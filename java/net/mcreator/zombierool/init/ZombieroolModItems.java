@@ -89,6 +89,7 @@ import net.mcreator.zombierool.item.ChinaLakeWeaponItem;
 import net.mcreator.zombierool.item.CZScorpionEvo3WeaponItem;
 import net.mcreator.zombierool.item.BulletVestTier1Item;
 import net.mcreator.zombierool.item.BrowningM1911WeaponItem;
+import net.mcreator.zombierool.item.BloodBrushItem;
 import net.mcreator.zombierool.item.BizonWeaponItem;
 import net.mcreator.zombierool.item.Beretta93rWeaponItem;
 import net.mcreator.zombierool.item.BattleRifleWeaponItem;
@@ -370,6 +371,7 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> IRON_SLABS = block(ZombieroolModBlocks.IRON_SLABS);
 	public static final RegistryObject<Item> AMMO_CRATE = block(ZombieroolModBlocks.AMMO_CRATE);
 	public static final RegistryObject<Item> RAYGUN_WEAPON = REGISTRY.register("raygun_weapon", () -> new RaygunWeaponItem());
+	public static final RegistryObject<Item> BLOOD_BRUSH = REGISTRY.register("blood_brush", () -> new BloodBrushItem());
 
 	private static RegistryObject<Item> block(RegistryObject<Block> block) {
 		return REGISTRY.register(block.getId().getPath(), () -> new BlockItem(block.get(), new Item.Properties()));

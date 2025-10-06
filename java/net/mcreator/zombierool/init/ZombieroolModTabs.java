@@ -54,6 +54,7 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.ZOMBIE_PASS.get().asItem());
 				tabData.accept(ZombieroolModBlocks.DER_WUNDERFIZZ.get().asItem());
 				tabData.accept(ZombieroolModBlocks.AMMO_CRATE.get().asItem());
+				tabData.accept(ZombieroolModItems.BLOOD_BRUSH.get());
 			}).withSearchBar().build());
 	public static final RegistryObject<CreativeModeTab> DECO = REGISTRY.register("deco",
 			() -> CreativeModeTab.builder().title(Component.translatable("item_group.zombierool.deco")).icon(() -> new ItemStack(ZombieroolModBlocks.DECO_FARMLAND.get())).displayItems((parameters, tabData) -> {
