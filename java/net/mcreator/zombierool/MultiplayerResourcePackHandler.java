@@ -6,15 +6,20 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.mcreator.zombierool.init.ZombieroolModSounds;
 import net.mcreator.zombierool.network.ResourcePackNetworkHandler;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 @OnlyIn(Dist.CLIENT)
@@ -22,11 +27,24 @@ public class MultiplayerResourcePackHandler {
     
     private static boolean hasRequestedThisSession = false;
     private static String currentWorldId = null;
+    
+    // ✅ Gestion du retrait automatique
+    private static List<String> appliedMultiplayerPacks = new ArrayList<>();
+    private static boolean pendingRemoval = false;
+    private static int ticksSinceDisconnect = 0;
+    private static final int TICKS_BEFORE_REMOVAL = 20; // 1 seconde
 
     @SubscribeEvent
     public static void onPlayerJoinWorld(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() && event.getEntity() == Minecraft.getInstance().player) {
             Minecraft mc = Minecraft.getInstance();
+            
+            // ✅ Annuler le retrait en cours si on rejoint un monde
+            if (pendingRemoval) {
+                System.out.println("[ZombieRool] Cancelling pending removal (player joined world)");
+                pendingRemoval = false;
+                ticksSinceDisconnect = 0;
+            }
             
             new Thread(() -> {
                 try {
@@ -48,6 +66,76 @@ public class MultiplayerResourcePackHandler {
                     Thread.currentThread().interrupt();
                 }
             }).start();
+        }
+    }
+
+    /**
+     * ✅ Gestion du retrait retardé en multijoueur
+     */
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        
+        Minecraft mc = Minecraft.getInstance();
+        
+        // Gérer le retrait retardé
+        if (pendingRemoval) {
+            ticksSinceDisconnect++;
+            if (ticksSinceDisconnect >= TICKS_BEFORE_REMOVAL) {
+                System.out.println("[ZombieRool] Removing multiplayer resource packs after disconnect...");
+                removeResourcePacksSilently(appliedMultiplayerPacks);
+                appliedMultiplayerPacks.clear();
+                pendingRemoval = false;
+                ticksSinceDisconnect = 0;
+            }
+            return;
+        }
+        
+        // Détecter la déconnexion (niveau null + pas en solo + avait un worldId)
+        if (mc.level == null && mc.getSingleplayerServer() == null && currentWorldId != null) {
+            System.out.println("[ZombieRool] Player disconnected from multiplayer world: " + currentWorldId);
+            if (!appliedMultiplayerPacks.isEmpty()) {
+                System.out.println("[ZombieRool] Scheduling resource pack removal...");
+                pendingRemoval = true;
+                ticksSinceDisconnect = 0;
+            }
+            currentWorldId = null;
+            hasRequestedThisSession = false;
+        }
+    }
+
+    /**
+     * ✅ Retire les packs avec reload (au menu principal)
+     */
+    private static void removeResourcePacksSilently(List<String> packIds) {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            
+            if (mc.level != null) {
+                System.out.println("[ZombieRool] Cannot remove packs while in world, delaying...");
+                return;
+            }
+            
+            PackRepository packRepository = mc.getResourcePackRepository();
+            Collection<String> selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
+            boolean changed = selectedPacks.removeAll(packIds);
+            
+            if (changed) {
+                System.out.println("[ZombieRool] Removing multiplayer resource packs: " + packIds);
+                packRepository.setSelected(selectedPacks);
+                
+                mc.execute(() -> {
+                    try {
+                        System.out.println("[ZombieRool] Reloading resources after pack removal...");
+                        mc.reloadResourcePacks();
+                        System.out.println("[ZombieRool] Multiplayer packs removed successfully");
+                    } catch (Exception e) {
+                        System.err.println("[ZombieRool] Error reloading after pack removal: " + e.getMessage());
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("[ZombieRool] Error removing resource packs: " + e.getMessage());
         }
     }
 
@@ -81,6 +169,11 @@ public class MultiplayerResourcePackHandler {
                 });
             } else {
                 System.out.println("[ZombieRool] Resource pack already applied");
+                // ✅ L'ajouter à la liste si pas déjà présent
+                String packId = "file/" + name + ".zip";
+                if (!appliedMultiplayerPacks.contains(packId)) {
+                    appliedMultiplayerPacks.add(packId);
+                }
             }
         } else {
             System.out.println("[ZombieRool] Resource pack not found locally, prompting download...");
@@ -150,18 +243,21 @@ public class MultiplayerResourcePackHandler {
                     var packRepository = minecraft.getResourcePackRepository();
                     packRepository.reload();
                     
-                    var selectedPacks = new java.util.ArrayList<>(packRepository.getSelectedIds());
+                    var selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
                     String packId = "file/" + fileName;
                     
                     if (!selectedPacks.contains(packId)) {
                         selectedPacks.add(packId);
                         packRepository.setSelected(selectedPacks);
                         
+                        // ✅ Ajouter à la liste de tracking
+                        appliedMultiplayerPacks.add(packId);
+                        
                         minecraft.execute(() -> {
                             minecraft.reloadResourcePacks();
                         });
                         
-                        System.out.println("[ZombieRool] Resource pack applied");
+                        System.out.println("[ZombieRool] Resource pack applied and tracked");
                     }
                 } catch (Exception e) {
                     System.err.println("[ZombieRool] Error applying resource pack: " + e.getMessage());
@@ -196,7 +292,6 @@ public class MultiplayerResourcePackHandler {
                 rpDir.mkdirs();
                 File targetFile = new File(rpDir, name + ".zip");
                 
-                // Vérifier si le fichier existe déjà
                 if (targetFile.exists()) {
                     System.out.println("[ZombieRool] Resource pack already exists, skipping download");
                     return true;

@@ -45,9 +45,10 @@ import net.mcreator.zombierool.network.ScreenShakePacket;
 import net.mcreator.zombierool.network.ObstacleDoorCopyBlockPacket;
 import net.mcreator.zombierool.network.PurchaseWunderfizzDrinkMessage;
 import net.mcreator.zombierool.network.packet.SyncWunderfizzLocationPacket;
-
+import net.mcreator.zombierool.network.BloodOverlayPacket;
 import net.mcreator.zombierool.network.packet.StartGameAnimationPacket;
 import net.mcreator.zombierool.network.packet.WaveChangeAnimationPacket;
+import net.mcreator.zombierool.network.SyncBloodOverlaysPacket;
 
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -108,7 +109,9 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CAmmoCratePricePacket.class,S2CAmmoCratePricePacket::toBytes,S2CAmmoCratePricePacket::new, S2CAmmoCratePricePacket::handle);
             INSTANCE.registerMessage(id++, PurchaseAmmoCrateMessage.class, PurchaseAmmoCrateMessage::encode, PurchaseAmmoCrateMessage::new, PurchaseAmmoCrateMessage::handler);
 			INSTANCE.registerMessage(id++, C2SRequestAmmoCrateInfoPacket.class,C2SRequestAmmoCrateInfoPacket::encode,C2SRequestAmmoCrateInfoPacket::new,C2SRequestAmmoCrateInfoPacket::handler);
+			INSTANCE.registerMessage(id++, BloodOverlayPacket.class, BloodOverlayPacket::encode, BloodOverlayPacket::new, BloodOverlayPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+			INSTANCE.registerMessage(id++, SyncBloodOverlaysPacket.class, SyncBloodOverlaysPacket::encode, SyncBloodOverlaysPacket::new, SyncBloodOverlaysPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
 			
-            });
+           });
 	}
 }

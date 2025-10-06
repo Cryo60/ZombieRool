@@ -99,6 +99,11 @@ class MapResourcePackManager {
     private static boolean worldJustLoaded = false;
     private static final int TICKS_BEFORE_PROMPT = 40; // 2 secondes
     
+    // ✅ NOUVEAU: Système de retrait retardé
+    private static boolean pendingRemoval = false;
+    private static int ticksSinceWorldUnload = 0;
+    private static final int TICKS_BEFORE_REMOVAL = 20; // 1 seconde après déchargement
+    
     private static final File CONFIG_FILE = new File(Minecraft.getInstance().gameDirectory, "config/zombierool_declined_packs.json");
     private static boolean configLoaded = false;
 
@@ -147,9 +152,22 @@ class MapResourcePackManager {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         
-        loadConfig(); // Charger la config au premier tick
+        loadConfig();
         
         Minecraft mc = Minecraft.getInstance();
+        
+        // ✅ Gérer le retrait retardé des packs
+        if (pendingRemoval) {
+            ticksSinceWorldUnload++;
+            if (ticksSinceWorldUnload >= TICKS_BEFORE_REMOVAL) {
+                System.out.println("[ZombieRool] Removing resource packs after world unload...");
+                removeResourcePacksSilently(appliedResourcePacks);
+                appliedResourcePacks.clear();
+                pendingRemoval = false;
+                ticksSinceWorldUnload = 0;
+            }
+            return; // Ne pas continuer pendant le retrait
+        }
         
         // Vérifier si on est dans un monde solo
         if (mc.level != null && mc.getSingleplayerServer() != null) {
@@ -162,9 +180,17 @@ class MapResourcePackManager {
                 worldJustLoaded = true;
                 ticksSinceWorldLoad = 0;
                 
-                // Nettoyer les anciens packs appliqués
+                // ✅ Annuler tout retrait en cours
+                if (pendingRemoval) {
+                    System.out.println("[ZombieRool] Cancelling pending removal (new world loaded)");
+                    pendingRemoval = false;
+                    ticksSinceWorldUnload = 0;
+                }
+                
+                // Nettoyer les anciens packs appliqués (immédiatement si nouveau monde)
                 if (!appliedResourcePacks.isEmpty()) {
-                    removeResourcePacksSilently(appliedResourcePacks);
+                    System.out.println("[ZombieRool] Cleaning old packs for new world");
+                    removeResourcePacksImmediately(appliedResourcePacks);
                     appliedResourcePacks.clear();
                 }
             }
@@ -178,7 +204,6 @@ class MapResourcePackManager {
                     
                     System.out.println("[ZombieRool] Checking for resource packs for world: " + worldName);
                     
-                    // Vérifier si l'utilisateur a refusé (temporairement ou définitivement)
                     if (declinedWorlds.contains(worldName)) {
                         System.out.println("[ZombieRool] World temporarily declined");
                         return;
@@ -211,15 +236,15 @@ class MapResourcePackManager {
                 }
             }
         } else if (mc.level == null && currentWorldName != null) {
-            // Monde déchargé
+            // ✅ Monde déchargé - retrait RETARDÉ
             System.out.println("[ZombieRool] World unloaded: " + currentWorldName);
             if (!appliedResourcePacks.isEmpty()) {
-                removeResourcePacksSilently(appliedResourcePacks);
-                appliedResourcePacks.clear();
+                System.out.println("[ZombieRool] Scheduling resource pack removal...");
+                pendingRemoval = true;
+                ticksSinceWorldUnload = 0;
             }
             currentWorldName = null;
             worldJustLoaded = false;
-            // Réinitialiser les refus temporaires quand on quitte un monde
             declinedWorlds.clear();
         }
     }
@@ -249,7 +274,6 @@ class MapResourcePackManager {
                 System.out.println("[ZombieRool] Found " + rpFiles.length + " files/folders in resourcepacks");
                 
                 for (File rpFile : rpFiles) {
-                    // Accepter à la fois les dossiers ET les fichiers .zip
                     if (!(rpFile.isDirectory() || rpFile.getName().endsWith(".zip"))) {
                         System.out.println("[ZombieRool]   Skipping (not dir/zip): " + rpFile.getName());
                         continue;
@@ -258,15 +282,9 @@ class MapResourcePackManager {
                     String rpName = rpFile.getName().replace(".zip", "").toLowerCase().trim();
                     System.out.println("[ZombieRool]   Checking: " + rpFile.getName() + " (normalized: '" + rpName + "')");
                     
-                    // Méthodes de matching (par ordre de priorité)
                     boolean exactMatch = rpName.equals(worldLower);
                     boolean worldInRP = rpName.contains(worldLower);
-                    
-                    // Match avec suffixe _RP ou _rp
-                    boolean rpSuffixMatch = rpName.equals(worldLower + "_rp") || 
-                                           rpName.equals(worldLower + " rp");
-                    
-                    // Match en retirant le suffixe RP
+                    boolean rpSuffixMatch = rpName.equals(worldLower + "_rp") || rpName.equals(worldLower + " rp");
                     String rpWithoutSuffix = rpName.replaceAll("_rp$|\\s+rp$", "");
                     boolean matchWithoutSuffix = rpWithoutSuffix.equals(worldLower);
                     
@@ -275,8 +293,7 @@ class MapResourcePackManager {
                     System.out.println("[ZombieRool]     - matchWithoutSuffix: " + matchWithoutSuffix + " (rpWithoutSuffix: '" + rpWithoutSuffix + "')");
                     System.out.println("[ZombieRool]     - worldInRP: " + worldInRP + " (worldLength: " + worldLower.length() + ")");
                     
-                    if (exactMatch || rpSuffixMatch || matchWithoutSuffix || 
-                        (worldInRP && worldLower.length() > 5)) { // Éviter les faux positifs sur noms courts
+                    if (exactMatch || rpSuffixMatch || matchWithoutSuffix || (worldInRP && worldLower.length() > 5)) {
                         System.out.println("[ZombieRool]     ✓ MATCH! Adding: " + rpFile.getName());
                         foundPacks.add(rpFile.getName());
                     } else {
@@ -304,13 +321,11 @@ class MapResourcePackManager {
             
             System.out.println("[ZombieRool] Applying resource packs: " + packNames);
             
-            // IMPORTANT: Forcer le reload du repository pour détecter les nouveaux packs
             packRepository.reload();
             
             Collection<String> selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
             System.out.println("[ZombieRool] Currently selected packs: " + selectedPacks);
             
-            // Vérifier les packs disponibles
             Collection<String> availablePacks = packRepository.getAvailableIds();
             System.out.println("[ZombieRool] Available packs: " + availablePacks);
             
@@ -334,7 +349,6 @@ class MapResourcePackManager {
             System.out.println("[ZombieRool] Final selected packs: " + selectedPacks);
             packRepository.setSelected(selectedPacks);
             
-            // Reload de manière asynchrone pour éviter les freeze
             mc.execute(() -> {
                 try {
                     System.out.println("[ZombieRool] Reloading resource packs...");
@@ -353,32 +367,62 @@ class MapResourcePackManager {
     }
 
     /**
-     * Retire les resource packs silencieusement (sans reload si pas nécessaire)
+     * ✅ NOUVEAU: Retire les packs immédiatement (lors du changement de monde)
+     */
+    private static void removeResourcePacksImmediately(List<String> packIds) {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            PackRepository packRepository = mc.getResourcePackRepository();
+            
+            Collection<String> selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
+            boolean changed = selectedPacks.removeAll(packIds);
+            
+            if (changed) {
+                System.out.println("[ZombieRool] Removing packs immediately (world change): " + packIds);
+                packRepository.setSelected(selectedPacks);
+                // Pas de reload ici pour éviter les conflits
+            }
+        } catch (Exception e) {
+            System.err.println("[ZombieRool] Error removing resource packs immediately: " + e.getMessage());
+        }
+    }
+
+    /**
+     * ✅ CORRIGÉ: Retire les packs après un délai (avec reload)
      */
     private static void removeResourcePacksSilently(List<String> packIds) {
-	    try {
-	        Minecraft mc = Minecraft.getInstance();
-	        PackRepository packRepository = mc.getResourcePackRepository();
-	        
-	        Collection<String> selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
-	        boolean changed = selectedPacks.removeAll(packIds);
-	        
-	        if (changed) {
-	            packRepository.setSelected(selectedPacks);
-	            // ✅ AJOUT: Forcer le reload
-	            mc.execute(() -> {
-	                try {
-	                    System.out.println("[ZombieRool] Removing and reloading resource packs...");
-	                    mc.reloadResourcePacks();
-	                } catch (Exception e) {
-	                    System.err.println("[ZombieRool] Error reloading after pack removal: " + e.getMessage());
-	                }
-	            });
-	        }
-	    } catch (Exception e) {
-	        System.err.println("[ZombieRool] Error removing resource packs: " + e.getMessage());
-	    }
-	}
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            
+            // Vérifier qu'on est dans un état stable (menu principal)
+            if (mc.level != null) {
+                System.out.println("[ZombieRool] Cannot remove packs while in world, delaying...");
+                return;
+            }
+            
+            PackRepository packRepository = mc.getResourcePackRepository();
+            Collection<String> selectedPacks = new ArrayList<>(packRepository.getSelectedIds());
+            boolean changed = selectedPacks.removeAll(packIds);
+            
+            if (changed) {
+                System.out.println("[ZombieRool] Removing resource packs: " + packIds);
+                packRepository.setSelected(selectedPacks);
+                
+                // Reload uniquement si on est au menu principal
+                mc.execute(() -> {
+                    try {
+                        System.out.println("[ZombieRool] Reloading resources after pack removal...");
+                        mc.reloadResourcePacks();
+                        System.out.println("[ZombieRool] Packs removed successfully");
+                    } catch (Exception e) {
+                        System.err.println("[ZombieRool] Error reloading after pack removal: " + e.getMessage());
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("[ZombieRool] Error removing resource packs: " + e.getMessage());
+        }
+    }
 
     /**
      * Confirme l'application des resource packs
@@ -387,7 +431,7 @@ class MapResourcePackManager {
         if (!pendingResourcePacks.isEmpty() && pendingWorldName != null) {
             applyResourcePacks(pendingResourcePacks);
             declinedWorlds.remove(pendingWorldName);
-            permanentlyDeclinedWorlds.remove(pendingWorldName); // Au cas où
+            permanentlyDeclinedWorlds.remove(pendingWorldName);
         }
         waitingForConfirmation = false;
         pendingResourcePacks.clear();
@@ -453,7 +497,6 @@ class ResourcePackConfirmationScreen extends Screen {
         int buttonHeight = 20;
         int spacing = 5;
         
-        // 3 boutons: Yes, Not now, Never
         int totalWidth = (buttonWidth * 3) + (spacing * 2);
         int startX = (this.width - totalWidth) / 2;
         int buttonY = this.height / 2 + 40;

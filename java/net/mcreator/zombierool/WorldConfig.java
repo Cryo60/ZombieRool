@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WorldConfig extends SavedData {
 
@@ -44,6 +46,8 @@ public class WorldConfig extends SavedData {
     private boolean superSprintersEnabled = false; 
 
     private boolean coldWaterEffectEnabled = false;
+
+    private Map<String, String> bloodOverlays = new HashMap<>();
 
     public WorldConfig() {
         // [DEBUG] System.out.println("[DEBUG][WorldConfig][Constructor] New WorldConfig instance created. Hash: " + System.identityHashCode(this));
@@ -176,6 +180,13 @@ public class WorldConfig extends SavedData {
             config.coldWaterEffectEnabled = false;
         }
 
+        if (nbt.contains("bloodOverlays", CompoundTag.TAG_COMPOUND)) {
+		    CompoundTag overlaysTag = nbt.getCompound("bloodOverlays");
+		    for (String key : overlaysTag.getAllKeys()) {
+		        config.bloodOverlays.put(key, overlaysTag.getString(key));
+		    }
+		}
+
         return config;
     }
 
@@ -251,6 +262,12 @@ public class WorldConfig extends SavedData {
         compound.putBoolean("superSprintersEnabled", this.superSprintersEnabled);
 
         compound.putBoolean("coldWaterEffectEnabled", this.coldWaterEffectEnabled);
+
+        CompoundTag overlaysTag = new CompoundTag();
+		for (Map.Entry<String, String> entry : bloodOverlays.entrySet()) {
+		    overlaysTag.putString(entry.getKey(), entry.getValue());
+		}
+		compound.put("bloodOverlays", overlaysTag);
 
         return compound;
     }
@@ -443,4 +460,23 @@ public class WorldConfig extends SavedData {
         this.coldWaterEffectEnabled = coldWaterEffectEnabled;
         this.setDirty();
     }
+
+    public void addBloodOverlay(String key, String value) {
+	    bloodOverlays.put(key, value);
+	    this.setDirty();
+	}
+	
+	public void removeBloodOverlay(String key) {
+	    bloodOverlays.remove(key);
+	    this.setDirty();
+	}
+	
+	public Map<String, String> getBloodOverlays() {
+	    return new HashMap<>(bloodOverlays);
+	}
+	
+	public void clearAllBloodOverlays() {
+	    bloodOverlays.clear();
+	    this.setDirty();
+	}
 }

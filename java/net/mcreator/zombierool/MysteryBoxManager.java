@@ -55,10 +55,6 @@ public class MysteryBoxManager extends SavedData {
 
     // Helper method to check if the client's language is English
     private static boolean isEnglishClient(Player player) {
-        // For server-side, we can't directly access client language settings.
-        // This is a placeholder. In a real scenario, you'd need client-server sync
-        // to pass the player's language preference to the server.
-        // For this example, we'll assume English if a player context is available.
         return true; 
     }
 

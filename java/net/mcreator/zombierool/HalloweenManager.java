@@ -41,7 +41,7 @@ public class HalloweenManager {
      * Force le mode Halloween indépendamment de la date
      * Modifier cette valeur à true pour activer Halloween en permanence
      */
-    private static boolean FORCE_HALLOWEEN_MODE = true;
+    private static boolean FORCE_HALLOWEEN_MODE = false;
     
     // Couleurs possibles pour l'armure en cuir (format RGB)
     private static final int[] ARMOR_COLORS = {

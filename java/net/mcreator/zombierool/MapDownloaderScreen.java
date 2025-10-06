@@ -3,13 +3,16 @@ package net.mcreator.zombierool;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.resources.ResourceLocation;
 import net.mcreator.zombierool.init.ZombieroolModSounds;
 import net.minecraft.Util;
 
@@ -28,11 +31,11 @@ import java.util.concurrent.*;
 
 public class MapDownloaderScreen extends Screen {
     private static final String MAPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/maps.json";
+    private static final String FEATURED_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/featured.json";
     private static final String GITHUB_MAPS_URL = "https://github.com/Cryo60/zombierool-maps/tree/main/maps";
     private static final String DISCORD_MESSAGE = "Join our Discord for community-made maps!";
     private static final String DISCORD_INVITE = "https://discord.gg/HGv2r44hXM";
     
-    // Sécurité: Domaines autorisés
     private static final List<String> ALLOWED_DOMAINS = Arrays.asList(
         "raw.githubusercontent.com",
         "github.com",
@@ -40,10 +43,7 @@ public class MapDownloaderScreen extends Screen {
         "codeload.github.com"
     );
     
-    // Sécurité: Limite de taille (500 MB max par fichier)
     private static final long MAX_FILE_SIZE = 500L * 1024L * 1024L;
-    
-    // Timeouts adaptés pour 4G
     private static final int CONNECT_TIMEOUT = 30000;
     private static final int READ_TIMEOUT = 60000;
     private static final int DOWNLOAD_TIMEOUT = 300000;
@@ -54,9 +54,16 @@ public class MapDownloaderScreen extends Screen {
     private Button downloadAllButton;
     private Button openGithubButton;
     private Button backButton;
+    private Button downloadFeaturedButton;
+    
     private List<MapEntry> maps = new ArrayList<>();
     private List<MapEntry> downloadedMaps = new ArrayList<>();
+    private FeaturedMap featuredMap = null;
+    private DynamicTexture featuredTexture = null;
+    private ResourceLocation featuredTextureLocation = null;
+    
     private boolean loading = true;
+    private boolean loadingFeatured = true;
     private String errorMessage = null;
     private String statusMessage = null;
     private float downloadProgress = 0.0f;
@@ -72,36 +79,35 @@ public class MapDownloaderScreen extends Screen {
         this.lastScreen = lastScreen;
     }
 
-    /**
-     * Sauvegarde les métadonnées du RP dans le monde après téléchargement
-     */
     private void saveResourcePackMetadata(MapEntry map, File worldDir) {
         if (!map.hasResourcePack()) return;
         
         try {
             File rpMetadataFile = new File(worldDir, "zombierool_resourcepack.json");
-            
-            com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+            JsonObject json = new JsonObject();
             json.addProperty("url", map.resourcePackUrl);
             json.addProperty("name", map.resourcePackName != null ? map.resourcePackName : map.name);
             
-            try (java.io.FileWriter writer = new java.io.FileWriter(rpMetadataFile)) {
-                new com.google.gson.Gson().toJson(json, writer);
+            try (FileWriter writer = new FileWriter(rpMetadataFile)) {
+                new Gson().toJson(json, writer);
             }
             
             System.out.println("[ZombieRool] Saved RP metadata to world: " + worldDir.getName());
         } catch (Exception e) {
             System.err.println("[ZombieRool] Error saving RP metadata: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
     @Override
     protected void init() {
+        loadFeaturedMap();
         loadMapsFromGithub();
 
-        int listHeight = (this.height * 2) / 3 - 60;
-        this.mapList = new MapList(this.minecraft, this.width, listHeight, 32, listHeight + 32, 36);
+        // Ajuster la hauteur de la liste pour faire de la place pour la featured map
+        int featuredHeight = 120;
+        int listTop = 32 + featuredHeight + 10;
+        int listHeight = this.height - listTop - 120;
+        this.mapList = new MapList(this.minecraft, this.width, listHeight, listTop, listTop + listHeight, 36);
         this.addWidget(this.mapList);
 
         int buttonWidth = 120;
@@ -136,7 +142,112 @@ public class MapDownloaderScreen extends Screen {
         this.addRenderableWidget(openGithubButton);
         this.addRenderableWidget(backButton);
 
+        // Bouton de téléchargement pour la featured map
+        if (featuredMap != null) {
+            int featuredButtonWidth = 100;
+            int featuredButtonX = this.width - featuredButtonWidth - 30;
+            int featuredButtonY = 70;
+            
+            this.downloadFeaturedButton = Button.builder(Component.literal("Download"), btn -> {
+                playSound();
+                downloadFeaturedMap();
+            }).bounds(featuredButtonX, featuredButtonY, featuredButtonWidth, 20).build();
+            
+            this.addRenderableWidget(downloadFeaturedButton);
+        }
+
         updateButtonStates();
+    }
+
+    private void loadFeaturedMap() {
+        new Thread(() -> {
+            try {
+                System.setProperty("java.net.preferIPv4Stack", "true");
+                
+                URL url = new URL(FEATURED_JSON_URL);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(CONNECT_TIMEOUT);
+                conn.setReadTimeout(READ_TIMEOUT);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                Gson gson = new Gson();
+                JsonObject json = gson.fromJson(response.toString(), JsonObject.class);
+                
+                String id = json.get("id").getAsString();
+                String name = json.get("name").getAsString();
+                String description = json.get("description").getAsString();
+                String downloadUrl = json.get("download_url").getAsString();
+                String previewUrl = json.get("preview_url").getAsString();
+                
+                String resourcePackUrl = null;
+                String resourcePackName = null;
+                if (json.has("resource_pack")) {
+                    JsonObject rpObj = json.getAsJsonObject("resource_pack");
+                    if (rpObj.has("url")) resourcePackUrl = rpObj.get("url").getAsString();
+                    if (rpObj.has("name")) resourcePackName = rpObj.get("name").getAsString();
+                }
+                
+                String sha256 = json.has("sha256") ? json.get("sha256").getAsString() : null;
+                
+                featuredMap = new FeaturedMap(id, name, description, downloadUrl, 
+                                             resourcePackUrl, resourcePackName, sha256, previewUrl);
+                
+                // Télécharger l'image de prévisualisation
+                downloadFeaturedPreview(previewUrl);
+                
+                loadingFeatured = false;
+
+            } catch (Exception e) {
+                System.err.println("[ZombieRool] Failed to load featured map: " + e.getMessage());
+                loadingFeatured = false;
+            }
+        }).start();
+    }
+
+    private void downloadFeaturedPreview(String previewUrl) {
+        try {
+            URL url = new URL(previewUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(CONNECT_TIMEOUT);
+            conn.setReadTimeout(READ_TIMEOUT);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            
+            try (InputStream in = conn.getInputStream()) {
+                NativeImage image = NativeImage.read(in);
+                
+                this.minecraft.execute(() -> {
+                    featuredTexture = new DynamicTexture(image);
+                    featuredTextureLocation = this.minecraft.getTextureManager()
+                        .register("zombierool_featured", featuredTexture);
+                });
+            }
+            
+            conn.disconnect();
+        } catch (Exception e) {
+            System.err.println("[ZombieRool] Failed to load preview image: " + e.getMessage());
+        }
+    }
+
+    private void downloadFeaturedMap() {
+        if (featuredMap == null || isDownloading) return;
+        
+        MapEntry mapEntry = featuredMap.toMapEntry();
+        
+        if (mapEntry.hasResourcePack()) {
+            this.minecraft.setScreen(new ResourcePackConfirmScreen(this, mapEntry));
+        } else {
+            downloadMap(mapEntry, true, false);
+        }
     }
 
     private void playSound() {
@@ -177,18 +288,11 @@ public class MapDownloaderScreen extends Screen {
                     String resourcePackName = null;
                     if (mapObj.has("resource_pack")) {
                         JsonObject rpObj = mapObj.getAsJsonObject("resource_pack");
-                        if (rpObj.has("url")) {
-                            resourcePackUrl = rpObj.get("url").getAsString();
-                        }
-                        if (rpObj.has("name")) {
-                            resourcePackName = rpObj.get("name").getAsString();
-                        }
+                        if (rpObj.has("url")) resourcePackUrl = rpObj.get("url").getAsString();
+                        if (rpObj.has("name")) resourcePackName = rpObj.get("name").getAsString();
                     }
                     
-                    String sha256 = null;
-                    if (mapObj.has("sha256")) {
-                        sha256 = mapObj.get("sha256").getAsString();
-                    }
+                    String sha256 = mapObj.has("sha256") ? mapObj.get("sha256").getAsString() : null;
                     
                     MapEntry entry = new MapEntry(
                         mapObj.get("id").getAsString(),
@@ -230,13 +334,17 @@ public class MapDownloaderScreen extends Screen {
                 downloadedMaps.add(map);
             }
         }
+        
+        // Vérifier si la featured map est téléchargée
+        if (featuredMap != null) {
+            File featuredDir = new File(savesDir, featuredMap.name);
+            featuredMap.isDownloaded = featuredDir.exists() && featuredDir.isDirectory();
+        }
     }
 
     private void downloadAndInstallMap() {
         MapEntry selected = mapList.getSelected();
-        if (selected == null || isDownloading) {
-            return;
-        }
+        if (selected == null || isDownloading) return;
         
         if (selected.hasResourcePack()) {
             this.minecraft.setScreen(new ResourcePackConfirmScreen(this, selected));
@@ -257,7 +365,6 @@ public class MapDownloaderScreen extends Screen {
         
         if (mapsToDownload.isEmpty()) return;
         
-        // Queue downloads using CompletableFuture chain
         CompletableFuture<Void> downloadChain = CompletableFuture.completedFuture(null);
         
         for (MapEntry map : mapsToDownload) {
@@ -271,7 +378,6 @@ public class MapDownloaderScreen extends Screen {
                 }
                 
                 CompletableFuture<Void> future = new CompletableFuture<>();
-                
                 new Thread(() -> {
                     downloadMapInternal(map, false, map.hasResourcePack());
                     try {
@@ -300,7 +406,6 @@ public class MapDownloaderScreen extends Screen {
         });
         
         try {
-            // Téléchargement de la map avec timeout global
             ExecutorService executor = Executors.newSingleThreadExecutor();
             Future<Boolean> future = executor.submit(() -> 
                 downloadFile(map.downloadUrl, map.name, true, map.name + ".zip", map.sha256)
@@ -312,18 +417,14 @@ public class MapDownloaderScreen extends Screen {
             } catch (TimeoutException e) {
                 future.cancel(true);
                 mapSuccess = false;
-                this.minecraft.execute(() -> {
-                    statusMessage = "Download timeout - slow connection detected";
-                });
+                this.minecraft.execute(() -> statusMessage = "Download timeout - slow connection detected");
             } finally {
                 executor.shutdownNow();
             }
             
             if (!mapSuccess) {
                 consecutiveFailures++;
-                if (consecutiveFailures >= 3) {
-                    networkIssuesDetected = true;
-                }
+                if (consecutiveFailures >= 3) networkIssuesDetected = true;
                 this.minecraft.execute(() -> {
                     statusMessage = "Download failed. Try 'Open GitHub' for manual download.";
                     isDownloading = false;
@@ -332,14 +433,12 @@ public class MapDownloaderScreen extends Screen {
                 return;
             }
             
-            consecutiveFailures = 0; // Reset sur succès
+            consecutiveFailures = 0;
             
-            // NOUVEAU: Sauvegarder les métadonnées du RP dans le monde après extraction
             if (includeResourcePack && map.hasResourcePack()) {
                 File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
                 File worldDir = new File(savesDir, map.name);
                 
-                // Trouver le bon dossier si un suffixe a été ajouté
                 int i = 1;
                 while (!worldDir.exists() && i < 100) {
                     worldDir = new File(savesDir, map.name + " (" + i + ")");
@@ -351,7 +450,6 @@ public class MapDownloaderScreen extends Screen {
                 }
             }
             
-            // Téléchargement du resource pack si disponible
             String resourcePackFileName = null;
             if (includeResourcePack && map.hasResourcePack()) {
                 this.minecraft.execute(() -> {
@@ -361,13 +459,6 @@ public class MapDownloaderScreen extends Screen {
                 
                 String rpName = map.resourcePackName != null ? map.resourcePackName : map.name;
                 resourcePackFileName = rpName + ".zip";
-                
-                System.out.println("[ZombieRool] ========== RESOURCE PACK DOWNLOAD ==========");
-                System.out.println("[ZombieRool] Map name: " + map.name);
-                System.out.println("[ZombieRool] RP name from JSON: " + map.resourcePackName);
-                System.out.println("[ZombieRool] Final RP name: " + rpName);
-                System.out.println("[ZombieRool] Final RP filename: " + resourcePackFileName);
-                System.out.println("[ZombieRool] RP URL: " + map.resourcePackUrl);
                 
                 final String finalRpName = rpName;
                 final String finalRpFileName = resourcePackFileName;
@@ -382,12 +473,9 @@ public class MapDownloaderScreen extends Screen {
                     if (!rpSuccess) {
                         resourcePackFileName = null;
                     } else {
-                        // IMPORTANT: Forcer Minecraft à détecter le nouveau resource pack
                         this.minecraft.execute(() -> {
                             try {
-                                System.out.println("[ZombieRool] Reloading pack repository to detect new RP...");
                                 Minecraft.getInstance().getResourcePackRepository().reload();
-                                System.out.println("[ZombieRool] Pack repository reloaded");
                             } catch (Exception e) {
                                 System.err.println("[ZombieRool] Error reloading pack repository: " + e.getMessage());
                             }
@@ -412,9 +500,7 @@ public class MapDownloaderScreen extends Screen {
                 
                 if (showNotification) {
                     String message = "Installed: " + map.name;
-                    if (finalRpFileName != null) {
-                        message += " + RP";
-                    }
+                    if (finalRpFileName != null) message += " + RP";
                     showSuccessNotification(message);
                 }
             });
@@ -433,16 +519,12 @@ public class MapDownloaderScreen extends Screen {
     private boolean downloadFile(String fileUrl, String name, boolean isMap, String fileName, String sha256Hash) {
         System.setProperty("java.net.preferIPv4Stack", "true");
         
-        int maxRetries = 2; // Réduit à 2 tentatives pour détecter les problèmes plus vite
+        int maxRetries = 2;
         int retryCount = 0;
         
         while (retryCount < maxRetries) {
             try {
-                System.out.println("[ZombieRool] Downloading " + (isMap ? "map" : "resource pack") + ": " + name);
-                System.out.println("[ZombieRool] URL: " + fileUrl);
-                
                 URL url = new URL(fileUrl);
-                
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setInstanceFollowRedirects(true);
@@ -450,18 +532,15 @@ public class MapDownloaderScreen extends Screen {
                 conn.setReadTimeout(READ_TIMEOUT);
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                 conn.setRequestProperty("Accept", "*/*");
-                conn.setRequestProperty("Connection", "close"); // Important pour 4G
+                conn.setRequestProperty("Connection", "close");
                 
                 conn.connect();
-                
                 int responseCode = conn.getResponseCode();
                 
-                // Gestion des redirections
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
                     responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                     responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
                     String newUrl = conn.getHeaderField("Location");
-                    System.out.println("[ZombieRool] Following redirect to: " + newUrl);
                     conn.disconnect();
                     conn = (HttpURLConnection) new URL(newUrl).openConnection();
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0");
@@ -481,16 +560,10 @@ public class MapDownloaderScreen extends Screen {
                 tempDir.mkdirs();
                 File zipFile = new File(tempDir, fileName);
                 
-                System.out.println("[ZombieRool] Downloading to temp file: " + zipFile.getAbsolutePath());
-                
                 long contentLength = conn.getContentLengthLong();
-                
-                // Sécurité: vérifier la taille du fichier
                 if (contentLength > MAX_FILE_SIZE) {
                     conn.disconnect();
-                    this.minecraft.execute(() -> {
-                        statusMessage = "File too large: " + (contentLength / 1024 / 1024) + " MB";
-                    });
+                    this.minecraft.execute(() -> statusMessage = "File too large: " + (contentLength / 1024 / 1024) + " MB");
                     return false;
                 }
                 
@@ -505,12 +578,10 @@ public class MapDownloaderScreen extends Screen {
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
                         
-                        // Sécurité: vérifier qu'on ne dépasse pas la limite même si contentLength est faux
                         if (totalRead > MAX_FILE_SIZE) {
                             throw new IOException("Download exceeded size limit");
                         }
                         
-                        // Update progress max toutes les 500ms pour éviter trop d'updates
                         long now = System.currentTimeMillis();
                         if (contentLength > 0 && now - lastUpdate > 500) {
                             final float progress = (float) totalRead / contentLength;
@@ -521,8 +592,6 @@ public class MapDownloaderScreen extends Screen {
                 }
                 
                 conn.disconnect();
-                
-                System.out.println("[ZombieRool] Download complete. File size: " + zipFile.length() + " bytes");
 
                 if (isMap) {
                     this.minecraft.execute(() -> statusMessage = "Installing " + name + "...");
@@ -535,74 +604,41 @@ public class MapDownloaderScreen extends Screen {
                         i++;
                     }
                     
-                    System.out.println("[ZombieRool] Extracting map to: " + targetDir.getAbsolutePath());
                     extractZip(zipFile, targetDir);
                     
-                    // Vérifier le hash SHA256 si disponible
                     if (sha256Hash != null && !sha256Hash.isEmpty()) {
                         this.minecraft.execute(() -> statusMessage = "Verifying integrity...");
                         String actualHash = calculateSHA256(zipFile);
                         if (actualHash != null && !actualHash.equalsIgnoreCase(sha256Hash)) {
                             zipFile.delete();
-                            this.minecraft.execute(() -> {
-                                statusMessage = "Integrity check failed - file may be corrupted";
-                            });
+                            this.minecraft.execute(() -> statusMessage = "Integrity check failed - file may be corrupted");
                             return false;
                         }
                     }
                     
                     zipFile.delete();
                 } else {
-				    this.minecraft.execute(() -> statusMessage = "Installing RP...");
-				    File resourcePacksDir = new File(Minecraft.getInstance().gameDirectory, "resourcepacks");
-				    resourcePacksDir.mkdirs();
-				    
-				    System.out.println("[ZombieRool] Resource packs directory: " + resourcePacksDir.getAbsolutePath());
-				    System.out.println("[ZombieRool] Target filename: " + fileName);
-				    
-				    File targetFile = new File(resourcePacksDir, fileName);
-				    
-				    // Vérifier si le fichier existe déjà
-				    if (targetFile.exists()) {
-				        System.out.println("[ZombieRool] Resource pack already exists, skipping: " + targetFile.getName());
-				        zipFile.delete(); // Supprimer le fichier temporaire
-				        return true;
-				    }
-				    
-				    // Chercher si une version avec suffixe existe déjà
-				    int i = 1;
-				    String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
-				    String extension = fileName.substring(fileName.lastIndexOf('.'));
-				    File existingFile = new File(resourcePacksDir, baseName + "_" + i + extension);
-				    
-				    if (existingFile.exists()) {
-				        System.out.println("[ZombieRool] Similar resource pack already exists, skipping: " + existingFile.getName());
-				        zipFile.delete();
-				        return true;
-				    }
-				    
-				    System.out.println("[ZombieRool] Moving resource pack to: " + targetFile.getAbsolutePath());
-				    Files.move(zipFile.toPath(), targetFile.toPath());
-				    System.out.println("[ZombieRool] Resource pack installed successfully");
-				    System.out.println("[ZombieRool] Final file exists: " + targetFile.exists());
-				    System.out.println("[ZombieRool] Final file size: " + targetFile.length() + " bytes");
-				}
+                    this.minecraft.execute(() -> statusMessage = "Installing RP...");
+                    File resourcePacksDir = new File(Minecraft.getInstance().gameDirectory, "resourcepacks");
+                    resourcePacksDir.mkdirs();
+                    
+                    File targetFile = new File(resourcePacksDir, fileName);
+                    if (targetFile.exists()) {
+                        zipFile.delete();
+                        return true;
+                    }
+                    
+                    Files.move(zipFile.toPath(), targetFile.toPath());
+                }
                 
                 return true;
 
             } catch (Exception e) {
                 retryCount++;
-                System.err.println("[ZombieRool] Download attempt " + retryCount + " failed: " + e.getMessage());
-                e.printStackTrace();
-                
-                if (retryCount >= maxRetries) {
-                    return false;
-                }
+                if (retryCount >= maxRetries) return false;
                 
                 final int currentRetry = retryCount;
-                this.minecraft.execute(() -> {
-                    statusMessage = "Retry " + currentRetry + "/" + maxRetries + "...";
-                });
+                this.minecraft.execute(() -> statusMessage = "Retry " + currentRetry + "/" + maxRetries + "...");
                 
                 try {
                     Thread.sleep(2000);
@@ -616,22 +652,6 @@ public class MapDownloaderScreen extends Screen {
         return false;
     }
     
-    /**
-     * Vérifie si une URL provient d'un domaine autorisé
-     */
-    private boolean isUrlSafe(String urlString) {
-        try {
-            URL url = new URL(urlString);
-            String host = url.getHost().toLowerCase();
-            return ALLOWED_DOMAINS.stream().anyMatch(host::contains);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Calcule le SHA-256 d'un fichier
-     */
     private String calculateSHA256(File file) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -645,14 +665,10 @@ public class MapDownloaderScreen extends Screen {
             byte[] hash = digest.digest();
             return bytesToHex(hash);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
     
-    /**
-     * Convertit un tableau de bytes en string hexadécimal
-     */
     private String bytesToHex(byte[] bytes) {
         StringBuilder result = new StringBuilder();
         for (byte b : bytes) {
@@ -674,14 +690,11 @@ public class MapDownloaderScreen extends Screen {
     }
 
     private void extractZip(File zipFile, File destDir) throws IOException {
-        if (!destDir.exists()) {
-            destDir.mkdirs();
-        }
+        if (!destDir.exists()) destDir.mkdirs();
 
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                // Protection Zip Slip
                 File file = new File(destDir, entry.getName());
                 String canonicalDestPath = destDir.getCanonicalPath();
                 String canonicalFilePath = file.getCanonicalPath();
@@ -714,6 +727,9 @@ public class MapDownloaderScreen extends Screen {
         if (downloadAllButton != null) {
             downloadAllButton.active = !isDownloading;
         }
+        if (downloadFeaturedButton != null && featuredMap != null) {
+            downloadFeaturedButton.active = !featuredMap.isDownloaded && !isDownloading;
+        }
     }
 
     @Override
@@ -728,64 +744,140 @@ public class MapDownloaderScreen extends Screen {
     }
 
     @Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-	    this.renderBackground(graphics);
-	    
-	    if (loading) {
-	        graphics.drawCenteredString(this.font, "Loading maps...", this.width / 2, this.height / 2, 0xFFFFFF);
-	    } else if (errorMessage != null) {
-	        graphics.drawCenteredString(this.font, errorMessage, this.width / 2, this.height / 2 - 10, 0xFF5555);
-	        if (networkIssuesDetected) {
-	            graphics.drawCenteredString(this.font, "Use 'Open GitHub' button for manual download", 
-	                this.width / 2, this.height / 2 + 10, 0xFFAA00);
-	        }
-	    } else {
-	        this.mapList.render(graphics, mouseX, mouseY, partialTick);
-	    }
-	
-	    graphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
-	    
-	    // Warning adapté pour 4G
-	    String warning = networkIssuesDetected ? 
-	        "⚠ Network issues - Use 'Open GitHub' for manual download" :
-	        "Requires stable connection (WiFi recommended)";
-	    int warningColor = networkIssuesDetected ? 0xFF5555 : 0xFFAA00;
-	    graphics.drawCenteredString(this.font, warning, this.width / 2, 22, warningColor);
-	    
-	    // Discord link
-	    discordLinkWidth = this.font.width(DISCORD_MESSAGE);
-	    discordLinkX = (this.width - discordLinkWidth) / 2;
-	    discordLinkY = this.height - 70;
-	    
-	    boolean hovering = mouseX >= discordLinkX && mouseX <= discordLinkX + discordLinkWidth &&
-	                      mouseY >= discordLinkY && mouseY <= discordLinkY + 9;
-	    int color = hovering ? 0x5555FF : 0xAAAAAA;
-	    graphics.drawCenteredString(this.font, DISCORD_MESSAGE, this.width / 2, discordLinkY, color);
-	    
-	    if (hovering) {
-	        graphics.fill(discordLinkX, discordLinkY + 9, discordLinkX + discordLinkWidth, discordLinkY + 10, 0xFF5555FF);
-	    }
-	    
-	    // Status
-	    if (statusMessage != null) {
-	        graphics.drawCenteredString(this.font, statusMessage, this.width / 2, this.height - 85, 0xFFFFFF);
-	    }
-	    
-	    // Progress bar
-	    if (isDownloading && downloadProgress > 0) {
-	        int barWidth = 200;
-	        int barHeight = 10;
-	        int barX = (this.width - barWidth) / 2;
-	        int barY = this.height - 100;
-	        
-	        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
-	        int progressWidth = (int)(barWidth * downloadProgress);
-	        graphics.fill(barX, barY, barX + progressWidth, barY + barHeight, 0xFF00FF00);
-	        graphics.renderOutline(barX, barY, barWidth, barHeight, 0xFFFFFFFF);
-	    }
-	
-	    super.render(graphics, mouseX, mouseY, partialTick);
-	}
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
+        
+        // Render featured map section
+        if (!loadingFeatured && featuredMap != null) {
+            int featuredX = 20;
+            int featuredY = 32;
+            int featuredWidth = this.width - 40;
+            int featuredHeight = 100;
+            
+            // Background
+            graphics.fill(featuredX, featuredY, featuredX + featuredWidth, featuredY + featuredHeight, 0xAA000000);
+            graphics.renderOutline(featuredX, featuredY, featuredWidth, featuredHeight, 0xFFFFAA00);
+            
+            // Preview image
+            if (featuredTextureLocation != null) {
+                int imgSize = 90;
+                int imgX = featuredX + 5;
+                int imgY = featuredY + 5;
+                graphics.blit(featuredTextureLocation, imgX, imgY, 0, 0, imgSize, imgSize, imgSize, imgSize);
+            }
+            
+            // Text info
+            int textX = featuredX + 105;
+            int textY = featuredY + 10;
+            
+            graphics.drawString(this.font, "⭐ FEATURED MAP", textX, textY, 0xFFFFAA00);
+            
+            String displayName = featuredMap.name;
+            if (featuredMap.isDownloaded) {
+                displayName += " [Installed]";
+            }
+            graphics.drawString(this.font, displayName, textX, textY + 15, 
+                featuredMap.isDownloaded ? 0xFF00FF00 : 0xFFFFFFFF);
+            
+            // Description avec wrap
+            String desc = featuredMap.description;
+            int maxWidth = featuredWidth - 120 - 120; // espace pour image + bouton
+            List<String> wrappedDesc = wrapText(desc, maxWidth);
+            int descY = textY + 30;
+            for (int i = 0; i < Math.min(3, wrappedDesc.size()); i++) {
+                graphics.drawString(this.font, wrappedDesc.get(i), textX, descY + (i * 10), 0xFFAAAAAA);
+            }
+            
+            if (featuredMap.hasResourcePack()) {
+                graphics.drawString(this.font, "[Includes Resource Pack]", textX, textY + 70, 0xFFFFAA00);
+            }
+        }
+        
+        if (loading) {
+            graphics.drawCenteredString(this.font, "Loading maps...", this.width / 2, this.height / 2, 0xFFFFFF);
+        } else if (errorMessage != null) {
+            graphics.drawCenteredString(this.font, errorMessage, this.width / 2, this.height / 2 - 10, 0xFF5555);
+            if (networkIssuesDetected) {
+                graphics.drawCenteredString(this.font, "Use 'Open GitHub' button for manual download", 
+                    this.width / 2, this.height / 2 + 10, 0xFFAA00);
+            }
+        } else {
+            this.mapList.render(graphics, mouseX, mouseY, partialTick);
+        }
+
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
+        
+        String warning = networkIssuesDetected ? 
+            "⚠ Network issues - Use 'Open GitHub' for manual download" :
+            "Requires stable connection (WiFi recommended)";
+        int warningColor = networkIssuesDetected ? 0xFF5555 : 0xFFAA00;
+        graphics.drawCenteredString(this.font, warning, this.width / 2, 22, warningColor);
+        
+        // Discord link
+        discordLinkWidth = this.font.width(DISCORD_MESSAGE);
+        discordLinkX = (this.width - discordLinkWidth) / 2;
+        discordLinkY = this.height - 70;
+        
+        boolean hovering = mouseX >= discordLinkX && mouseX <= discordLinkX + discordLinkWidth &&
+                          mouseY >= discordLinkY && mouseY <= discordLinkY + 9;
+        int color = hovering ? 0x5555FF : 0xAAAAAA;
+        graphics.drawCenteredString(this.font, DISCORD_MESSAGE, this.width / 2, discordLinkY, color);
+        
+        if (hovering) {
+            graphics.fill(discordLinkX, discordLinkY + 9, discordLinkX + discordLinkWidth, discordLinkY + 10, 0xFF5555FF);
+        }
+        
+        if (statusMessage != null) {
+            graphics.drawCenteredString(this.font, statusMessage, this.width / 2, this.height - 85, 0xFFFFFF);
+        }
+        
+        if (isDownloading && downloadProgress > 0) {
+            int barWidth = 200;
+            int barHeight = 10;
+            int barX = (this.width - barWidth) / 2;
+            int barY = this.height - 100;
+            
+            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
+            int progressWidth = (int)(barWidth * downloadProgress);
+            graphics.fill(barX, barY, barX + progressWidth, barY + barHeight, 0xFF00FF00);
+            graphics.renderOutline(barX, barY, barWidth, barHeight, 0xFFFFFFFF);
+        }
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private List<String> wrapText(String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder currentLine = new StringBuilder();
+        
+        for (String word : words) {
+            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+            if (this.font.width(testLine) <= maxWidth) {
+                if (currentLine.length() > 0) currentLine.append(" ");
+                currentLine.append(word);
+            } else {
+                if (currentLine.length() > 0) {
+                    lines.add(currentLine.toString());
+                    currentLine = new StringBuilder(word);
+                } else {
+                    lines.add(word);
+                }
+            }
+        }
+        if (currentLine.length() > 0) {
+            lines.add(currentLine.toString());
+        }
+        return lines;
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        if (featuredTexture != null) {
+            featuredTexture.close();
+        }
+    }
 
     private class MapList extends ObjectSelectionList<MapEntry> {
         public MapList(Minecraft mc, int width, int height, int top, int bottom, int itemHeight) {
@@ -808,24 +900,24 @@ public class MapDownloaderScreen extends Screen {
     }
 
     private class MapEntry extends ObjectSelectionList.Entry<MapEntry> {
-	    public final String id;
-	    public final String name;
-	    public final String description;
-	    public final String downloadUrl;
-	    public final String resourcePackUrl;
-	    public final String resourcePackName;
-	    public final String sha256;
-	
-	    public MapEntry(String id, String name, String description, String downloadUrl, 
-	                   String resourcePackUrl, String resourcePackName, String sha256) {
-	        this.id = id;
-	        this.name = name;
-	        this.description = description;
-	        this.downloadUrl = downloadUrl;
-	        this.resourcePackUrl = resourcePackUrl;
-	        this.resourcePackName = resourcePackName;
-	        this.sha256 = sha256;
-	    }
+        public final String id;
+        public final String name;
+        public final String description;
+        public final String downloadUrl;
+        public final String resourcePackUrl;
+        public final String resourcePackName;
+        public final String sha256;
+
+        public MapEntry(String id, String name, String description, String downloadUrl, 
+                       String resourcePackUrl, String resourcePackName, String sha256) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            this.downloadUrl = downloadUrl;
+            this.resourcePackUrl = resourcePackUrl;
+            this.resourcePackName = resourcePackName;
+            this.sha256 = sha256;
+        }
         
         public boolean hasResourcePack() {
             return resourcePackUrl != null && !resourcePackUrl.isEmpty();
@@ -865,6 +957,39 @@ public class MapDownloaderScreen extends Screen {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             mapList.setSelected(this);
             return true;
+        }
+    }
+    
+    private class FeaturedMap {
+        public final String id;
+        public final String name;
+        public final String description;
+        public final String downloadUrl;
+        public final String resourcePackUrl;
+        public final String resourcePackName;
+        public final String sha256;
+        public final String previewUrl;
+        public boolean isDownloaded = false;
+
+        public FeaturedMap(String id, String name, String description, String downloadUrl,
+                          String resourcePackUrl, String resourcePackName, String sha256, String previewUrl) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            this.downloadUrl = downloadUrl;
+            this.resourcePackUrl = resourcePackUrl;
+            this.resourcePackName = resourcePackName;
+            this.sha256 = sha256;
+            this.previewUrl = previewUrl;
+        }
+        
+        public boolean hasResourcePack() {
+            return resourcePackUrl != null && !resourcePackUrl.isEmpty();
+        }
+        
+        public MapEntry toMapEntry() {
+            return new MapEntry(id, name, description, downloadUrl, 
+                              resourcePackUrl, resourcePackName, sha256);
         }
     }
     
