@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/deco_grass"
+    },
+    "facing=east": {
+      "model": "zombierool:block/deco_grass",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/deco_grass",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/deco_grass",
+      "y": 270
+    }
+  }
+}

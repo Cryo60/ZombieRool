@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/ammo_crate"
+    },
+    "facing=east": {
+      "model": "zombierool:block/ammo_crate",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/ammo_crate",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/ammo_crate",
+      "y": 270
+    }
+  }
+}

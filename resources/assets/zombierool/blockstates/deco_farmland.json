@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/deco_farmland"
+    },
+    "facing=east": {
+      "model": "zombierool:block/deco_farmland",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/deco_farmland",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/deco_farmland",
+      "y": 270
+    }
+  }
+}

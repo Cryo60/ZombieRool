@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/perks_upper"
+    },
+    "facing=east": {
+      "model": "zombierool:block/perks_upper",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/perks_upper",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/perks_upper",
+      "y": 270
+    }
+  }
+}

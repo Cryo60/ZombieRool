@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/mystery_box_texture",
+    "up": "zombierool:block/mystery_box_top",
+    "north": "zombierool:block/mystery_box_texture",
+    "east": "zombierool:block/mystery_box_texture",
+    "south": "zombierool:block/mystery_box_texture",
+    "west": "zombierool:block/mystery_box_texture",
+    "particle": "zombierool:block/mystery_box_texture"
+  },
+  "render_type": "solid"
+}

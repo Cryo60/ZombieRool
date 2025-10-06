@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/playerblock",
+    "particle": "zombierool:block/playerblock"
+  },
+  "render_type": "translucent"
+}

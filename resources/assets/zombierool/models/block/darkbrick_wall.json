@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_wall_side",
+  "textures": {
+    "wall": "zombierool:block/dark_brick",
+    "particle": "zombierool:block/dark_brick"
+  },
+  "render_type": "solid"
+}

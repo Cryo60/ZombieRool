@@ -1,0 +1,9 @@
+{
+  "parent": "block/slab_top",
+  "textures": {
+    "bottom": "zombierool:block/stoneblocktext",
+    "top": "zombierool:block/stoneblocktext",
+    "side": "zombierool:block/stoneblocktext"
+  },
+  "render_type": "solid"
+}

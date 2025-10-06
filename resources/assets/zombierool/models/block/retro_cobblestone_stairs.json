@@ -1,0 +1,9 @@
+{
+  "parent": "block/stairs",
+  "textures": {
+    "bottom": "zombierool:block/retro_cobblestone",
+    "top": "zombierool:block/retro_cobblestone",
+    "side": "zombierool:block/retro_cobblestone"
+  },
+  "render_type": "solid"
+}

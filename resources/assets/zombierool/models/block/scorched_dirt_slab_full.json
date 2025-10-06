@@ -1,0 +1,9 @@
+{
+  "parent": "block/cube_bottom_top",
+  "textures": {
+    "bottom": "zombierool:block/dirt_scorched",
+    "top": "zombierool:block/dirt_scorched",
+    "side": "zombierool:block/dirt_scorched"
+  },
+  "render_type": "solid"
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/mosaic3",
+    "particle": "zombierool:block/mosaic3"
+  },
+  "render_type": "solid"
+}

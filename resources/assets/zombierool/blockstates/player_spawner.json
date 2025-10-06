@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "zombierool:block/player_spawner"
+    }
+  }
+}

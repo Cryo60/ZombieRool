@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/brick_steel_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/brick_steel_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/brick_steel_slab_full"
+    }
+  }
+}

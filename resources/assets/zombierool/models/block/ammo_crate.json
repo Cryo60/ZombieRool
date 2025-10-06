@@ -1,0 +1,12 @@
+{
+  "parent": "zombierool:custom/ammo_crate",
+  "textures": {
+    "all": "zombierool:block/ammo_crate",
+    "particle": "zombierool:block/ammo_crate",
+    "0": "zombierool:block/ammo_crate_sign",
+    "1": "zombierool:block/ammo_crate_base",
+    "2": "zombierool:block/ammo_crate_case",
+    "3": "zombierool:block/ammo_crate_handle"
+  },
+  "render_type": "cutout"
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/squarefloor_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/squarefloor_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/squarefloor_slab_full"
+    }
+  }
+}

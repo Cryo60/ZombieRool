@@ -1,0 +1,8 @@
+{
+  "parent": "block/fence_post",
+  "textures": {
+    "texture": "zombierool:block/blue",
+    "particle": "zombierool:block/blue"
+  },
+  "render_type": "solid"
+}

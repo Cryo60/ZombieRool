@@ -1,0 +1,8 @@
+{
+  "parent": "block/door_top_left_open",
+  "textures": {
+    "bottom": "zombierool:block/door_wood_lower",
+    "top": "zombierool:block/barricade0"
+  },
+  "render_type": "cutout"
+}

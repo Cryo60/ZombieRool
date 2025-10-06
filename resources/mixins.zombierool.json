@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "net.mcreator.zombierool.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "mixins.zombierool.refmap.json",
+  "mixins": [
+    "CustomMobMixin",
+    "ZombieroolWalkNodeEvaluatorMixin",
+    "ArrowRendererMixin",
+    "ArrowSizeMixin",
+    "AbstractArrowMixin",
+    "CustomStepSoundMixin",
+    "PlayerMixin",
+    "CancelInvulnerabilityMixin"
+  ],
+  "client": [],
+  "minVersion": "0.8"
+}

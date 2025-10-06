@@ -1,0 +1,12 @@
+{
+  "parent": "zombierool:custom/powerswitch_on",
+  "textures": {
+    "all": "zombierool:block/iron_block", 
+    "particle": "zombierool:block/iron_block",
+    "0": "zombierool:block/iron_block",
+    "1": "zombierool:block/iron_bars",
+    "2": "zombierool:block/nether_bricks",
+    "3": "zombierool:block/black_wool"
+  },
+  "render_type": "cutout"
+}

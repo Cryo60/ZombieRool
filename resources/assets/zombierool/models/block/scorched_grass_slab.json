@@ -1,0 +1,9 @@
+{
+  "parent": "block/slab",
+  "textures": {
+    "bottom": "zombierool:block/grass_scorched",
+    "top": "zombierool:block/grass_scorched",
+    "side": "zombierool:block/grass_scorched"
+  },
+  "render_type": "solid"
+}

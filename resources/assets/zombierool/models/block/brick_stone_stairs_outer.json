@@ -1,0 +1,9 @@
+{
+  "parent": "block/outer_stairs",
+  "textures": {
+    "bottom": "zombierool:block/brick_stone",
+    "top": "zombierool:block/brick_stone",
+    "side": "zombierool:block/brick_stone"
+  },
+  "render_type": "solid"
+}

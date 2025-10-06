@@ -1,0 +1,8 @@
+{
+  "parent": "block/wall_inventory",
+  "textures": {
+    "wall": "zombierool:block/retro_cobblestone",
+    "particle": "zombierool:block/retro_cobblestone"
+  },
+  "render_type": "solid"
+}

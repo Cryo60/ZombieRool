@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/glass_tinted_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/glass_tinted_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/glass_tinted_slab_full"
+    }
+  }
+}

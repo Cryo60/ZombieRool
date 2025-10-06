@@ -1,0 +1,14 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "zombierool:item/r4c"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "zombierool:is_black_ice": 1
+      },
+      "model": "zombierool:item/r4c_black_ice"
+    }
+  ]
+}

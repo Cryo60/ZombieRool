@@ -1,0 +1,7 @@
+{
+  "parent": "block/door_top_left",
+  "textures": {
+    "top": "zombierool:block/barricade3"
+  },
+  "render_type": "cutout"
+}

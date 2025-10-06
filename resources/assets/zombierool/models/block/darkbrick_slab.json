@@ -1,0 +1,9 @@
+{
+  "parent": "block/slab",
+  "textures": {
+    "bottom": "zombierool:block/dark_brick",
+    "top": "zombierool:block/dark_brick",
+    "side": "zombierool:block/dark_brick"
+  },
+  "render_type": "solid"
+}

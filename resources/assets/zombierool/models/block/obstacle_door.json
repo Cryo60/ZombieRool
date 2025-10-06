@@ -1,0 +1,8 @@
+{
+  "parent": "block/fence_side",
+  "textures": {
+    "texture": "zombierool:block/obstacledoor_texture",
+    "particle": "zombierool:block/obstacledoor_texture"
+  },
+  "render_type": "solid"
+}

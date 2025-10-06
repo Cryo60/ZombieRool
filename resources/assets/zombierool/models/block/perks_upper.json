@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/base_perks_lower_texture",
+    "up": "zombierool:block/base_perks_lower_texture",
+    "north": "zombierool:block/base_perks_upper_texture",
+    "east": "zombierool:block/base_perks_lower_texture",
+    "south": "zombierool:block/base_perks_lower_texture",
+    "west": "zombierool:block/base_perks_lower_texture",
+    "particle": "zombierool:block/base_perks_lower_texture"
+  },
+  "render_type": "solid"
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/sewerbrick_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/sewerbrick_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/sewerbrick_slab_full"
+    }
+  }
+}

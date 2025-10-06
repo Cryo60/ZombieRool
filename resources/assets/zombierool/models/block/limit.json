@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/limitblockpart1",
+    "up": "zombierool:block/limitblockpart1",
+    "north": "zombierool:block/limitblockpart2",
+    "east": "zombierool:block/limitblockpart2",
+    "south": "zombierool:block/limitblockpart2",
+    "west": "zombierool:block/limitblockpart2",
+    "particle": "zombierool:block/limitblockpart1"
+  },
+  "render_type": "translucent"
+}

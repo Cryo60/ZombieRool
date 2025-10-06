@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/stoneblocktext",
+    "particle": "zombierool:block/stoneblocktext"
+  },
+  "render_type": "solid"
+}

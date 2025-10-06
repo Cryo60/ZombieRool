@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "": {
+      "model": "zombierool:block/traitor"
+    }
+  },
+  "render_type": "entityblock_animated"
+}

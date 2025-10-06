@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_glass_pane_side_alt",
+  "textures": {
+    "edge": "zombierool:block/glass_steel",
+    "pane": "zombierool:block/glass_steel"
+  },
+  "render_type": "cutout_mipped"
+}

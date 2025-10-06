@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/modern_furnace_side",
+    "up": "zombierool:block/modern_furnace_top",
+    "north": "zombierool:block/modern_furnace_front",
+    "east": "zombierool:block/modern_furnace_side",
+    "south": "zombierool:block/modern_furnace_side",
+    "west": "zombierool:block/modern_furnace_side",
+    "particle": "zombierool:block/modern_furnace_side"
+  },
+  "render_type": "solid"
+}

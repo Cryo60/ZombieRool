@@ -1,0 +1,9 @@
+{
+  "parent": "block/slab_top",
+  "textures": {
+    "bottom": "zombierool:block/mesh",
+    "top": "zombierool:block/mesh",
+    "side": "zombierool:block/mesh"
+  },
+  "render_type": "cutout_mipped"
+}

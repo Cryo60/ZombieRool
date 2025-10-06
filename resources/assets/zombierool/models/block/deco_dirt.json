@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/dirt-pro-mega",
+    "particle": "zombierool:block/dirt-pro-mega"
+  },
+  "render_type": "solid"
+}

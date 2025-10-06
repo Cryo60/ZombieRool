@@ -1,0 +1,14 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "zombierool:item/deagle"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "zombierool:is_golden": 1
+      },
+      "model": "zombierool:item/golden_deagle"
+    }
+  ]
+}

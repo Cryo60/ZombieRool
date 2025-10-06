@@ -1,0 +1,9 @@
+{
+  "parent": "block/outer_stairs",
+  "textures": {
+    "bottom": "zombierool:block/yellow",
+    "top": "zombierool:block/yellow",
+    "side": "zombierool:block/yellow"
+  },
+  "render_type": "solid"
+}

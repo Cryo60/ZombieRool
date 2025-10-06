@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/grass_scorched",
+    "particle": "zombierool:block/grass_scorched"
+  },
+  "render_type": "solid"
+}

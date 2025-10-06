@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_wall_post",
+  "textures": {
+    "wall": "zombierool:block/cobbled_stone",
+    "particle": "zombierool:block/cobbled_stone"
+  },
+  "render_type": "solid"
+}

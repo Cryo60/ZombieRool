@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/dark_brick",
+    "up": "zombierool:block/dark_brick",
+    "north": "zombierool:block/dark_brick_variation",
+    "east": "zombierool:block/dark_brick_variation",
+    "south": "zombierool:block/dark_brick_variation",
+    "west": "zombierool:block/dark_brick_variation",
+    "particle": "zombierool:block/dark_brick"
+  },
+  "render_type": "solid"
+}

@@ -1,0 +1,10 @@
+{
+  "parent": "zombierool:custom/storagebox",
+  "textures": {
+    "all": "zombierool:block/storage_box",
+    "particle": "zombierool:block/storage_box",
+    "0": "zombierool:block/door_wood_lower",
+    "1": "zombierool:block/spruce_boat"
+  },
+  "render_type": "solid"
+}

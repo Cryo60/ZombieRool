@@ -1,0 +1,57 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "zombierool:block/deco_dirt"
+    },
+    "face=floor,facing=east": {
+      "model": "zombierool:block/deco_dirt",
+      "y": 90
+    },
+    "face=floor,facing=south": {
+      "model": "zombierool:block/deco_dirt",
+      "y": 180
+    },
+    "face=floor,facing=west": {
+      "model": "zombierool:block/deco_dirt",
+      "y": 270
+    },
+    "face=wall,facing=north": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 90
+    },
+    "face=wall,facing=east": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 90,
+      "y": 90
+    },
+    "face=wall,facing=south": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 90,
+      "y": 180
+    },
+    "face=wall,facing=west": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 90,
+      "y": 270
+    },
+    "face=ceiling,facing=north": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 180,
+      "y": 180
+    },
+    "face=ceiling,facing=east": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 180,
+      "y": 270
+    },
+    "face=ceiling,facing=south": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 180
+    },
+    "face=ceiling,facing=west": {
+      "model": "zombierool:block/deco_dirt",
+      "x": 180,
+      "y": 90
+    }
+  }
+}

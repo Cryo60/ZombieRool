@@ -1,0 +1,14 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "zombierool:item/rpg"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "zombierool:empty": 1
+      },
+      "model": "zombierool:item/rpg_empty_weapon_item"
+    }
+  ]
+}

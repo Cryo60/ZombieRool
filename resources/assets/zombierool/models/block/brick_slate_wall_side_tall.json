@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_wall_side_tall",
+  "textures": {
+    "wall": "zombierool:block/brick_slate",
+    "particle": "zombierool:block/brick_slate"
+  },
+  "render_type": "solid"
+}

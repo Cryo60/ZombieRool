@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/carved_slate",
+    "particle": "zombierool:block/carved_slate"
+  },
+  "render_type": "solid"
+}

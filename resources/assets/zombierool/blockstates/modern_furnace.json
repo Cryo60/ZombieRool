@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/modern_furnace"
+    },
+    "facing=east": {
+      "model": "zombierool:block/modern_furnace",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/modern_furnace",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/modern_furnace",
+      "y": 270
+    }
+  }
+}

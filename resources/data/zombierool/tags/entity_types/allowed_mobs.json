@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+  	"zombierool:hellhound",
+    "zombierool:zombie",
+    "zombierool:crawler",
+    "zombierool:mannequin",
+    "zombierool:white_knight"
+  ]
+}

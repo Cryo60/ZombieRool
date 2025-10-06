@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/balsatic_stone_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/balsatic_stone_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/balsatic_stone_slab_full"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/wet",
+    "particle": "zombierool:block/wet"
+  },
+  "render_type": "solid"
+}
