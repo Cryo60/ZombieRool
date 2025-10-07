@@ -1,13 +1,13 @@
 modLoader="javafml"
 loaderVersion="[47,)"
-license="All Rights Reserved"
+license="MIT License"
 
 [[mods]]
 modId="zombierool"
-version="1.5.2"
+version="1.5.3.1"
 displayName="ZombieRool"
 credits="Pyro for invaluable help - Created using mod maker MCreator - https://mcreator.net/about"
-displayURL="https://cryo60.github.io/ZombieRoolSite/"
+displayURL="https://mcreator.net"
 logoFile="logo.png"
 authors="Cryo"
 description="A Call of Duty Zombies inspired mod with weapons, perks, and zombies! Survive waves of undead enemies and unlock powerful perks."
