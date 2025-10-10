@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.NetworkEvent;
 import net.mcreator.zombierool.block.entity.PerksLowerBlockEntity;
+import net.mcreator.zombierool.block.PerksLowerBlock;
 
 import java.util.function.Supplier;
 
@@ -34,18 +35,23 @@ public class SavePerksConfigMessage {
     }
 
     public static void handle(SavePerksConfigMessage msg, Supplier<NetworkEvent.Context> ctxSupplier) {
-	    NetworkEvent.Context ctx = ctxSupplier.get();
-	    ctx.enqueueWork(() -> {
-	        ServerPlayer sender = ctx.getSender();
-	        if (sender == null) return;
-	        // Remplace getLevel() par level()
-	        var world = sender.level();
-	        var be = world.getBlockEntity(msg.pos);
-	        if (be instanceof PerksLowerBlockEntity perksBE) {
-	            perksBE.setSavedPrice(msg.price);
-	            perksBE.setSavedPerkId(msg.perkId);
-	        }
-	    });
-	    ctx.setPacketHandled(true);
-	}
+        NetworkEvent.Context ctx = ctxSupplier.get();
+        ctx.enqueueWork(() -> {
+            ServerPlayer sender = ctx.getSender();
+            if (sender == null) return;
+            
+            var world = sender.level();
+            var be = world.getBlockEntity(msg.pos);
+            
+            if (be instanceof PerksLowerBlockEntity perksBE) {
+                // Sauvegarder dans le BlockEntity
+                perksBE.setSavedPrice(msg.price);
+                perksBE.setSavedPerkId(msg.perkId);
+                
+                // IMPORTANT : Mettre à jour le blockstate pour changer le modèle visuellement
+                PerksLowerBlock.updatePerkType(world, msg.pos, msg.perkId);
+            }
+        });
+        ctx.setPacketHandled(true);
+    }
 }

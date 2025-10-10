@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AmmoCrateManager extends SavedData {
 
     private static final String DATA_NAME = "zombierool_ammo_crate_manager";
-    private static final int BASE_COST = 2500;
+    private static final int BASE_COST = 1000;
     private static final int COST_INCREMENT = 500;
     private static final ResourceLocation BUY_SOUND = new ResourceLocation("zombierool", "buy");
     

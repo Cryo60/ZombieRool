@@ -1,7 +1,163 @@
 {
   "variants": {
-    "": {
+    "facing=north,perk_type=none": {
       "model": "zombierool:block/perks_lower"
+    },
+    "facing=east,perk_type=none": {
+      "model": "zombierool:block/perks_lower",
+      "y": 90
+    },
+    "facing=south,perk_type=none": {
+      "model": "zombierool:block/perks_lower",
+      "y": 180
+    },
+    "facing=west,perk_type=none": {
+      "model": "zombierool:block/perks_lower",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=mastodonte": {
+      "model": "zombierool:block/perks_lower_mastodonte"
+    },
+    "facing=east,perk_type=mastodonte": {
+      "model": "zombierool:block/perks_lower_mastodonte",
+      "y": 90
+    },
+    "facing=south,perk_type=mastodonte": {
+      "model": "zombierool:block/perks_lower_mastodonte",
+      "y": 180
+    },
+    "facing=west,perk_type=mastodonte": {
+      "model": "zombierool:block/perks_lower_mastodonte",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=speed_cola": {
+      "model": "zombierool:block/perks_lower_speed_cola"
+    },
+    "facing=east,perk_type=speed_cola": {
+      "model": "zombierool:block/perks_lower_speed_cola",
+      "y": 90
+    },
+    "facing=south,perk_type=speed_cola": {
+      "model": "zombierool:block/perks_lower_speed_cola",
+      "y": 180
+    },
+    "facing=west,perk_type=speed_cola": {
+      "model": "zombierool:block/perks_lower_speed_cola",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=double_tape": {
+      "model": "zombierool:block/perks_lower_double_tape"
+    },
+    "facing=east,perk_type=double_tape": {
+      "model": "zombierool:block/perks_lower_double_tape",
+      "y": 90
+    },
+    "facing=south,perk_type=double_tape": {
+      "model": "zombierool:block/perks_lower_double_tape",
+      "y": 180
+    },
+    "facing=west,perk_type=double_tape": {
+      "model": "zombierool:block/perks_lower_double_tape",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=royal_beer": {
+      "model": "zombierool:block/perks_lower_royal_beer"
+    },
+    "facing=east,perk_type=royal_beer": {
+      "model": "zombierool:block/perks_lower_royal_beer",
+      "y": 90
+    },
+    "facing=south,perk_type=royal_beer": {
+      "model": "zombierool:block/perks_lower_royal_beer",
+      "y": 180
+    },
+    "facing=west,perk_type=royal_beer": {
+      "model": "zombierool:block/perks_lower_royal_beer",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=blood_rage": {
+      "model": "zombierool:block/perks_lower_blood_rage"
+    },
+    "facing=east,perk_type=blood_rage": {
+      "model": "zombierool:block/perks_lower_blood_rage",
+      "y": 90
+    },
+    "facing=south,perk_type=blood_rage": {
+      "model": "zombierool:block/perks_lower_blood_rage",
+      "y": 180
+    },
+    "facing=west,perk_type=blood_rage": {
+      "model": "zombierool:block/perks_lower_blood_rage",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=phd_flopper": {
+      "model": "zombierool:block/perks_lower_phd_flopper"
+    },
+    "facing=east,perk_type=phd_flopper": {
+      "model": "zombierool:block/perks_lower_phd_flopper",
+      "y": 90
+    },
+    "facing=south,perk_type=phd_flopper": {
+      "model": "zombierool:block/perks_lower_phd_flopper",
+      "y": 180
+    },
+    "facing=west,perk_type=phd_flopper": {
+      "model": "zombierool:block/perks_lower_phd_flopper",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=cherry": {
+      "model": "zombierool:block/perks_lower_cherry"
+    },
+    "facing=east,perk_type=cherry": {
+      "model": "zombierool:block/perks_lower_cherry",
+      "y": 90
+    },
+    "facing=south,perk_type=cherry": {
+      "model": "zombierool:block/perks_lower_cherry",
+      "y": 180
+    },
+    "facing=west,perk_type=cherry": {
+      "model": "zombierool:block/perks_lower_cherry",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=quick_revive": {
+      "model": "zombierool:block/perks_lower_quick_revive"
+    },
+    "facing=east,perk_type=quick_revive": {
+      "model": "zombierool:block/perks_lower_quick_revive",
+      "y": 90
+    },
+    "facing=south,perk_type=quick_revive": {
+      "model": "zombierool:block/perks_lower_quick_revive",
+      "y": 180
+    },
+    "facing=west,perk_type=quick_revive": {
+      "model": "zombierool:block/perks_lower_quick_revive",
+      "y": 270
+    },
+    
+    "facing=north,perk_type=vulture": {
+      "model": "zombierool:block/perks_lower_vulture"
+    },
+    "facing=east,perk_type=vulture": {
+      "model": "zombierool:block/perks_lower_vulture",
+      "y": 90
+    },
+    "facing=south,perk_type=vulture": {
+      "model": "zombierool:block/perks_lower_vulture",
+      "y": 180
+    },
+    "facing=west,perk_type=vulture": {
+      "model": "zombierool:block/perks_lower_vulture",
+      "y": 270
     }
   }
 }

@@ -2,19 +2,33 @@ package net.mcreator.zombierool.block;
 
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,68 +37,89 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.Containers;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.core.Direction;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.block.RenderShape;
+
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.util.StringRepresentable;
+
+import net.minecraftforge.registries.ForgeRegistries;
+
 import net.mcreator.zombierool.world.inventory.PerksInterfaceMenu;
 import net.mcreator.zombierool.block.entity.PerksLowerBlockEntity;
-import net.mcreator.zombierool.init.ZombieroolModBlocks;
+
 import javax.annotation.Nullable;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import java.util.List;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import io.netty.buffer.Unpooled;
-import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.CollisionContext; // Ensure this import is present and correct
-import net.minecraft.world.level.pathfinder.PathComputationType;
-import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
-import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.level.material.PushReaction;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.client.Minecraft;
-// Added imports for PerksUpperBlock and PerksAntenneBlock to resolve POWERED symbol
-import net.mcreator.zombierool.block.PerksUpperBlock;
-import net.mcreator.zombierool.block.PerksAntenneBlock;
 
+import io.netty.buffer.Unpooled;
 
 public class PerksLowerBlock extends Block implements EntityBlock {
 
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final Map<Player, Boolean> isTouching = new HashMap<>();
+    public static final EnumProperty<PerkType> PERK_TYPE = EnumProperty.create("perk_type", PerkType.class);
 
     public PerksLowerBlock() {
-        super(BlockBehaviour.Properties.of()
-            .mapColor(MapColor.METAL) // Assign a map color
-            .instrument(NoteBlockInstrument.IRON_XYLOPHONE) // Assign an instrument
-            .sound(SoundType.METAL)
-            .strength(-1, 3600000)
-            .noOcclusion() // Tells the game it's not a full, opaque block
-            .isRedstoneConductor((state, world, pos) -> false) // **Crucial: Prevents redstone dust connections**
-            .isViewBlocking((state, world, pos) -> false) // Indicates it doesn't fully block vision
-            .isSuffocating((state, world, pos) -> false)  // Indicates it doesn't fully suffocate
-            .pushReaction(PushReaction.BLOCK) // Prevents pistons from pushing it easily
-            // .forceSolidOn() // This might sometimes make it act "too" solid. Let's try without it first.
-        );
-        this.registerDefaultState(this.stateDefinition.any().setValue(POWERED, false).setValue(FACING, Direction.NORTH));
-    }
+	    super(BlockBehaviour.Properties.of()
+	        .mapColor(MapColor.METAL)
+	        .instrument(NoteBlockInstrument.IRON_XYLOPHONE)
+	        .sound(SoundType.METAL)
+	        .strength(-1, 3600000)
+	        .noOcclusion()
+	        .isRedstoneConductor((state, world, pos) -> false)
+	        .isViewBlocking((state, world, pos) -> false)
+	        .isSuffocating((state, world, pos) -> false)
+	        .pushReaction(PushReaction.BLOCK)
+	    );
+	    this.registerDefaultState(this.stateDefinition.any()
+	        .setValue(POWERED, false)
+	        .setValue(FACING, Direction.NORTH)
+	        .setValue(PERK_TYPE, PerkType.NONE));  // ← AJOUTEZ CETTE LIGNE
+	}
 
-    /**
-     * Helper method to check if the client's language is English.
-     * This is crucial for dynamic translation of item names and tooltips.
-     * @return true if the client's language code starts with "en", false otherwise.
-     */
+    public enum PerkType implements StringRepresentable {
+	    NONE("none"),
+	    MASTODONTE("mastodonte"),
+	    SPEED_COLA("speed_cola"),
+	    DOUBLE_TAPE("double_tape"),
+	    ROYAL_BEER("royal_beer"),
+	    BLOOD_RAGE("blood_rage"),
+	    PHD_FLOPPER("phd_flopper"),
+	    CHERRY("cherry"),
+	    QUICK_REVIVE("quick_revive"),
+	    VULTURE("vulture");
+	
+	    private final String name;
+	
+	    PerkType(String name) {
+	        this.name = name;
+	    }
+	
+	    @Override
+	    public String getSerializedName() {
+	        return this.name;
+	    }
+	
+	    public static PerkType fromString(String str) {
+	        if (str == null || str.isEmpty()) return NONE;
+	        for (PerkType type : values()) {
+	            if (type.name.equals(str)) return type;
+	        }
+	        return NONE;
+	    }
+	}
+
     private static boolean isEnglishClient() {
         if (Minecraft.getInstance() == null) {
             return false;
@@ -92,15 +127,14 @@ public class PerksLowerBlock extends Block implements EntityBlock {
         return Minecraft.getInstance().options.languageCode.startsWith("en");
     }
 
-    /**
-     * Helper method for dynamic translation based on the client's language.
-     * @param frenchMessage The message to display if the client's language is French or not English.
-     * @param englishMessage The message to display if the client's language is English.
-     * @return The appropriate translated message.
-     */
     private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
         return isEnglishClient() ? englishMessage : frenchMessage;
     }
+
+    @Override
+	public RenderShape getRenderShape(BlockState state) {
+	    return RenderShape.MODEL;
+	}
 
     @Override
     public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
@@ -111,66 +145,106 @@ public class PerksLowerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED, FACING);
-    }
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+	    builder.add(POWERED, FACING, PERK_TYPE);  // ← AJOUTEZ PERK_TYPE
+	}
+
+	public static void updatePerkType(Level level, BlockPos pos, String perkId) {
+	    BlockState state = level.getBlockState(pos);
+	    if (state.getBlock() instanceof PerksLowerBlock) {
+	        PerkType newType = PerkType.fromString(perkId);
+	        level.setBlock(pos, state.setValue(PERK_TYPE, newType), 3);
+	    }
+	}
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
+    public BlockState rotate(BlockState state, Rotation rot) {
+        return state.setValue(FACING, rot.rotate(state.getValue(FACING)));
+    }
+
+    public BlockState mirror(BlockState state, Mirror mirrorIn) {
+        return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
+        return true;
+    }
+
     @Override
     public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
-        // If it's not visually full, it should not block light like a full block.
-        // Returning 0 for a non-full block is common, or a value based on your texture.
-        return 0; // Changed from 15 to 0 for non-occluding block
+        return 0;
     }
 
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter world, BlockPos pos, Direction side) {
-        // This method should align with isRedstoneConductor in properties.
-        // If you don't want redstone dust connecting, return false.
-        return false; // Changed from true to false
+        return false;
     }
 
-    // --- Explicitly define shapes to prevent connection logic ---
+    // Forme visuelle personnalisée basée sur votre modèle
     @Override
-    public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
-        // Return a full block shape for interaction/collision, even if visually it's not.
-        // This is often key to preventing "fence-like" connection rendering.
-        return Shapes.block();
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        // Utilise la forme du modèle original qui simule 2 blocs de hauteur
+        return switch (state.getValue(FACING)) {
+            default -> Shapes.or(
+                box(0, 0, 0, 16, 26.75, 16), 
+                box(1.5, 26.75, 1.5, 14.5, 32, 14.5), 
+                box(3.25, 13.25, 16, 12.75, 25, 17), 
+                box(3, 28.25, 14.5, 13, 31, 15)
+            );
+            case NORTH -> Shapes.or(
+                box(0, 0, 0, 16, 26.75, 16), 
+                box(1.5, 26.75, 1.5, 14.5, 32, 14.5), 
+                box(3.25, 13.25, -1, 12.75, 25, 0), 
+                box(3, 28.25, 1, 13, 31, 1.5)
+            );
+            case EAST -> Shapes.or(
+                box(0, 0, 0, 16, 26.75, 16), 
+                box(1.5, 26.75, 1.5, 14.5, 32, 14.5), 
+                box(16, 13.25, 3.25, 17, 25, 12.75), 
+                box(14.5, 28.25, 3, 15, 31, 13)
+            );
+            case WEST -> Shapes.or(
+                box(0, 0, 0, 16, 26.75, 16), 
+                box(1.5, 26.75, 1.5, 14.5, 32, 14.5), 
+                box(-1, 13.25, 3.25, 0, 25, 12.75), 
+                box(1, 28.25, 3, 1.5, 31, 13)
+            );
+        };
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
-        return Shapes.block();
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        return getShape(state, world, pos, context);
     }
 
     @Override
-    public VoxelShape getOcclusionShape(BlockState pState, BlockGetter pLevel, BlockPos pPos) {
-        // Return an empty shape for occlusion if you used .noOcclusion()
-        return Shapes.empty(); // Consistent with .noOcclusion()
+    public VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        return Shapes.empty();
+    }
+
+    @Override
+    public VoxelShape getOcclusionShape(BlockState state, BlockGetter world, BlockPos pos) {
+        return Shapes.empty();
     }
 
     public boolean isRedstoneConductor(BlockState state, BlockGetter level, BlockPos pos) {
-        // This method is called by redstone dust to check if it can connect.
-        // It should match the .isRedstoneConductor property set in the constructor.
         return false;
     }
 
     @Override
     public boolean isSignalSource(BlockState state) {
-        // This means the block can emit redstone signal. Keep as true if it should.
         return true;
     }
 
     @Override
-    public boolean isPathfindable(BlockState pState, BlockGetter pLevel, BlockPos pPos, PathComputationType pType) {
-        // Prevents pathfinding entities from treating it as a full, solid block for navigation.
+    public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, PathComputationType type) {
         return false;
     }
-
 
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
@@ -231,18 +305,12 @@ public class PerksLowerBlock extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (state.getBlock() != newState.getBlock() || isMoving) {
+        if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof PerksLowerBlockEntity be) {
                 Containers.dropContents(world, pos, be);
                 world.updateNeighbourForOutputSignal(pos, this);
             }
-
-            BlockPos upperPos = pos.above();
-            if (world.getBlockState(upperPos).getBlock() == ZombieroolModBlocks.PERKS_UPPER.get()) {
-                world.destroyBlock(upperPos, false);
-            }
-
             super.onRemove(state, world, pos, newState, isMoving);
         }
     }
@@ -264,10 +332,6 @@ public class PerksLowerBlock extends Block implements EntityBlock {
     public void onPlace(BlockState blockstate, Level world, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(blockstate, world, pos, oldState, isMoving);
         if (!world.isClientSide) {
-            BlockPos upperPos = pos.above();
-            Direction facing = blockstate.getValue(FACING);
-            BlockState upperBlockState = ZombieroolModBlocks.PERKS_UPPER.get().defaultBlockState().setValue(PerksUpperBlock.FACING, facing);
-            world.setBlock(upperPos, upperBlockState, 3);
             this.neighborChanged(blockstate, world, pos, this, pos, false);
         }
     }
@@ -279,20 +343,6 @@ public class PerksLowerBlock extends Block implements EntityBlock {
             boolean powered = world.hasNeighborSignal(pos);
             if (powered != state.getValue(POWERED)) {
                 world.setBlock(pos, state.setValue(POWERED, powered), 3);
-
-                BlockPos upperPos = pos.above();
-                BlockState upperState = world.getBlockState(upperPos);
-                if (upperState.getBlock() == ZombieroolModBlocks.PERKS_UPPER.get()) {
-                    world.sendBlockUpdated(upperPos, upperState, upperState, 3);
-
-                    BlockPos antennePos = upperPos.above();
-                    BlockState antenneState = world.getBlockState(antennePos);
-                    if (antenneState.getBlock() == ZombieroolModBlocks.PERKS_ANTENNE.get()) {
-                        if (antenneState.getValue(PerksAntenneBlock.POWERED) != powered) {
-                            world.setBlock(antennePos, antenneState.setValue(PerksAntenneBlock.POWERED, powered), 3);
-                        }
-                    }
-                }
             }
         }
     }

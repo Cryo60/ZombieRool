@@ -4,7 +4,7 @@ license="MIT License"
 
 [[mods]]
 modId="zombierool"
-version="1.5.3.1"
+version="1.5.3.2"
 displayName="ZombieRool"
 credits="Pyro for invaluable help - Created using mod maker MCreator - https://mcreator.net/about"
 displayURL="https://mcreator.net"
@@ -21,4 +21,10 @@ description="A Call of Duty Zombies inspired mod with weapons, perks, and zombie
 
 
 
+[[dependencies.zombierool]]
+    modId="geckolib"
+    mandatory=false
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
 

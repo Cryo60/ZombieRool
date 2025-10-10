@@ -47,7 +47,6 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.BUY_WALL_WEAPON.get().asItem());
 				tabData.accept(ZombieroolModBlocks.PUNCH_PACK_CORPSE.get().asItem());
 				tabData.accept(ZombieroolModBlocks.PUNCH_PACK.get().asItem());
-				tabData.accept(ZombieroolModBlocks.PERKS_LOWER.get().asItem());
 				tabData.accept(ZombieroolModBlocks.PLAYER_SPAWNER.get().asItem());
 				tabData.accept(ZombieroolModBlocks.MYSTERY_BOX.get().asItem());
 				tabData.accept(ZombieroolModItems.MANNEQUIN_SPAWN_EGG.get());
@@ -55,6 +54,7 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.DER_WUNDERFIZZ.get().asItem());
 				tabData.accept(ZombieroolModBlocks.AMMO_CRATE.get().asItem());
 				tabData.accept(ZombieroolModItems.BLOOD_BRUSH.get());
+				tabData.accept(ZombieroolModBlocks.PERKS_LOWER.get().asItem());
 			}).withSearchBar().build());
 	public static final RegistryObject<CreativeModeTab> DECO = REGISTRY.register("deco",
 			() -> CreativeModeTab.builder().title(Component.translatable("item_group.zombierool.deco")).icon(() -> new ItemStack(ZombieroolModBlocks.DECO_FARMLAND.get())).displayItems((parameters, tabData) -> {
@@ -184,10 +184,6 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.SEWERBRICK_WALL.get().asItem());
 				tabData.accept(ZombieroolModBlocks.SQUAREFLOOR.get().asItem());
 				tabData.accept(ZombieroolModBlocks.SQUAREFLOOR_SLAB.get().asItem());
-				tabData.accept(ZombieroolModBlocks.GRAY_MOSAIC.get().asItem());
-				tabData.accept(ZombieroolModBlocks.BLUE_MOSAIC.get().asItem());
-				tabData.accept(ZombieroolModBlocks.DARK_MOSAIC.get().asItem());
-				tabData.accept(ZombieroolModBlocks.ASH_STONE.get().asItem());
 				tabData.accept(ZombieroolModBlocks.TILE_BLOCK.get().asItem());
 				tabData.accept(ZombieroolModBlocks.MODERN_FURNACE.get().asItem());
 				tabData.accept(ZombieroolModBlocks.MACHINE_BLOCK.get().asItem());
@@ -195,9 +191,38 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.RAW_OBSCURIUM.get().asItem());
 				tabData.accept(ZombieroolModBlocks.MUD.get().asItem());
 				tabData.accept(ZombieroolModBlocks.MUD_2.get().asItem());
-				tabData.accept(ZombieroolModBlocks.MILITARY_CRATE.get().asItem());
 				tabData.accept(ZombieroolModBlocks.IRON_STAIRS.get().asItem());
 				tabData.accept(ZombieroolModBlocks.IRON_SLABS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.EYE_OAK.get().asItem());
+				tabData.accept(ZombieroolModBlocks.SUSPICIOUS_HAUNTED_PLANKS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.HAUNTED_PLANKS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.HAUNTED_GLASS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.BLACK_IRON_DOOR.get().asItem());
+				tabData.accept(ZombieroolModBlocks.BLACK_IRON_FENCE.get().asItem());
+				tabData.accept(ZombieroolModBlocks.BLACK_DIRT.get().asItem());
+				tabData.accept(ZombieroolModBlocks.BLACK_COARSED_DIRT.get().asItem());
+				tabData.accept(ZombieroolModBlocks.BLACK_PUMPKIN.get().asItem());
+				tabData.accept(ZombieroolModBlocks.COBBLED_AND_STONED.get().asItem());
+				tabData.accept(ZombieroolModBlocks.CRACKED_SHADOWED_BRICK.get().asItem());
+				tabData.accept(ZombieroolModBlocks.CRACKED_SHADOWED_TILES.get().asItem());
+				tabData.accept(ZombieroolModBlocks.FEL_BRICKS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECT_DIORITE.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECT_GRANITE.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECT_ANDESIT.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECTED_DIORITE.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECTED_GRANITE.get().asItem());
+				tabData.accept(ZombieroolModBlocks.PERFECTED_ANDESIT.get().asItem());
+				tabData.accept(ZombieroolModBlocks.SHADOW_BRICKS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.SHADOW_TILES.get().asItem());
+				tabData.accept(ZombieroolModBlocks.TINY_CANDLES.get().asItem());
+				tabData.accept(ZombieroolModBlocks.TINY_BONES.get().asItem());
+				tabData.accept(ZombieroolModBlocks.TINY_FLAME.get().asItem());
+				tabData.accept(ZombieroolModBlocks.TINY_SKULL.get().asItem());
+				tabData.accept(ZombieroolModBlocks.SPIDER_WEB.get().asItem());
+				tabData.accept(ZombieroolModBlocks.WEIRD_GRASS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.SOUL_LICHEN.get().asItem());
+				tabData.accept(ZombieroolModBlocks.NOT_HAUNTED_GLASS.get().asItem());
+				tabData.accept(ZombieroolModBlocks.HAUNTED_WINDOW.get().asItem());
 			}).withSearchBar().build());
 	public static final RegistryObject<CreativeModeTab> ZB_RWEAPON = REGISTRY.register("zb_rweapon",
 			() -> CreativeModeTab.builder().title(Component.translatable("item_group.zombierool.zb_rweapon")).icon(() -> new ItemStack(Items.BOW)).displayItems((parameters, tabData) -> {

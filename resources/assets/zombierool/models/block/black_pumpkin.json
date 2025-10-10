@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/black_pumpkin_side",
+    "up": "zombierool:block/black_pumpkin_side",
+    "north": "zombierool:block/black_pumpkin",
+    "east": "zombierool:block/black_pumpkin_side",
+    "south": "zombierool:block/black_pumpkin_side",
+    "west": "zombierool:block/black_pumpkin_side",
+    "particle": "zombierool:block/black_pumpkin_side"
+  },
+  "render_type": "solid"
+}

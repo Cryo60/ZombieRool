@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled;
 
 import net.mcreator.zombierool.init.ZombieroolModBlockEntities;
 import net.mcreator.zombierool.world.inventory.PerksInterfaceMenu;
+import net.mcreator.zombierool.PerksManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -38,7 +39,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.IntStream;
 
-import net.mcreator.zombierool.block.PerksLowerBlock; // <-- NOUVEL IMPORT
+import net.mcreator.zombierool.block.PerksLowerBlock;
 
 public class PerksLowerBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer {
 
@@ -64,6 +65,11 @@ public class PerksLowerBlockEntity extends RandomizableContainerBlockEntity impl
         super.load(tag);
         this.savedPrice = tag.getInt("savedPrice");
         this.savedPerkId = tag.getString("savedPerkId");
+        
+        // Restaurer le blockstate après le chargement
+        if (this.level != null && !this.level.isClientSide() && !this.savedPerkId.isEmpty()) {
+            net.mcreator.zombierool.block.PerksLowerBlock.updatePerkType(this.level, this.worldPosition, this.savedPerkId);
+        }
     }
 
     public void setSavedPrice(int p) {
@@ -80,6 +86,10 @@ public class PerksLowerBlockEntity extends RandomizableContainerBlockEntity impl
         if (this.level != null && !this.level.isClientSide()) {
             this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
         }
+        // Forcer le rechargement du chunk côté client
+        if (this.level != null && this.level.isClientSide()) {
+            this.level.getModelDataManager().requestRefresh(this);
+        }
     }
 
     public int getSavedPrice() {
@@ -88,6 +98,29 @@ public class PerksLowerBlockEntity extends RandomizableContainerBlockEntity impl
 
     public String getSavedPerkId() {
         return savedPerkId;
+    }
+
+    // Méthodes pour obtenir les textures basées sur le perk configuré
+    public String getSkinTexture() {
+        if (savedPerkId == null || savedPerkId.isEmpty()) {
+            return "zombierool:block/perks_base";
+        }
+        PerksManager.Perk perk = PerksManager.ALL_PERKS.get(savedPerkId);
+        if (perk != null && perk.getSkinTexture() != null) {
+            return perk.getSkinTexture().replace("zombierool:", "zombierool:block/");
+        }
+        return "zombierool:block/perks_base";
+    }
+
+    public String getSignTexture() {
+        if (savedPerkId == null || savedPerkId.isEmpty()) {
+            return "zombierool:block/perks_sign";
+        }
+        PerksManager.Perk perk = PerksManager.ALL_PERKS.get(savedPerkId);
+        if (perk != null && perk.getSignTexture() != null) {
+            return perk.getSignTexture().replace("zombierool:", "zombierool:block/");
+        }
+        return "zombierool:block/perks_sign";
     }
 
     @Override
@@ -223,7 +256,6 @@ public class PerksLowerBlockEntity extends RandomizableContainerBlockEntity impl
         if (player == null)
             return;
 
-        // Vérifie si le bloc est alimenté via sa propre propriété POWERED
         if (state.hasProperty(PerksLowerBlock.POWERED) && state.getValue(PerksLowerBlock.POWERED)) {
             double distanceSq = player.position().distanceToSqr(pos.getCenter());
             if (distanceSq < 16) {

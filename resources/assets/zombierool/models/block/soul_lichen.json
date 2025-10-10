@@ -1,0 +1,9 @@
+{
+  "parent": "zombierool:custom/soullichen",
+  "textures": {
+    "all": "zombierool:block/soul_lichen",
+    "particle": "zombierool:block/soul_lichen",
+    "0": "zombierool:block/soul_lichen"
+  },
+  "render_type": "solid"
+}

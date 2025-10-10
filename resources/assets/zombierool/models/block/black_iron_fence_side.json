@@ -1,0 +1,8 @@
+{
+  "parent": "block/template_glass_pane_side",
+  "textures": {
+    "edge": "zombierool:block/black_iron_bars",
+    "pane": "zombierool:block/black_iron_bars"
+  },
+  "render_type": "cutout"
+}

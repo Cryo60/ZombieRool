@@ -1,8 +1,9 @@
 {
-  "parent": "block/cube_all",
+  "parent": "zombierool:custom/perks",
   "textures": {
-    "all": "zombierool:block/base_perks_lower_texture",
-    "particle": "zombierool:block/base_perks_lower_texture"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/item_base_perks",
+    "particle": "zombierool:block/item_base_perks",
+    "0": "zombierool:block/perks_base",
+    "1": "zombierool:block/perks_sign"
+  }
 }

@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/ashstone",
-    "particle": "zombierool:block/ashstone"
-  },
-  "render_type": "solid"
-}

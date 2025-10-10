@@ -1,0 +1,8 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "zombierool:block/fel_bricks",
+    "particle": "zombierool:block/fel_bricks"
+  },
+  "render_type": "solid"
+}

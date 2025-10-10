@@ -1,0 +1,9 @@
+{
+  "parent": "zombierool:custom/perks",
+  "textures": {
+    "all": "zombierool:block/item_base_perks",
+    "particle": "zombierool:block/item_base_perks",
+    "0": "zombierool:block/speed_cola_skin",
+    "1": "zombierool:block/speed_cola_sign"
+  }
+}

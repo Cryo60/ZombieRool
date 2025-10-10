@@ -88,78 +88,151 @@ public class PerksManager {
 
 
     @SubscribeEvent
-    public static void init(FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
-            ALL_PERKS.put("mastodonte", new Perk("mastodonte", "Juggernog", "zombierool:textures/block/masto_perks_lower_texture.png",
-                getTranslatedComponent(null, "Résiste à la horde, +4 coeurs de vie en plus.", "Resist the horde, +4 extra hearts."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("speed_cola", new Perk("speed_cola", "Speed Cola", "zombierool:textures/block/speedcola_perks_lower_texture.png",
-                getTranslatedComponent(null, "Recharge rapide et +20% en vitesse.", "Fast reload and +20% speed."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("double_tape", new Perk("double_tape", "Double Tape", "zombierool:textures/block/dt_perks_lower_texture.png",
-                getTranslatedComponent(null, "Chaque tir inflige deux fois plus.", "Each shot deals double damage."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("royal_beer", new Perk("royal_beer", "Royal Beer", "zombierool:textures/block/royalbeer_perks_lower_texture.png",
-                getTranslatedComponent(null, "Invoque un Chevalier pour vous protéger pendant 3 minutes.", "Summon a Knight to protect you for 3 minutes."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("blood_rage", new Perk("blood_rage", "Blood Rage", "zombierool:textures/block/blood_rage_perks_lower_texture.png",
-                getTranslatedComponent(null, "Quand vous faites des dégâts, vous avez une chance de vous régénérer et d'obtenir des coeurs d'absorption.", "When you deal damage, you have a chance to regenerate and gain absorption hearts."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("phd_flopper", new Perk("phd_flopper", "PHD Flopper", "zombierool:textures/block/phd_flopper_perks_lower_texture.png",
-                getTranslatedComponent(null, "Résiste aux dégâts de chute, d'explosion et de feu. Les chutes créent une explosion sans briser de blocs.", "Resist fall, explosion, and fire damage. Falls create an explosion without breaking blocks."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("cherry", new Perk("cherry", "Cherry", "zombierool:textures/block/cherry_perks_lower_texture.png",
-                getTranslatedComponent(null, "Produit une décharge éléctrique autour du joueur lorsqu'il recharge son arme", "Produces an electrical discharge around the player when reloading their weapon."), player -> {})); // Added player -> {}
-
-            ALL_PERKS.put("quick_revive", new Perk("quick_revive", "Quick Revive", "zombierool:textures/block/quick_revive_perks_lower_texture.png",
-                getTranslatedComponent(null, "Se ranime plus vite.", "Revives faster."), player -> {})); // Added player -> {}
-            
-            ALL_PERKS.put("vulture", new Perk("vulture", "Vulture Aid", "zombierool:textures/block/vulture_perks_lower_texture.png",
-                getTranslatedComponent(null, "Donne des points extra, et a plus de chance de loot certains bonus.", "Gives extra points, and has a higher chance to loot certain bonuses."), player -> {})); // Added player -> {}
-        });
-    }
+	public static void init(FMLCommonSetupEvent event) {
+	    event.enqueueWork(() -> {
+	        ALL_PERKS.put("mastodonte", new Perk(
+	            "mastodonte", 
+	            "Juggernog", 
+	            "zombierool:textures/block/masto_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Résiste à la horde, +4 coeurs de vie en plus.", "Resist the horde, +4 extra hearts."), 
+	            player -> {},
+	            "zombierool:juggernog_skin",
+	            "zombierool:juggernog_sign"
+	        ));
+	
+	        ALL_PERKS.put("speed_cola", new Perk(
+	            "speed_cola", 
+	            "Speed Cola", 
+	            "zombierool:textures/block/speedcola_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Recharge rapide et +20% en vitesse.", "Fast reload and +20% speed."), 
+	            player -> {},
+	            "zombierool:speed_cola_skin",
+	            "zombierool:speed_cola_sign"
+	        ));
+	
+	        ALL_PERKS.put("double_tape", new Perk(
+	            "double_tape", 
+	            "Double Tap", 
+	            "zombierool:textures/block/dt_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Chaque tir inflige deux fois plus.", "Each shot deals double damage."), 
+	            player -> {},
+	            "zombierool:double_tape_skin",
+	            "zombierool:double_tape_sign"
+	        ));
+	
+	        ALL_PERKS.put("royal_beer", new Perk(
+	            "royal_beer", 
+	            "Royal Beer", 
+	            "zombierool:textures/block/royalbeer_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Invoque un Chevalier pour vous protéger pendant 3 minutes.", "Summon a Knight to protect you for 3 minutes."), 
+	            player -> {},
+	            "zombierool:royal_beer_skin",
+	            "zombierool:royal_beer_sign"
+	        ));
+	
+	        ALL_PERKS.put("blood_rage", new Perk(
+	            "blood_rage", 
+	            "Blood Rage", 
+	            "zombierool:textures/block/blood_rage_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Quand vous faites des dégâts, vous avez une chance de vous régénérer et d'obtenir des coeurs d'absorption.", "When you deal damage, you have a chance to regenerate and gain absorption hearts."), 
+	            player -> {},
+	            "zombierool:blood_rage_skin",
+	            "zombierool:blood_rage_sign"
+	        ));
+	
+	        ALL_PERKS.put("phd_flopper", new Perk(
+	            "phd_flopper", 
+	            "PHD Flopper", 
+	            "zombierool:textures/block/phd_flopper_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Résiste aux dégâts de chute, d'explosion et de feu. Les chutes créent une explosion sans briser de blocs.", "Resist fall, explosion, and fire damage. Falls create an explosion without breaking blocks."), 
+	            player -> {},
+	            "zombierool:phd_flopper_skin",
+	            "zombierool:phd_flopper_sign"
+	        ));
+	
+	        ALL_PERKS.put("cherry", new Perk(
+	            "cherry", 
+	            "Cherry", 
+	            "zombierool:textures/block/cherry_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Produit une décharge éléctrique autour du joueur lorsqu'il recharge son arme", "Produces an electrical discharge around the player when reloading their weapon."), 
+	            player -> {},
+	            "zombierool:cherry_skin",
+	            "zombierool:cherry_sign"
+	        ));
+	
+	        ALL_PERKS.put("quick_revive", new Perk(
+	            "quick_revive", 
+	            "Quick Revive", 
+	            "zombierool:textures/block/quick_revive_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Se ranime plus vite.", "Revives faster."), 
+	            player -> {},
+	            "zombierool:quick_revive_skin",
+	            "zombierool:quick_revive_sign"
+	        ));
+	        
+	        ALL_PERKS.put("vulture", new Perk(
+	            "vulture", 
+	            "Vulture Aid", 
+	            "zombierool:textures/block/vulture_perks_lower_texture.png",
+	            getTranslatedComponent(null, "Donne des points extra, et a plus de chance de loot certains bonus.", "Gives extra points, and has a higher chance to loot certain bonuses."), 
+	            player -> {},
+	            "zombierool:vulture_skin",
+	            "zombierool:vulture_sign"
+	        ));
+	    });
+	}
 
     public static class Perk {
-        private final String id;
-        private final String name;
-        private final String texturePath;
-        private final Component description; // Keep as Component, as it's already a MutableComponent from getTranslatedComponent
-        private final Consumer<Player> effectConsumer;
-
-        public Perk(String id, String name, String texturePath, Component description, Consumer<Player> effectConsumer) {
-            this.id = id;
-            this.name = name;
-            this.texturePath = texturePath;
-            this.description = description;
-            this.effectConsumer = effectConsumer;
-        }
-
-        public String getId() { return id; }
-        public String getName() { return name; }
-        public String getTexturePath() { return texturePath; }
-        public Component getDescription() { return description; }
-
-        public MobEffect getAssociatedEffect() {
-            return PerksManager.getEffectInstance(this.id);
-        }
-
-        public void applyEffect(Player player) {
-            var mobEffect = getAssociatedEffect();
-            if (mobEffect == null) {
-                return;
-            }
-
-            if (!player.hasEffect(mobEffect)) {
-                int duration = Integer.MAX_VALUE;
-                if (this.id.equals("royal_beer")) duration = 20 * 60 * 3;
-
-                player.addEffect(new MobEffectInstance(mobEffect, duration, 0, false, false, true));
-            }
-
-            if (effectConsumer != null) effectConsumer.accept(player);
-        }
-    }
-
+	    private final String id;
+	    private final String name;
+	    private final String texturePath;
+	    private final Component description;
+	    private final Consumer<Player> effectConsumer;
+	    private final String skinTexture; // Nouvelle propriété
+	    private final String signTexture; // Nouvelle propriété
+	
+	    public Perk(String id, String name, String texturePath, Component description, 
+	                Consumer<Player> effectConsumer, String skinTexture, String signTexture) {
+	        this.id = id;
+	        this.name = name;
+	        this.texturePath = texturePath;
+	        this.description = description;
+	        this.effectConsumer = effectConsumer;
+	        this.skinTexture = skinTexture;
+	        this.signTexture = signTexture;
+	    }
+	
+	    // Getters existants...
+	    public String getId() { return id; }
+	    public String getName() { return name; }
+	    public String getTexturePath() { return texturePath; }
+	    public Component getDescription() { return description; }
+	    
+	    // Nouveaux getters
+	    public String getSkinTexture() { return skinTexture; }
+	    public String getSignTexture() { return signTexture; }
+	
+	    public MobEffect getAssociatedEffect() {
+	        return PerksManager.getEffectInstance(this.id);
+	    }
+	
+	    public void applyEffect(Player player) {
+	        var mobEffect = getAssociatedEffect();
+	        if (mobEffect == null) {
+	            return;
+	        }
+	
+	        if (!player.hasEffect(mobEffect)) {
+	            int duration = Integer.MAX_VALUE;
+	            if (this.id.equals("royal_beer")) duration = 20 * 60 * 3;
+	
+	            player.addEffect(new MobEffectInstance(mobEffect, duration, 0, false, false, true));
+	        }
+	
+	        if (effectConsumer != null) effectConsumer.accept(player);
+	    }
+	}
+	
     public static MobEffect getEffectInstance(String perkId) {
         switch (perkId) {
             case "mastodonte": return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation("zombierool:perks_effect_mastodonte"));

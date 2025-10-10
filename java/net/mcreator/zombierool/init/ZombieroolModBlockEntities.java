@@ -31,8 +31,8 @@ public class ZombieroolModBlockEntities {
 	public static final RegistryObject<BlockEntityType<?>> TRAITOR = register("traitor", ZombieroolModBlocks.TRAITOR, TraitorBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> BUY_WALL_WEAPON = register("buy_wall_weapon", ZombieroolModBlocks.BUY_WALL_WEAPON, BuyWallWeaponBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> PUNCH_PACK = register("punch_pack", ZombieroolModBlocks.PUNCH_PACK, PunchPackBlockEntity::new);
-	public static final RegistryObject<BlockEntityType<?>> PERKS_LOWER = register("perks_lower", ZombieroolModBlocks.PERKS_LOWER, PerksLowerBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> MYSTERY_BOX = register("mystery_box", ZombieroolModBlocks.MYSTERY_BOX, MysteryBoxBlockEntity::new);
+	public static final RegistryObject<BlockEntityType<?>> PERKS_LOWER = register("perks_lower", ZombieroolModBlocks.PERKS_LOWER, PerksLowerBlockEntity::new);
 
 	private static RegistryObject<BlockEntityType<?>> register(String registryname, RegistryObject<Block> block, BlockEntityType.BlockEntitySupplier<?> supplier) {
 		return REGISTRY.register(registryname, () -> BlockEntityType.Builder.of(supplier, block.get()).build(null));

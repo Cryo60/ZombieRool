@@ -133,7 +133,6 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> BUY_WALL_WEAPON = block(ZombieroolModBlocks.BUY_WALL_WEAPON);
 	public static final RegistryObject<Item> PUNCH_PACK_CORPSE = block(ZombieroolModBlocks.PUNCH_PACK_CORPSE);
 	public static final RegistryObject<Item> PUNCH_PACK = block(ZombieroolModBlocks.PUNCH_PACK);
-	public static final RegistryObject<Item> PERKS_LOWER = block(ZombieroolModBlocks.PERKS_LOWER);
 	public static final RegistryObject<Item> PLAYER_SPAWNER = block(ZombieroolModBlocks.PLAYER_SPAWNER);
 	public static final RegistryObject<Item> DECO_FARMLAND = block(ZombieroolModBlocks.DECO_FARMLAND);
 	public static final RegistryObject<Item> DECO_DIRT = block(ZombieroolModBlocks.DECO_DIRT);
@@ -205,8 +204,6 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> STEEL_SLATE_SLAB = block(ZombieroolModBlocks.STEEL_SLATE_SLAB);
 	public static final RegistryObject<Item> SUPER_BOW = REGISTRY.register("super_bow", () -> new SuperBowItem());
 	public static final RegistryObject<Item> M_16_A_4_WEAPON = REGISTRY.register("m_16_a_4_weapon", () -> new M16A4WeaponItem());
-	public static final RegistryObject<Item> PERKS_UPPER = block(ZombieroolModBlocks.PERKS_UPPER);
-	public static final RegistryObject<Item> PERKS_ANTENNE = block(ZombieroolModBlocks.PERKS_ANTENNE);
 	public static final RegistryObject<Item> PLANKSBLACK = block(ZombieroolModBlocks.PLANKSBLACK);
 	public static final RegistryObject<Item> PLANKS_BLACK_STAIRS = block(ZombieroolModBlocks.PLANKS_BLACK_STAIRS);
 	public static final RegistryObject<Item> PLANKS_BLACK_FENCE = block(ZombieroolModBlocks.PLANKS_BLACK_FENCE);
@@ -305,10 +302,6 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> ACR_WEAPON = REGISTRY.register("acr_weapon", () -> new ACRWeaponItem());
 	public static final RegistryObject<Item> G_36C_WEAPON = REGISTRY.register("g_36c_weapon", () -> new G36cWeaponItem());
 	public static final RegistryObject<Item> M_14_WEAPON = REGISTRY.register("m_14_weapon", () -> new M14WeaponItem());
-	public static final RegistryObject<Item> GRAY_MOSAIC = block(ZombieroolModBlocks.GRAY_MOSAIC);
-	public static final RegistryObject<Item> BLUE_MOSAIC = block(ZombieroolModBlocks.BLUE_MOSAIC);
-	public static final RegistryObject<Item> DARK_MOSAIC = block(ZombieroolModBlocks.DARK_MOSAIC);
-	public static final RegistryObject<Item> ASH_STONE = block(ZombieroolModBlocks.ASH_STONE);
 	public static final RegistryObject<Item> MP_5_WEAPON = REGISTRY.register("mp_5_weapon", () -> new MP5WeaponItem());
 	public static final RegistryObject<Item> UMP_45_WEAPON = REGISTRY.register("ump_45_weapon", () -> new UMP45WeaponItem());
 	public static final RegistryObject<Item> BIZON_WEAPON = REGISTRY.register("bizon_weapon", () -> new BizonWeaponItem());
@@ -363,7 +356,6 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> RAW_OBSCURIUM = block(ZombieroolModBlocks.RAW_OBSCURIUM);
 	public static final RegistryObject<Item> MUD = block(ZombieroolModBlocks.MUD);
 	public static final RegistryObject<Item> MUD_2 = block(ZombieroolModBlocks.MUD_2);
-	public static final RegistryObject<Item> MILITARY_CRATE = block(ZombieroolModBlocks.MILITARY_CRATE);
 	public static final RegistryObject<Item> WUNDERFIZZ_ANTENNE = block(ZombieroolModBlocks.WUNDERFIZZ_ANTENNE);
 	public static final RegistryObject<Item> DER_WUNDERFIZZ = block(ZombieroolModBlocks.DER_WUNDERFIZZ);
 	public static final RegistryObject<Item> DER_WUNDERFIZZ_UPPER = block(ZombieroolModBlocks.DER_WUNDERFIZZ_UPPER);
@@ -372,6 +364,37 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> AMMO_CRATE = block(ZombieroolModBlocks.AMMO_CRATE);
 	public static final RegistryObject<Item> RAYGUN_WEAPON = REGISTRY.register("raygun_weapon", () -> new RaygunWeaponItem());
 	public static final RegistryObject<Item> BLOOD_BRUSH = REGISTRY.register("blood_brush", () -> new BloodBrushItem());
+	public static final RegistryObject<Item> EYE_OAK = block(ZombieroolModBlocks.EYE_OAK);
+	public static final RegistryObject<Item> SUSPICIOUS_HAUNTED_PLANKS = block(ZombieroolModBlocks.SUSPICIOUS_HAUNTED_PLANKS);
+	public static final RegistryObject<Item> HAUNTED_PLANKS = block(ZombieroolModBlocks.HAUNTED_PLANKS);
+	public static final RegistryObject<Item> HAUNTED_GLASS = block(ZombieroolModBlocks.HAUNTED_GLASS);
+	public static final RegistryObject<Item> BLACK_IRON_DOOR = doubleBlock(ZombieroolModBlocks.BLACK_IRON_DOOR);
+	public static final RegistryObject<Item> BLACK_IRON_FENCE = block(ZombieroolModBlocks.BLACK_IRON_FENCE);
+	public static final RegistryObject<Item> BLACK_DIRT = block(ZombieroolModBlocks.BLACK_DIRT);
+	public static final RegistryObject<Item> BLACK_COARSED_DIRT = block(ZombieroolModBlocks.BLACK_COARSED_DIRT);
+	public static final RegistryObject<Item> BLACK_PUMPKIN = block(ZombieroolModBlocks.BLACK_PUMPKIN);
+	public static final RegistryObject<Item> COBBLED_AND_STONED = block(ZombieroolModBlocks.COBBLED_AND_STONED);
+	public static final RegistryObject<Item> CRACKED_SHADOWED_BRICK = block(ZombieroolModBlocks.CRACKED_SHADOWED_BRICK);
+	public static final RegistryObject<Item> CRACKED_SHADOWED_TILES = block(ZombieroolModBlocks.CRACKED_SHADOWED_TILES);
+	public static final RegistryObject<Item> FEL_BRICKS = block(ZombieroolModBlocks.FEL_BRICKS);
+	public static final RegistryObject<Item> PERFECT_DIORITE = block(ZombieroolModBlocks.PERFECT_DIORITE);
+	public static final RegistryObject<Item> PERFECT_GRANITE = block(ZombieroolModBlocks.PERFECT_GRANITE);
+	public static final RegistryObject<Item> PERFECT_ANDESIT = block(ZombieroolModBlocks.PERFECT_ANDESIT);
+	public static final RegistryObject<Item> PERFECTED_DIORITE = block(ZombieroolModBlocks.PERFECTED_DIORITE);
+	public static final RegistryObject<Item> PERFECTED_GRANITE = block(ZombieroolModBlocks.PERFECTED_GRANITE);
+	public static final RegistryObject<Item> PERFECTED_ANDESIT = block(ZombieroolModBlocks.PERFECTED_ANDESIT);
+	public static final RegistryObject<Item> SHADOW_BRICKS = block(ZombieroolModBlocks.SHADOW_BRICKS);
+	public static final RegistryObject<Item> SHADOW_TILES = block(ZombieroolModBlocks.SHADOW_TILES);
+	public static final RegistryObject<Item> TINY_CANDLES = block(ZombieroolModBlocks.TINY_CANDLES);
+	public static final RegistryObject<Item> TINY_BONES = block(ZombieroolModBlocks.TINY_BONES);
+	public static final RegistryObject<Item> TINY_FLAME = block(ZombieroolModBlocks.TINY_FLAME);
+	public static final RegistryObject<Item> TINY_SKULL = block(ZombieroolModBlocks.TINY_SKULL);
+	public static final RegistryObject<Item> SPIDER_WEB = block(ZombieroolModBlocks.SPIDER_WEB);
+	public static final RegistryObject<Item> WEIRD_GRASS = block(ZombieroolModBlocks.WEIRD_GRASS);
+	public static final RegistryObject<Item> SOUL_LICHEN = block(ZombieroolModBlocks.SOUL_LICHEN);
+	public static final RegistryObject<Item> NOT_HAUNTED_GLASS = block(ZombieroolModBlocks.NOT_HAUNTED_GLASS);
+	public static final RegistryObject<Item> HAUNTED_WINDOW = block(ZombieroolModBlocks.HAUNTED_WINDOW);
+	public static final RegistryObject<Item> PERKS_LOWER = block(ZombieroolModBlocks.PERKS_LOWER);
 
 	private static RegistryObject<Item> block(RegistryObject<Block> block) {
 		return REGISTRY.register(block.getId().getPath(), () -> new BlockItem(block.get(), new Item.Properties()));

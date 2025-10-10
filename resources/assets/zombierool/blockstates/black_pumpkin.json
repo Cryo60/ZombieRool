@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/black_pumpkin"
+    },
+    "facing=east": {
+      "model": "zombierool:block/black_pumpkin",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/black_pumpkin",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/black_pumpkin",
+      "y": 270
+    }
+  }
+}

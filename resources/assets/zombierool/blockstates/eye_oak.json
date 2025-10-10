@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "zombierool:block/eye_oak",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "zombierool:block/eye_oak"
+    },
+    "axis=z": {
+      "model": "zombierool:block/eye_oak",
+      "x": 90
+    }
+  }
+}

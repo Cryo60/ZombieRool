@@ -1,0 +1,33 @@
+{
+  "variants": {
+    "facing=up,rotation=0":    { "model": "zombierool:block/soul_lichen" },
+    "facing=up,rotation=1":    { "model": "zombierool:block/soul_lichen", "y": 90 },
+    "facing=up,rotation=2":    { "model": "zombierool:block/soul_lichen", "y": 180 },
+    "facing=up,rotation=3":    { "model": "zombierool:block/soul_lichen", "y": 270 },
+
+    "facing=down,rotation=0":  { "model": "zombierool:block/soul_lichen", "x": 180 },
+    "facing=down,rotation=1":  { "model": "zombierool:block/soul_lichen", "x": 180, "y": 90 },
+    "facing=down,rotation=2":  { "model": "zombierool:block/soul_lichen", "x": 180, "y": 180 },
+    "facing=down,rotation=3":  { "model": "zombierool:block/soul_lichen", "x": 180, "y": 270 },
+
+    "facing=north,rotation=0": { "model": "zombierool:block/soul_lichen", "x": 90 },
+    "facing=north,rotation=1": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 90 },
+    "facing=north,rotation=2": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 180 },
+    "facing=north,rotation=3": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 270 },
+
+    "facing=south,rotation=0": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 180 },
+    "facing=south,rotation=1": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 270 },
+    "facing=south,rotation=2": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 0 },
+    "facing=south,rotation=3": { "model": "zombierool:block/soul_lichen", "x": 90, "y": 90 },
+
+    "facing=east,rotation=0":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 90 },
+    "facing=east,rotation=1":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 180 },
+    "facing=east,rotation=2":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 270 },
+    "facing=east,rotation=3":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 0 },
+
+    "facing=west,rotation=0":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 270 },
+    "facing=west,rotation=1":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 0 },
+    "facing=west,rotation=2":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 90 },
+    "facing=west,rotation=3":  { "model": "zombierool:block/soul_lichen", "x": 90, "y": 180 }
+  }
+}

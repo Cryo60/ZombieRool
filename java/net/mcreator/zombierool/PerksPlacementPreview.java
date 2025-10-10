@@ -1,8 +1,6 @@
 package net.mcreator.zombierool.client.renderer;
 
 import net.mcreator.zombierool.block.PerksLowerBlock; // Import du bloc de base des Perks
-import net.mcreator.zombierool.block.PerksUpperBlock; // Import du bloc supérieur des Perks
-import net.mcreator.zombierool.block.PerksAntenneBlock; // Import du bloc d'antenne des Perks
 import net.mcreator.zombierool.init.ZombieroolModBlocks; // Pour accéder aux instances de vos blocs Perks
 
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -97,21 +95,6 @@ public class PerksPlacementPreview {
                 ZombieroolModBlocks.PERKS_LOWER.get().defaultBlockState()
                         .setValue(PerksLowerBlock.FACING, facing), // Définit la direction pour la base
                 0.5f); // Alpha pour la transparence
-
-        // Rend le bloc fantôme pour le PerksUpperBlock (supérieur)
-        // Note: Selon le code que vous avez fourni pour PerksLowerBlock,
-        // PerksUpperBlock a également une propriété FACING.
-        renderGhostBlock(poseStack, level, upperPos,
-                ZombieroolModBlocks.PERKS_UPPER.get().defaultBlockState()
-                        .setValue(PerksUpperBlock.FACING, facing), // Définit la direction pour la partie supérieure
-                0.5f);
-
-        // Rend le bloc fantôme pour le WunderfizzAntenneBlock (antenne)
-        // Note: PerksAntenneBlock ne semble pas avoir de propriété FACING,
-        // donc nous utilisons simplement l'état par défaut.
-        renderGhostBlock(poseStack, level, antennaPos,
-                ZombieroolModBlocks.PERKS_ANTENNE.get().defaultBlockState(),
-                0.5f);
 
         poseStack.popPose(); // Restaure l'état précédent de la pose stack
     }

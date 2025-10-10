@@ -1,0 +1,13 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "zombierool:block/black_dirt",
+    "up": "zombierool:block/weird_grass_top",
+    "north": "zombierool:block/weird_grass_side",
+    "east": "zombierool:block/weird_grass_side",
+    "south": "zombierool:block/weird_grass_side",
+    "west": "zombierool:block/weird_grass_side",
+    "particle": "zombierool:block/black_dirt"
+  },
+  "render_type": "solid"
+}
