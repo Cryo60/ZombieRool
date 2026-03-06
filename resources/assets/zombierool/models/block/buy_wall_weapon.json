@@ -1,8 +1,8 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/traitorblock",
-    "particle": "zombierool:block/traitorblock"
+    "all": "zombierool:block/apply_me_texture_b",
+    "particle": "zombierool:block/apply_me_texture_b"
   },
-  "render_type": "cutout_mipped"
+  "render_type": "solid"
 }

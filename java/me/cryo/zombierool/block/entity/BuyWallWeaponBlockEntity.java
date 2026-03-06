@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block.entity;
-
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.common.util.LazyOptional;
@@ -31,14 +30,12 @@ import me.cryo.zombierool.init.ZombieroolModBlockEntities;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.block.BuyWallWeaponBlock;
 import me.cryo.zombierool.block.system.MimicSystem;
-
 import javax.annotation.Nullable;
 import java.util.stream.IntStream;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Locale;
 import io.netty.buffer.Unpooled;
-
 public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, MimicSystem.IMimicContainer {
 	private NonNullList<ItemStack> stacks = NonNullList.withSize(1, ItemStack.EMPTY);
 	private final LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.values());
@@ -48,18 +45,13 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	private boolean orientationFixed = false;
 	private static final Map<String, String> ID_MIGRATION_MAP = new HashMap<>();
 	static {
-	    // M1 Garand mappings
 	    ID_MIGRATION_MAP.put("M1GarandItem", "m1garand");
 	    ID_MIGRATION_MAP.put("m_1_garand_weapon", "m1garand");
 	    ID_MIGRATION_MAP.put("m1_garand_weapon", "m1garand");
 	    ID_MIGRATION_MAP.put("m1garand_weapon", "m1garand");
-	    
-	    // Gewehr 43 mappings
 	    ID_MIGRATION_MAP.put("Gewehr43WeaponItem", "gewehr43");
 	    ID_MIGRATION_MAP.put("gewehr_43_weapon", "gewehr43");
 	    ID_MIGRATION_MAP.put("gewehr43_weapon", "gewehr43");
-	    
-	    // Autres mappings existants (Kar98k etc)
 	    ID_MIGRATION_MAP.put("Kar98kWeaponItem", "kar98k");
 	    ID_MIGRATION_MAP.put("kar_98k_weapon", "kar98k");
 	    ID_MIGRATION_MAP.put("kar98k_weapon", "kar98k");
@@ -213,11 +205,9 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    ID_MIGRATION_MAP.put("DMRWeaponItem", "dmr");
 	    ID_MIGRATION_MAP.put("dmr_weapon", "dmr");
 	}
-	
 	public BuyWallWeaponBlockEntity(BlockPos position, BlockState state) {
 	    super(ZombieroolModBlockEntities.BUY_WALL_WEAPON.get(), position, state);
 	}
-	
 	public void tick(Level level, BlockPos pos, BlockState state) {
 	    if (level.isClientSide) return;
 	    if (!orientationFixed) {
@@ -225,7 +215,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	        orientationFixed = true;
 	    }
 	}
-	
 	private void fixOrientation(Level level, BlockPos pos, BlockState state) {
 	    if (!(state.getBlock() instanceof BuyWallWeaponBlock)) return;
 	    Direction currentFacing = state.getValue(BuyWallWeaponBlock.FACING);
@@ -240,7 +229,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	        }
 	    }
 	}
-	
 	private boolean isValidOrientation(Level level, BlockPos pos, Direction facing) {
 	    BlockPos front = pos.relative(facing);
 	    BlockPos belowFront = front.below();
@@ -250,7 +238,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    boolean isPathAbove = level.getBlockState(aboveFront).is(ZombieroolModBlocks.PATH.get());
 	    return isAirFront && (isPathBelow || isPathAbove);
 	}
-	
 	@Override
 	public void onLoad() {
 	    super.onLoad();
@@ -258,7 +245,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	         this.orientationFixed = false; 
 	    }
 	}
-	
 	@Override
 	public void load(CompoundTag nbt) {
 	    super.load(nbt);
@@ -268,20 +254,14 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    if (nbt.contains("OrientationFixed")) {
 	        this.orientationFixed = nbt.getBoolean("OrientationFixed");
 	    }
-	    
-	    // Item migration logic
 	    if (nbt.contains("ItemToSell", Tag.TAG_STRING)) {
 	        String fullId = nbt.getString("ItemToSell");
-	        // Simplified for brevity, assume original migration logic works here or reuse previous implementation
-	        // Just ensuring itemToSell is set correctly
-	        this.itemToSell = ResourceLocation.tryParse(fullId); // Fallback parse
+	        this.itemToSell = ResourceLocation.tryParse(fullId); 
 	        if (this.itemToSell != null && ForgeRegistries.ITEMS.containsKey(this.itemToSell)) {
 	             this.stacks.set(0, new ItemStack(ForgeRegistries.ITEMS.getValue(this.itemToSell)));
 	        }
 	    }
-	
 	    this.mimicBlockState = MimicSystem.loadMimic(nbt, this.level, "CapturedBlock", true);
-	
 	    if (this.itemToSell != null) {
 	        ItemStack currentStack = this.stacks.get(0);
 	        Item regItem = ForgeRegistries.ITEMS.getValue(this.itemToSell);
@@ -293,7 +273,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	        }
 	    }
 	}
-	
 	@Override
 	public void saveAdditional(CompoundTag nbt) {
 	    super.saveAdditional(nbt);
@@ -305,10 +284,8 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    }
 	    MimicSystem.saveMimic(nbt, this.mimicBlockState);
 	}
-	
 	public int getPrice() { return price; }
 	public void setPrice(int price) { this.price = price; setChanged(); }
-	
 	public ResourceLocation getItemToSell() { return itemToSell; }
 	public void setItemToSell(ResourceLocation itemToSell) { 
 	    this.itemToSell = itemToSell; 
@@ -320,33 +297,27 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    }
 	    setChanged(); 
 	}
-	
 	@Override
 	public BlockState getMimic() {
 	    return mimicBlockState;
 	}
-	
 	@Override
 	public void setMimic(BlockState state) {
 	    this.mimicBlockState = state;
 	    setChanged();
 	}
-	
 	@Override
 	public ClientboundBlockEntityDataPacket getUpdatePacket() {
 	    return ClientboundBlockEntityDataPacket.create(this);
 	}
-	
 	@Override
 	public CompoundTag getUpdateTag() {
 	    return this.saveWithFullMetadata();
 	}
-	
 	@Override
 	public int getContainerSize() {
 	    return stacks.size();
 	}
-	
 	@Override
 	public boolean isEmpty() {
 	    for (ItemStack itemstack : this.stacks)
@@ -354,64 +325,52 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	            return false;
 	    return true;
 	}
-	
 	@Override
 	public Component getDefaultName() {
 	    return Component.literal("buy_wall_weapon");
 	}
-	
 	@Override
 	public int getMaxStackSize() {
 	    return 64;
 	}
-	
 	@Override
 	public AbstractContainerMenu createMenu(int id, Inventory inventory) {
 	    return new WallWeaponManagerMenu(id, inventory, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(this.worldPosition));
 	}
-	
 	@Override
 	public Component getDisplayName() {
 	    return Component.literal("Wall Weapon");
 	}
-	
 	@Override
 	protected NonNullList<ItemStack> getItems() {
 	    return this.stacks;
 	}
-	
 	@Override
 	protected void setItems(NonNullList<ItemStack> stacks) {
 	    this.stacks = stacks;
 	}
-	
 	@Override
 	public boolean canPlaceItem(int index, ItemStack stack) {
 	    return true;
 	}
-	
 	@Override
 	public int[] getSlotsForFace(Direction side) {
 	    return IntStream.range(0, this.getContainerSize()).toArray();
 	}
-	
 	@Override
 	public boolean canPlaceItemThroughFace(int index, ItemStack stack, @Nullable Direction direction) {
 	    return this.canPlaceItem(index, stack);
 	}
-	
 	@Override
 	public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) {
 	    return index != 0;
 	}
-	
 	@Override
 	public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction facing) {
 	    if (!this.remove && facing != null && capability == ForgeCapabilities.ITEM_HANDLER)
 	        return handlers[facing.ordinal()].cast();
 	    return super.getCapability(capability, facing);
 	}
-	
 	@Override
 	public void setRemoved() {
 	    super.setRemoved();

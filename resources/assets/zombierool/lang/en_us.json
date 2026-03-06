@@ -1,9 +1,9 @@
 {
   "message.zombierool.disabled": "DISABLED (Visible Blocks)",
   "gui.zombierool.wall_weapon_manager.label_prix": "Prix",
-  "entity.zombierool.white_knight": "White Knight",
-  "effect.zombierool.perks_effect_vulture": "Vulture",
   "block.zombierool.ultima_receptor": "Ultima Receptor",
+  "effect.zombierool.perks_effect_vulture": "Vulture",
+  "entity.zombierool.white_knight": "White Knight",
   "message.zombierool.filter_all": "ALL",
   "gui.zombierool.perks_interface.button_next": "\u003e",
   "block.zombierool.zombie_pass": "Zombie Pass",

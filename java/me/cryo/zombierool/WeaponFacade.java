@@ -22,14 +22,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class WeaponFacade {
-    private static List<ResourceLocation> unmappedTaczGunsCache = null;
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Détection
-    // ─────────────────────────────────────────────────────────────────────────────
+    private static List<ResourceLocation> unmappedTaczGunsCache = null;
 
     public static boolean isWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
@@ -54,10 +52,6 @@ public class WeaponFacade {
         return false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Définition & munitions
-    // ─────────────────────────────────────────────────────────────────────────────
-
     public static Item getAmmoItemForGun(ItemStack stack) {
         WeaponSystem.Definition def = getDefinition(stack);
         if (def != null && def.tacz != null && def.tacz.ammo_id != null) {
@@ -80,19 +74,16 @@ public class WeaponFacade {
             return gun.getDefinition();
         }
         if (isTaczWeapon(stack)) {
-            // Tentative via le tag weapon_id (mise en cache)
             String wId = stack.hasTag() ? stack.getTag().getString("zombierool:weapon_id") : "";
             if (!wId.isEmpty()) {
                 return WeaponSystem.Loader.LOADED_DEFINITIONS.get(wId.replace("zombierool:", ""));
             }
-            // Recherche par GunId TacZ
+
             String gunId = stack.getOrCreateTag().getString("GunId");
             if (!gunId.isEmpty()) {
                 for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
                     if (def.tacz != null && gunId.equals(def.tacz.gun_id)) {
-                        // On met en cache pour éviter de reparcourir la map à chaque tick
-                        stack.getOrCreateTag().putString("zombierool:weapon_id",
-                            def.id.replace("zombierool:", ""));
+                        stack.getOrCreateTag().putString("zombierool:weapon_id", def.id.replace("zombierool:", ""));
                         stack.getOrCreateTag().putBoolean("zombierool:is_tacz", true);
                         return def;
                     }
@@ -102,19 +93,18 @@ public class WeaponFacade {
         return null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Création d'ItemStack
-    // ─────────────────────────────────────────────────────────────────────────────
-
     public static List<ResourceLocation> getUnmappedTaczGuns() {
         if (unmappedTaczGunsCache != null) return unmappedTaczGunsCache;
         unmappedTaczGunsCache = new ArrayList<>();
         if (!ModList.get().isLoaded("tacz")) return unmappedTaczGunsCache;
+
         List<ResourceLocation> allTaczGuns = TacZIntegration.getAllTacZGunIds();
         Set<String> mappedIds = new HashSet<>();
+
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             if (def.tacz != null && def.tacz.gun_id != null) mappedIds.add(def.tacz.gun_id);
         }
+
         for (ResourceLocation rl : allTaczGuns) {
             if (!mappedIds.contains(rl.toString())) unmappedTaczGunsCache.add(rl);
         }
@@ -132,17 +122,65 @@ public class WeaponFacade {
         tag.putBoolean("zombierool:unmapped", true);
         tag.putBoolean("HasBulletInBarrel", true);
         tag.putString("GunFireMode", "AUTO");
+
         tag.putInt("GunCurrentAmmoCount", pap ? 60 : 30);
         setReserve(stack, pap ? 240 : 120);
+
         if (pap) tag.putBoolean("zombierool:pap", true);
+
         return stack;
     }
 
     private static String formatAttachmentType(String type) {
         if (type == null || type.isEmpty()) return "";
         if (type.equalsIgnoreCase("extendedmag") || type.equalsIgnoreCase("extended_mag"))
-            return "ExtendedMag";
-        return type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase(java.util.Locale.US);
+            return "EXTENDED_MAG";
+        return type.toUpperCase(java.util.Locale.US);
+    }
+
+    private static void applyTaczAttachments(CompoundTag tag, Map<String, String> attachmentsMap) {
+        if (attachmentsMap == null || attachmentsMap.isEmpty()) return;
+
+        for (Map.Entry<String, String> entry : attachmentsMap.entrySet()) {
+            String type = formatAttachmentType(entry.getKey());
+            String idStr = entry.getValue();
+
+            if (idStr.equalsIgnoreCase("none") || idStr.isEmpty()) {
+                CompoundTag emptyNbt = new CompoundTag();
+                ItemStack.EMPTY.save(emptyNbt);
+                tag.put("Attachment" + type, emptyNbt);
+                continue;
+            }
+
+            ResourceLocation attId = new ResourceLocation(idStr.contains(":") ? idStr : "tacz:" + idStr);
+            boolean exists = true;
+
+            if (ModList.get().isLoaded("tacz")) {
+                try {
+                    Class<?> apiClass = Class.forName("com.tacz.guns.api.TimelessAPI");
+                    Optional<?> opt = (Optional<?>) apiClass.getMethod("getCommonAttachmentIndex", ResourceLocation.class).invoke(null, attId);
+                    if (opt.isEmpty()) {
+                        exists = false;
+                        me.cryo.zombierool.ZombieroolMod.LOGGER.warn("[ZR] L'accessoire {} n'existe pas dans TacZ, remplacé par vide pour éviter une texture manquante.", attId);
+                    }
+                } catch (Exception e) {}
+            }
+
+            if (exists) {
+                CompoundTag attNbt = new CompoundTag();
+                attNbt.putString("id", "tacz:attachment");
+                attNbt.putByte("Count", (byte) 1);
+                CompoundTag attTag = new CompoundTag();
+                attTag.putString("AttachmentId", attId.toString());
+                attNbt.put("tag", attTag);
+
+                tag.put("Attachment" + type, attNbt);
+            } else {
+                CompoundTag emptyNbt = new CompoundTag();
+                ItemStack.EMPTY.save(emptyNbt);
+                tag.put("Attachment" + type, emptyNbt);
+            }
+        }
     }
 
     public static ItemStack createWeaponStack(String zrId, boolean pap) {
@@ -175,20 +213,13 @@ public class WeaponFacade {
                 } else {
                     setReserve(taczStack, def.ammo.max_reserve);
                     if (def.tacz.attachments != null && !def.tacz.attachments.isEmpty()) {
-                        CompoundTag attachments = new CompoundTag();
-                        for (Map.Entry<String, String> entry : def.tacz.attachments.entrySet()) {
-                            CompoundTag att = new CompoundTag();
-                            att.putString("AttachmentId", entry.getValue());
-                            attachments.put(formatAttachmentType(entry.getKey()), att);
-                        }
-                        tag.put("GunCurrentAttachment", attachments);
+                        applyTaczAttachments(tag, def.tacz.attachments);
                     }
                 }
                 return taczStack;
             }
         }
 
-        // Arme ZombieRool native (non-TacZ)
         ResourceLocation zrLoc = new ResourceLocation(
             def.id != null && def.id.contains(":") ? def.id : "zombierool:" + cleanId);
         Item zrItem = ForgeRegistries.ITEMS.getValue(zrLoc);
@@ -198,36 +229,26 @@ public class WeaponFacade {
             if (pap && zrItem instanceof IPackAPunchable papable) papable.applyPackAPunch(stack);
             return stack;
         }
+
         return ItemStack.EMPTY;
     }
 
     public static void applyTaczPap(ItemStack stack, WeaponSystem.Definition def) {
         CompoundTag tag = stack.getOrCreateTag();
         tag.putBoolean("zombierool:pap", true);
+
         if (def != null) {
             tag.putInt("GunCurrentAmmoCount", def.ammo.clip_size + def.pap.clip_bonus);
             setReserve(stack, def.ammo.max_reserve + def.pap.reserve_bonus);
 
-            if (def.tacz != null && def.tacz.pap_attachments != null
-                    && !def.tacz.pap_attachments.isEmpty()) {
-                CompoundTag attachments = tag.contains("GunCurrentAttachment")
-                    ? tag.getCompound("GunCurrentAttachment") : new CompoundTag();
-                for (Map.Entry<String, String> entry : def.tacz.pap_attachments.entrySet()) {
-                    CompoundTag att = new CompoundTag();
-                    att.putString("AttachmentId", entry.getValue());
-                    attachments.put(formatAttachmentType(entry.getKey()), att);
-                }
-                tag.put("GunCurrentAttachment", attachments);
+            if (def.tacz != null && def.tacz.pap_attachments != null && !def.tacz.pap_attachments.isEmpty()) {
+                applyTaczAttachments(tag, def.tacz.pap_attachments);
             }
         } else {
             tag.putInt("GunCurrentAmmoCount", 60);
             setReserve(stack, 240);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Pack-A-Punch
-    // ─────────────────────────────────────────────────────────────────────────────
 
     public static boolean isPackAPunched(ItemStack stack) {
         if (stack.getItem() instanceof IPackAPunchable pap) return pap.isPackAPunched(stack);
@@ -246,10 +267,6 @@ public class WeaponFacade {
         return false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Accesseurs munitions
-    // ─────────────────────────────────────────────────────────────────────────────
-
     public static int getAmmo(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getAmmo(stack);
         if (isTaczWeapon(stack)) return stack.getOrCreateTag().getInt("GunCurrentAmmoCount");
@@ -258,25 +275,30 @@ public class WeaponFacade {
 
     public static void setAmmo(ItemStack stack, int ammo) {
         if (stack.getItem() instanceof IReloadable r) r.setAmmo(stack, ammo);
-        else if (isTaczWeapon(stack)) stack.getOrCreateTag().putInt("GunCurrentAmmoCount", ammo);
+        else if (isTaczWeapon(stack)) stack.getOrCreateTag().putInt("GunCurrentAmmoCount", Math.max(0, ammo));
     }
 
     public static int getReserve(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getReserve(stack);
-        if (isTaczWeapon(stack)) return stack.getOrCreateTag().getInt("zombierool:Reserve");
+        if (isTaczWeapon(stack)) return stack.getOrCreateTag().getInt("DummyAmmo");
         return 0;
     }
 
     public static void setReserve(ItemStack stack, int reserve) {
-        if (stack.getItem() instanceof IReloadable r) r.setReserve(stack, reserve);
-        else if (isTaczWeapon(stack)) stack.getOrCreateTag().putInt("zombierool:Reserve", reserve);
+        if (stack.getItem() instanceof IReloadable r) {
+            r.setReserve(stack, reserve);
+        } else if (isTaczWeapon(stack)) {
+            stack.getOrCreateTag().putInt("DummyAmmo", Math.max(0, reserve));
+            WeaponSystem.Definition def = getDefinition(stack);
+            int max = def != null ? (isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve) : 9999;
+            stack.getOrCreateTag().putInt("MaxDummyAmmo", max);
+        }
     }
 
     public static int getMaxAmmo(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getMaxAmmo(stack);
         WeaponSystem.Definition def = getDefinition(stack);
-        if (def != null) return isPackAPunched(stack)
-            ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size;
+        if (def != null) return isPackAPunched(stack) ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size;
         if (isTaczWeapon(stack) && stack.getOrCreateTag().getBoolean("zombierool:unmapped"))
             return isPackAPunched(stack) ? 60 : 30;
         return 0;
@@ -285,28 +307,13 @@ public class WeaponFacade {
     public static int getMaxReserve(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getMaxReserve(stack);
         WeaponSystem.Definition def = getDefinition(stack);
-        if (def != null) return isPackAPunched(stack)
-            ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve;
+        if (def != null) return isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve;
         if (isTaczWeapon(stack) && stack.getOrCreateTag().getBoolean("zombierool:unmapped"))
             return isPackAPunched(stack) ? 240 : 120;
         return 0;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Refill (Max Ammo, Ammo Box) — AVEC verrou de synchronisation
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Recharge toutes les armes TacZ du joueur à leur maximum.
-     *
-     * <p>On pose un verrou de 3 ticks AVANT de toucher les munitions pour s'assurer
-     * que syncDummyAmmo ne va pas interpréter la divergence comme un tir TacZ et
-     * déduire à tort de la réserve.</p>
-     */
     public static void refillAllTaczAmmo(Player player) {
-        // Verrou posé AVANT la modification → syncDummyAmmo sautera la déduction
-        TacZIntegration.markSyncLock(player, 3);
-
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (isTaczWeapon(stack)) {
@@ -314,48 +321,32 @@ public class WeaponFacade {
                 setReserve(stack, getMaxReserve(stack));
             }
         }
-        // Recalcul immédiat des dummy (synchronisation forcée)
-        TacZIntegration.syncDummyAmmo(player);
     }
 
-    /**
-     * Recharge uniquement l'arme tenue en main.
-     */
     public static void refillHeldTaczAmmo(Player player, ItemStack stack) {
         if (!isTaczWeapon(stack)) return;
-
-        TacZIntegration.markSyncLock(player, 3);
         setAmmo(stack, getMaxAmmo(stack));
         setReserve(stack, getMaxReserve(stack));
-        TacZIntegration.syncDummyAmmo(player);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Projectile custom (roquettes / rayguns)
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    public static void shootCustomTaczProjectile(ServerPlayer player, ItemStack stack,
-                                                  WeaponSystem.Definition def) {
-        boolean isPap     = isPackAPunched(stack);
-        float   damage    = def.stats.damage + (isPap ? def.pap.damage_bonus : 0);
-        float   spread    = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
-        float   velocity  = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity;
-        int     count     = (isPap && def.pap.pellet_count_override > 0)
-                                ? def.pap.pellet_count_override : def.ballistics.count;
-        int     penetration = def.stats.penetration + (isPap ? def.pap.penetration_bonus : 0);
+    public static void shootCustomTaczProjectile(ServerPlayer player, ItemStack stack, WeaponSystem.Definition def) {
+        boolean isPap = isPackAPunched(stack);
+        float damage = def.stats.damage + (isPap ? def.pap.damage_bonus : 0);
+        float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
+        float velocity = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity;
+        int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
+        int penetration = def.stats.penetration + (isPap ? def.pap.penetration_bonus : 0);
 
         for (int i = 0; i < count; i++) {
             Arrow projectile = new Arrow(player.level(), player);
-            projectile.setBaseDamage(0); // Les dégâts sont gérés dans le handler d'impact
+            projectile.setBaseDamage(0); 
 
-            Vec3 eyePos  = player.getEyePosition(1.0F);
-            Vec3 look    = player.getViewVector(1.0F);
-            Vec3 right   = look.cross(new Vec3(0, 1, 0)).normalize();
-            Vec3 up      = right.cross(look).normalize();
-            Vec3 startPos = eyePos
-                .add(right.scale(0.45f))
-                .add(up.scale(-0.35))
-                .add(look.scale(0.6));
+            Vec3 eyePos = player.getEyePosition(1.0F);
+            Vec3 look = player.getViewVector(1.0F);
+            Vec3 right = look.cross(new Vec3(0, 1, 0)).normalize();
+            Vec3 up = right.cross(look).normalize();
+
+            Vec3 startPos = eyePos.add(right.scale(0.45f)).add(up.scale(-0.35)).add(look.scale(0.6));
             projectile.setPos(startPos.x, startPos.y, startPos.z);
 
             float yaw = player.getYRot();
@@ -363,6 +354,7 @@ public class WeaponFacade {
                 if (i == 0) yaw -= 10.0f;
                 else if (i == 2) yaw += 10.0f;
             }
+
             projectile.shootFromRotation(player, player.getXRot(), yaw, 0.0F, velocity, spread);
             projectile.setSilent(true);
             projectile.pickup = AbstractArrow.Pickup.DISALLOWED;
@@ -377,35 +369,27 @@ public class WeaponFacade {
 
             if (def.explosion != null && (!def.explosion.pap_only || isPap)) {
                 nbt.putBoolean("zombierool:explosive", true);
-                nbt.putFloat("zr_exp_radius",
-                    def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0));
-                nbt.putFloat("zr_exp_dmg_mult",   def.explosion.damage_multiplier);
-                nbt.putFloat("zr_exp_self_mult",  def.explosion.self_damage_multiplier);
-                nbt.putFloat("zr_exp_self_cap",   def.explosion.self_damage_cap);
-                nbt.putFloat("zr_exp_kb",         def.explosion.knockback);
-                nbt.putString("zr_exp_vfx",       def.explosion.vfx_type);
-                nbt.putString("zr_exp_sound",     def.explosion.sound);
+                nbt.putFloat("zr_exp_radius", def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0));
+                nbt.putFloat("zr_exp_dmg_mult", def.explosion.damage_multiplier);
+                nbt.putFloat("zr_exp_self_mult", def.explosion.self_damage_multiplier);
+                nbt.putFloat("zr_exp_self_cap", def.explosion.self_damage_cap);
+                nbt.putFloat("zr_exp_kb", def.explosion.knockback);
+                nbt.putString("zr_exp_vfx", def.explosion.vfx_type);
+                nbt.putString("zr_exp_sound", def.explosion.sound);
             }
 
             if (!def.ballistics.gravity) projectile.setNoGravity(true);
             player.level().addFreshEntity(projectile);
         }
 
-        // Son de tir
         String soundId = isPap ? def.sounds.fire_pap : def.sounds.fire;
         if (soundId != null && !soundId.isEmpty()) {
-            net.minecraft.sounds.SoundEvent evt =
-                ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(soundId));
+            net.minecraft.sounds.SoundEvent evt = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(soundId));
             if (evt != null) {
-                player.level().playSound(null, player.blockPosition(), evt,
-                    SoundSource.PLAYERS, 1f, 1f);
+                player.level().playSound(null, player.blockPosition(), evt, SoundSource.PLAYERS, 1f, 1f);
             }
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Divers
-    // ─────────────────────────────────────────────────────────────────────────────
 
     public static void clearCache() {
         unmappedTaczGunsCache = null;

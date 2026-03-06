@@ -3,7 +3,6 @@ package me.cryo.zombierool.core.manager;
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.api.IHeadshotWeapon;
-import me.cryo.zombierool.api.IPackAPunchable;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.core.system.WeaponSystem;
@@ -58,7 +57,6 @@ public class DamageManager {
                     }
                 }
             }
-
             damage = (baseGunDamage + flatBonus) * globalMultiplier;
         }
 
@@ -103,19 +101,18 @@ public class DamageManager {
         if (!(attackerEntity instanceof ServerPlayer player)) return;
 
         int points = 50; 
-
         boolean isGunDamage = target.getPersistentData().getBoolean(GUN_DAMAGE_TAG);
         boolean isHeadshot = target.getPersistentData().getBoolean(HEADSHOT_TAG);
         boolean isExplosive = target.getPersistentData().getBoolean("zombierool:explosive_damage");
 
-        if (isExplosive) {
-            points = 50;
-        } else if (isGunDamage) {
+        if (isGunDamage) {
             if (isHeadshot) {
                 points = 100;
             } else {
                 points = 50;
             }
+        } else if (isExplosive) {
+            points = 50;
         } else if (source.getDirectEntity() instanceof Player) {
             points = 130;
         }

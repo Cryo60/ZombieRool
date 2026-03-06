@@ -38,6 +38,7 @@ public class WeaponEventHandler {
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
+
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.screen != null) return;
 
@@ -56,7 +57,7 @@ public class WeaponEventHandler {
 
                 if (!(gun instanceof WeaponImplementations.MeleeWeaponItem) && !(gun instanceof PlasmaPistolItem)) {
                     long now = mc.level.getGameTime();
-                    
+
                     if (gun.isAkimbo(stack)) {
                         if (attackDown) {
                             long lastFireLeft = stack.getOrCreateTag().getLong("LastFireLeftClient");
@@ -92,10 +93,12 @@ public class WeaponEventHandler {
 
         private static void applyRecoil(Player player, WeaponSystem.BaseGunItem gun, ItemStack stack) {
             float pitchRecoil = gun.getDefinition().recoil.pitch;
+            float yawRecoil = gun.getDefinition().recoil.yaw;
             if (gun.isPackAPunched(stack)) {
                 pitchRecoil *= gun.getDefinition().pap.recoil_mult;
+                yawRecoil *= gun.getDefinition().pap.recoil_mult;
             }
-            player.setXRot(player.getXRot() - pitchRecoil);
+            player.turn((player.getRandom().nextBoolean() ? 1 : -1) * yawRecoil, -pitchRecoil);
         }
 
         @SubscribeEvent
@@ -138,18 +141,19 @@ public class WeaponEventHandler {
 
                         float equipProgress = event.getEquipProgress();
                         float swingProgress = event.getSwingProgress();
-                        
+
                         float f = -0.4F * Mth.sin(Mth.sqrt(swingProgress) * (float)Math.PI);
                         float f1 = 0.2F * Mth.sin(Mth.sqrt(swingProgress) * ((float)Math.PI * 2F));
                         float f2 = -0.2F * Mth.sin(swingProgress * (float)Math.PI);
+
                         poseStack.translate(f, f1, f2);
                         poseStack.translate(-0.56F, -0.52F + equipProgress * -0.6F, -0.72F);
-                        
+
                         boolean isReloading = mainStack.getOrCreateTag().getBoolean(WeaponSystem.BaseGunItem.TAG_IS_RELOADING);
                         if (isReloading) {
                             poseStack.translate(0.0, -0.5, 0.0);
                         }
-                        
+
                         Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer().renderItem(
                             player,
                             mainStack,
@@ -159,7 +163,6 @@ public class WeaponEventHandler {
                             event.getMultiBufferSource(),
                             event.getPackedLight()
                         );
-                        
                         poseStack.popPose();
                     }
                 }
