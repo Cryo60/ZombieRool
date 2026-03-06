@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/basalt",
-    "particle": "zombierool:block/basalt"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/brick_stone"
+  }
 }

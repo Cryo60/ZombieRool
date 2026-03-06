@@ -1,8 +1,6 @@
 {
-  "parent": "block/leaves",
-  "textures": {
-    "all": "zombierool:block/grass_block_top",
-    "particle": "zombierool:block/grass_block_top"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/deco_grass"
+    }
 }

@@ -1,0 +1,8 @@
+{
+    "parent": "minecraft:block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/mesh",
+        "top": "zombierool:block/deco/mesh",
+        "side": "zombierool:block/deco/mesh"
+    }
+}

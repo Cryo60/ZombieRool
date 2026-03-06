@@ -1,13 +1,7 @@
 {
-  "variants": {
-    "type=bottom": {
-      "model": "zombierool:block/mesh"
-    },
-    "type=top": {
-      "model": "zombierool:block/mesh_top"
-    },
-    "type=double": {
-      "model": "zombierool:block/mesh_full"
+    "variants": {
+        "": {
+            "model": "zombierool:block/mesh"
+        }
     }
-  }
 }

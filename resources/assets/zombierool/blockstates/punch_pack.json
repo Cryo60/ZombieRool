@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/punch_pack"
+    "variants": {
+        "": {
+            "model": "zombierool:block/punch_pack"
+        }
     }
-  }
 }

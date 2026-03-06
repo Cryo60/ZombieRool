@@ -1,0 +1,8 @@
+{
+  "parent": "block/slab",
+  "textures": {
+    "bottom": "zombierool:block/deco/farmland",
+    "top": "zombierool:block/deco/farmland",
+    "side": "zombierool:block/deco/farmland"
+  }
+}

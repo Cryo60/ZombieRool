@@ -1,7 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "zombierool:block/black_iron_bars"
-  },
-  "render_type": "cutout"
-}

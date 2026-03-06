@@ -1,7 +1,9 @@
 {
-  "parent": "block/door_top_right",
-  "textures": {
-    "top": "zombierool:block/barricade3"
-  },
-  "render_type": "cutout"
+    "parent": "minecraft:block/door_top_right_open",
+    "textures": {
+        "bottom": "zombierool:block/door_wood_lower",
+        "top": "zombierool:block/barricade3",
+        "particle": "zombierool:block/barricade3"
+    },
+    "render_type": "cutout"
 }

@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/tile_block"
+    "variants": {
+        "": {
+            "model": "zombierool:block/tile_block"
+        }
     }
-  }
 }

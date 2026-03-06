@@ -1,8 +1,0 @@
-{
-  "parent": "block/fence_inventory",
-  "textures": {
-    "texture": "zombierool:block/oak",
-    "particle": "zombierool:block/oak"
-  },
-  "render_type": "solid"
-}

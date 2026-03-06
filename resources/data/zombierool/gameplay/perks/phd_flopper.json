@@ -1,0 +1,12 @@
+{
+  "id": "phd_flopper",
+  "name": "PHD Flopper",
+  "texture_path": "zombierool:textures/block/phd_flopper_perks_lower_texture.png",
+  "description_fr": "Résiste aux dégâts de chute, d'explosion et de feu. Les chutes créent une explosion sans briser de blocs.",
+  "description_en": "Resist fall, explosion, and fire damage. Falls create an explosion without breaking blocks.",
+  "skin_texture": "zombierool:phd_flopper_skin",
+  "sign_texture": "zombierool:phd_flopper_sign",
+  "effect_id": "zombierool:perks_effect_phd_flopper",
+  "duration": 2147483647,
+  "amplifier": 0
+}

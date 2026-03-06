@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/glass_tinted",
-    "particle": "zombierool:block/glass_tinted"
-  },
-  "render_type": "translucent"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/glass_tinted"
+    }
 }

@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/andesite_stone",
-    "particle": "zombierool:block/andesite_stone"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/perfected_andesite"
+  }
 }

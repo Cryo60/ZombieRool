@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/mud"
+    "variants": {
+        "": {
+            "model": "zombierool:block/mud"
+        }
     }
-  }
 }

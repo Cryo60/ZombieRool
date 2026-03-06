@@ -1,9 +1,8 @@
 {
   "parent": "block/inner_stairs",
   "textures": {
-    "bottom": "zombierool:block/woodplankszbr",
-    "top": "zombierool:block/woodplankszbr",
-    "side": "zombierool:block/woodplankszbr"
-  },
-  "render_type": "solid"
+    "bottom": "zombierool:block/deco/oak_planks",
+    "top": "zombierool:block/deco/oak_planks",
+    "side": "zombierool:block/deco/oak_planks"
+  }
 }

@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/glass_steel"
+    "variants": {
+        "": {
+            "model": "zombierool:block/glass_steel"
+        }
     }
-  }
 }

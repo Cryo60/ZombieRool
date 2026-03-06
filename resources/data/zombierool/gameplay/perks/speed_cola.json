@@ -1,0 +1,12 @@
+{
+  "id": "speed_cola",
+  "name": "Speed Cola",
+  "texture_path": "zombierool:textures/block/speedcola_perks_lower_texture.png",
+  "description_fr": "Recharge rapide et +20% en vitesse.",
+  "description_en": "Fast reload and +20% speed.",
+  "skin_texture": "zombierool:speed_cola_skin",
+  "sign_texture": "zombierool:speed_cola_sign",
+  "effect_id": "zombierool:perks_effect_speed_cola",
+  "duration": 2147483647,
+  "amplifier": 3
+}

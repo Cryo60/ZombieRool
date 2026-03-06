@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/cracked_shadowed_tiles_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/cracked_shadowed_tiles_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/cracked_shadowed_tiles"
+        }
+    }
+}

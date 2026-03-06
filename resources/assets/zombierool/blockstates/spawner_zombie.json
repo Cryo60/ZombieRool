@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/spawner_zombie"
+    "variants": {
+        "": {
+            "model": "zombierool:block/spawner_zombie"
+        }
     }
-  }
 }

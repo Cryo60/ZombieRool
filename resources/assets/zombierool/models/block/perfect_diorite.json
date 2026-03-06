@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/perfect_diorite",
-    "particle": "zombierool:block/perfect_diorite"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/perfect_diorite"
+    }
 }

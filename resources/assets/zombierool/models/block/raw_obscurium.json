@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/raw_obscurium",
-    "particle": "zombierool:block/raw_obscurium"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/raw_obscurium"
+    }
 }

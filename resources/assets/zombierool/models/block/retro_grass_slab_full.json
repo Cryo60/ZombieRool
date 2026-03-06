@@ -1,9 +1,0 @@
-{
-  "parent": "block/cube_bottom_top",
-  "textures": {
-    "bottom": "zombierool:block/top",
-    "top": "zombierool:block/top",
-    "side": "zombierool:block/top"
-  },
-  "render_type": "solid"
-}

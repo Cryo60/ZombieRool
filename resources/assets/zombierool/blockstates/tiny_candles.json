@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/tiny_candles"
+    "variants": {
+        "": {
+            "model": "zombierool:block/tiny_candles"
+        }
     }
-  }
 }

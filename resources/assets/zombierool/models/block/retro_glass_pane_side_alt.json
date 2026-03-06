@@ -1,8 +1,7 @@
 {
-  "parent": "block/template_glass_pane_side_alt",
-  "textures": {
-    "edge": "zombierool:block/glass",
-    "pane": "zombierool:block/glass"
-  },
-  "render_type": "cutout_mipped"
+    "parent": "minecraft:block/template_glass_pane_side_alt",
+    "textures": {
+        "edge": "zombierool:block/deco/retro_glass",
+        "pane": "zombierool:block/deco/retro_glass"
+    }
 }

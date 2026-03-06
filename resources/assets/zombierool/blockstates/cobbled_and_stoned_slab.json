@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/cobbled_and_stoned_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/cobbled_and_stoned_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/cobbled_and_stoned"
+        }
+    }
+}

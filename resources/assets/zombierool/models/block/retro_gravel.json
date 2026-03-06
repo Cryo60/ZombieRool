@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/gravel",
-    "particle": "zombierool:block/gravel"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/retro_gravel"
+    }
 }

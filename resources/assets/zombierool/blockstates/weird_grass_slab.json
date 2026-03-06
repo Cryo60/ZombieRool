@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/weird_grass_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/weird_grass_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/weird_grass"
+        }
+    }
+}

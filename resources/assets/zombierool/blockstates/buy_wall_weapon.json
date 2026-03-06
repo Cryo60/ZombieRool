@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/buy_wall_weapon"
+    "variants": {
+        "": {
+            "model": "zombierool:block/buy_wall_weapon"
+        }
     }
-  }
 }

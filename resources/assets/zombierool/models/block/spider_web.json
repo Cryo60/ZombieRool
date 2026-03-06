@@ -1,8 +1,6 @@
 {
-  "parent": "block/cross",
-  "textures": {
-    "cross": "zombierool:block/spider_web",
-    "particle": "zombierool:block/spider_web"
-  },
-  "render_type": "cutout"
+    "parent": "block/cross",
+    "textures": {
+        "cross": "zombierool:block/deco/spider_web"
+    }
 }

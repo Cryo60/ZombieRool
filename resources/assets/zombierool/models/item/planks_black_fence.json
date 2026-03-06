@@ -1,3 +1,6 @@
 {
-  "parent": "zombierool:block/planks_black_fence_inventory"
+    "parent": "block/fence_inventory",
+    "textures": {
+        "texture": "zombierool:block/deco/planks_black"
+    }
 }

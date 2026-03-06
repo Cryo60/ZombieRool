@@ -1,0 +1,8 @@
+{
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/carved_slate",
+        "top": "zombierool:block/deco/carved_slate",
+        "side": "zombierool:block/deco/carved_slate"
+    }
+}

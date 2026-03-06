@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/suspicious_haunted_planks",
-    "particle": "zombierool:block/suspicious_haunted_planks"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/suspicious_haunted_planks"
+    }
 }

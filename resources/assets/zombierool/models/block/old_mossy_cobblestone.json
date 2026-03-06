@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/cobbled_stone_mossy",
-    "particle": "zombierool:block/cobbled_stone_mossy"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/old_mossy_cobblestone"
+    }
 }

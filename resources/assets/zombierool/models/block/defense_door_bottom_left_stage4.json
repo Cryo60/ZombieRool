@@ -1,0 +1,9 @@
+{
+    "parent": "minecraft:block/door_bottom_left",
+    "textures": {
+        "bottom": "zombierool:block/door_wood_lower",
+        "top": "zombierool:block/barricade4",
+        "particle": "zombierool:block/barricade4"
+    },
+    "render_type": "cutout"
+}

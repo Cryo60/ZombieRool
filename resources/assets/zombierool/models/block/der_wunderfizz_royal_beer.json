@@ -1,0 +1,10 @@
+{
+  "parent": "zombierool:custom/der_wunderfizz",
+  "textures": {
+    "all": "zombierool:block/der_wunderfizz_item",
+    "particle": "zombierool:block/der_wunderfizz_item",
+    "0": "zombierool:block/der_wunderfizz_skin",
+    "1": "zombierool:block/perks_effect_royal_beer"
+  },
+  "render_type": "cutout"
+}

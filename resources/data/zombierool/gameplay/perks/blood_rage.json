@@ -1,0 +1,12 @@
+{
+  "id": "blood_rage",
+  "name": "Blood Rage",
+  "texture_path": "zombierool:textures/block/blood_rage_perks_lower_texture.png",
+  "description_fr": "Quand vous faites des dégâts, vous avez une chance de vous régénérer et d'obtenir des coeurs d'absorption.",
+  "description_en": "When you deal damage, you have a chance to regenerate and gain absorption hearts.",
+  "skin_texture": "zombierool:blood_rage_skin",
+  "sign_texture": "zombierool:blood_rage_sign",
+  "effect_id": "zombierool:perks_effect_blood_rage",
+  "duration": 2147483647,
+  "amplifier": 0
+}

@@ -1,0 +1,12 @@
+{
+  "id": "vulture",
+  "name": "Vulture Aid",
+  "texture_path": "zombierool:textures/block/vulture_perks_lower_texture.png",
+  "description_fr": "Donne des points extra, et a plus de chance de loot certains bonus.",
+  "description_en": "Gives extra points, and has a higher chance to loot certain bonuses.",
+  "skin_texture": "zombierool:vulture_skin",
+  "sign_texture": "zombierool:vulture_sign",
+  "effect_id": "zombierool:perks_effect_vulture",
+  "duration": 2147483647,
+  "amplifier": 0
+}

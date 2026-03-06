@@ -1,9 +1,8 @@
 {
-  "parent": "block/outer_stairs",
-  "textures": {
-    "bottom": "zombierool:block/pink",
-    "top": "zombierool:block/pink",
-    "side": "zombierool:block/pink"
-  },
-  "render_type": "solid"
+    "parent": "block/outer_stairs",
+    "textures": {
+        "bottom": "zombierool:block/deco/planks_pink",
+        "top": "zombierool:block/deco/planks_pink",
+        "side": "zombierool:block/deco/planks_pink"
+    }
 }

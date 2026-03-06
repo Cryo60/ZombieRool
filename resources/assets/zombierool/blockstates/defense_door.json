@@ -1,1416 +1,1444 @@
 {
-  "multipart": [
-    {
-      "when": {
-        "facing": "east",
-        "half": "lower",
-        "hinge": "left",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "lower",
-        "hinge": "left",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left_open",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "lower",
-        "hinge": "right",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "lower",
-        "hinge": "right",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right_open",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "lower",
-        "hinge": "left",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "lower",
-        "hinge": "left",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left_open"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "lower",
-        "hinge": "right",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "lower",
-        "hinge": "right",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right_open",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "lower",
-        "hinge": "left",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "lower",
-        "hinge": "left",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left_open",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "lower",
-        "hinge": "right",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "lower",
-        "hinge": "right",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right_open"
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "lower",
-        "hinge": "left",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "lower",
-        "hinge": "left",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_left_open",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "lower",
-        "hinge": "right",
-        "open": false
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "lower",
-        "hinge": "right",
-        "open": true
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_bottom_right_open",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage0"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage1"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage2"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage3"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage4"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage5"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage0",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage1",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage2",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage3",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage4",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage5",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage0"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage1"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage2"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage3"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage4"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage5"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage0",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage1",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage2",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage3",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage4",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage5",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage0",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage1",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage2",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage3",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage4",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage5",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage0"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage1"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage2"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage3"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage4"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage5"
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage0",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage1",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage2",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage3",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage4",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage5",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage0",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage1",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage2",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage3",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage4",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage5",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage0",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage1",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage2",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage3",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage4",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage5",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage0",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage1",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage2",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage3",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage4",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage5",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage0",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage1",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage2",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage3",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage4",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage5",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage0"
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage1"
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage2"
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage3"
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage4"
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage5"
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage0",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage1",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage2",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage3",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage4",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_stage5",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage0",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage1",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage2",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage3",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage4",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "left",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_left_open_stage5",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage0",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage1",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage2",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage3",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage4",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": false,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_stage5",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 0
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage0",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 1
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage1",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 2
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage2",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 3
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage3",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 4
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage4",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "half": "upper",
-        "hinge": "right",
-        "open": true,
-        "stage": 5
-      },
-      "apply": {
-        "model": "zombierool:block/defense_door_top_right_open_stage5",
-        "y": 90
-      }
+  "variants": {
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4_centered"
+    },
+    "centered=false,facing=north,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open",
+      "y": 90
+    },
+    "centered=true,facing=north,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open_centered"
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4_centered",
+      "y": 90
+    },
+    "centered=false,facing=east,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open",
+      "y": 180
+    },
+    "centered=true,facing=east,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open_centered",
+      "y": 90
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4_centered",
+      "y": 180
+    },
+    "centered=false,facing=south,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open",
+      "y": 270
+    },
+    "centered=true,facing=south,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open_centered",
+      "y": 180
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open"
+    },
+    "centered=true,facing=west,half=lower,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_bottom_right_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_stage0_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_stage1_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_stage2_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_stage3_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_stage4_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_left_open_stage0_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_left_open_stage1_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_left_open_stage2_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_left_open_stage3_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_left_open_stage4_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open"
+    },
+    "centered=true,facing=west,half=upper,hinge=left,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_left_open_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_stage0_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_stage1_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_stage2_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_stage3_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_stage4_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=false,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=0": {
+      "model": "zombierool:block/defense_door_top_right_open_stage0_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=1": {
+      "model": "zombierool:block/defense_door_top_right_open_stage1_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=2": {
+      "model": "zombierool:block/defense_door_top_right_open_stage2_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=3": {
+      "model": "zombierool:block/defense_door_top_right_open_stage3_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=4": {
+      "model": "zombierool:block/defense_door_top_right_open_stage4_centered",
+      "y": 270
+    },
+    "centered=false,facing=west,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open"
+    },
+    "centered=true,facing=west,half=upper,hinge=right,open=true,stage=5": {
+      "model": "zombierool:block/defense_door_top_right_open_centered",
+      "y": 270
     }
-  ]
+  }
 }

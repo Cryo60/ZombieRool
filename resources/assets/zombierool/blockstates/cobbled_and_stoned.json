@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/cobbled_and_stoned"
+    "variants": {
+        "": {
+            "model": "zombierool:block/cobbled_and_stoned"
+        }
     }
-  }
 }

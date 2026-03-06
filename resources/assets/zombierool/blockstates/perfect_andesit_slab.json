@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/perfect_andesit_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/perfect_andesit_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/perfect_andesit"
+        }
+    }
+}

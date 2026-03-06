@@ -1,0 +1,13 @@
+package me.cryo.zombierool.network;
+
+public enum InteractionType {
+	WALL_WEAPON,
+	OBSTACLE,
+	MYSTERY_BOX,
+	PERK,
+	WUNDERFIZZ_BUY,
+	WUNDERFIZZ_COLLECT,
+	PACK_A_PUNCH,
+	AMMO_CRATE,
+	REPAIR_BARRICADE
+}

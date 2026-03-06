@@ -1,9 +1,0 @@
-{
-  "parent": "block/cube_bottom_top",
-  "textures": {
-    "bottom": "zombierool:block/woodplankszbr",
-    "top": "zombierool:block/woodplankszbr",
-    "side": "zombierool:block/woodplankszbr"
-  },
-  "render_type": "solid"
-}

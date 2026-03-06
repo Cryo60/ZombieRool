@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/permafrost_grass_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/permafrost_grass_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/permafrost_grass"
+        }
+    }
+}

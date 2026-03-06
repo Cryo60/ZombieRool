@@ -1,8 +1,0 @@
-{
-  "parent": "block/template_wall_side",
-  "textures": {
-    "wall": "zombierool:block/stoneblocktext",
-    "particle": "zombierool:block/stoneblocktext"
-  },
-  "render_type": "solid"
-}

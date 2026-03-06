@@ -1,0 +1,12 @@
+{
+  "id": "mastodonte",
+  "name": "Juggernog",
+  "texture_path": "zombierool:textures/block/masto_perks_lower_texture.png",
+  "description_fr": "Résiste à la horde, +4 coeurs de vie en plus.",
+  "description_en": "Resist the horde, +4 extra hearts.",
+  "skin_texture": "zombierool:juggernog_skin",
+  "sign_texture": "zombierool:juggernog_sign",
+  "effect_id": "zombierool:perks_effect_mastodonte",
+  "duration": 2147483647,
+  "amplifier": 0
+}

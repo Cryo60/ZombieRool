@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/perfect_diorite"
+    "variants": {
+        "": {
+            "model": "zombierool:block/perfect_diorite"
+        }
     }
-  }
 }

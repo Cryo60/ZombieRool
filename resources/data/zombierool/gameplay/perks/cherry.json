@@ -1,0 +1,12 @@
+{
+  "id": "cherry",
+  "name": "Cherry",
+  "texture_path": "zombierool:textures/block/cherry_perks_lower_texture.png",
+  "description_fr": "Produit une décharge électrique autour du joueur lorsqu'il recharge son arme.",
+  "description_en": "Produces an electrical discharge around the player when reloading their weapon.",
+  "skin_texture": "zombierool:cherry_skin",
+  "sign_texture": "zombierool:cherry_sign",
+  "effect_id": "zombierool:perks_effect_cherry",
+  "duration": 2147483647,
+  "amplifier": 0
+}

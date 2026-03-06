@@ -1,0 +1,7 @@
+{
+  "id": "gold_rush",
+  "chance": 0.06,
+  "duration_ticks": 0,
+  "action_id": "gold_rush",
+  "particle_id": "zombierool:gold_rush"
+}

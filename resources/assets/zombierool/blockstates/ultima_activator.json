@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/ultima_activator"
+    "variants": {
+        "": {
+            "model": "zombierool:block/ultima_activator"
+        }
     }
-  }
 }

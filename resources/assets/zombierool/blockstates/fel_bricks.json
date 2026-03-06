@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/fel_bricks"
+    "variants": {
+        "": {
+            "model": "zombierool:block/fel_bricks"
+        }
     }
-  }
 }

@@ -1,0 +1,8 @@
+{
+    "parent": "block/outer_stairs",
+    "textures": {
+        "bottom": "zombierool:block/deco/fel_bricks",
+        "top": "zombierool:block/deco/fel_bricks",
+        "side": "zombierool:block/deco/fel_bricks"
+    }
+}

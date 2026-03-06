@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/obscurium"
+    "variants": {
+        "": {
+            "model": "zombierool:block/obscurium"
+        }
     }
-  }
 }

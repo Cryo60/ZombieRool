@@ -1,9 +1,8 @@
 {
   "parent": "block/slab_top",
   "textures": {
-    "bottom": "zombierool:block/square_floor",
-    "top": "zombierool:block/square_floor",
-    "side": "zombierool:block/square_floor"
-  },
-  "render_type": "solid"
+    "bottom": "zombierool:block/deco/square_floor",
+    "top": "zombierool:block/deco/square_floor",
+    "side": "zombierool:block/deco/square_floor"
+  }
 }

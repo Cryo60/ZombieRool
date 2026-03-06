@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/perfect_diorite_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/perfect_diorite_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/perfect_diorite"
+        }
+    }
+}

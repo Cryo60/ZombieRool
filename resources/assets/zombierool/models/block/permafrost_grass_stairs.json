@@ -1,0 +1,8 @@
+{
+  "parent": "block/stairs",
+  "textures": {
+    "bottom": "zombierool:block/deco/permafrost",
+    "top": "zombierool:block/deco/permafrost",
+    "side": "zombierool:block/deco/permafrost"
+  }
+}

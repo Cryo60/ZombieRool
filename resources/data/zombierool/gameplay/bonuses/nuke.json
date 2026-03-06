@@ -1,0 +1,7 @@
+{
+  "id": "nuke",
+  "chance": 0.01,
+  "duration_ticks": 0,
+  "action_id": "nuke",
+  "particle_id": "zombierool:nuke"
+}

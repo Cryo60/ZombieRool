@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/brick_iron"
+    "variants": {
+        "": {
+            "model": "zombierool:block/brick_iron"
+        }
     }
-  }
 }

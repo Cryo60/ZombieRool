@@ -1,7 +1,6 @@
 {
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "zombierool:block/door_wood_lower"
-  },
-  "render_type": "cutout"
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "zombierool:item/barricade_door"
+    }
 }

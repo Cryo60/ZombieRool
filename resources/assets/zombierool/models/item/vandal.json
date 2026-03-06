@@ -1,0 +1,14 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "zombierool:item/weapons/vandal"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "zombierool:is_pap": 1.0
+      },
+      "model": "zombierool:item/vandal_dragon"
+    }
+  ]
+}

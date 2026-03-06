@@ -1,0 +1,22 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"mystery_box_animation_open": {
+			"animation_length": 8.7083,
+			"bones": {
+				"group": {
+					"rotation": {
+						"0.0": [0, 0, 0],
+						"0.2917": [-90, 0, 0],
+						"8.0": {"pre": [-90, 0, 0], "post": [0, 0, 0]}
+					},
+					"position": {
+						"0.0": [0, 0, 0],
+						"0.2917": [0, 4, -3],
+						"8.0": {"pre": [0, 4, -3], "post": [0, 0, 0]}
+					}
+				}
+			}
+		}
+	}
+}

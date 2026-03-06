@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/planks_pink"
+    "variants": {
+        "": {
+            "model": "zombierool:block/planks_pink"
+        }
     }
-  }
 }

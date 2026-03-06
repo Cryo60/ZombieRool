@@ -1,8 +1,0 @@
-{
-  "parent": "block/fence_side",
-  "textures": {
-    "texture": "zombierool:block/black",
-    "particle": "zombierool:block/black"
-  },
-  "render_type": "solid"
-}

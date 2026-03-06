@@ -1,0 +1,24 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "zombierool:item/weapons/needler"
+  },
+  "overrides": [
+    {
+      "predicate": { "zombierool:ammo_stage": 1.0 },
+      "model": "zombierool:item/needler_empty_1"
+    },
+    {
+      "predicate": { "zombierool:ammo_stage": 2.0 },
+      "model": "zombierool:item/needler_empty_2"
+    },
+    {
+      "predicate": { "zombierool:ammo_stage": 3.0 },
+      "model": "zombierool:item/needler_empty_3"
+    },
+    {
+      "predicate": { "zombierool:ammo_stage": 4.0 },
+      "model": "zombierool:item/needler_empty_4"
+    }
+  ]
+}

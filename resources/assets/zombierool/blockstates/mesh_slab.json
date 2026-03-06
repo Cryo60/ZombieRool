@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/mesh_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/mesh_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/mesh"
+        }
+    }
+}

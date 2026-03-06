@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/retro_brick"
+    "variants": {
+        "": {
+            "model": "zombierool:block/retro_brick"
+        }
     }
-  }
 }

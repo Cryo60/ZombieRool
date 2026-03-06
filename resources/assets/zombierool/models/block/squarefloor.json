@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/square_floor",
-    "particle": "zombierool:block/square_floor"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/square_floor"
+  }
 }

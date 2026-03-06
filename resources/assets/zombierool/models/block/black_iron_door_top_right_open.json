@@ -1,8 +1,0 @@
-{
-  "parent": "block/door_top_right_open",
-  "textures": {
-    "bottom": "zombierool:block/black_iron_fences_2",
-    "top": "zombierool:block/black_iron_fences"
-  },
-  "render_type": "cutout"
-}

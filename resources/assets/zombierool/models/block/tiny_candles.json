@@ -1,8 +1,6 @@
 {
-  "parent": "block/cross",
-  "textures": {
-    "cross": "zombierool:block/tiny_candles",
-    "particle": "zombierool:block/tiny_candles"
-  },
-  "render_type": "cutout"
+    "parent": "block/cross",
+    "textures": {
+        "cross": "zombierool:block/deco/tiny_candles"
+    }
 }

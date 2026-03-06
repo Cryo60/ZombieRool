@@ -1,0 +1,12 @@
+{
+  "id": "double_tape",
+  "name": "Double Tap",
+  "texture_path": "zombierool:textures/block/dt_perks_lower_texture.png",
+  "description_fr": "Cadence de tir +33% et tire 2 balles pour le prix d'une.",
+  "description_en": "Fire rate +33% and shoots 2 bullets for the price of one.",
+  "skin_texture": "zombierool:double_tape_skin",
+  "sign_texture": "zombierool:double_tape_sign",
+  "effect_id": "zombierool:perks_effect_double_tape",
+  "duration": 2147483647,
+  "amplifier": 0
+}

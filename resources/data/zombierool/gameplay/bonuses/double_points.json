@@ -1,0 +1,7 @@
+{
+  "id": "double_points",
+  "chance": 0.04,
+  "duration_ticks": 900,
+  "action_id": "double_points",
+  "particle_id": "zombierool:double_points"
+}

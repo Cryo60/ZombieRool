@@ -1,0 +1,7 @@
+{
+  "id": "insta_kill",
+  "chance": 0.04,
+  "duration_ticks": 600,
+  "action_id": "insta_kill",
+  "particle_id": "zombierool:instakill"
+}

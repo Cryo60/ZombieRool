@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/planks_black_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/planks_black_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/planks_black"
+        }
+    }
+}

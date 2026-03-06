@@ -1,0 +1,7 @@
+{
+  "id": "wish",
+  "chance": 0.02,
+  "duration_ticks": 0,
+  "action_id": "wish",
+  "particle_id": "zombierool:wish"
+}

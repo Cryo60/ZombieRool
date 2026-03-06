@@ -1,0 +1,7 @@
+{
+  "id": "zombie_blood",
+  "chance": 0.02,
+  "duration_ticks": 200,
+  "action_id": "zombie_blood",
+  "particle_id": "zombierool:zombie_blood"
+}

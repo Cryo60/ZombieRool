@@ -1,6 +1,6 @@
 {
   "parent": "item/handheld",
   "textures": {
-    "layer0": "zombierool:item/golden_deagle"
+    "layer0": "zombierool:item/weapons/golden_deagle"
   }
 }

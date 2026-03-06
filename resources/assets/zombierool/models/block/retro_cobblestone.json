@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/retro_cobblestone",
-    "particle": "zombierool:block/retro_cobblestone"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/retro_cobblestone"
+    }
 }

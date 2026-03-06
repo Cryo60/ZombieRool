@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/mud_1",
-    "particle": "zombierool:block/mud_1"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/mud_2"
+  }
 }

@@ -1,0 +1,8 @@
+{
+    "parent": "block/outer_stairs",
+    "textures": {
+        "bottom": "zombierool:block/deco/perfect_granite",
+        "top": "zombierool:block/deco/perfect_granite",
+        "side": "zombierool:block/deco/perfect_granite"
+    }
+}

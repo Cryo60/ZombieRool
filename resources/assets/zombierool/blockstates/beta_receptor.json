@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/beta_receptor"
+    "variants": {
+        "": {
+            "model": "zombierool:block/beta_receptor"
+        }
     }
-  }
 }

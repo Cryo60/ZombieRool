@@ -1,7 +1,6 @@
 {
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "zombierool:block/glass_steel"
-  },
-  "render_type": "cutout_mipped"
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "zombierool:block/deco/glass_steel"
+    }
 }

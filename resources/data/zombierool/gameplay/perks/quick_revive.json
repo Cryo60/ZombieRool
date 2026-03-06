@@ -1,0 +1,12 @@
+{
+  "id": "quick_revive",
+  "name": "Quick Revive",
+  "texture_path": "zombierool:textures/block/quick_revive_perks_lower_texture.png",
+  "description_fr": "Se ranime plus vite.",
+  "description_en": "Revives faster.",
+  "skin_texture": "zombierool:quick_revive_skin",
+  "sign_texture": "zombierool:quick_revive_sign",
+  "effect_id": "zombierool:perks_effect_quick_revive",
+  "duration": 2147483647,
+  "amplifier": 0
+}

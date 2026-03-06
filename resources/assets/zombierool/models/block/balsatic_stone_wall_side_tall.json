@@ -1,8 +1,6 @@
 {
   "parent": "block/template_wall_side_tall",
   "textures": {
-    "wall": "zombierool:block/basalt",
-    "particle": "zombierool:block/basalt"
-  },
-  "render_type": "solid"
+    "wall": "zombierool:block/deco/brick_stone"
+  }
 }

@@ -1,0 +1,7 @@
+{
+  "id": "max_ammo",
+  "chance": 0.05,
+  "duration_ticks": 0,
+  "action_id": "max_ammo",
+  "particle_id": "zombierool:maxammo"
+}

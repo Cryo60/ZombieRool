@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/not_haunted_glass"
+    "variants": {
+        "": {
+            "model": "zombierool:block/not_haunted_glass"
+        }
     }
-  }
 }

@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/shadow_tiles"
+    "variants": {
+        "": {
+            "model": "zombierool:block/shadow_tiles"
+        }
     }
-  }
 }

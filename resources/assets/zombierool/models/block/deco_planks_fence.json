@@ -1,8 +1,0 @@
-{
-  "parent": "block/fence_side",
-  "textures": {
-    "texture": "zombierool:block/woodplankszbr",
-    "particle": "zombierool:block/woodplankszbr"
-  },
-  "render_type": "cutout"
-}

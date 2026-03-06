@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/retro_cobblestone"
+    "variants": {
+        "": {
+            "model": "zombierool:block/retro_cobblestone"
+        }
     }
-  }
 }

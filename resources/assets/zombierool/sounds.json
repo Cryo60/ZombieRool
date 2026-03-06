@@ -3295,26 +3295,6 @@
       }
     ]
   },
-  "saw_fire": {
-    "sounds": [
-      {
-        "name": "zombierool:h5_saw_1",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_saw_2",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_saw_3",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_saw_4",
-        "stream": false
-      }
-    ]
-  },
   "saw_reloading": {
     "sounds": [
       {
@@ -3339,30 +3319,6 @@
       },
       {
         "name": "zombierool:h5_storm_rifle_overheat_2",
-        "stream": false
-      }
-    ]
-  },
-  "storm_rifle_fire": {
-    "sounds": [
-      {
-        "name": "zombierool:h5_storm_1",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_storm_2",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_storm_3",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_storm_4",
-        "stream": false
-      },
-      {
-        "name": "zombierool:h5_storm_5",
         "stream": false
       }
     ]
@@ -4251,6 +4207,182 @@
       },
       {
         "name": "zombierool:crawl11",
+        "stream": false
+      }
+    ]
+  },
+  "weapon": {
+    "sounds": [
+      {
+        "name": "zombierool:weapon",
+        "stream": false
+      }
+    ]
+  },
+  "power": {
+    "sounds": [
+      {
+        "name": "zombierool:power",
+        "stream": false
+      }
+    ]
+  },
+  "wunderfizz_end": {
+    "sounds": [
+      {
+        "name": "zombierool:wunderfizz_end",
+        "stream": false
+      }
+    ]
+  },
+  "wunderfizz_loop": {
+    "sounds": [
+      {
+        "name": "zombierool:wunderfizz_loop",
+        "stream": false
+      }
+    ]
+  },
+  "wunderfizz_start": {
+    "sounds": [
+      {
+        "name": "zombierool:wunderfizz_start",
+        "stream": false
+      }
+    ]
+  },
+  "amb_spooky": {
+    "sounds": [
+      {
+        "name": "zombierool:amb_spooky_1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_5",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_6",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_7",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_8",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_9",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_10",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_11",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_12",
+        "stream": false
+      },
+      {
+        "name": "zombierool:amb_spooky_13",
+        "stream": false
+      }
+    ]
+  },
+  "amb_spooky_2d": {
+    "sounds": [
+      {
+        "name": "zombierool:amb_spooky_2d_1",
+        "stream": false
+      }
+    ]
+  },
+  "wall_snap": {
+    "sounds": [
+      {
+        "name": "zombierool:wall_snap_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:wall_snap_02",
+        "stream": false
+      },
+      {
+        "name": "zombierool:wall_snap_03",
+        "stream": false
+      },
+      {
+        "name": "zombierool:wall_snap_04",
+        "stream": false
+      },
+      {
+        "name": "zombierool:wall_snap_05",
+        "stream": false
+      }
+    ]
+  },
+  "heart_beat": {
+    "sounds": [
+      {
+        "name": "zombierool:heart_beat",
+        "stream": false
+      }
+    ]
+  },
+  "saw_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:h5_saw_1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_saw_2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_saw_3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_saw_4",
+        "stream": false
+      }
+    ]
+  },
+  "storm_rifle_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:h5_storm_1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_storm_2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_storm_3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:h5_storm_4",
         "stream": false
       }
     ]

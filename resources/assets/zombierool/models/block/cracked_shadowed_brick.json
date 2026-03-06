@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/cracked_shadowed_bricks",
-    "particle": "zombierool:block/cracked_shadowed_bricks"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/cracked_shadowed_bricks"
+  }
 }

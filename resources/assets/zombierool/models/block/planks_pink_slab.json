@@ -1,0 +1,8 @@
+{
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/planks_pink",
+        "top": "zombierool:block/deco/planks_pink",
+        "side": "zombierool:block/deco/planks_pink"
+    }
+}

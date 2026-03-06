@@ -1,0 +1,12 @@
+{
+  "id": "royal_beer",
+  "name": "Royal Beer",
+  "texture_path": "zombierool:textures/block/royalbeer_perks_lower_texture.png",
+  "description_fr": "Invoque un Chevalier pour vous protéger pendant 3 minutes.",
+  "description_en": "Summon a Knight to protect you for 3 minutes.",
+  "skin_texture": "zombierool:royal_beer_skin",
+  "sign_texture": "zombierool:royal_beer_sign",
+  "effect_id": "zombierool:perks_effect_royal_beer",
+  "duration": 3600,
+  "amplifier": 0
+}

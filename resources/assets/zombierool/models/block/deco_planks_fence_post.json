@@ -1,8 +1,6 @@
 {
   "parent": "block/fence_post",
   "textures": {
-    "texture": "zombierool:block/woodplankszbr",
-    "particle": "zombierool:block/woodplankszbr"
-  },
-  "render_type": "cutout"
+    "texture": "zombierool:block/deco/oak_planks"
+  }
 }

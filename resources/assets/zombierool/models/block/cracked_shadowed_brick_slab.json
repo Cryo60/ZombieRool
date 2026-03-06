@@ -1,0 +1,8 @@
+{
+  "parent": "block/slab",
+  "textures": {
+    "bottom": "zombierool:block/deco/cracked_shadowed_bricks",
+    "top": "zombierool:block/deco/cracked_shadowed_bricks",
+    "side": "zombierool:block/deco/cracked_shadowed_bricks"
+  }
+}

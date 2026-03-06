@@ -1,0 +1,8 @@
+{
+    "parent": "block/inner_stairs",
+    "textures": {
+        "bottom": "zombierool:block/deco/brick_iron",
+        "top": "zombierool:block/deco/brick_iron",
+        "side": "zombierool:block/deco/brick_iron"
+    }
+}

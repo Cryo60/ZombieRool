@@ -1,0 +1,96 @@
+{
+  "id": "zombierool:arc12",
+  "name": "ARC-12",
+  "type": "SHOTGUN",
+  "lore": [
+    "Fusil à pompe automatique",
+    "Chargeur tambour"
+  ],
+  "stats": {
+    "damage": 6.0,
+    "fire_rate": 6,
+    "range": 20.0,
+    "mobility": 1.0,
+    "penetration": 0,
+    "durability": 0,
+    "damage_reduction_on_pierce": true
+  },
+  "ammo": {
+    "clip_size": 12,
+    "max_reserve": 96,
+    "reload_time": 40,
+    "ammo_per_shot": 1,
+    "reload_type": "MAGAZINE"
+  },
+  "ballistics": {
+    "count": 7,
+    "spread": 3.2,
+    "velocity": 2.0,
+    "type": "BULLET",
+    "gravity": false,
+    "trail_vfx": "NONE",
+    "hitscan_vfx": "NONE"
+  },
+  "burst": {
+    "count": 1,
+    "delay": 0
+  },
+  "recoil": {
+    "pitch": 1.8,
+    "yaw": 0.4
+  },
+  "pack_a_punch": {
+    "name": "Gut Ripper",
+    "damage_bonus": 8.0,
+    "clip_bonus": 10,
+    "reserve_bonus": 80,
+    "reload_speed_mult": 0.8,
+    "spread_mult": 0.6,
+    "recoil_mult": 0.6,
+    "durability_bonus": 0,
+    "penetration_bonus": 0,
+    "incendiary": false,
+    "pellet_count_override": 0,
+    "burst_count_override": 0,
+    "burst_delay_override": 0,
+    "knockback_bonus": 0.0,
+    "headshot_threshold": 0.85,
+    "ricochet_count": 0
+  },
+  "headshot": {
+    "can_explode_head": true,
+    "head_explosion_chance": 0.3,
+    "base_bonus_damage": 0.0,
+    "pap_bonus_damage": 0.0
+  },
+  "sounds": {
+    "fire": "zombierool:ar_fire",
+    "fire_pap": "zombierool:gun_fire_upgraded",
+    "reload": "zombierool:ar_reloading",
+    "dry": "zombierool:rifle_dry",
+    "equip": "zombierool:weapon_in_hand",
+    "pump": ""
+  },
+  "scoped": {
+    "boolean": false,
+    "scope": "none",
+    "zoom": "1x"
+  },
+  "explosion": {
+    "radius": 0.0,
+    "damage_multiplier": 1.0,
+    "self_damage_multiplier": 0.15,
+    "self_damage_cap": 3.0,
+    "knockback": 0.4,
+    "vfx_type": "NONE",
+    "sound": "",
+    "pap_only": false
+  },
+  "is_wonder_weapon": false,
+  "tags": [
+    "call_of_duty",
+    "light",
+    "modern",
+    "shotgun"
+  ]
+}

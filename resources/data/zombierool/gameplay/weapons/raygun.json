@@ -1,0 +1,106 @@
+{
+  "id": "zombierool:raygun",
+  "name": "RAYGUN",
+  "type": "PISTOL",
+  "lore": [
+    "Wonder Weapon",
+    "Tir de plasma explosif",
+    "Attention: dégâts de zone au joueur"
+  ],
+  "stats": {
+    "damage": 10.0,
+    "fire_rate": 5,
+    "range": 100.0,
+    "mobility": 1.0,
+    "penetration": 0,
+    "durability": 0,
+    "damage_reduction_on_pierce": true
+  },
+  "ammo": {
+    "clip_size": 20,
+    "max_reserve": 160,
+    "reload_time": 50,
+    "ammo_per_shot": 1,
+    "reload_type": "MAGAZINE"
+  },
+  "ballistics": {
+    "count": 1,
+    "spread": 0.1,
+    "velocity": 7.0,
+    "type": "PROJECTILE",
+    "gravity": false,
+    "trail_vfx": "RAYGUN",
+    "hitscan_vfx": "NONE"
+  },
+  "burst": {
+    "count": 1,
+    "delay": 0
+  },
+  "recoil": {
+    "pitch": 0.3,
+    "yaw": 0.1
+  },
+  "pack_a_punch": {
+    "name": "Laser Pistol-Z",
+    "damage_bonus": 15.0,
+    "clip_bonus": 20,
+    "reserve_bonus": 80,
+    "reload_speed_mult": 0.8,
+    "spread_mult": 1.0,
+    "recoil_mult": 0.8,
+    "durability_bonus": 0,
+    "explosion_radius_bonus": 0.5,
+    "penetration_bonus": 0,
+    "incendiary": false,
+    "pellet_count_override": 0,
+    "burst_count_override": 0,
+    "burst_delay_override": 0,
+    "knockback_bonus": 0.0,
+    "headshot_threshold": 0.85,
+    "ricochet_count": 0
+  },
+  "headshot": {
+    "can_explode_head": true,
+    "head_explosion_chance": 0.3,
+    "base_bonus_damage": 0.0,
+    "pap_bonus_damage": 0.0
+  },
+  "sounds": {
+    "fire": "zombierool:laser_fire",
+    "fire_pap": "zombierool:gun_fire_upgraded",
+    "reload": "zombierool:laser_reloading",
+    "dry": "zombierool:rifle_dry",
+    "equip": "zombierool:weapon_in_hand",
+    "pump": ""
+  },
+  "scoped": {
+    "boolean": false,
+    "scope": "none",
+    "zoom": "1x"
+  },
+  "explosion": {
+    "radius": 2.5,
+    "damage_multiplier": 0.05,
+    "self_damage_multiplier": 0.1,
+    "self_damage_cap": 14.0,
+    "knockback": 0.0,
+    "vfx_type": "RAYGUN_IMPACT",
+    "sound": "",
+    "pap_only": false
+  },
+  "is_wonder_weapon": true,
+  "tags": [
+    "cod_zombies",
+    "explosive",
+    "group_935",
+    "light",
+    "pistol",
+    "sci_fi",
+    "wonder_weapon",
+    "tacz",
+    "tacz_elitex"
+  ],
+  "tacz": {
+    "gun_id": "elitex:raygun_bo6"
+  }
+}

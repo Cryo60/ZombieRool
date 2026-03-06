@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/sewer_brick",
-    "particle": "zombierool:block/sewer_brick"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/sewer_brick"
+  }
 }

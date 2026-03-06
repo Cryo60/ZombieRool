@@ -1,0 +1,8 @@
+{
+    "parent": "block/slab_top",
+    "textures": {
+        "bottom": "zombierool:block/deco/retro_gravel",
+        "top": "zombierool:block/deco/retro_gravel",
+        "side": "zombierool:block/deco/retro_gravel"
+    }
+}

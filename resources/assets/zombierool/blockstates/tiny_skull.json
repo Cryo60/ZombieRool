@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/tiny_skull"
+    "variants": {
+        "": {
+            "model": "zombierool:block/tiny_skull"
+        }
     }
-  }
 }

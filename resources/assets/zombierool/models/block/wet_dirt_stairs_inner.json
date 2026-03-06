@@ -1,0 +1,8 @@
+{
+    "parent": "block/inner_stairs",
+    "textures": {
+        "bottom": "zombierool:block/deco/wet_dirt",
+        "top": "zombierool:block/deco/wet_dirt",
+        "side": "zombierool:block/deco/wet_dirt"
+    }
+}

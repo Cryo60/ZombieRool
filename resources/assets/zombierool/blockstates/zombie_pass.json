@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/zombie_pass"
+    "variants": {
+        "": {
+            "model": "zombierool:block/zombie_pass"
+        }
     }
-  }
 }

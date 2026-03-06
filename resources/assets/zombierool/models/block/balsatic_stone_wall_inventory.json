@@ -1,8 +1,0 @@
-{
-  "parent": "block/wall_inventory",
-  "textures": {
-    "wall": "zombierool:block/basalt",
-    "particle": "zombierool:block/basalt"
-  },
-  "render_type": "solid"
-}

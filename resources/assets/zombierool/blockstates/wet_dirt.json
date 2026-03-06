@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/wet_dirt"
+    "variants": {
+        "": {
+            "model": "zombierool:block/wet_dirt"
+        }
     }
-  }
 }

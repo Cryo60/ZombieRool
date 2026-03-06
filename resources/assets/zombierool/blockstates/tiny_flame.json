@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/tiny_flame"
+    "variants": {
+        "": {
+            "model": "zombierool:block/tiny_flame"
+        }
     }
-  }
 }

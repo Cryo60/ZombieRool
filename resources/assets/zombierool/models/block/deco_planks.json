@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/woodplankszbr",
-    "particle": "zombierool:block/woodplankszbr"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/oak_planks"
+  }
 }

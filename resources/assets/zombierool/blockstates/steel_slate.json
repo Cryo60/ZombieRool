@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/steel_slate"
+    "variants": {
+        "": {
+            "model": "zombierool:block/steel_slate"
+        }
     }
-  }
 }

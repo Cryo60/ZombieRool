@@ -1,0 +1,7 @@
+{
+  "id": "on_the_house",
+  "chance": 0.01,
+  "duration_ticks": 0,
+  "action_id": "on_the_house",
+  "particle_id": "zombierool:on_the_house"
+}

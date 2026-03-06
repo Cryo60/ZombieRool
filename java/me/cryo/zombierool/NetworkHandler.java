@@ -1,0 +1,115 @@
+package me.cryo.zombierool.network;
+
+import me.cryo.zombierool.network.packet.SyncColdWaterStatePacket;
+import me.cryo.zombierool.SetWallWeaponConfigPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
+
+import java.util.Optional;
+
+import me.cryo.zombierool.network.packet.PlayGlobalSoundPacket;
+import me.cryo.zombierool.network.StopFourIsReadySoundPacket;
+import me.cryo.zombierool.network.MeleeAttackPacket;
+import me.cryo.zombierool.network.packet.SetEyeColorPacket;
+import me.cryo.zombierool.network.handler.SetEyeColorPacketHandler;
+import me.cryo.zombierool.network.ObstacleDoorGUIPacket;
+import me.cryo.zombierool.network.SetSpawnerChannelMessage;
+import me.cryo.zombierool.network.ReloadWeaponMessage;
+import me.cryo.zombierool.network.CaptureWallTexturePacket;
+import me.cryo.zombierool.network.SpecialWavePacket;
+import me.cryo.zombierool.network.SavePerksConfigMessage;
+import me.cryo.zombierool.network.PointGainPacket;
+import me.cryo.zombierool.network.PlayerDownPacket;
+import me.cryo.zombierool.network.PlayerRevivePacket;
+import me.cryo.zombierool.network.C2SReviveAttemptPacket;
+import me.cryo.zombierool.network.WaveUpdatePacket;
+import me.cryo.zombierool.network.PlayerPosePacket;
+import me.cryo.zombierool.network.DisplayHitmarkerPacket;
+import me.cryo.zombierool.network.RecoilPacket;
+import me.cryo.zombierool.network.ScreenShakePacket;
+import me.cryo.zombierool.network.ObstacleDoorCopyBlockPacket;
+import me.cryo.zombierool.network.BloodOverlayPacket;
+import me.cryo.zombierool.network.packet.StartGameAnimationPacket;
+import me.cryo.zombierool.network.packet.WaveChangeAnimationPacket;
+import me.cryo.zombierool.network.SyncBloodOverlaysPacket;
+import me.cryo.zombierool.network.NotifyPurchasePacket;
+import me.cryo.zombierool.MapEventManager;
+import me.cryo.zombierool.core.network.PacketShoot;
+import me.cryo.zombierool.network.packet.WeaponVfxPacket;
+import me.cryo.zombierool.network.packet.SetFogPresetPacket;
+import me.cryo.zombierool.network.packet.OpenConfigMenuPacket;
+import me.cryo.zombierool.network.packet.UpdateConfigPacket;
+import me.cryo.zombierool.network.packet.RequestConfigMenuPacket;
+import me.cryo.zombierool.network.packet.SyncWeatherPacket;
+
+@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+public class NetworkHandler {
+
+	private static boolean alreadyRegistered = false;
+	private static final String PROTOCOL_VERSION = "1";
+	public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation("zombierool", "main"), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
+
+	@SubscribeEvent
+	public static void register(FMLCommonSetupEvent event) {
+	    if (alreadyRegistered) return;
+	    alreadyRegistered = true;
+
+	    ResourcePackNetworkHandler.register();
+
+	    event.enqueueWork(() -> {
+	        int id = 0;
+	        INSTANCE.registerMessage(id++, C2SUnifiedInteractPacket.class, C2SUnifiedInteractPacket::encode, C2SUnifiedInteractPacket::decode, C2SUnifiedInteractPacket::handle);
+	        INSTANCE.registerMessage(id++, ObstacleDoorGUIPacket.class, ObstacleDoorGUIPacket::encode, ObstacleDoorGUIPacket::decode, ObstacleDoorGUIPacket::handle);
+	        INSTANCE.registerMessage(id++, SetSpawnerChannelMessage.class, SetSpawnerChannelMessage::encode, SetSpawnerChannelMessage::decode, SetSpawnerChannelMessage::handle);
+	        INSTANCE.registerMessage(id++, ReloadWeaponMessage.class, ReloadWeaponMessage::encode, ReloadWeaponMessage::decode, ReloadWeaponMessage::handler);
+	        INSTANCE.registerMessage(id++, SetWallWeaponConfigPacket.class, SetWallWeaponConfigPacket::encode, SetWallWeaponConfigPacket::decode, SetWallWeaponConfigPacket::handle);
+	        INSTANCE.registerMessage(id++, CaptureWallTexturePacket.class, CaptureWallTexturePacket::encode, CaptureWallTexturePacket::decode, CaptureWallTexturePacket::handle);
+	        INSTANCE.registerMessage(id++, SpecialWavePacket.class, SpecialWavePacket::encode, SpecialWavePacket::decode, SpecialWavePacket::handle);
+	        INSTANCE.registerMessage(id++, SavePerksConfigMessage.class, SavePerksConfigMessage::encode, SavePerksConfigMessage::decode, SavePerksConfigMessage::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+	        INSTANCE.registerMessage(id++, PointGainPacket.class, PointGainPacket::encode, PointGainPacket::decode, PointGainPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, PlayerDownPacket.class, PlayerDownPacket::encode, PlayerDownPacket::decode, PlayerDownPacket::handle);
+	        INSTANCE.registerMessage(id++, PlayerRevivePacket.class, PlayerRevivePacket::encode, PlayerRevivePacket::decode, PlayerRevivePacket::handle);
+	        INSTANCE.registerMessage(id++, C2SReviveAttemptPacket.class, C2SReviveAttemptPacket::encode, C2SReviveAttemptPacket::decode, C2SReviveAttemptPacket::handle);
+	        INSTANCE.registerMessage(id++, WaveUpdatePacket.class, WaveUpdatePacket::encode, WaveUpdatePacket::decode, WaveUpdatePacket::handle);
+	        INSTANCE.registerMessage(id++, PlayerPosePacket.class, PlayerPosePacket::encode, PlayerPosePacket::decode, PlayerPosePacket::handle);
+	        INSTANCE.registerMessage(id++, DisplayHitmarkerPacket.class, DisplayHitmarkerPacket::encode, DisplayHitmarkerPacket::decode, DisplayHitmarkerPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, RecoilPacket.class, RecoilPacket::encode, RecoilPacket::decode, RecoilPacket::handle);
+	        INSTANCE.registerMessage(id++, StopFourIsReadySoundPacket.class, StopFourIsReadySoundPacket::encode, StopFourIsReadySoundPacket::new, StopFourIsReadySoundPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, MeleeAttackPacket.class, MeleeAttackPacket::encode, MeleeAttackPacket::new, MeleeAttackPacket::handle);
+	        INSTANCE.registerMessage(id++, ScreenShakePacket.class, ScreenShakePacket::encode, ScreenShakePacket::new, ScreenShakePacket::handle);
+	        INSTANCE.registerMessage(id++, PlayGlobalSoundPacket.class, PlayGlobalSoundPacket::encode, PlayGlobalSoundPacket::decode, PlayGlobalSoundPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SetEyeColorPacket.class, SetEyeColorPacket::encode, SetEyeColorPacket::decode, SetEyeColorPacketHandler::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, ObstacleDoorCopyBlockPacket.class, ObstacleDoorCopyBlockPacket::encode, ObstacleDoorCopyBlockPacket::new, ObstacleDoorCopyBlockPacket::handle);
+	        INSTANCE.registerMessage(id++, SyncColdWaterStatePacket.class, SyncColdWaterStatePacket::encode, SyncColdWaterStatePacket::decode, SyncColdWaterStatePacket::handle);
+	        INSTANCE.registerMessage(id++, StartGameAnimationPacket.class, StartGameAnimationPacket::encode, StartGameAnimationPacket::decode, StartGameAnimationPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, WaveChangeAnimationPacket.class, WaveChangeAnimationPacket::encode, WaveChangeAnimationPacket::decode, WaveChangeAnimationPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, S2CAmmoCratePricePacket.class, S2CAmmoCratePricePacket::toBytes, S2CAmmoCratePricePacket::new, S2CAmmoCratePricePacket::handle);
+	        INSTANCE.registerMessage(id++, C2SRequestAmmoCrateInfoPacket.class, C2SRequestAmmoCrateInfoPacket::encode, C2SRequestAmmoCrateInfoPacket::new, C2SRequestAmmoCrateInfoPacket::handler);
+	        INSTANCE.registerMessage(id++, BloodOverlayPacket.class, BloodOverlayPacket::encode, BloodOverlayPacket::new, BloodOverlayPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncBloodOverlaysPacket.class, SyncBloodOverlaysPacket::encode, SyncBloodOverlaysPacket::new, SyncBloodOverlaysPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncWunderfizzStatePacket.class, SyncWunderfizzStatePacket::encode, SyncWunderfizzStatePacket::new, SyncWunderfizzStatePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, StartWunderfizzDrinkAnimationPacket.class, StartWunderfizzDrinkAnimationPacket::encode, StartWunderfizzDrinkAnimationPacket::new, StartWunderfizzDrinkAnimationPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, NotifyPurchasePacket.class, NotifyPurchasePacket::encode, NotifyPurchasePacket::decode, NotifyPurchasePacket::handle);
+	        INSTANCE.registerMessage(id++, MapEventManager.MapConfigPacket.class, MapEventManager.MapConfigPacket::encode, MapEventManager.MapConfigPacket::decode, MapEventManager.MapConfigPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, MapEventManager.PlaySoundPacket.class, MapEventManager.PlaySoundPacket::encode, MapEventManager.PlaySoundPacket::decode, MapEventManager.PlaySoundPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncActiveWunderfizzPositionPacket.class, SyncActiveWunderfizzPositionPacket::encode, SyncActiveWunderfizzPositionPacket::new, SyncActiveWunderfizzPositionPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, HalloweenConfigSyncPacket.class, HalloweenConfigSyncPacket::encode, HalloweenConfigSyncPacket::decode, HalloweenConfigSyncPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+	        INSTANCE.registerMessage(id++, PacketShoot.class, PacketShoot::encode, PacketShoot::decode, PacketShoot::handle);
+	        INSTANCE.registerMessage(id++, WeaponVfxPacket.class, WeaponVfxPacket::encode, WeaponVfxPacket::decode, WeaponVfxPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, SyncGorePacket.class, SyncGorePacket::encode, SyncGorePacket::decode, SyncGorePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, me.cryo.zombierool.network.VisualBlockCrackPacket.class, me.cryo.zombierool.network.VisualBlockCrackPacket::encode, me.cryo.zombierool.network.VisualBlockCrackPacket::new, me.cryo.zombierool.network.VisualBlockCrackPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncMapVisualsPacket.class, SyncMapVisualsPacket::encode, SyncMapVisualsPacket::decode, SyncMapVisualsPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SetFogPresetPacket.class, SetFogPresetPacket::encode, SetFogPresetPacket::decode, SetFogPresetPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncBlueFirePacket.class, SyncBlueFirePacket::encode, SyncBlueFirePacket::decode, SyncBlueFirePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, OpenConfigMenuPacket.class, OpenConfigMenuPacket::encode, OpenConfigMenuPacket::decode, OpenConfigMenuPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, UpdateConfigPacket.class, UpdateConfigPacket::encode, UpdateConfigPacket::decode, UpdateConfigPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+	        INSTANCE.registerMessage(id++, RequestConfigMenuPacket.class, RequestConfigMenuPacket::encode, RequestConfigMenuPacket::new, RequestConfigMenuPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+	        INSTANCE.registerMessage(id++, SyncWeatherPacket.class, SyncWeatherPacket::encode, SyncWeatherPacket::decode, SyncWeatherPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	    });
+	}
+}

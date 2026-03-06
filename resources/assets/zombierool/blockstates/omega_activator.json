@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/omega_activator"
+    "variants": {
+        "": {
+            "model": "zombierool:block/omega_activator"
+        }
     }
-  }
 }

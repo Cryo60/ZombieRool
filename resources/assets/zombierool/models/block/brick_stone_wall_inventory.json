@@ -1,8 +1,0 @@
-{
-  "parent": "block/wall_inventory",
-  "textures": {
-    "wall": "zombierool:block/brick_stone",
-    "particle": "zombierool:block/brick_stone"
-  },
-  "render_type": "solid"
-}

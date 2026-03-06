@@ -1,9 +1,8 @@
 {
-  "parent": "block/slab",
-  "textures": {
-    "bottom": "zombierool:block/brick_iron",
-    "top": "zombierool:block/brick_iron",
-    "side": "zombierool:block/brick_iron"
-  },
-  "render_type": "solid"
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/brick_iron",
+        "top": "zombierool:block/deco/brick_iron",
+        "side": "zombierool:block/deco/brick_iron"
+    }
 }

@@ -1,13 +1,9 @@
 {
-  "parent": "block/cube",
-  "textures": {
-    "down": "zombierool:block/machine_bot",
-    "up": "zombierool:block/machine_top",
-    "north": "zombierool:block/machine_front",
-    "east": "zombierool:block/machine_side",
-    "south": "zombierool:block/machine_side",
-    "west": "zombierool:block/machine_side",
-    "particle": "zombierool:block/machine_bot"
-  },
-  "render_type": "solid"
+    "parent": "block/orientable",
+    "textures": {
+        "top": "zombierool:block/deco/machine_side",
+        "bottom": "zombierool:block/deco/machine_side",
+        "side": "zombierool:block/deco/machine_side",
+        "front": "zombierool:block/deco/machine_front"
+    }
 }

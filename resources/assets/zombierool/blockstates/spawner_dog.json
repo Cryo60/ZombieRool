@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/spawner_dog"
+    "variants": {
+        "": {
+            "model": "zombierool:block/spawner_dog"
+        }
     }
-  }
 }

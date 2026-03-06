@@ -1,9 +1,8 @@
 {
-  "parent": "block/slab",
-  "textures": {
-    "bottom": "zombierool:block/top",
-    "top": "zombierool:block/top",
-    "side": "zombierool:block/top"
-  },
-  "render_type": "solid"
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/retro_grass",
+        "top": "zombierool:block/deco/retro_grass",
+        "side": "zombierool:block/deco/retro_grass"
+    }
 }

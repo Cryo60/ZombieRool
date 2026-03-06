@@ -1,9 +1,8 @@
 {
   "parent": "block/slab_top",
   "textures": {
-    "bottom": "zombierool:block/dirt_scorched",
-    "top": "zombierool:block/dirt_scorched",
-    "side": "zombierool:block/dirt_scorched"
-  },
-  "render_type": "solid"
+    "bottom": "zombierool:block/deco/dirt_scorched",
+    "top": "zombierool:block/deco/dirt_scorched",
+    "side": "zombierool:block/deco/dirt_scorched"
+  }
 }

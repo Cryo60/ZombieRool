@@ -1,0 +1,79 @@
+{
+    "parent": "minecraft:block/block",
+    "textures": {
+        "bottom": "zombierool:block/door_wood_lower",
+        "top": "zombierool:block/barricade2",
+        "particle": "zombierool:block/barricade2"
+    },
+    "render_type": "cutout",
+    "elements": [
+        {
+            "from": [
+                0,
+                0,
+                5
+            ],
+            "to": [
+                16,
+                16,
+                11
+            ],
+            "faces": {
+                "north": {
+                    "uv": [
+                        0,
+                        0,
+                        16,
+                        16
+                    ],
+                    "texture": "#top"
+                },
+                "south": {
+                    "uv": [
+                        0,
+                        0,
+                        16,
+                        16
+                    ],
+                    "texture": "#top"
+                },
+                "west": {
+                    "uv": [
+                        0,
+                        0,
+                        6,
+                        16
+                    ],
+                    "texture": "#top"
+                },
+                "east": {
+                    "uv": [
+                        0,
+                        0,
+                        6,
+                        16
+                    ],
+                    "texture": "#top"
+                },
+                "up": {
+                    "uv": [
+                        0,
+                        0,
+                        16,
+                        6
+                    ],
+                    "texture": "#top"
+                },
+                "down": {
+                    "uv": [
+                        0,
+                        0,
+                        16,
+                        6
+                    ],
+                    "texture": "#top"
+                }
+            }
+        }
+    ]
+}

@@ -1,8 +1,6 @@
 {
-  "parent": "block/template_wall_post",
-  "textures": {
-    "wall": "zombierool:block/retro_cobblestone",
-    "particle": "zombierool:block/retro_cobblestone"
-  },
-  "render_type": "solid"
+    "parent": "block/template_wall_post",
+    "textures": {
+        "wall": "zombierool:block/deco/retro_cobblestone"
+    }
 }

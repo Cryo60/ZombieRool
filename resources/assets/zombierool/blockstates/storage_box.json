@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/storage_box"
+    "variants": {
+        "": {
+            "model": "zombierool:custom/storage_box"
+        }
     }
-  }
 }

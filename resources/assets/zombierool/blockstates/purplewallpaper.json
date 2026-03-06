@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/purplewallpaper"
+    "variants": {
+        "": {
+            "model": "zombierool:block/purplewallpaper"
+        }
     }
-  }
 }

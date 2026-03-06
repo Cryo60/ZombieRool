@@ -1,3 +1,6 @@
 {
-  "parent": "zombierool:block/whitebrick_wall_inventory"
+  "parent": "block/wall_inventory",
+  "textures": {
+    "wall": "zombierool:block/deco/white_brick"
+  }
 }

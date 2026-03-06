@@ -1,8 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "zombierool:block/permafrost",
-    "particle": "zombierool:block/permafrost"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/deco/permafrost"
+  }
 }

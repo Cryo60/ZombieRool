@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/black_coarsed_dirt_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/black_coarsed_dirt_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/black_coarsed_dirt"
+        }
+    }
+}

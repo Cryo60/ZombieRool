@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/carved_stone"
+    "variants": {
+        "": {
+            "model": "zombierool:block/carved_stone"
+        }
     }
-  }
 }

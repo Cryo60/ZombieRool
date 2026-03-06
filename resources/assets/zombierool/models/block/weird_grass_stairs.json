@@ -1,0 +1,8 @@
+{
+  "parent": "block/stairs",
+  "textures": {
+    "bottom": "zombierool:block/deco/weird_grass_top",
+    "top": "zombierool:block/deco/weird_grass_top",
+    "side": "zombierool:block/deco/weird_grass_top"
+  }
+}

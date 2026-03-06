@@ -1,0 +1,7 @@
+{
+    "parent": "minecraft:block/template_glass_pane_noside",
+    "textures": {
+        "edge": "zombierool:block/deco/permaice",
+        "pane": "zombierool:block/deco/permaice"
+    }
+}

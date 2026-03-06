@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/perfected_granite"
+    "variants": {
+        "": {
+            "model": "zombierool:block/perfected_granite"
+        }
     }
-  }
 }

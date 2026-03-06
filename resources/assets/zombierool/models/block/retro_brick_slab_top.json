@@ -1,9 +1,8 @@
 {
   "parent": "block/slab_top",
   "textures": {
-    "bottom": "zombierool:block/brick_clay_retro",
-    "top": "zombierool:block/brick_clay_retro",
-    "side": "zombierool:block/brick_clay_retro"
-  },
-  "render_type": "solid"
+    "bottom": "zombierool:block/deco/sewer_brick",
+    "top": "zombierool:block/deco/sewer_brick",
+    "side": "zombierool:block/deco/sewer_brick"
+  }
 }

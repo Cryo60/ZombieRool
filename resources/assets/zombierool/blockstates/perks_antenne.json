@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/perks_antenne"
+    "variants": {
+        "": {
+            "model": "zombierool:block/perks_antenne"
+        }
     }
-  }
 }

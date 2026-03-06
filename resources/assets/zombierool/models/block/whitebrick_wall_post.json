@@ -1,8 +1,6 @@
 {
   "parent": "block/template_wall_post",
   "textures": {
-    "wall": "zombierool:block/white_brick",
-    "particle": "zombierool:block/white_brick"
-  },
-  "render_type": "solid"
+    "wall": "zombierool:block/deco/white_brick"
+  }
 }

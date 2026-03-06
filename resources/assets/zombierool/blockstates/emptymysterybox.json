@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/emptymysterybox"
+    "variants": {
+        "": {
+            "model": "zombierool:block/emptymysterybox"
+        }
     }
-  }
 }

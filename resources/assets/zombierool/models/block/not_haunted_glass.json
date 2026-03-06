@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/not_haunted_glass",
-    "particle": "zombierool:block/not_haunted_glass"
-  },
-  "render_type": "solid"
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "zombierool:block/deco/not_haunted_glass"
+    }
 }

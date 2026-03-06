@@ -1,9 +1,8 @@
 {
-  "parent": "block/slab",
-  "textures": {
-    "bottom": "zombierool:block/glass",
-    "top": "zombierool:block/glass",
-    "side": "zombierool:block/glass"
-  },
-  "render_type": "cutout_mipped"
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "zombierool:block/deco/retro_glass",
+        "top": "zombierool:block/deco/retro_glass",
+        "side": "zombierool:block/deco/retro_glass"
+    }
 }

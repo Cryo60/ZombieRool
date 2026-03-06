@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "zombierool:block/carved_slate_slab"
+        },
+        "type=top": {
+            "model": "zombierool:block/carved_slate_slab_top"
+        },
+        "type=double": {
+            "model": "zombierool:block/carved_slate"
+        }
+    }
+}

@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "zombierool:block/opaque_leaves"
+    "variants": {
+        "": {
+            "model": "zombierool:block/opaque_leaves"
+        }
     }
-  }
 }
