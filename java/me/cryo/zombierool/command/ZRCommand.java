@@ -7,7 +7,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-
 import me.cryo.zombierool.MysteryBoxManager;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.WaveManager;
@@ -30,8 +29,8 @@ import me.cryo.zombierool.network.packet.SetEyeColorPacket;
 import me.cryo.zombierool.network.packet.SetFogPresetPacket;
 import me.cryo.zombierool.network.packet.OpenConfigMenuPacket;
 import me.cryo.zombierool.network.packet.SyncWeatherPacket;
+import me.cryo.zombierool.network.packet.ReloadWeaponsPacket;
 import me.cryo.zombierool.event.ServerEventHandler;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -47,11 +46,13 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.ServerScoreboard;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
@@ -64,7 +65,6 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.nbt.CompoundTag;
 
 import java.util.*;
@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 public class ZRCommand {
 
 	private static boolean isEnglishClient(ServerPlayer player) {
+	    // TODO: Ideally check client locale via packets, returning true for now to avoid crashes on dedicated servers
 	    return true;
 	}
 
@@ -118,6 +119,16 @@ public class ZRCommand {
 	    event.getDispatcher().register(
 	        Commands.literal("zombierool")
 	            .requires(src -> src.hasPermission(REQUIRED_PERMISSION_LEVEL))
+                .then(Commands.literal("reload")
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        me.cryo.zombierool.core.system.WeaponSystem.Loader.loadWeapons();
+                        me.cryo.zombierool.integration.TacZIntegration.syncTaczGunData();
+                        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new ReloadWeaponsPacket());
+                        ctx.getSource().sendSuccess(() -> getTranslatedComponent(player, "Fichiers JSON des armes rechargés et synchronisés !", "Weapon JSON files reloaded and synced!").withStyle(ChatFormatting.GREEN), true);
+                        return 1;
+                    })
+                )
                 .then(Commands.literal("menu")
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -125,7 +136,6 @@ public class ZRCommand {
                         WorldConfig config = WorldConfig.get(level);
                         CompoundTag tag = new CompoundTag();
                         config.saveEditable(tag);
-
                         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player),
                             new OpenConfigMenuPacket(
                                 tag,
@@ -151,7 +161,7 @@ public class ZRCommand {
 	                        return 0;
 	                    }
 
-	                    ServerScoreboard scoreboard = level.getServer().getScoreboard();
+	                    net.minecraft.world.scores.Scoreboard scoreboard = level.getServer().getScoreboard();
 	                    Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID);
 	                    if (objective == null) {
 	                        objective = scoreboard.addObjective(
@@ -171,7 +181,6 @@ public class ZRCommand {
 	                    if (spawnerPositions.isEmpty()) {
 	                        throw ERROR_NO_SPAWNER_BLOCKS.create();
 	                    }
-
 	                    if (spawnerPositions.size() < players.size()) {
 	                        ctx.getSource().sendFailure(getTranslatedComponent(senderPlayer, "Pas assez de PlayerSpawnerBlock pour tous les joueurs en ligne !", "Not enough PlayerSpawnerBlocks for all online players!").withStyle(ChatFormatting.RED));
 	                        return 0;
@@ -179,16 +188,14 @@ public class ZRCommand {
 
 	                    Collections.shuffle(spawnerPositions);
 	                    WaveManager.PLAYER_RESPAWN_POINTS.clear();
-
 	                    ResourceLocation starterItemId = worldConfig.getStarterItem();
-	                    Item starterItem = BuiltInRegistries.ITEM.get(starterItemId);
-	                    if (starterItem == null) {
-	                        starterItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation("zombierool", "m1911"));
-	                        if (starterItem == null) {
-	                            starterItem = net.minecraft.world.item.Items.WOODEN_SWORD;
-	                        }
-	                    }
-	                    ItemStack starterItemStack = new ItemStack(starterItem);
+                        ItemStack starterItemStack = me.cryo.zombierool.core.system.WeaponFacade.createWeaponStack(starterItemId.toString(), false);
+                        
+                        if (starterItemStack.isEmpty()) {
+                            net.minecraft.world.item.Item starterItem = BuiltInRegistries.ITEM.get(starterItemId);
+                            if (starterItem == null) starterItem = net.minecraft.world.item.Items.WOODEN_SWORD;
+                            starterItemStack = new ItemStack(starterItem);
+                        }
 
 	                    for (int i = 0; i < players.size(); i++) {
 	                        ServerPlayer player = players.get(i);
@@ -253,14 +260,50 @@ public class ZRCommand {
 	                    return 1;
 	                })
 	            )
-
+				.then(Commands.literal("wallweapons")
+					.executes(ctx -> {
+						ServerPlayer player = ctx.getSource().getPlayerOrException();
+						ServerLevel level = player.serverLevel();
+						Direction playerFacing = player.getDirection();
+						Direction lineDirection = playerFacing.getClockWise();
+						
+						BlockPos startPos = player.blockPosition().relative(playerFacing, 2);
+						
+						List<String> weapons = new ArrayList<>(me.cryo.zombierool.core.system.WeaponSystem.Loader.LOADED_DEFINITIONS.keySet());
+						Collections.sort(weapons);
+						
+						int count = 0;
+						for (String weaponId : weapons) {
+							BlockPos currentPos = startPos.relative(lineDirection, count);
+							level.setBlock(currentPos, net.minecraft.world.level.block.Blocks.OAK_PLANKS.defaultBlockState(), 3);
+							
+							BlockPos weaponPos = currentPos.above();
+							BlockState wallState = me.cryo.zombierool.init.ZombieroolModBlocks.BUY_WALL_WEAPON.get().defaultBlockState()
+									.setValue(me.cryo.zombierool.block.BuyWallWeaponBlock.FACING, playerFacing.getOpposite());
+							level.setBlock(weaponPos, wallState, 3);
+							
+							BlockEntity be = level.getBlockEntity(weaponPos);
+							if (be instanceof me.cryo.zombierool.block.entity.BuyWallWeaponBlockEntity wallWeap) {
+								wallWeap.setItemToSell(new ResourceLocation("zombierool", weaponId));
+								wallWeap.setPrice(1);
+								wallWeap.setMimic(net.minecraft.world.level.block.Blocks.OAK_PLANKS.defaultBlockState());
+								wallWeap.setChanged();
+								level.sendBlockUpdated(weaponPos, wallState, wallState, 3);
+							}
+							count++;
+						}
+						
+						final int finalCount = count;
+						ctx.getSource().sendSuccess(() -> getTranslatedComponent(player, "§aGénération du mur d'armes terminée (" + finalCount + " armes).", "§aWall weapon generation complete (" + finalCount + " weapons)."), true);
+						return 1;
+					})
+				)
 	            .then(Commands.literal("scan")
 	                .then(Commands.argument("radius", IntegerArgumentType.integer(10, 10000)) 
 	                    .executes(ctx -> performScan(ctx, IntegerArgumentType.getInteger(ctx, "radius")))
 	                )
 	                .executes(ctx -> performScan(ctx, 10000)) 
 	            )
-
 	            .then(Commands.literal("points")
 	                 .then(Commands.literal("add")
 	                    .then(Commands.argument("targets", EntityArgument.players())
@@ -271,7 +314,7 @@ public class ZRCommand {
 	                                if (players.isEmpty()) return 0;
 
 	                                ServerLevel level = ctx.getSource().getLevel();
-	                                ServerScoreboard scoreboard = level.getServer().getScoreboard();
+	                                net.minecraft.world.scores.Scoreboard scoreboard = level.getServer().getScoreboard();
 	                                Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID);
 	                                 if (objective == null) {
 	                                    objective = scoreboard.addObjective(
@@ -288,7 +331,6 @@ public class ZRCommand {
 	                                    PointManager.modifyScore(player, amount);
 	                                    totalModified++;
 	                                }
-
 	                                final int finalTotalModified = totalModified;
 	                                ctx.getSource().sendSuccess(() -> getTranslatedComponent(null, "Ajout de " + amount + " points à " + finalTotalModified + " joueur(s).", "Added " + amount + " points to " + finalTotalModified + " player(s)."), true);
 	                                return finalTotalModified;
@@ -301,13 +343,11 @@ public class ZRCommand {
 	                        .executes(ctx -> {
 	                            Collection<ServerPlayer> players = EntityArgument.getPlayers(ctx, "targets");
 	                            if (players.isEmpty()) return 0;
-
 	                            int totalReset = 0;
 	                            for (ServerPlayer player : players) {
 	                                PointManager.setScore(player, DEFAULT_PLAYER_SCORE);
 	                                totalReset++;
 	                            }
-
 	                            final int finalTotalReset = totalReset;
 	                            ctx.getSource().sendSuccess(() -> getTranslatedComponent(null, "Points de " + finalTotalReset + " joueur(s) réinitialisés à " + DEFAULT_PLAYER_SCORE + ".", "Points of " + finalTotalReset + " player(s) reset to " + DEFAULT_PLAYER_SCORE + "."), true);
 	                            return finalTotalReset;
@@ -315,7 +355,6 @@ public class ZRCommand {
 	                    )
 	                )
 	            )
-
 	            .then(Commands.literal("end")
 	                .executes(ctx -> {
 	                    ServerLevel level = ctx.getSource().getLevel();
@@ -324,7 +363,7 @@ public class ZRCommand {
 	                    if (!WaveManager.isGameRunning()) {
 	                        throw ERROR_GAME_NOT_RUNNING_END.create();
 	                    }
-
+	                    
 	                    Component endMessage;
 	                    if (ctx.getSource().isPlayer()) {
 	                        endMessage = getTranslatedComponent(senderPlayer, "§cLa partie a été terminée par une commande.", "§cThe game was ended by a command.");
@@ -338,7 +377,6 @@ public class ZRCommand {
 	                    return 1;
 	                })
 	            )
-
 	            .then(Commands.literal("setWave")
 	                .then(Commands.argument("waveNumber", IntegerArgumentType.integer(MIN_WAVE_NUMBER))
 	                    .executes(ctx -> {
@@ -356,7 +394,6 @@ public class ZRCommand {
 	                    })
 	                )
 	            )
-	            
 	            .then(Commands.literal("bonus")
 	                 .then(Commands.argument("bonus_id", StringArgumentType.word())
 	                    .suggests((ctx, builder) -> {
@@ -368,9 +405,10 @@ public class ZRCommand {
 	                        ServerLevel level = ctx.getSource().getLevel();
 	                        ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
 	                        Vec3 spawnPos = ctx.getSource().getPosition();
-	                        String bonusIdString = StringArgumentType.getString(ctx, "bonus_id").toLowerCase(Locale.ROOT);
 
+	                        String bonusIdString = StringArgumentType.getString(ctx, "bonus_id").toLowerCase(Locale.ROOT);
                             BonusManager.Bonus bonus = null;
+
                             if (bonusIdString.equals("random")) {
                                 bonus = BonusManager.getRandomBonus(senderPlayer);
                             } else {
@@ -388,7 +426,6 @@ public class ZRCommand {
 	                    })
 	                 )
 	            )
-
                 .then(Commands.literal("perk")
                     .then(Commands.argument("perk_id", StringArgumentType.word())
                         .suggests((ctx, builder) -> {
@@ -439,7 +476,7 @@ public class ZRCommand {
                                     } else {
                                         perk = PerksManager.ALL_PERKS.get(perkIdString);
                                     }
-
+                                    
                                     if (perk != null) {
                                         perk.applyEffect(player);
                                         count++;
@@ -453,28 +490,27 @@ public class ZRCommand {
                         )
                     )
                 )
-
 	            .then(Commands.literal("locate")
 	                .then(Commands.literal("obstacle")
 	                    .executes(ctx -> {
 	                        ServerLevel level = ctx.getSource().getLevel();
 	                        Player player = ctx.getSource().getPlayerOrException();
 	                        Set<BlockPos> visited = new HashSet<>();
-
+	                        
 	                        for (BlockPos pos : BlockPos.betweenClosed(
 	                            player.blockPosition().offset(-OBSTACLE_SEARCH_RADIUS, MIN_VERTICAL_SEARCH_OFFSET, -OBSTACLE_SEARCH_RADIUS),
 	                            player.blockPosition().offset(OBSTACLE_SEARCH_RADIUS, MAX_VERTICAL_SEARCH_OFFSET, OBSTACLE_SEARCH_RADIUS))) {
 	                            
 	                            if (!level.isLoaded(pos)) continue;
-
 	                            BlockEntity be = level.getBlockEntity(pos);
+	                            
 	                            if (!(be instanceof ObstacleDoorBlockEntity obstacle) || visited.contains(pos)) continue;
-
+	                            
 	                            findAllConnectedDoors(level, pos, visited);
-
+	                            
 	                            String canal = obstacle.getCanal();
 	                            int prix = obstacle.getPrix();
-
+	                            
 	                            MutableComponent msg = getTranslatedComponent((ServerPlayer)player,
 	                                "Obstacle trouvé : " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + 
 	                                ". Canal : " + canal + ". Prix : " + prix,
@@ -492,7 +528,7 @@ public class ZRCommand {
 	                                    getTranslatedComponent((ServerPlayer)player, "Clique pour te téléporter", "Click to teleport")
 	                                ))
 	                            );
-
+	                            
 	                            player.sendSystemMessage(msg);
 	                        }
 	                        return 1;
@@ -507,17 +543,16 @@ public class ZRCommand {
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            Player player = ctx.getSource().getPlayerOrException();
 	                            List<MutableComponent> spawnerList = new ArrayList<>();
-
+	                            
 	                            for (BlockPos pos : BlockPos.betweenClosed(
 	                                player.blockPosition().offset(-SPAWNER_LOCATE_RADIUS, MIN_VERTICAL_SEARCH_OFFSET, -SPAWNER_LOCATE_RADIUS),
 	                                player.blockPosition().offset(SPAWNER_LOCATE_RADIUS, MAX_VERTICAL_SEARCH_OFFSET, SPAWNER_LOCATE_RADIUS))) {
 	                                
 	                                if (!level.isLoaded(pos)) continue;
-
 	                                BlockEntity be = level.getBlockEntity(pos);
 	                                boolean match = false;
 	                                String canal = "?";
-
+	                                
 	                                if (type.equals("zombie") && be instanceof SpawnerZombieBlockEntity z) {
 	                                    match = true;
 	                                    canal = String.valueOf(z.getCanal());
@@ -528,7 +563,7 @@ public class ZRCommand {
 	                                    match = true;
 	                                    canal = String.valueOf(d.getCanal());
 	                                }
-
+	                                
 	                                if (match) {
 	                                    MutableComponent spawnerInfo = Component.literal(
 	                                        pos.getX() + " " + pos.getY() + " " + pos.getZ())
@@ -544,7 +579,7 @@ public class ZRCommand {
 	                                                getTranslatedComponent((ServerPlayer)player, "Clique pour te téléporter", "Click to teleport")
 	                                            ))
 	                                        );
-
+	                                        
 	                                    spawnerList.add(
 	                                        Component.literal("- ")
 	                                            .append(spawnerInfo)
@@ -553,7 +588,7 @@ public class ZRCommand {
 	                                    );
 	                                }
 	                            }
-
+	                            
 	                            if (spawnerList.isEmpty()) {
 	                                player.sendSystemMessage(getTranslatedComponent((ServerPlayer)player, "Aucun spawner trouvé.", "No spawner found.")
 	                                    .withStyle(style -> style.withColor(ChatFormatting.RED)));
@@ -568,7 +603,6 @@ public class ZRCommand {
 	                    )
 	                )
 	            )
-
 	            .then(Commands.literal("config")
 	                .then(Commands.literal("fog")
                         .then(Commands.literal("preset")
@@ -586,14 +620,11 @@ public class ZRCommand {
                                     String preset = StringArgumentType.getString(ctx, "preset").toLowerCase(Locale.ROOT);
                                     ServerLevel level = ctx.getSource().getLevel();
                                     ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
                                     WorldConfig worldConfig = WorldConfig.get(level);
                                     worldConfig.setFogPreset(preset);
-
                                     NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SetFogPresetPacket(
                                         preset, 0, 0, 0, 0.5f, 18.0f
                                     ));
-
                                     ctx.getSource().sendSuccess(() -> getTranslatedComponent(senderPlayer, "Preset de brouillard défini sur '" + preset + "' pour tout le monde et sauvegardé.", "Fog preset set to '" + preset + "' for everyone and saved."), true);
                                     return 1;
                                 })
@@ -611,21 +642,17 @@ public class ZRCommand {
                                                     float b = FloatArgumentType.getFloat(ctx, "b");
                                                     float near = FloatArgumentType.getFloat(ctx, "near");
                                                     float far = FloatArgumentType.getFloat(ctx, "far");
-
                                                     ServerLevel level = ctx.getSource().getLevel();
                                                     WorldConfig config = WorldConfig.get(level);
-                                                    
                                                     config.setFogPreset("custom");
                                                     config.setCustomFogR(r);
                                                     config.setCustomFogG(g);
                                                     config.setCustomFogB(b);
                                                     config.setCustomFogNear(near);
                                                     config.setCustomFogFar(far);
-
                                                     NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SetFogPresetPacket(
                                                         "custom", r, g, b, near, far
                                                     ));
-
                                                     ctx.getSource().sendSuccess(() -> Component.literal("Custom fog set and saved."), true);
                                                     return 1;
                                                 })
@@ -643,15 +670,14 @@ public class ZRCommand {
 	                            String itemIdString = StringArgumentType.getString(ctx, "item_id");
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
 	                            ResourceLocation itemId = ResourceLocation.tryParse(itemIdString);
+	                            
 	                            if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
 	                                throw ERROR_INVALID_ITEM.create();
 	                            }
 
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setStarterItem(itemId);
-
 	                            ctx.getSource().sendSuccess(() -> getTranslatedComponent(senderPlayer, "Objet de démarrage défini sur '" + itemId.toString() + "' et sauvegardé.", "Starter item set to '" + itemId.toString() + "' and saved."), true);
 	                            return 1;
 	                        })
@@ -665,17 +691,17 @@ public class ZRCommand {
 	                            String mode = StringArgumentType.getString(ctx, "mode").toLowerCase(Locale.ROOT);
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            if (!Arrays.asList("day", "night", "cycle").contains(mode)) {
 	                                throw ERROR_INVALID_DAYNIGHT_MODE.create();
 	                            }
 
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setDayNightMode(mode);
-
+	                            
 	                            if (mode.equals("day")) level.setDayTime(6000);
                                 else if (mode.equals("night")) level.setDayTime(18000);
-
+	                            
 	                            String statusMessageFrench;
 	                            String statusMessageEnglish;
 	                            switch (mode) {
@@ -693,7 +719,7 @@ public class ZRCommand {
 	                                    statusMessageEnglish = "normal day/night cycle";
 	                                    break;
 	                            }
-	                            
+
 	                            ctx.getSource().sendSuccess(() -> getTranslatedComponent(senderPlayer, "Cycle jour/nuit défini sur '" + statusMessageFrench + "' et sauvegardé.", "Day/night cycle set to '" + statusMessageEnglish + "' and saved."), true);
 	                            return 1;
 	                        })
@@ -716,7 +742,7 @@ public class ZRCommand {
 	                                ServerLevel level = ctx.getSource().getLevel();
 	                                ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
 
-	                                Item wonderWeaponItem = BuiltInRegistries.ITEM.get(itemId);
+	                                net.minecraft.world.item.Item wonderWeaponItem = BuiltInRegistries.ITEM.get(itemId);
 	                                if (wonderWeaponItem == null || !MysteryBoxManager.WONDER_WEAPONS.contains(wonderWeaponItem)) {
 	                                    throw ERROR_INVALID_WONDER_WEAPON.create();
 	                                }
@@ -736,7 +762,7 @@ public class ZRCommand {
 	                                ServerLevel level = ctx.getSource().getLevel();
 	                                ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
 
-	                                Item wonderWeaponItem = BuiltInRegistries.ITEM.get(itemId);
+	                                net.minecraft.world.item.Item wonderWeaponItem = BuiltInRegistries.ITEM.get(itemId);
 	                                if (wonderWeaponItem == null || !MysteryBoxManager.WONDER_WEAPONS.contains(wonderWeaponItem)) {
 	                                    throw ERROR_INVALID_WONDER_WEAPON.create();
 	                                }
@@ -780,7 +806,6 @@ public class ZRCommand {
 
 	                                        WorldConfig worldConfig = WorldConfig.get(level);
 	                                        worldConfig.enableParticles(particleId, density, mode);
-	                                        
 	                                        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SyncWeatherPacket(true, particleId.toString(), density, mode));
 
 	                                        ctx.getSource().sendSuccess(() -> getTranslatedComponent(senderPlayer, "Particules de type '" + particleId.toString() + "' activées avec densité '" + density + "' et mode '" + mode + "' et sauvegardées.", "Particles of type '" + particleId.toString() + "' enabled with density '" + density + "' and mode '" + mode + "' and saved."), true);
@@ -826,7 +851,7 @@ public class ZRCommand {
 	                        .executes(ctx -> {
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.disableParticles();
                                 NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SyncWeatherPacket(false, "", "", ""));
@@ -844,14 +869,14 @@ public class ZRCommand {
 	                            String preset = StringArgumentType.getString(ctx, "preset").toLowerCase(Locale.ROOT);
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            if (!Arrays.asList("default", "illusion", "none").contains(preset)) {
 	                                throw ERROR_INVALID_MUSIC_PRESET.create();
 	                            }
 
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setMusicPreset(preset);
-
+	                            
 	                            level.getServer().getPlayerList().getPlayers().forEach(p -> {
 	                                p.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:" + preset), true);
 	                            });
@@ -885,7 +910,7 @@ public class ZRCommand {
 	                            boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setSuperSprintersEnabled(enabled);
 
@@ -900,10 +925,10 @@ public class ZRCommand {
 	                            boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setColdWaterEffectEnabled(enabled);
-
+	                            
 	                            level.getServer().getPlayerList().getPlayers().forEach(p -> {
 	                                p.sendSystemMessage(Component.literal("ZOMBIEROOL_COLDWATER_EFFECT:" + enabled), true);
 	                            });
@@ -921,14 +946,14 @@ public class ZRCommand {
 	                            String preset = StringArgumentType.getString(ctx, "preset").toLowerCase(Locale.ROOT);
 	                            ServerLevel level = ctx.getSource().getLevel();
 	                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-
+	                            
 	                            if (!Arrays.asList("uk", "us", "ru", "fr", "ger", "none").contains(preset)) {
 	                                throw ERROR_INVALID_VOICE_PRESET.create();
 	                            }
 
 	                            WorldConfig worldConfig = WorldConfig.get(level);
 	                            worldConfig.setVoicePreset(preset);
-
+	                            
 	                            level.getServer().getPlayerList().getPlayers().forEach(p -> {
 	                                p.sendSystemMessage(Component.literal("ZOMBIEROOL_VOICE_PRESET:" + preset), true);
 	                            });
@@ -952,17 +977,16 @@ public class ZRCommand {
 	        "Starting world scan... (Radius: " + radius + ")"));
 
 	    WorldConfig config = WorldConfig.get(level);
-
+	    
 	    int chunkRadius = (radius >> 4) + 1;
 	    int centerChunkX = center.getX() >> 4;
 	    int centerChunkZ = center.getZ() >> 4;
-
+	    
 	    int foundWunderfizz = 0;
 	    int foundMystery = 0;
 	    int foundPath = 0;
 	    int foundSwitch = 0;
 	    int foundSpawners = 0;
-
 	    int totalBlocksChecked = 0;
 
 	    int minX = center.getX() - radius;
@@ -986,7 +1010,7 @@ public class ZRCommand {
 	                int iterMaxX = Math.min(endBlockX, maxX);
 	                int iterMinZ = Math.max(startBlockZ, minZ);
 	                int iterMaxZ = Math.min(endBlockZ, maxZ);
-
+	                
 	                if (iterMinX > iterMaxX || iterMinZ > iterMaxZ) continue;
 
 	                for (int x = iterMinX; x <= iterMaxX; x++) {
@@ -994,9 +1018,8 @@ public class ZRCommand {
 	                        for (int y = minY; y <= maxY; y++) {
 	                            mutablePos.set(x, y, z);
 	                            BlockState state = level.getBlockState(mutablePos);
-	                            
 	                            if (state.isAir()) continue; 
-
+	                            
 	                            Block block = state.getBlock();
 	                            totalBlocksChecked++;
 
@@ -1034,7 +1057,7 @@ public class ZRCommand {
 	        "Scan terminé. Enregistré : " + finalPath + " chemins, " + finalWunder + " Wunderfizz, " + finalBox + " Boîtes, " + finalSwitch + " Leviers, " + finalSpawn + " Spawns.",
 	        "Scan complete. Registered: " + finalPath + " paths, " + finalWunder + " Wunderfizz, " + finalBox + " Boxes, " + finalSwitch + " Switches, " + finalSpawn + " Spawns."
 	    ).withStyle(ChatFormatting.GREEN), true);
-
+	    
 	    return 1;
 	}
 
@@ -1042,7 +1065,7 @@ public class ZRCommand {
 	    Queue<BlockPos> queue = new ArrayDeque<>();
 	    queue.add(startPos);
 	    visited.add(startPos);
-
+	    
 	    while (!queue.isEmpty()) {
 	        BlockPos cur = queue.poll();
 	        for (Direction dir : Direction.values()) {

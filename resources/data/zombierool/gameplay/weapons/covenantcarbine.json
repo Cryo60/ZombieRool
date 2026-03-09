@@ -92,6 +92,11 @@
     "covenant",
     "halo",
     "medium",
-    "sci_fi"
-  ]
+    "sci_fi",
+	"tacz",
+	"tacz_halor6"
+  ],
+  "tacz": {
+    "gun_id": "halor6:type-57b_carbine"
+  }
 }

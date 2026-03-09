@@ -100,6 +100,9 @@
   ],
   "tacz": {
     "gun_id": "mw_guns:mw_svd",
-    "ammo_id": "tacz:338"
+    "ammo_id": "tacz:338",
+    "attachments": {
+      "scope": "tacz:scope_mk5hd"
+    }
   }
 }

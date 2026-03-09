@@ -95,10 +95,10 @@
     "shotgun",
     "single_fire",
     "tacz",
-    "tacz_elitex"
+    "tacz_tacz"
   ],
   "tacz": {
-    "gun_id": "elitex:spaz12",
+    "gun_id": "tacz:spas_12",
     "ammo_id": "tacz:12g"
   }
 }

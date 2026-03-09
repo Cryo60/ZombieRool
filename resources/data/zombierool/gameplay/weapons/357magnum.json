@@ -1,14 +1,14 @@
 {
-  "id": "zombierool:glock",
-  "name": "GLOCK",
+  "id": "zombierool:357magnum",
+  "name": ".357 Magnum",
   "type": "PISTOL",
   "lore": [
     "Arme standard",
     "Statistiques importées"
   ],
   "stats": {
-    "damage": 5.0,
-    "fire_rate": 4,
+    "damage": 14.0,
+    "fire_rate": 12,
     "range": 100.0,
     "mobility": 1.0,
     "penetration": 0,
@@ -16,16 +16,16 @@
     "damage_reduction_on_pierce": true
   },
   "ammo": {
-    "clip_size": 17,
-    "max_reserve": 102,
-    "reload_time": 30,
+    "clip_size": 6,
+    "max_reserve": 60,
+    "reload_time": 60,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
   "ballistics": {
     "count": 1,
-    "spread": 1.0,
-    "velocity": 3.0,
+    "spread": 0.8,
+    "velocity": 3.5,
     "type": "BULLET",
     "gravity": false,
     "trail_vfx": "NONE",
@@ -36,17 +36,17 @@
     "delay": 0
   },
   "recoil": {
-    "pitch": 0.8,
-    "yaw": 0.4
+    "pitch": 8.0,
+    "yaw": 0.8
   },
   "pack_a_punch": {
-    "name": "G18: Full Auto",
-    "damage_bonus": 7.0,
+    "name": "Python",
+    "damage_bonus": 15.0,
     "clip_bonus": 0,
-    "reserve_bonus": 0,
+    "reserve_bonus": 30,
     "reload_speed_mult": 0.8,
-    "spread_mult": 0.5,
-    "recoil_mult": 0.5,
+    "spread_mult": 0.8,
+    "recoil_mult": 0.8,
     "durability_bonus": 0,
     "penetration_bonus": 0,
     "incendiary": false,
@@ -59,14 +59,14 @@
   },
   "headshot": {
     "can_explode_head": true,
-    "head_explosion_chance": 0.3,
+    "head_explosion_chance": 1.0,
     "base_bonus_damage": 0.0,
     "pap_bonus_damage": 0.0
   },
   "sounds": {
-    "fire": "zombierool:glock_fire",
+    "fire": "zombierool:troicinqsept_fire",
     "fire_pap": "zombierool:gun_fire_upgraded",
-    "reload": "zombierool:glock_reloading",
+    "reload": "zombierool:troicinqsept_reloading",
     "dry": "zombierool:rifle_dry",
     "equip": "zombierool:weapon_in_hand",
     "pump": ""
@@ -88,19 +88,16 @@
   },
   "is_wonder_weapon": false,
   "tags": [
-    "austria",
     "call_of_duty",
     "light",
     "modern",
     "pistol",
+    "single_fire",
     "tacz",
-    "tacz_tacz"
+    "tacz_ronmc"
   ],
   "tacz": {
-    "gun_id": "tacz:glock_17",
-    "ammo_id": "tacz:9mm",
-    "pap_attachments": {
-      "muzzle": "tacz:silencer"
-    }
+    "gun_id": "ronmc:357_magnum",
+    "ammo_id": "tacz:357mag"
   }
 }

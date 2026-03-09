@@ -7,6 +7,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -14,9 +16,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import me.cryo.zombierool.core.system.WeaponFacade;
+import me.cryo.zombierool.core.system.WeaponSystem;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ZombieSoundHandler {
+
     private static final SoundEvent GAME_MUSIC_DEFAULT = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_soundtrack"));
     private static final SoundEvent GAME_MUSIC_ILLUSION = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_soundtrack_illusion"));
     private static final SoundEvent MENU_MUSIC = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_music"));
@@ -36,10 +41,15 @@ public class ZombieSoundHandler {
     private static int fadeTickCount = 0;
 
     public static boolean isGamePausedClient = false;
+
     private static SimpleSoundInstance currentAmbientSound;
     private static boolean ambientSoundPlaying = false;
-    
+
     public static int tickCounter = 0;
+
+    private static final java.util.Set<String> OVERRIDE_SOUND_WEAPONS = java.util.Set.of(
+        "m40a3", "deagle", "kar98k", "barret", "fg42", "ppsh41", "intervention", "usp45", "m14", "m1garand", "gewehr43"
+    );
 
     @SubscribeEvent
     @OnlyIn(Dist.CLIENT)
@@ -47,6 +57,28 @@ public class ZombieSoundHandler {
         if (event.getSound() == null) return;
         SoundSource source = event.getSound().getSource();
         ResourceLocation soundLoc = event.getSound().getLocation();
+        
+        String path = soundLoc.getPath().toLowerCase();
+        String namespace = soundLoc.getNamespace().toLowerCase();
+        if ((namespace.equals("tacz") || namespace.equals("ww") || namespace.equals("elitex") || namespace.equals("hamster") || namespace.equals("ronmc") || namespace.equals("mw_guns") || namespace.equals("rainforest") || namespace.equals("halor6") || namespace.equals("valorant")) 
+            && (path.contains("fire") || path.contains("shoot"))) {
+            
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                Player closest = mc.level.getNearestPlayer(event.getSound().getX(), event.getSound().getY(), event.getSound().getZ(), 2.0, false);
+                if (closest != null) {
+                    ItemStack stack = closest.getMainHandItem();
+                    if (WeaponFacade.isTaczWeapon(stack)) {
+                        WeaponSystem.Definition def = WeaponFacade.getDefinition(stack);
+                        if (def != null && OVERRIDE_SOUND_WEAPONS.contains(def.id.replace("zombierool:", ""))) {
+                            if (def.sounds != null && def.sounds.fire != null && !def.sounds.fire.isEmpty()) {
+                                event.setSound(null); 
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (source == SoundSource.MUSIC &&
             !soundLoc.equals(GAME_MUSIC_DEFAULT.getLocation()) &&
@@ -69,7 +101,6 @@ public class ZombieSoundHandler {
 
     private static SoundEvent determineTargetMusic(Minecraft mc, SoundManager manager) {
         String targetMusicPreset;
-
         if (mc.level == null) { 
             targetMusicPreset = "menu";
         } else if (isGamePausedClient) { 
@@ -88,7 +119,6 @@ public class ZombieSoundHandler {
         } else if (targetMusicPreset.equals("none")) {
             targetMusic = null;
         }
-
         return targetMusic;
     }
 
@@ -101,9 +131,11 @@ public class ZombieSoundHandler {
         SoundManager manager = mc.getSoundManager();
 
         boolean musicStateChangedByFade = false;
+
         if (fadingOut || fadingIn) {
             fadeTickCount++;
             float newCalculatedVolume;
+
             if (fadingOut) {
                 newCalculatedVolume = targetMusicVolume * (1.0f - (float) fadeTickCount / FADE_TICKS);
                 if (newCalculatedVolume < 0.001f) {
@@ -214,7 +246,6 @@ public class ZombieSoundHandler {
     @OnlyIn(Dist.CLIENT)
     public static void onClientChatReceived(ClientChatReceivedEvent event) {
         String message = event.getMessage().getString();
-
         if (message.startsWith("ZOMBIEROOL_MUSIC_PRESET:")) {
             String[] parts = message.split(":");
             if (parts.length == 2) {

@@ -99,6 +99,7 @@
   ],
   "tacz": {
     "gun_id": "elitex:bo1_1911",
+    "pap_gun_id": "elitex:mustang_and_sally",
     "ammo_id": "tacz:45acp",
     "pap_attachments": {
       "muzzle": "tacz:compensator"

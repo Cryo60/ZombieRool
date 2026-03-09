@@ -25,12 +25,14 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientHUDHandler {
+
     private static long startGameAnimationStartTime = -1;
     private static int startGameAnimationWave = 0;
     private static final long START_ANIM_FADE_DURATION_TICKS = 40;
@@ -67,12 +69,36 @@ public class ClientHUDHandler {
     }
 
     @SubscribeEvent
+    public static void onRenderOverlayPre(RenderGuiOverlayEvent.Pre event) {
+        if (ClientSniperHandler.isScoping()) return; 
+
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (mc.level == null || player == null || mc.options.hideGui) return;
+
+        ItemStack mainHand = player.getMainHandItem();
+        if (WeaponFacade.isTaczWeapon(mainHand)) {
+            ResourceLocation overlayId = event.getOverlay().id();
+            
+            if (overlayId.getNamespace().equals("tacz")) {
+                event.setCanceled(true);
+            }
+            
+            if (overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.PLAYER_HEALTH.id()) ||
+                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.ARMOR_LEVEL.id()) ||
+                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.FOOD_LEVEL.id()) ||
+                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.AIR_LEVEL.id())) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
+    @SubscribeEvent
     public static void onRenderGuiPost(RenderGuiEvent.Post event) {
         if (ClientSniperHandler.isScoping()) return; 
 
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-
         if (mc.level == null || player == null || mc.options.hideGui) return;
 
         GuiGraphics gui = event.getGuiGraphics();
@@ -97,16 +123,20 @@ public class ClientHUDHandler {
         if (gainInfo != null) {
             long timeElapsed = mc.level.getGameTime() - gainInfo.timestamp;
             long displayDuration = 20; 
+
             if (timeElapsed < displayDuration) {
                 float progress = (float) timeElapsed / displayDuration;
                 float alpha = 1.0f - progress;
                 float offsetY = progress * 15.0f; 
+
                 int baseColor = gainInfo.amount >= 0 ? 0x00FF00 : 0xFF0000;
                 int color = ((int) (alpha * 255) << 24) | baseColor;
+
                 String gainText = (gainInfo.amount >= 0 ? "+" : "") + gainInfo.amount;
                 int scoreTextWidth = mc.font.width(scoreText);
                 int textX = 10 + scoreTextWidth + 5;
                 int textY = (int) (yPosTopLeft - offsetY);
+
                 gui.drawString(mc.font, gainText, textX, textY, color, true);
             }
         }
@@ -118,7 +148,6 @@ public class ClientHUDHandler {
         int spacingBetweenElements = 5;
         int drawY = height - bottomPadding;
         int textHeight = mc.font.lineHeight;
-
         int barHeight = 8;
         int barWidth = 80;
 
@@ -135,18 +164,8 @@ public class ClientHUDHandler {
 
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty() || !WeaponFacade.isWeapon(held)) return;
-        
-        WeaponSystem.Definition def = WeaponFacade.getDefinition(held);
-        if (def == null) return;
 
-        boolean isTacz = WeaponFacade.isTaczWeapon(held);
-
-        // For TacZ, we only render reserve ammo properly if it's available, but let's hide HUD if TacZ draws its own? 
-        // TacZ has its own HUD. So if it's TacZ, we might skip drawing ammo here to avoid double HUD.
-        if (isTacz) {
-            // We just let TacZ draw its own ammo hud.
-            return;
-        }
+        if (WeaponFacade.isTaczWeapon(held)) return;
 
         boolean hasDurability = held.getItem() instanceof WeaponSystem.BaseGunItem gunD && gunD.hasDurability();
         boolean hasOverheat = held.getItem() instanceof WeaponSystem.BaseGunItem gunO && gunO.hasOverheat();
@@ -162,7 +181,6 @@ public class ClientHUDHandler {
 
             float ratio = (float) dur / maxDur;
             int filledWidth = (int)(barWidth * ratio);
-
             int borderColor = 0xFF555555;
             int fillColor = ratio > 0.6f ? 0xFF00FF00 : (ratio > 0.3f ? 0xFFFFFF00 : 0xFFFF0000);
 
@@ -189,7 +207,6 @@ public class ClientHUDHandler {
 
             float ratio = (float) heat / maxHeat;
             int filledWidth = (int)(barWidth * ratio);
-
             int borderColor = 0xFF555555;
             int fillColor = ratio < 0.3f ? 0xFF00FF00 : (ratio < 0.6f ? 0xFFFFFF00 : 0xFFFF0000);
 
@@ -205,10 +222,12 @@ public class ClientHUDHandler {
             drawY = textY - spacingBetweenElements;
         }
 
-        if (!hasDurability && !hasOverheat && held.getItem() instanceof IReloadable reloadable) {
-            int currentAmmo = reloadable.getAmmo(held);
-            int maxAmmo = reloadable.getMaxAmmo(held);
-            int reserveAmmo = reloadable.getReserve(held);
+        if (!hasDurability && !hasOverheat) {
+            int currentAmmo = WeaponFacade.getAmmo(held);
+            int maxAmmo = WeaponFacade.getMaxAmmo(held);
+            int reserveAmmo = WeaponFacade.getReserve(held);
+            boolean isInfinite = false;
+            if (held.getItem() instanceof IReloadable rel) isInfinite = rel.isInfinite(held);
 
             String currentAmmoStr;
             if (held.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.isAkimbo(held)) {
@@ -217,15 +236,15 @@ public class ClientHUDHandler {
             } else {
                 currentAmmoStr = String.valueOf(currentAmmo);
             }
-            
+
             String maxAmmoStr = " / " + maxAmmo;
-            String reserveAmmoText = reloadable.isInfinite(held) ? "∞" : String.valueOf(reserveAmmo);
+            String reserveAmmoText = isInfinite ? "∞" : String.valueOf(reserveAmmo);
 
             float scaleFactor = 0.7f;
             int mainAmmoTextY = drawY - textHeight;
             int currentAmmoWidth = mc.font.width(currentAmmoStr);
             int maxAmmoWidth = mc.font.width(maxAmmoStr);
-            
+
             int targetRightX = width - paddingX;
             int maxAmmoTextX = targetRightX - maxAmmoWidth;
             int currentAmmoTextX = maxAmmoTextX - currentAmmoWidth;
@@ -263,7 +282,6 @@ public class ClientHUDHandler {
 
                 float centerMancheX = (width / 2f) - (scaledMancheWidth / 2f);
                 float centerMancheY = (height / 2f) - scaledHeight;
-                
                 float centerWaveCharX = (width / 2f) - (scaledWaveCharWidth / 2f);
                 float centerWaveCharY = (height / 2f);
 
@@ -291,15 +309,15 @@ public class ClientHUDHandler {
                     long translationTime = timeElapsed - START_ANIM_FADE_DURATION_TICKS;
                     float progress = Math.min(1.0f, (float) translationTime / START_ANIM_TRANSLATION_DURATION_TICKS);
                     
-                    float ease = progress * progress * (3 - 2 * progress);
-                    
+                    float ease = progress * progress * (3 - 2 * progress); 
+
                     float startScale = START_ANIM_TEXT_SCALE;
                     float endScale = 1.5f;
                     float currentScale = startScale + (endScale - startScale) * ease;
 
                     float currentX = centerMancheX + (10f - centerMancheX) * ease;
                     float currentY = centerMancheY + ((height - 40f) - centerMancheY) * ease;
-                    
+
                     int currentAnimColor = interpolateColor(redColor, 0xFFA80000, ease);
 
                     gui.pose().pushPose();
@@ -310,7 +328,7 @@ public class ClientHUDHandler {
                 }
 
                 gui.pose().popPose();
-                return;
+                return; 
             } else {
                 startGameAnimationStartTime = -1;
             }
@@ -346,48 +364,92 @@ public class ClientHUDHandler {
 
     private static void renderWallWeaponHint(GuiGraphics gui, Minecraft mc, LocalPlayer player, int width, int height) {
         if (player.isCreative()) return;
+
         HitResult ray = mc.hitResult;
         if (!(ray instanceof BlockHitResult bhr)) return;
-        
+
         BlockPos pos = bhr.getBlockPos();
         BlockState state = mc.level.getBlockState(pos);
         var te = mc.level.getBlockEntity(pos);
-        
+
         if (!(state.getBlock() instanceof BuyWallWeaponBlock) || !(te instanceof BuyWallWeaponBlockEntity be)) return;
-        
+
         if (bhr.getDirection() != state.getValue(BuyWallWeaponBlock.FACING)) return;
 
         double dx = Math.abs(player.getX() - (pos.getX() + .5));
         double dy = Math.abs(player.getY() - (pos.getY() + .5));
         double dz = Math.abs(player.getZ() - (pos.getZ() + .5));
+
         if (dx > WALL_PURCHASE_MAX_DIST || dy > WALL_PURCHASE_MAX_DIST || dz > WALL_PURCHASE_MAX_DIST) return;
 
         int basePrice = be.getPrice();
-        ResourceLocation rl = be.getItemToSell();
-        if (basePrice <= 0 || rl == null) return;
-        
-        WeaponSystem.Definition def = WeaponSystem.Loader.LOADED_DEFINITIONS.get(rl.getPath());
-        if (def == null) return;
+        if (basePrice <= 0) return;
+
+        ItemStack weaponOnWall = ItemStack.EMPTY;
+        var opt = be.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, null).resolve();
+        if (opt.isPresent()) {
+            weaponOnWall = opt.get().getStackInSlot(0);
+        } else if (be.getItemToSell() != null) {
+            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(be.getItemToSell());
+            if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                weaponOnWall = new ItemStack(item);
+            }
+        }
+
+        if (weaponOnWall.isEmpty()) return;
+
+        boolean isTacz = WeaponFacade.isTaczWeapon(weaponOnWall);
+        WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponOnWall);
+
+        if (!isTacz && def == null && !(weaponOnWall.getItem() instanceof IReloadable)) return;
 
         boolean playerHasBaseItem = false;
         boolean playerHasUpgradedItem = false;
 
+        String wId = WeaponFacade.getWeaponId(weaponOnWall);
+
         for (ItemStack s : player.getInventory().items) {
-            if (WeaponFacade.isWeapon(s)) {
-                WeaponSystem.Definition d = WeaponFacade.getDefinition(s);
-                if (d != null && d.id.equals(def.id)) {
-                    if (WeaponFacade.isPackAPunched(s)) {
-                        playerHasUpgradedItem = true;
-                    } else {
-                        playerHasBaseItem = true;
-                    }
+            if (isTacz && WeaponFacade.isTaczWeapon(s)) {
+                String wallId = weaponOnWall.getOrCreateTag().getString("GunId");
+                String invId = s.getOrCreateTag().getString("GunId");
+                if (wallId.equals(invId)) {
+                    if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
+                    else playerHasBaseItem = true;
                 }
+            } else if (!isTacz && def != null && WeaponFacade.isWeapon(s)) {
+                WeaponSystem.Definition d = WeaponFacade.getDefinition(s);
+                if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
+                    if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
+                    else playerHasBaseItem = true;
+                }
+            } else if (!isTacz && def == null && s.getItem() == weaponOnWall.getItem()) {
+                if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
+                else playerHasBaseItem = true;
             }
+        }
+
+        String wpnName;
+        if (def != null) {
+            wpnName = def.name;
+        } else if (isTacz) {
+            String gunId = weaponOnWall.getOrCreateTag().getString("GunId");
+            if (!gunId.isEmpty()) {
+                ResourceLocation loc = new ResourceLocation(gunId);
+                String translatableKey = String.format("gun.%s.%s.name", loc.getNamespace(), loc.getPath());
+                Component translated = Component.translatable(translatableKey);
+                wpnName = translated.getString();
+                if (wpnName.equals(translatableKey)) {
+                    wpnName = loc.getPath().replace("_", " ").toUpperCase();
+                }
+            } else {
+                wpnName = weaponOnWall.getHoverName().getString();
+            }
+        } else {
+            wpnName = weaponOnWall.getHoverName().getString();
         }
 
         String msg;
         boolean english = Minecraft.getInstance().options.languageCode.startsWith("en");
-        String wpnName = def.name;
 
         if (playerHasUpgradedItem) {
             int rechargePrice = (basePrice / 2) + 5000;

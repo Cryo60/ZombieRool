@@ -17,7 +17,7 @@
   },
   "ammo": {
     "clip_size": 1,
-    "max_reserve": 3,
+    "max_reserve": 8,
     "reload_time": 80,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"

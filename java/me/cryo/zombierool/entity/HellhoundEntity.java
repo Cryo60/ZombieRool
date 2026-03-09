@@ -1,4 +1,5 @@
 package me.cryo.zombierool.entity;
+
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.network.PlayMessages;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,9 +37,13 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.player.PlayerDownManager;
+
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 import net.minecraft.world.level.GameType;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -47,7 +52,9 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     private int spawnTimer = 0;
     private boolean isFireVariant = false;
     private boolean spawnInitialized = false;
+
     public UUID assignedTarget = null;
+
     public static final EntityType<HellhoundEntity> TYPE = ZombieroolModEntities.HELLHOUND.get();
 
     private static final EntityDataAccessor<Boolean> REVEALED = SynchedEntityData.defineId(
@@ -191,18 +198,34 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     private void validateOrAssignTarget() {
         ServerLevel serverLevel = (ServerLevel) this.level();
+        
         if (assignedTarget != null) {
             ServerPlayer p = serverLevel.getServer().getPlayerList().getPlayer(assignedTarget);
             if (p != null && p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)) {
                 return; 
             }
         }
+        
         List<ServerPlayer> validPlayers = serverLevel.getServer().getPlayerList().getPlayers().stream()
             .filter(p -> p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE))
             .collect(Collectors.toList());
-
+            
         if (!validPlayers.isEmpty()) {
-            assignedTarget = validPlayers.get(this.random.nextInt(validPlayers.size())).getUUID();
+            Map<UUID, Integer> targetCounts = new HashMap<>();
+            for (ServerPlayer p : validPlayers) targetCounts.put(p.getUUID(), 0);
+            
+            List<HellhoundEntity> hounds = serverLevel.getEntitiesOfClass(HellhoundEntity.class, this.getBoundingBox().inflate(200));
+            for (HellhoundEntity h : hounds) {
+                if (h != this && h.assignedTarget != null && targetCounts.containsKey(h.assignedTarget)) {
+                    targetCounts.put(h.assignedTarget, targetCounts.get(h.assignedTarget) + 1);
+                }
+            }
+            
+            ServerPlayer chosen = validPlayers.stream()
+                .min(Comparator.comparingInt(p -> targetCounts.get(p.getUUID())))
+                .orElse(validPlayers.get(this.random.nextInt(validPlayers.size())));
+                
+            assignedTarget = chosen.getUUID();
         } else {
             assignedTarget = null;
         }
@@ -220,6 +243,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             this.setInvisible(true);
             this.entityData.set(REVEALED, false);
             spawnTimer = 20;
+
             this.level().playSound(
                 null, this.blockPosition(),
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_prespawn")),
@@ -234,6 +258,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
                 if (isFireVariant) {
                     this.setSecondsOnFire(15);
                 }
+
                 this.level().playSound(
                     null, this.blockPosition(),
                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_strike")),

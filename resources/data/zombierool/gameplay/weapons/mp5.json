@@ -100,6 +100,9 @@
   "tacz": {
     "gun_id": "elitex:mp5_classic",
     "ammo_id": "tacz:9mm",
+    "attachments": {
+      "muzzle": "tacz:muzzle_silencer_ptilopsis"
+    },
     "pap_attachments": {
       "scope": "tacz:red_dot"
     }

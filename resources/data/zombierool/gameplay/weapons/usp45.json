@@ -93,6 +93,11 @@
     "germany",
     "light",
     "modern",
-    "pistol"
-  ]
+    "pistol",
+	"tacz",
+	"tacz_ronmc"
+  ],
+  "tacz": {
+    "gun_id": "ronmc:usp45"
+  }
 }

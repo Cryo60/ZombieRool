@@ -3507,22 +3507,6 @@
       }
     ]
   },
-  "vandal_fire": {
-    "sounds": [
-      {
-        "name": "zombierool:vandal_fire",
-        "stream": false
-      }
-    ]
-  },
-  "vandal_reloading": {
-    "sounds": [
-      {
-        "name": "zombierool:vandal_reloading",
-        "stream": false
-      }
-    ]
-  },
   "l85a2_fire": {
     "sounds": [
       {
@@ -4383,6 +4367,22 @@
       },
       {
         "name": "zombierool:h5_storm_4",
+        "stream": false
+      }
+    ]
+  },
+  "vandal_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:vandal_shoot",
+        "stream": false
+      }
+    ]
+  },
+  "vandal_reload": {
+    "sounds": [
+      {
+        "name": "zombierool:vandal_reload",
         "stream": false
       }
     ]

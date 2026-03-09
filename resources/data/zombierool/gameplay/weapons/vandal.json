@@ -93,6 +93,11 @@
     "fantasy",
     "medium",
     "modern",
-    "valorant"
-  ]
+    "valorant",
+	"tacz",
+	"tacz_valorant"
+  ],
+  "tacz": {
+    "gun_id": "valorant:vandal"
+  }
 }

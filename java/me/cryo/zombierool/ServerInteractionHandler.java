@@ -51,11 +51,12 @@ public class ServerInteractionHandler {
     private static final long REPAIR_COOLDOWN = 1250;
     private static final double SPEED_COLA_REPAIR_MULTIPLIER = 0.5; 
     private static final Map<UUID, Long> lastRepairTimes = new HashMap<>();
+    private static final Map<UUID, Long> activeDrinkAnimations = new HashMap<>();
 
     public static void handleInteraction(ServerPlayer player, BlockPos pos, InteractionType type) {
         if (player == null || player.level().isClientSide) return;
         ServerLevel level = (ServerLevel) player.level();
-        
+
         if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 25.0) {
             return; 
         }
@@ -80,30 +81,43 @@ public class ServerInteractionHandler {
         int basePrice = be.getPrice();
         if (basePrice <= 0) return;
 
-        ResourceLocation itemRl = be.getItemToSell();
-        if (itemRl == null) return;
-        Item vanillaItem = ForgeRegistries.ITEMS.getValue(itemRl);
-        if (vanillaItem == null || vanillaItem == net.minecraft.world.item.Items.AIR) return;
+        ItemStack weaponToSell = ItemStack.EMPTY;
+        var optional = be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).resolve();
+        if (optional.isPresent()) {
+            weaponToSell = optional.get().getStackInSlot(0);
+        }
 
-        WeaponSystem.Definition def = WeaponSystem.Loader.LOADED_DEFINITIONS.get(itemRl.getPath());
+        if (weaponToSell.isEmpty()) {
+            player.sendSystemMessage(Component.literal("§cCette arme au mur est vide (Mod manquant ?).").withStyle(ChatFormatting.RED));
+            return;
+        }
+
+        boolean isTacz = WeaponFacade.isTaczWeapon(weaponToSell);
+        WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponToSell);
+
         int balance = PointManager.getScore(player);
         boolean hasIngot = hasIngot(player);
 
         ItemStack existing = ItemStack.EMPTY;
+        String wId = WeaponFacade.getWeaponId(weaponToSell);
+
         for (ItemStack s : player.getInventory().items) {
-            if (def != null && WeaponFacade.isWeapon(s)) {
+            if (isTacz && WeaponFacade.isTaczWeapon(s)) {
+                String sGunId = s.getOrCreateTag().getString("GunId");
+                if (wId.equals(sGunId)) {
+                    existing = s; break;
+                }
+            } else if (!isTacz && def != null && WeaponFacade.isWeapon(s)) {
                 WeaponSystem.Definition d = WeaponFacade.getDefinition(s);
                 if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                    existing = s;
-                    break;
+                    existing = s; break;
                 }
-            } else if (def == null && s.getItem() == vanillaItem) {
-                existing = s;
-                break;
+            } else if (!isTacz && def == null && s.getItem() == weaponToSell.getItem()) {
+                existing = s; break;
             }
         }
 
-        boolean isReloadable = def != null || vanillaItem instanceof IReloadable;
+        boolean isReloadable = def != null || isTacz || weaponToSell.getItem() instanceof IReloadable;
 
         if (!existing.isEmpty() && isReloadable) {
             int halfPrice = Math.max(1, basePrice / 2);
@@ -123,19 +137,13 @@ public class ServerInteractionHandler {
                 PointManager.modifyScore(player, -halfPrice);
             }
 
-            if (def != null) {
-                WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
-                WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
-                if (existing.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
-                    gun.setDurability(existing, gun.getMaxDurability(existing));
-                }
-                WeaponFacade.refillHeldTaczAmmo(player, existing);
-            } else if (vanillaItem instanceof IReloadable r) {
-                r.initializeIfNeeded(existing);
-                r.setAmmo(existing, r.getMaxAmmo(existing));
-                r.setReserve(existing, r.getMaxReserve(existing));
+            WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
+            WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
+            if (existing.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
+                gun.setDurability(existing, gun.getMaxDurability(existing));
             }
-            
+            if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
+
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             player.sendSystemMessage(getTranslatedComponent(player,
                 "§aRechargé : " + existing.getHoverName().getString() + (hasIngot ? " pour 1 ingot" : " pour " + halfPrice + " points"),
@@ -155,28 +163,31 @@ public class ServerInteractionHandler {
                 PointManager.modifyScore(player, -basePrice);
             }
 
-            ItemStack stack;
+            ItemStack stackToGive = weaponToSell.copy();
+            stackToGive.setCount(1);
+
             if (def != null) {
-                stack = WeaponFacade.createWeaponStack(def.id, false);
-                if (stack.isEmpty()) stack = new ItemStack(vanillaItem, 1);
-            } else {
-                stack = new ItemStack(vanillaItem, 1);
-                if (vanillaItem instanceof IReloadable r) r.initializeIfNeeded(stack);
+                stackToGive = WeaponFacade.createWeaponStack(def.id, false);
+                if (stackToGive.isEmpty()) stackToGive = new ItemStack(weaponToSell.getItem(), 1);
+            } else if (isTacz) {
+                ResourceLocation gunId = new ResourceLocation(stackToGive.getOrCreateTag().getString("GunId"));
+                stackToGive = WeaponFacade.createUnmappedTaczWeaponStack(gunId, false);
+            } else if (stackToGive.getItem() instanceof IReloadable r) {
+                r.initializeIfNeeded(stackToGive);
             }
 
-            if (!player.getInventory().add(stack)) {
-                player.drop(stack, false);
+            if (!player.getInventory().add(stackToGive)) {
+                player.drop(stackToGive, false);
             }
 
-            NotifyPurchasePacket notifyPacket = new NotifyPurchasePacket(itemRl);
+            NotifyPurchasePacket notifyPacket = new NotifyPurchasePacket(wId);
             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), notifyPacket);
 
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "weapon")), SoundSource.PLAYERS, 1f, 1f);
-            
             player.sendSystemMessage(getTranslatedComponent(player,
-                "§aAcheté : " + stack.getHoverName().getString() + (hasIngot ? " pour 1 ingot" : " pour " + basePrice + " points"),
-                "§aPurchased: " + stack.getHoverName().getString() + (hasIngot ? " for 1 ingot" : " for " + basePrice + " points")
+                "§aAcheté : " + stackToGive.getHoverName().getString() + (hasIngot ? " pour 1 ingot" : " pour " + basePrice + " points"),
+                "§aPurchased: " + stackToGive.getHoverName().getString() + (hasIngot ? " for 1 ingot" : " for " + basePrice + " points")
             ));
         }
     }
@@ -193,6 +204,7 @@ public class ServerInteractionHandler {
             player.sendSystemMessage(getTranslatedComponent(player, "§cLa Mystery Box est en train de se déplacer... attendez !", "§cThe Mystery Box is moving... wait!").withStyle(ChatFormatting.RED));
             return;
         }
+
         if (manager.isAwaitingWeapon) {
             player.sendSystemMessage(getTranslatedComponent(player, "§cLa Mystery Box prépare déjà votre arme... un instant !", "§cThe Mystery Box is already preparing your weapon... just a moment!").withStyle(ChatFormatting.YELLOW));
             return;
@@ -201,7 +213,7 @@ public class ServerInteractionHandler {
         if (!(state.getBlock() instanceof MysteryBoxBlock) || state.getValue(MysteryBoxBlock.PART)) {
             return;
         }
-        
+
         if (!manager.hasAvailableWeapons(player, level)) {
             player.sendSystemMessage(getTranslatedComponent(player, "§cVous possédez déjà toutes les armes disponibles !", "§cYou already have all available weapons!").withStyle(ChatFormatting.RED));
             return;
@@ -223,9 +235,15 @@ public class ServerInteractionHandler {
     }
 
     private static void handlePerk(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        long now = level.getGameTime();
+        if (now < activeDrinkAnimations.getOrDefault(player.getUUID(), 0L)) {
+            player.displayClientMessage(getTranslatedComponent(player, "§cVous êtes déjà en train de boire !", "§cYou are already drinking!"), true);
+            return;
+        }
+
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof PerksLowerBlockEntity perksBE)) return;
-        
+
         BlockState state = level.getBlockState(pos);
         if (!state.getValue(PerksLowerBlock.POWERED)) {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous devez d'abord activer le courant !", "§cYou must activate the power first!"), true);
@@ -250,11 +268,10 @@ public class ServerInteractionHandler {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous avez atteint la limite de " + PerksManager.MAX_PERKS_LIMIT + " perks !", "§cYou have reached the limit of " + PerksManager.MAX_PERKS_LIMIT + " perks!"), true);
             return;
         }
-        
+
         if (PerksManager.isPerkLimited(perkId, player)) {
             int currentPerkPurchases = PerksManager.getCurrentPerkPurchases(perkId, player);
             int perkLimit = PerksManager.getPerkLimit(perkId, player);
-            
             if (currentPerkPurchases >= perkLimit) {
                 String perkName = perkToPurchase.getName();
                 player.displayClientMessage(getTranslatedComponent(player, "§cVous avez atteint la limite de " + perkLimit + " achats pour " + perkName + " !", "§cYou have reached the limit of " + perkLimit + " purchases for " + perkName + "!"), true);
@@ -280,6 +297,7 @@ public class ServerInteractionHandler {
             paymentMessage = getTranslatedComponent(player, " (" + price + " points)", " (" + price + " points)").getString();
         }
 
+        activeDrinkAnimations.put(player.getUUID(), now + 65);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new StartWunderfizzDrinkAnimationPacket(perkId));
         level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:buy")), SoundSource.BLOCKS, 1f, 1f);
 
@@ -303,11 +321,12 @@ public class ServerInteractionHandler {
     private static void handleWunderfizzBuy(ServerPlayer player, ServerLevel level, BlockPos pos) {
         WorldConfig config = WorldConfig.get(level);
         BlockPos activePos = config.getActiveWunderfizzPosition();
+
         if (activePos == null || !activePos.equals(pos)) {
             player.displayClientMessage(getTranslatedComponent(player, "§cLa Wunderfizz est ailleurs !", "§cThe Wunderfizz is elsewhere!"), true);
             return;
         }
-        
+
         if (!DerWunderfizzBlock.isPowered(level, pos)) {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous devez d'abord activer le courant !", "§cYou must activate the power first!"), true);
             return;
@@ -315,7 +334,7 @@ public class ServerInteractionHandler {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof DerWunderfizzBlockEntity wunderfizz)) return;
-        
+
         if (wunderfizz.getState() != DerWunderfizzBlockEntity.WunderfizzState.IDLE) return;
 
         int currentPerkCount = PerksManager.getPerkCount(player);
@@ -323,14 +342,14 @@ public class ServerInteractionHandler {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous possédez déjà " + PerksManager.MAX_PERKS_LIMIT + " atouts !", "§cYou already have " + PerksManager.MAX_PERKS_LIMIT + " perks!"), true);
             return;
         }
-        
+
         long availablePerksCount = PerksManager.ALL_PERKS.keySet().stream()
             .filter(perkId -> {
                 var effect = PerksManager.getEffectInstance(perkId);
                 return effect != null && !player.hasEffect(effect) && !config.isRandomPerkDisabled(perkId);
             })
             .count();
-            
+
         if (availablePerksCount == 0) {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous possédez déjà tous les atouts disponibles !", "§cYou already have all available perks!"), true);
             return;
@@ -355,16 +374,22 @@ public class ServerInteractionHandler {
     }
 
     private static void handleWunderfizzCollect(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        long now = level.getGameTime();
+        if (now < activeDrinkAnimations.getOrDefault(player.getUUID(), 0L)) {
+            player.displayClientMessage(getTranslatedComponent(player, "§cVous êtes déjà en train de boire !", "§cYou are already drinking!"), true);
+            return;
+        }
+
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof DerWunderfizzBlockEntity wunderfizz)) return;
-        
+
         if (wunderfizz.getState() != DerWunderfizzBlockEntity.WunderfizzState.READY) return;
-        
+
         String perkId = wunderfizz.getSelectedPerkId();
         if (perkId == null) return;
-        
+
         if (!wunderfizz.collectDrink(player)) return; 
-        
+
         PerksManager.Perk perk = PerksManager.ALL_PERKS.get(perkId);
         if (perk == null) return;
 
@@ -381,7 +406,7 @@ public class ServerInteractionHandler {
             wunderfizz.resetAfterCollect();
             return;
         }
-        
+
         if (PerksManager.isPerkLimited(perkId, player)) {
             int limit = PerksManager.getPerkLimit(perkId, player);
             int purchases = PerksManager.getCurrentPerkPurchases(perkId, player);
@@ -391,8 +416,9 @@ public class ServerInteractionHandler {
             }
         }
 
+        activeDrinkAnimations.put(player.getUUID(), now + 65);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new StartWunderfizzDrinkAnimationPacket(perkId));
-        
+
         final String finalPerkId = perkId;
         level.getServer().execute(() -> {
             level.getServer().tell(new net.minecraft.server.TickTask(
@@ -429,9 +455,10 @@ public class ServerInteractionHandler {
         long now = System.currentTimeMillis();
         boolean hasSpeedCola = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get());
         long effectiveCooldown = hasSpeedCola ? (long) (REPAIR_COOLDOWN * SPEED_COLA_REPAIR_MULTIPLIER) : REPAIR_COOLDOWN;
-        long lastTime = lastRepairTimes.getOrDefault(playerId, 0L);
 
+        long lastTime = lastRepairTimes.getOrDefault(playerId, 0L);
         if (now - lastTime < effectiveCooldown) return;
+
         lastRepairTimes.put(playerId, now);
 
         BlockState state = level.getBlockState(pos);

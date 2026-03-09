@@ -94,6 +94,14 @@
     "modern",
     "single_fire",
     "sniper",
-    "usa"
-  ]
+    "usa",
+	"tacz",
+	"tacz_tacz"
+  ],
+  "tacz" : {
+	"gun_id": "tacz:m95",
+    "attachments": {
+      "scope": "tacz:scope_mk5hd"
+    }
+  }
 }

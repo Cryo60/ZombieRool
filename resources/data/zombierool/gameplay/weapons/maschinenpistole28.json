@@ -1,6 +1,6 @@
 {
   "id": "zombierool:maschinenpistole28",
-  "name": "MASCHINENPISTOLE28",
+  "name": "MP28",
   "type": "PISTOL",
   "lore": [
     "Arme standard",
@@ -8,7 +8,7 @@
   ],
   "stats": {
     "damage": 8.0,
-    "fire_rate": 5,
+    "fire_rate": 3,
     "range": 100.0,
     "mobility": 1.0,
     "penetration": 0,
@@ -92,6 +92,11 @@
     "germany",
     "light",
     "pistol",
-    "ww2"
-  ]
+    "ww2",
+	"tacz",
+	"tacz_ww"
+  ],
+  "tacz": {
+    "gun_id": "ww:mp28"
+  }
 }

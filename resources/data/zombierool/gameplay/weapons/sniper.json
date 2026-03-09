@@ -94,6 +94,11 @@
     "sci_fi",
     "single_fire",
     "sniper",
-    "unsc"
-  ]
+    "unsc",
+	"tacz",
+	"tacz_halor6"
+  ],
+  "tacz": {
+    "gun_id": "halor6:s7"
+  }
 }

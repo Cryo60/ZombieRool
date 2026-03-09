@@ -92,6 +92,11 @@
     "halo",
     "medium",
     "sci_fi",
-    "unsc"
-  ]
+    "unsc",
+	"tacz",
+	"tacz_halor6"
+  ],
+  "tacz": {
+    "gun_id": "halor6:m395b_dmr"
+  }
 }

@@ -38,13 +38,12 @@ public class DamageManager {
         if (isHeadshot) {
             float globalMultiplier = 2.0f; 
             float flatBonus = 0.0f; 
-
             if (weapon != null) {
                 WeaponSystem.Definition def = WeaponFacade.getDefinition(weapon);
                 if (def != null && "SNIPER".equalsIgnoreCase(def.type)) {
                     globalMultiplier = 3.0f;
                 }
-
+                
                 if (weapon.getItem() instanceof IHeadshotWeapon headshotWeapon) {
                     flatBonus += headshotWeapon.getHeadshotBaseDamage(weapon); 
                     if (WeaponFacade.isPackAPunched(weapon)) {
@@ -63,16 +62,20 @@ public class DamageManager {
         if (BonusManager.isInstaKillActive(attacker)) {
             damage = 100000f;
         }
-
         return damage;
     }
 
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent event) {
         if (event.getEntity().level().isClientSide) return;
-
         LivingEntity target = event.getEntity();
         DamageSource source = event.getSource();
+
+        // Désactivation du PVP
+        if (target instanceof Player && source.getEntity() instanceof Player && target != source.getEntity()) {
+            event.setCanceled(true);
+            return;
+        }
 
         if (!isValidTarget(target)) return;
 
@@ -94,7 +97,7 @@ public class DamageManager {
 
         LivingEntity target = event.getEntity();
         DamageSource source = event.getSource();
-
+        
         if (!isValidTarget(target)) return;
 
         Entity attackerEntity = source.getEntity();
@@ -106,10 +109,14 @@ public class DamageManager {
         boolean isExplosive = target.getPersistentData().getBoolean("zombierool:explosive_damage");
 
         if (isGunDamage) {
+            points = isHeadshot ? 100 : 50;
+
             if (isHeadshot) {
-                points = 100;
+                if (target.getRandom().nextFloat() <= 0.3f) {
+                    GoreManager.triggerHeadExplosion(target);
+                }
             } else {
-                points = 50;
+                GoreManager.tryDismemberLimb(target, 100f );
             }
         } else if (isExplosive) {
             points = 50;

@@ -345,8 +345,6 @@ public class ZombieroolModSounds {
 	public static final RegistryObject<SoundEvent> R4C_RELOADING = REGISTRY.register("r4c_reloading", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "r4c_reloading")));
 	public static final RegistryObject<SoundEvent> S1858_FIRE = REGISTRY.register("s1858_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "s1858_fire")));
 	public static final RegistryObject<SoundEvent> S1858_RELOADING = REGISTRY.register("s1858_reloading", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "s1858_reloading")));
-	public static final RegistryObject<SoundEvent> VANDAL_FIRE = REGISTRY.register("vandal_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_fire")));
-	public static final RegistryObject<SoundEvent> VANDAL_RELOADING = REGISTRY.register("vandal_reloading", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_reloading")));
 	public static final RegistryObject<SoundEvent> L85A2_FIRE = REGISTRY.register("l85a2_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "l85a2_fire")));
 	public static final RegistryObject<SoundEvent> EQUIP_BULLETVEST = REGISTRY.register("equip_bulletvest", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "equip_bulletvest")));
 	public static final RegistryObject<SoundEvent> PLATE_CRACK = REGISTRY.register("plate_crack", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "plate_crack")));
@@ -389,4 +387,6 @@ public class ZombieroolModSounds {
 	public static final RegistryObject<SoundEvent> HEART_BEAT = REGISTRY.register("heart_beat", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "heart_beat")));
 	public static final RegistryObject<SoundEvent> SAW_FIRE = REGISTRY.register("saw_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "saw_fire")));
 	public static final RegistryObject<SoundEvent> STORM_RIFLE_FIRE = REGISTRY.register("storm_rifle_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "storm_rifle_fire")));
+	public static final RegistryObject<SoundEvent> VANDAL_FIRE = REGISTRY.register("vandal_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_fire")));
+	public static final RegistryObject<SoundEvent> VANDAL_RELOAD = REGISTRY.register("vandal_reload", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_reload")));
 }

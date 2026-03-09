@@ -1,5 +1,4 @@
 package me.cryo.zombierool.network;
-
 import me.cryo.zombierool.network.packet.SyncColdWaterStatePacket;
 import me.cryo.zombierool.SetWallWeaponConfigPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -9,9 +8,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-
 import java.util.Optional;
-
 import me.cryo.zombierool.network.packet.PlayGlobalSoundPacket;
 import me.cryo.zombierool.network.StopFourIsReadySoundPacket;
 import me.cryo.zombierool.network.MeleeAttackPacket;
@@ -46,21 +43,18 @@ import me.cryo.zombierool.network.packet.OpenConfigMenuPacket;
 import me.cryo.zombierool.network.packet.UpdateConfigPacket;
 import me.cryo.zombierool.network.packet.RequestConfigMenuPacket;
 import me.cryo.zombierool.network.packet.SyncWeatherPacket;
-
+import me.cryo.zombierool.network.packet.GenerateWeaponMappingPacket;
+import me.cryo.zombierool.network.packet.ReloadWeaponsPacket;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NetworkHandler {
-
 	private static boolean alreadyRegistered = false;
 	private static final String PROTOCOL_VERSION = "1";
 	public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation("zombierool", "main"), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
-
 	@SubscribeEvent
 	public static void register(FMLCommonSetupEvent event) {
 	    if (alreadyRegistered) return;
 	    alreadyRegistered = true;
-
 	    ResourcePackNetworkHandler.register();
-
 	    event.enqueueWork(() -> {
 	        int id = 0;
 	        INSTANCE.registerMessage(id++, C2SUnifiedInteractPacket.class, C2SUnifiedInteractPacket::encode, C2SUnifiedInteractPacket::decode, C2SUnifiedInteractPacket::handle);
@@ -110,6 +104,8 @@ public class NetworkHandler {
 	        INSTANCE.registerMessage(id++, UpdateConfigPacket.class, UpdateConfigPacket::encode, UpdateConfigPacket::decode, UpdateConfigPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
 	        INSTANCE.registerMessage(id++, RequestConfigMenuPacket.class, RequestConfigMenuPacket::encode, RequestConfigMenuPacket::new, RequestConfigMenuPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
 	        INSTANCE.registerMessage(id++, SyncWeatherPacket.class, SyncWeatherPacket::encode, SyncWeatherPacket::decode, SyncWeatherPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, GenerateWeaponMappingPacket.class, GenerateWeaponMappingPacket::encode, GenerateWeaponMappingPacket::decode, GenerateWeaponMappingPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+	        INSTANCE.registerMessage(id++, ReloadWeaponsPacket.class, ReloadWeaponsPacket::encode, ReloadWeaponsPacket::decode, ReloadWeaponsPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
 	    });
 	}
 }

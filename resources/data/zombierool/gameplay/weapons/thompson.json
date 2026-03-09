@@ -93,6 +93,11 @@
     "light",
     "smg",
     "usa",
-    "ww2"
-  ]
+    "ww2",
+	"tacz",
+	"tacz_ww"
+  ],
+  "tacz": {
+    "gun_id": "ww:m1921"
+  }
 }

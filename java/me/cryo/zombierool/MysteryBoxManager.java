@@ -7,6 +7,7 @@ import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.core.system.WeaponFacade;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class MysteryBoxManager extends SavedData {
+
     private static final String DATA_NAME = "zombierool_mysterybox_manager";
     private static final Random STATIC_RANDOM = new Random();
     public static final Set<Item> WONDER_WEAPONS = new HashSet<>();
@@ -155,6 +157,7 @@ public class MysteryBoxManager extends SavedData {
                 manager.registeredMysteryBoxLocations.add(MysteryBoxPair.load(listTag.getCompound(i)));
             }
         }
+
         return manager;
     }
 
@@ -179,6 +182,7 @@ public class MysteryBoxManager extends SavedData {
             listTag.add(pair.save());
         }
         compound.put("RegisteredMysteryBoxLocations", listTag);
+
         return compound;
     }
 
@@ -222,8 +226,8 @@ public class MysteryBoxManager extends SavedData {
 
         for (BlockPos pos : registeredPositions) {
             if (processedMainPositions.contains(pos)) continue;
-            BlockState state = level.getBlockState(pos);
 
+            BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof MysteryBoxBlock || state.getBlock() instanceof EmptymysteryboxBlock) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
                 BlockPos mainPartPos;
@@ -245,6 +249,7 @@ public class MysteryBoxManager extends SavedData {
                     (otherState.getBlock() instanceof MysteryBoxBlock || otherState.getBlock() instanceof EmptymysteryboxBlock) &&
                     mainState.getValue(MysteryBoxBlock.FACING) == facing && !mainState.getValue(MysteryBoxBlock.PART) &&
                     otherState.getValue(MysteryBoxBlock.FACING) == facing && otherState.getValue(MysteryBoxBlock.PART)) {
+                    
                     MysteryBoxPair newPair = new MysteryBoxPair(mainPartPos.immutable(), otherPartPos.immutable(), facing);
                     if (!potentialBoxPairs.contains(newPair)) {
                         potentialBoxPairs.add(newPair);
@@ -303,7 +308,7 @@ public class MysteryBoxManager extends SavedData {
     public boolean hasAvailableWeapons(Player player, ServerLevel level) {
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<String> requiredTags = worldConfig.getMysteryBoxTags();
-
+        
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             ResourceLocation defLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + def.id);
             if (worldConfig.isBoxWeaponDisabled(defLoc)) continue;
@@ -374,10 +379,10 @@ public class MysteryBoxManager extends SavedData {
             }
         }
 
-        // UNMAPPED TACZ WEAPONS EVALUATION
         for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
             if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
-            
+            if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
+
             boolean owned = false;
             for (ItemStack stack : player.getInventory().items) {
                 if (WeaponFacade.isTaczWeapon(stack)) {
@@ -398,7 +403,7 @@ public class MysteryBoxManager extends SavedData {
         List<ItemStack> candidates = new ArrayList<>();
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<String> requiredTags = worldConfig.getMysteryBoxTags();
-
+        
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             ResourceLocation defLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + def.id);
             if (worldConfig.isBoxWeaponDisabled(defLoc)) continue;
@@ -471,10 +476,10 @@ public class MysteryBoxManager extends SavedData {
             }
         }
 
-        // UNMAPPED TACZ WEAPONS POOL
         for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
             if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
-            
+            if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
+
             boolean owned = false;
             for (ItemStack stack : player.getInventory().items) {
                 if (WeaponFacade.isTaczWeapon(stack)) {
@@ -486,7 +491,7 @@ public class MysteryBoxManager extends SavedData {
                 }
             }
             if (owned) continue;
-            
+
             ItemStack wep = WeaponFacade.createUnmappedTaczWeaponStack(unmappedId, false);
             if (wep != null && !wep.isEmpty()) candidates.add(wep);
         }
@@ -503,6 +508,7 @@ public class MysteryBoxManager extends SavedData {
         if (isMysteryBoxMoving || isAwaitingWeapon) return;
 
         int cost = 950;
+
         if (useIngot) {
             for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
                 ItemStack stack = player.getInventory().getItem(i);
@@ -541,14 +547,16 @@ public class MysteryBoxManager extends SavedData {
             e.printStackTrace();
             weaponToGive = new ItemStack(net.minecraft.world.item.Items.WOODEN_SWORD);
         }
+        
         setDirty();
     }
 
     public void finalizeMysteryBoxInteraction(ServerLevel level, Player player) {
         if (currentActiveMysteryBoxPair == null || player == null) return;
-
+        
         isAwaitingWeapon = false;
         jingleStartTime = 0;
+        
         currentActiveMysteryBoxPair.usesSinceLastMove++;
         setDirty();
 
@@ -567,7 +575,6 @@ public class MysteryBoxManager extends SavedData {
         } else {
             giveWeapon(player);
         }
-
         setDirty();
     }
 
@@ -633,14 +640,14 @@ public class MysteryBoxManager extends SavedData {
     public void moveMysteryBox(ServerLevel level) {
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<BlockPos> worldConfigBoxPositions = worldConfig.getMysteryBoxPositions();
-
+        
         this.registeredMysteryBoxLocations.clear();
         Set<BlockPos> processedMainPositions = new HashSet<>();
 
         for (BlockPos pos : worldConfigBoxPositions) {
             if (processedMainPositions.contains(pos)) continue;
-            BlockState state = level.getBlockState(pos);
 
+            BlockState state = level.getBlockState(pos);
             if ((state.getBlock() instanceof MysteryBoxBlock || state.getBlock() instanceof EmptymysteryboxBlock)) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
                 BlockPos mainPartPos;

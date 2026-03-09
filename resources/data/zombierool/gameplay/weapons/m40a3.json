@@ -100,6 +100,9 @@
   ],
   "tacz": {
     "gun_id": "tacz:ai_awp",
-    "ammo_id": "tacz:338"
+    "ammo_id": "tacz:338",
+    "attachments": {
+      "scope": "tacz:scope_mk5hd"
+    }
   }
 }

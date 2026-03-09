@@ -8,7 +8,7 @@
   ],
   "stats": {
     "damage": 9.0,
-    "fire_rate": 4,
+    "fire_rate": 3,
     "range": 100.0,
     "mobility": 0.9,
     "penetration": 0,
@@ -93,6 +93,11 @@
     "medium",
     "modern",
     "rainbow_six_siege",
-    "uk"
-  ]
+    "uk",
+	"tacz",
+	"tacz_rainforest"
+  ],
+  "tacz": {
+    "gun_id": "rainforest:l85a1"
+  }
 }

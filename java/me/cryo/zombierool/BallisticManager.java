@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.Collections;
 
 public class BallisticManager {
+
     private static final Random RANDOM = new Random();
 
     private static class Impact {
@@ -78,7 +79,6 @@ public class BallisticManager {
 
         float actualYaw = shooter.getYRot() + yawOffset;
         float actualPitch = shooter.getXRot();
-
         float f = actualPitch * ((float)Math.PI / 180F);
         float f1 = -actualYaw * ((float)Math.PI / 180F);
         float f2 = net.minecraft.util.Mth.cos(f1);
@@ -95,7 +95,7 @@ public class BallisticManager {
         boolean isWhisperLastShot = false;
         boolean isPap = false;
         WeaponSystem.Definition def = null;
-
+        
         if (weaponStack != null && weaponStack.getItem() instanceof WeaponSystem.BaseGunItem gunItem) {
             def = gunItem.getDefinition();
             weaponId = def.id.replace("zombierool:", "").toLowerCase();
@@ -120,14 +120,13 @@ public class BallisticManager {
         double accumulatedDist = 0;
         int maxBounces = isPap && def != null ? def.pap.ricochet_count : 0;
         int bounces = 0;
-
         int safetyLoop = 0;
         BlockPos lastHitBlock = null;
 
         while (remainingRange > 0 && safetyLoop < 50) {
             safetyLoop++;
             Vec3 segmentEnd = currentPos.add(currentDir.scale(remainingRange));
-
+            
             BlockHitResult blockHit = level.clip(new ClipContext(currentPos, segmentEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
             Vec3 actualEnd = blockHit.getType() == HitResult.Type.MISS ? segmentEnd : blockHit.getLocation();
             double segmentDist = currentPos.distanceTo(actualEnd);
@@ -147,7 +146,8 @@ public class BallisticManager {
                 }
 
                 BlockState hitState = level.getBlockState(hitPos);
-                if (hitState.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) {
+                
+                if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock || hitState.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) {
                     currentPos = actualEnd.add(currentDir.scale(0.1));
                     accumulatedDist += segmentDist;
                     remainingRange -= segmentDist;
@@ -283,7 +283,6 @@ public class BallisticManager {
                                     }
                                 }
                             }
-                            
                             if (isWhisperLastShot && !isHeadshot) { 
                                 double bX = livingTarget.getX();
                                 double bY = livingTarget.getY() + livingTarget.getBbHeight() / 2.0D;
@@ -320,7 +319,6 @@ public class BallisticManager {
                 }
             } else {
                 BlockState state = level.getBlockState(impact.blockPos);
-
                 int crackLevel = RANDOM.nextInt(3) + 3;
                 NetworkHandler.INSTANCE.send(
                     PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(impact.blockPos)),
@@ -380,20 +378,18 @@ public class BallisticManager {
     private static void spawnCrowFlockEffect(ServerLevel level, double x, double y, double z) {
         level.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 100, 0.3, 0.3, 0.3, 0.1);
         level.sendParticles(new DustParticleOptions(new Vector3f(0f, 0f, 0f), 3.0f), x, y, z, 100, 0.4, 0.4, 0.4, 0.1);
-
         for (int i = 0; i < 40; i++) {
             double vx = (RANDOM.nextFloat() - 0.5) * 2.0;
             double vy = RANDOM.nextFloat() * 1.5 + 0.5; 
             double vz = (RANDOM.nextFloat() - 0.5) * 2.0;
-            
             level.sendParticles(ZombieroolModParticleTypes.BLACK_CROW.get(), x, y, z, 0, vx, vy, vz, 1.0);
             level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y, z, 0, vx * 0.5, vy * 0.5, vz * 0.5, 1.0);
         }
-        
         level.playSound(null, x, y, z, ZombieroolModSounds.CROW_WAVE.get(), SoundSource.HOSTILE, 1.5f, 0.8f + RANDOM.nextFloat() * 0.4f);
     }
 
     private static boolean isPenetrable(BlockState state) {
+        if (state.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock) return true;
         return state.is(BlockTags.LOGS) ||
                state.is(BlockTags.PLANKS) ||
                state.is(BlockTags.WOODEN_DOORS) ||
@@ -413,7 +409,6 @@ public class BallisticManager {
         Vec3 eyePos = shooter.getEyePosition(1.0F);
         Vec3 lookVec = shooter.getViewVector(1.0F);
         Vec3 endPos = eyePos.add(lookVec.scale(range));
-
         EntityHitResult hit = findEntityOnPath(shooter.level(), shooter, eyePos, endPos, new AABB(eyePos, endPos).inflate(1.0));
         return hit != null ? hit.getEntity() : null;
     }

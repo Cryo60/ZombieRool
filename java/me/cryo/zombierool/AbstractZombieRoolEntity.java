@@ -1,9 +1,11 @@
 package me.cryo.zombierool.entity;
+
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import me.cryo.zombierool.init.ZombieroolModSounds;
+
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
@@ -27,6 +29,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3f;
 
 public abstract class AbstractZombieRoolEntity extends Monster {
+
     protected boolean headshotDeath = false;
     protected int headshotDeathTicks = 0;
     protected DamageSource headshotSource;
@@ -99,6 +102,10 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
+        
+        if (this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG)) {
+            headshot = true;
+        }
 
         if (headshot) {
             boolean lethal = amount >= this.getHealth();
@@ -112,6 +119,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
+
         return super.hurt(source, amount);
     }
 
@@ -137,13 +145,13 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public void die(DamageSource cause) {
         super.die(cause);
+
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             WaveManager.onMobDeath(this, serverLevel);
 
             Entity direct = cause.getDirectEntity();
             Entity src = cause.getEntity();
             Player player = null;
-
             boolean killedByWhisperLastBullet = this.getPersistentData().getBoolean("zr_whisper_crow_kill");
 
             if (src instanceof Player p1) {
@@ -155,7 +163,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (player != null) {
                 boolean hasIngot = player.getInventory().items.stream()
                     .anyMatch(st -> st.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
-                
+
                 if (!hasIngot && player.level().random.nextFloat() < 0.0015f) {
                     player.getInventory().add(new ItemStack(
                         me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()));
@@ -166,6 +174,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (player != null && WorldConfig.get(serverLevel).isBonusDropsEnabled()) {
                 int zombiesKilledSinceLastBonus = WaveManager.getZombiesKilledSinceLastBonus(serverLevel);
                 boolean shouldSpawnBonus = false;
+
                 if (zombiesKilledSinceLastBonus >= 150) {
                     shouldSpawnBonus = true;
                     WaveManager.resetZombiesKilledSinceLastBonus(serverLevel);
@@ -191,19 +200,20 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected void spawnWhisperDeathParticles(ServerLevel serverLevel, double x, double y, double z) {
         serverLevel.sendParticles(new DustParticleOptions(new Vector3f(0.01f, 0.01f, 0.01f), 3.0f), x, y, z, 100, 0.5, 0.6, 0.5, 0.15);
         serverLevel.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 200, 0.6, 0.7, 0.6, 0.3);
+
         for (int i = 0; i < 40; i++) {
             double vx = (this.random.nextFloat() - 0.5) * 2.0;
             double vy = this.random.nextFloat() * 1.5 + 0.5; 
             double vz = (this.random.nextFloat() - 0.5) * 2.0;
             serverLevel.sendParticles(ZombieroolModParticleTypes.BLACK_CROW.get(), x, y, z, 0, vx, vy, vz, 1.0);
         }
+
         this.level().playSound(null, x, y, z, ZombieroolModSounds.CROW_WAVE.get(), SoundSource.HOSTILE, 1.5f, 0.7f + this.random.nextFloat() * 0.3f);
     }
 
     @Override
     public void tick() {
         super.tick();
-
         if (this.headshotDeath && !hasTriggeredHeadshotKill) {
             headshotDeathTicks++;
             if (headshotDeathTicks >= 5 && !this.level().isClientSide) {
@@ -230,6 +240,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 if (this.stuckTimer >= 300) { 
                     WaveManager.recycleMob(this, (ServerLevel) this.level());
                 }
+
                 this.lastPos = this.position();
             }
         }

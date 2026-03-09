@@ -93,6 +93,11 @@
     "cold_war",
     "heavy",
     "lmg",
-    "ussr_russia"
-  ]
+    "ussr_russia",
+	"tacz",
+	"tacz_rainforest"
+  ],
+  "tacz": {
+    "gun_id": "rainforest:rpd"
+  }
 }

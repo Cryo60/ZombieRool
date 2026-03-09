@@ -4,7 +4,6 @@ import net.minecraftforge.items.SlotItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
-
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
@@ -18,10 +17,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.core.BlockPos;
-
 import me.cryo.zombierool.block.entity.BuyWallWeaponBlockEntity;
 import me.cryo.zombierool.init.ZombieroolModMenus;
-
 import java.util.function.Supplier;
 import java.util.Map;
 import java.util.HashMap;
@@ -44,11 +41,8 @@ public class WallWeaponManagerMenu extends AbstractContainerMenu implements Supp
 	    super(ZombieroolModMenus.WALL_WEAPON_MANAGER.get(), id);
 	    this.entity = inv.player;
 	    this.world = inv.player.level();
-	
-	    // Au départ, un handler vide d’un slot
 	    this.internal = new ItemStackHandler(1);
-	
-	    // Slot de synchronisation du prix
+	    
 	    this.data = new ContainerData() {
 	        @Override public int get(int index) {
 	            if (boundBlockEntity instanceof BuyWallWeaponBlockEntity be) {
@@ -64,8 +58,7 @@ public class WallWeaponManagerMenu extends AbstractContainerMenu implements Supp
 	        @Override public int getCount() { return 1; }
 	    };
 	    this.addDataSlots(data);
-	
-	    // Lecture de la position
+	    
 	    BlockPos pos = null;
 	    if (extraData != null) {
 	        pos = extraData.readBlockPos();
@@ -74,8 +67,7 @@ public class WallWeaponManagerMenu extends AbstractContainerMenu implements Supp
 	        this.z = pos.getZ();
 	        access = ContainerLevelAccess.create(world, pos);
 	    }
-	
-	    // ——— BIND au BlockEntity et à sa capability ———
+	    
 	    if (pos != null) {
 	        boundBlockEntity = world.getBlockEntity(pos);
 	        if (boundBlockEntity != null) {
@@ -85,31 +77,16 @@ public class WallWeaponManagerMenu extends AbstractContainerMenu implements Supp
 	            });
 	        }
 	    }
-	
-	    // Copier l’item déjà stocké dans le BE (slot 0) vers internal
-	    if (boundBlockEntity instanceof BuyWallWeaponBlockEntity) {
-	        ItemStack stored = internal.getStackInSlot(0); 
-	        if (!stored.isEmpty() && internal instanceof ItemStackHandler handler) {
-	            handler.setStackInSlot(0, stored.copy());
-	        }
-	    }
-	
-	    // ——— Ajout des slots GUI ———
-	    // Slot de configuration (slot 0 du handler)
+	    
 	    this.customSlots.put(0, this.addSlot(new SlotItemHandler(internal, 0, 5, 23)));
-	
-	    // Inventaire joueur (3 lignes × 9 colonnes)
+	    
 	    for (int si = 0; si < 3; ++si)
 	        for (int sj = 0; sj < 9; ++sj)
 	            this.addSlot(new Slot(inv, sj + (si + 1) * 9, 8 + sj * 18, 84 + si * 18));
-	
-	    // Hotbar (9 slots)
 	    for (int si = 0; si < 9; ++si)
 	        this.addSlot(new Slot(inv, si, 8 + si * 18, 142));
 	}
 
-
-    /** Récupère le prix synchronisé depuis le serveur */
     public int getConfiguredPrice() {
         return this.data.get(0);
     }

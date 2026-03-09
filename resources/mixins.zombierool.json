@@ -13,7 +13,11 @@
     "WallBlockMixin",
     "IronBarsAndPaneMixin",
     "FireOverlayMixin",
-    "EntityTurnMixin"
+    "EntityTurnMixin",
+    "TacZGlassProtectionMixin",
+    "TacZShootIntervalMixin",
+    "TacZReloadOperatorMixin",
+    "TacZActionTickMixin"
   ],
   "client": [],
   "minVersion": "0.8"

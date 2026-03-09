@@ -94,12 +94,15 @@
     "light",
     "modern",
     "smg",
-    "tacz",
-    "tacz_lradd"
+	"tacz",
+	"tacz_ronmc"
   ],
   "tacz": {
-    "gun_id": "lradd:p90",
+    "gun_id": "ronmc:p90",
     "ammo_id": "tacz:57x28",
+    "attachments": {
+      "scope": "tacz:sight_coyote"
+    },
     "pap_attachments": {
       "scope": "tacz:red_dot"
     }

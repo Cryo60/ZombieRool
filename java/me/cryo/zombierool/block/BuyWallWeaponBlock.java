@@ -44,7 +44,8 @@ import java.util.List;
 
 public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
-		public BuyWallWeaponBlock() {
+
+	public BuyWallWeaponBlock() {
 	    super(BlockBehaviour.Properties.of()
 	            .instrument(NoteBlockInstrument.BASEDRUM)
 	            .sound(SoundType.STONE)
@@ -54,23 +55,23 @@ public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	    );
 	    this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
 	}
-	
+
 	@Override
 	public boolean useShapeForLightOcclusion(BlockState state) {
 	    return true;
 	}
-	
+
 	private static boolean isEnglishClient() {
 	    if (Minecraft.getInstance() == null) {
 	        return false;
 	    }
 	    return Minecraft.getInstance().options.languageCode.startsWith("en");
 	}
-	
+
 	private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
 	    return isEnglishClient() ? englishMessage : frenchMessage;
 	}
-	
+
 	@Override
 	public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
 	    super.appendHoverText(itemstack, world, list, flag);
@@ -78,25 +79,28 @@ public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	    list.add(Component.literal(getTranslatedMessage("§7Définit les armes au mur avec un prix (en Créatif).", "§7Defines wall weapons with a price (in Creative).")));
 	    list.add(Component.literal(getTranslatedMessage("§7Peut imiter l'apparence d'un bloc (clic droit en Créatif).", "§7Can mimic the appearance of a block (right-click in Creative).")));
 	}
-	
+
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 	    builder.add(FACING);
 	}
-	
+
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
 	    Level level = context.getLevel();
 	    BlockPos pos = context.getClickedPos();
+
 	    for (Direction dir : context.getNearestLookingDirections()) {
 	        if (dir.getAxis().isHorizontal()) {
 	            Direction opposite = dir.getOpposite();
 	            BlockPos front = pos.relative(opposite);
 	            BlockPos belowFront = front.below();
 	            BlockPos aboveFront = front.above();
+	            
 	            boolean isAirFront = level.getBlockState(front).isAir();
 	            boolean isPathBelow = level.getBlockState(belowFront).is(ZombieroolModBlocks.PATH.get());
 	            boolean isPathAbove = level.getBlockState(aboveFront).is(ZombieroolModBlocks.PATH.get());
+	            
 	            if (isAirFront && (isPathBelow || isPathAbove)) {
 	                return this.defaultBlockState().setValue(FACING, opposite);
 	            }
@@ -104,25 +108,26 @@ public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	    }
 	    return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
 	}
-	
+
 	public BlockState rotate(BlockState state, Rotation rot) {
 	    return state.setValue(FACING, rot.rotate(state.getValue(FACING)));
 	}
-	
+
 	public BlockState mirror(BlockState state, Mirror mirrorIn) {
 	    return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
 	}
-	
+
 	@Override
 	public RenderShape getRenderShape(BlockState state) {
 	    return RenderShape.ENTITYBLOCK_ANIMATED;
 	}
-	
+
 	@Override
 	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 	    ItemStack held = player.getItemInHand(hand);
 	    boolean creative = player.getAbilities().instabuild;
 	    boolean sneaking = player.isShiftKeyDown();
+
 	    if (creative && sneaking) {
 	        if (!world.isClientSide && player instanceof ServerPlayer sp) {
 	            MenuProvider provider = new SimpleMenuProvider(
@@ -136,21 +141,28 @@ public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	        }
 	        return InteractionResult.sidedSuccess(world.isClientSide);
 	    }
+	    
 	    if (creative && !sneaking && !held.isEmpty() && held.getItem() instanceof BlockItem bi) {
 	        if (world.isClientSide) {
-	            ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(bi.getBlock());
-	            NetworkHandler.INSTANCE.sendToServer(new CaptureWallTexturePacket(pos, blockRL, hit.getDirection(), hit.getLocation(), hit.isInside()));
+	            // FIX CRASH: Ne pas copier les blocs de type IMimicBlock pour éviter les boucles infinies
+	            if (!(bi.getBlock() instanceof MimicSystem.IMimicBlock)) {
+	                ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(bi.getBlock());
+	                NetworkHandler.INSTANCE.sendToServer(new CaptureWallTexturePacket(pos, blockRL, hit.getDirection(), hit.getLocation(), hit.isInside()));
+	            } else {
+	                player.displayClientMessage(Component.literal("§cVous ne pouvez pas imiter un bloc technique !").withStyle(net.minecraft.ChatFormatting.RED), true);
+	            }
 	        }
 	        return InteractionResult.sidedSuccess(world.isClientSide);
 	    }
+
 	    return InteractionResult.PASS;
 	}
-	
+
 	@Override
 	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 	    return new BuyWallWeaponBlockEntity(pos, state);
 	}
-	
+
 	@Override
 	public int getAnalogOutputSignal(BlockState blockState, Level world, BlockPos pos) {
 	    BlockEntity tileentity = world.getBlockEntity(pos);
@@ -159,7 +171,7 @@ public class BuyWallWeaponBlock extends MimicSystem.AbstractMimicBlock {
 	    else
 	        return 0;
 	}
-	
+
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
 	    return (lvl, pos, st, blockEntity) -> {

@@ -8,17 +8,15 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.SetWallWeaponConfigPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
 import me.cryo.zombierool.world.inventory.WallWeaponManagerMenu;
 
 import java.util.HashMap;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 
 public class WallWeaponManagerScreen extends AbstractContainerScreen<WallWeaponManagerMenu> {
@@ -28,7 +26,6 @@ public class WallWeaponManagerScreen extends AbstractContainerScreen<WallWeaponM
 	private final Player entity;
 	EditBox price_input;
 	Button button_confirm;
-	
 
 	public WallWeaponManagerScreen(WallWeaponManagerMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
@@ -91,32 +88,28 @@ public class WallWeaponManagerScreen extends AbstractContainerScreen<WallWeaponM
 	@Override
 	public void init() {
 	    super.init();
-	
-	    // Création de l'EditBox (même code qu'avant)…
 	    price_input = new EditBox(this.font, this.leftPos + 51, this.topPos + 22, 120, 20,
-	        Component.translatable("gui.zombierool.wall_weapon_manager.price_input")) { /* … */ };
+	        Component.translatable("gui.zombierool.wall_weapon_manager.price_input")) {  };
 	    price_input.setMaxLength(6);
 	    int existing = menu.getConfiguredPrice();
 	    if (existing > 0) {
 	        price_input.setValue(Integer.toString(existing));
 	    }
 	    this.addRenderableWidget(price_input);
-	
-	    // Bouton de confirmation avec message et fermeture
+
 	    button_confirm = Button.builder(Component.literal("Valider"), btn -> {
 	        String text = price_input.getValue();
 	        int p;
 	        try {
 	            p = text.isEmpty() ? 0 : Integer.parseInt(text);
 	        } catch (NumberFormatException e) {
-	            // Message d'erreur en rouge
 	            this.minecraft.player.displayClientMessage(
 	                Component.literal("Prix invalide !").withStyle(style -> style.withColor(0xFF5555)),
 	                false
 	            );
 	            return;
 	        }
-	
+
 	        ItemStack stack = menu.getSlot(0).getItem();
 	        if (stack.isEmpty()) {
 	            this.minecraft.player.displayClientMessage(
@@ -125,24 +118,19 @@ public class WallWeaponManagerScreen extends AbstractContainerScreen<WallWeaponM
 	            );
 	            return;
 	        }
-	
-	        ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(stack.getItem());
-	        // Envoi du paquet
+
 	        NetworkHandler.INSTANCE.sendToServer(
-	            new SetWallWeaponConfigPacket(new BlockPos(x, y, z), p, itemRL)
+	            new SetWallWeaponConfigPacket(new BlockPos(x, y, z), p, stack)
 	        );
-	
-	        // Message de succès en vert
+
 	        this.minecraft.player.displayClientMessage(
 	            Component.literal("Configuration enregistrée !").withStyle(style -> style.withColor(0x55FF55)),
 	            false
 	        );
-	        // Fermeture du GUI
 	        this.minecraft.player.closeContainer();
 	    })
 	    .bounds(this.leftPos + 107, this.topPos + 53, 61, 20)
 	    .build();
-	
 	    this.addRenderableWidget(button_confirm);
 	}
 }

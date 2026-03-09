@@ -96,10 +96,9 @@
     "sniper",
     "ww2",
     "tacz",
-    "tacz_elitex"
+    "tacz_ww"
   ],
   "tacz": {
-    "gun_id": "elitex:kar98k",
-    "ammo_id": "lesraisins:792x57"
+    "gun_id": "ww:kar98k"
   }
 }

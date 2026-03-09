@@ -8,7 +8,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.SaplingBlock;
@@ -24,13 +23,8 @@ import java.util.Random;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class GameplayEventHandler {
-
     private static final Random RANDOM = new Random();
 
-    /**
-     * Gère les points bonus Vulture Aid lors du drop d'item.
-     * (Anciennement DropItemPointGainEvent)
-     */
     @SubscribeEvent
     public static void onItemTossed(ItemTossEvent event) {
         Player player = event.getPlayer();
@@ -47,10 +41,6 @@ public class GameplayEventHandler {
         }
     }
 
-    /**
-     * Force la croissance instantanée des arbres avec de la poudre d'os.
-     * (Anciennement InstantTreeGrowthHandler)
-     */
     @SubscribeEvent
     public static void onBonemealUsed(BonemealEvent event) {
         if (event.getBlock().getBlock() instanceof SaplingBlock sapling) {
@@ -65,10 +55,6 @@ public class GameplayEventHandler {
         }
     }
 
-    /**
-     * Désactive le spawn naturel des mobs à la création/chargement du monde.
-     * (Anciennement MapCreationHandler)
-     */
     @SubscribeEvent
     public static void onWorldLoad(LevelEvent.Load event) {
         if (!event.getLevel().isClientSide() && event.getLevel() instanceof ServerLevel serverLevel) {

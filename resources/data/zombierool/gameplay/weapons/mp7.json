@@ -93,11 +93,11 @@
     "germany",
     "light",
     "smg",
-    "tacz",
-    "tacz_mw_guns"
+	"tacz",
+	"tacz_ronmc"
   ],
   "tacz": {
-    "gun_id": "mw_guns:mw_mp7",
+    "gun_id": "ronmc:mp7",
     "ammo_id": "tacz:45acp",
     "pap_attachments": {
       "scope": "tacz:holographic"

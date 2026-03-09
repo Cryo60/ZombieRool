@@ -93,6 +93,11 @@
     "call_of_duty",
     "medium",
     "usa",
-    "ww2"
-  ]
+    "ww2",
+	"tacz",
+	"tacz_ww"
+  ],
+  "tacz": {
+    "gun_id": "ww:m1918a2"
+  }
 }

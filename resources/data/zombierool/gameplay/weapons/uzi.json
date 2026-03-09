@@ -93,6 +93,11 @@
     "israel",
     "light",
     "modern",
-    "smg"
-  ]
+    "smg",
+	"tacz",
+	"tacz_tacz"
+  ],
+  "tacz": {
+    "gun_id": "tacz:uzi"
+  }
 }

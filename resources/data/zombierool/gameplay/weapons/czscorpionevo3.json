@@ -92,6 +92,12 @@
     "light",
     "modern",
     "rainbow_six_siege",
-    "smg"
-  ]
+    "smg",
+    "tacz",
+    "tacz_mw_guns"
+  ],
+  "tacz": {
+    "gun_id": "mw_guns:mw_cx9",
+    "ammo_id": "tacz:9mm"
+  }
 }

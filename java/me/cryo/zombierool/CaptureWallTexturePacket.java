@@ -60,6 +60,7 @@ public class CaptureWallTexturePacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayer sender = ctx.get().getSender();
             if (sender == null) return;
+
             Level lvl = sender.getCommandSenderWorld();
             if (!(lvl instanceof ServerLevel server)) return;
 
@@ -67,15 +68,18 @@ public class CaptureWallTexturePacket {
             if (!(be instanceof MimicSystem.IMimicContainer mimicContainer)) return;
 
             Block block = ForgeRegistries.BLOCKS.getValue(pkt.blockRL);
-            if (block != null) {
+            
+            // FIX CRASH: Vérification serveur (sécurité) pour ne pas copier les IMimicBlock
+            if (block != null && !(block instanceof MimicSystem.IMimicBlock)) {
                 ItemStack stack = new ItemStack(block);
                 BlockHitResult hitResult = new BlockHitResult(pkt.hitVec, pkt.clickedFace, pkt.wallPos, pkt.inside);
                 BlockPlaceContext placeContext = new BlockPlaceContext(sender, InteractionHand.MAIN_HAND, stack, hitResult);
                 
                 BlockState placementState = block.getStateForPlacement(placeContext);
                 if (placementState == null) placementState = block.defaultBlockState();
-
+                
                 mimicContainer.setMimic(placementState);
+
                 if (be != null) {
                     be.setChanged();
                     server.sendBlockUpdated(

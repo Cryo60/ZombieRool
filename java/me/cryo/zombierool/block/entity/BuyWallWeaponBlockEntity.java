@@ -1,4 +1,5 @@
 package me.cryo.zombierool.block.entity;
+
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.common.util.LazyOptional;
@@ -34,15 +35,18 @@ import javax.annotation.Nullable;
 import java.util.stream.IntStream;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Locale;
 import io.netty.buffer.Unpooled;
+
 public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, MimicSystem.IMimicContainer {
 	private NonNullList<ItemStack> stacks = NonNullList.withSize(1, ItemStack.EMPTY);
 	private final LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.values());
+	
+	// RESTAURATION: variables d'origine pour la rétrocompatibilité
 	private int price = 0;
 	private ResourceLocation itemToSell = null;
 	private BlockState mimicBlockState = null;
 	private boolean orientationFixed = false;
+	
 	private static final Map<String, String> ID_MIGRATION_MAP = new HashMap<>();
 	static {
 	    ID_MIGRATION_MAP.put("M1GarandItem", "m1garand");
@@ -192,8 +196,6 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    ID_MIGRATION_MAP.put("storm_weapon", "storm");
 	    ID_MIGRATION_MAP.put("MG42WeaponItem", "mg42");
 	    ID_MIGRATION_MAP.put("mg_42_weapon", "mg42");
-	    ID_MIGRATION_MAP.put("Gewehr43WeaponItem", "gewehr43");
-	    ID_MIGRATION_MAP.put("gewehr_43_weapon", "gewehr43");
 	    ID_MIGRATION_MAP.put("MagnumWeaponItem", "magnum");
 	    ID_MIGRATION_MAP.put("magnum_weapon", "magnum");
 	    ID_MIGRATION_MAP.put("USP45WeaponItem", "usp45");
@@ -205,9 +207,11 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    ID_MIGRATION_MAP.put("DMRWeaponItem", "dmr");
 	    ID_MIGRATION_MAP.put("dmr_weapon", "dmr");
 	}
+
 	public BuyWallWeaponBlockEntity(BlockPos position, BlockState state) {
 	    super(ZombieroolModBlockEntities.BUY_WALL_WEAPON.get(), position, state);
 	}
+
 	public void tick(Level level, BlockPos pos, BlockState state) {
 	    if (level.isClientSide) return;
 	    if (!orientationFixed) {
@@ -215,6 +219,7 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	        orientationFixed = true;
 	    }
 	}
+
 	private void fixOrientation(Level level, BlockPos pos, BlockState state) {
 	    if (!(state.getBlock() instanceof BuyWallWeaponBlock)) return;
 	    Direction currentFacing = state.getValue(BuyWallWeaponBlock.FACING);
@@ -229,6 +234,7 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	        }
 	    }
 	}
+
 	private boolean isValidOrientation(Level level, BlockPos pos, Direction facing) {
 	    BlockPos front = pos.relative(facing);
 	    BlockPos belowFront = front.below();
@@ -238,6 +244,7 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    boolean isPathAbove = level.getBlockState(aboveFront).is(ZombieroolModBlocks.PATH.get());
 	    return isAirFront && (isPathBelow || isPathAbove);
 	}
+
 	@Override
 	public void onLoad() {
 	    super.onLoad();
@@ -245,50 +252,62 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	         this.orientationFixed = false; 
 	    }
 	}
+
 	@Override
 	public void load(CompoundTag nbt) {
 	    super.load(nbt);
 	    this.stacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
 	    ContainerHelper.loadAllItems(nbt, this.stacks);
+	    
 	    this.price = nbt.getInt("Price");
 	    if (nbt.contains("OrientationFixed")) {
 	        this.orientationFixed = nbt.getBoolean("OrientationFixed");
 	    }
+	    
+	    // Legacy Loader pour les anciennes maps utilisant itemToSell
 	    if (nbt.contains("ItemToSell", Tag.TAG_STRING)) {
 	        String fullId = nbt.getString("ItemToSell");
-	        this.itemToSell = ResourceLocation.tryParse(fullId); 
-	        if (this.itemToSell != null && ForgeRegistries.ITEMS.containsKey(this.itemToSell)) {
-	             this.stacks.set(0, new ItemStack(ForgeRegistries.ITEMS.getValue(this.itemToSell)));
+	        ResourceLocation legacyRl = ResourceLocation.tryParse(fullId);
+	        this.itemToSell = legacyRl;
+	        
+	        if (legacyRl != null && ForgeRegistries.ITEMS.containsKey(legacyRl)) {
+	             if (this.stacks.get(0).isEmpty()) {
+	                 this.stacks.set(0, new ItemStack(ForgeRegistries.ITEMS.getValue(legacyRl)));
+	             }
 	        }
 	    }
+	    
 	    this.mimicBlockState = MimicSystem.loadMimic(nbt, this.level, "CapturedBlock", true);
-	    if (this.itemToSell != null) {
-	        ItemStack currentStack = this.stacks.get(0);
-	        Item regItem = ForgeRegistries.ITEMS.getValue(this.itemToSell);
-	        if (regItem != null && regItem != Items.AIR) {
-	            if (currentStack.isEmpty() || currentStack.getItem() != regItem) {
-	                 this.stacks.set(0, new ItemStack(regItem));
-	                 this.setChanged();
-	            }
-	        }
-	    }
 	}
+
 	@Override
 	public void saveAdditional(CompoundTag nbt) {
 	    super.saveAdditional(nbt);
 	    ContainerHelper.saveAllItems(nbt, this.stacks);
 	    nbt.putInt("Price", this.price);
 	    nbt.putBoolean("OrientationFixed", this.orientationFixed);
+	    
 	    if (this.itemToSell != null) {
 	        nbt.putString("ItemToSell", this.itemToSell.toString());
 	    }
+	    
 	    MimicSystem.saveMimic(nbt, this.mimicBlockState);
 	}
+
 	public int getPrice() { return price; }
 	public void setPrice(int price) { this.price = price; setChanged(); }
-	public ResourceLocation getItemToSell() { return itemToSell; }
+	
+	public ResourceLocation getItemToSell() {
+	    ItemStack stack = this.stacks.get(0);
+	    if (stack.isEmpty() && this.itemToSell != null) {
+	        return this.itemToSell; 
+	    }
+	    if (stack.isEmpty()) return null;
+	    return ForgeRegistries.ITEMS.getKey(stack.getItem());
+	}
+	
 	public void setItemToSell(ResourceLocation itemToSell) { 
-	    this.itemToSell = itemToSell; 
+	    this.itemToSell = itemToSell;
 	    if (itemToSell != null) {
 	        Item item = ForgeRegistries.ITEMS.getValue(itemToSell);
 	        if (item != null && item != Items.AIR) {
@@ -297,27 +316,33 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	    }
 	    setChanged(); 
 	}
+
 	@Override
 	public BlockState getMimic() {
 	    return mimicBlockState;
 	}
+
 	@Override
 	public void setMimic(BlockState state) {
 	    this.mimicBlockState = state;
 	    setChanged();
 	}
+
 	@Override
 	public ClientboundBlockEntityDataPacket getUpdatePacket() {
 	    return ClientboundBlockEntityDataPacket.create(this);
 	}
+
 	@Override
 	public CompoundTag getUpdateTag() {
 	    return this.saveWithFullMetadata();
 	}
+
 	@Override
 	public int getContainerSize() {
 	    return stacks.size();
 	}
+
 	@Override
 	public boolean isEmpty() {
 	    for (ItemStack itemstack : this.stacks)
@@ -325,52 +350,64 @@ public class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity i
 	            return false;
 	    return true;
 	}
+
 	@Override
 	public Component getDefaultName() {
 	    return Component.literal("buy_wall_weapon");
 	}
+
 	@Override
 	public int getMaxStackSize() {
 	    return 64;
 	}
+
 	@Override
 	public AbstractContainerMenu createMenu(int id, Inventory inventory) {
 	    return new WallWeaponManagerMenu(id, inventory, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(this.worldPosition));
 	}
+
 	@Override
 	public Component getDisplayName() {
 	    return Component.literal("Wall Weapon");
 	}
+
 	@Override
 	protected NonNullList<ItemStack> getItems() {
 	    return this.stacks;
 	}
+
 	@Override
 	protected void setItems(NonNullList<ItemStack> stacks) {
 	    this.stacks = stacks;
 	}
+
 	@Override
 	public boolean canPlaceItem(int index, ItemStack stack) {
 	    return true;
 	}
+
 	@Override
 	public int[] getSlotsForFace(Direction side) {
 	    return IntStream.range(0, this.getContainerSize()).toArray();
 	}
+
 	@Override
 	public boolean canPlaceItemThroughFace(int index, ItemStack stack, @Nullable Direction direction) {
 	    return this.canPlaceItem(index, stack);
 	}
+
 	@Override
 	public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) {
 	    return index != 0;
 	}
+
 	@Override
 	public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction facing) {
 	    if (!this.remove && facing != null && capability == ForgeCapabilities.ITEM_HANDLER)
 	        return handlers[facing.ordinal()].cast();
 	    return super.getCapability(capability, facing);
 	}
+
 	@Override
 	public void setRemoved() {
 	    super.setRemoved();

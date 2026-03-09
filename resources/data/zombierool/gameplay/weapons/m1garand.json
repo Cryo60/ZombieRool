@@ -94,10 +94,9 @@
     "usa",
     "ww2",
     "tacz",
-    "tacz_elitex"
+	"tacz_ww"
   ],
   "tacz": {
-    "gun_id": "elitex:m1_garand",
-    "ammo_id": "lesraisins:30_06"
+    "gun_id": "ww:m1g"
   }
 }

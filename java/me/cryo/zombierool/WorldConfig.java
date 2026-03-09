@@ -1,4 +1,5 @@
 package me.cryo.zombierool;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.BlockPos;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +20,7 @@ import java.util.Map;
 
 public class WorldConfig extends SavedData {
     private static final String DATA_NAME = "zombierool_world_config";
+
     public static final TicketType<ChunkPos> PATH_TICKET = TicketType.create("zombierool_path", Comparator.comparingLong(ChunkPos::toLong));
 
     private Set<BlockPos> playerSpawnerPositions = new HashSet<>();
@@ -34,12 +37,10 @@ public class WorldConfig extends SavedData {
     private float customFogNear = 0.5f, customFogFar = 18.0f;
     private ResourceLocation starterItem = new ResourceLocation("zombierool", "m1911");
     private String dayNightMode = "night"; 
-    
     private boolean particlesEnabled = false;
     private ResourceLocation particleTypeId = null;
     private String particleDensity = "normal";
     private String particleMode = "global";
-
     private String musicPreset = "none"; 
     private String eyeColorPreset = "default";
     private String voicePreset = "none"; 
@@ -48,6 +49,7 @@ public class WorldConfig extends SavedData {
 
     private int baseZombies = 6;
     private int maxActiveMobsPerPlayer = 50;
+
     private float zombieBaseHealth = 4f;
     private float zombieMaxHealth = 1050f;
     private float hellhoundBaseHealth = 8f;
@@ -81,6 +83,9 @@ public class WorldConfig extends SavedData {
     private Set<ResourceLocation> customBoxWeapons = new HashSet<>();
     private Set<ResourceLocation> customWonderWeapons = new HashSet<>();
     private Set<String> mysteryBoxTags = new HashSet<>();
+    
+    // Nouveau paramètre pour gérer l'apparition des armes TacZ non mappées dans la boite
+    private Set<ResourceLocation> enabledUnmappedWeapons = new HashSet<>();
 
     public WorldConfig() {}
 
@@ -91,12 +96,13 @@ public class WorldConfig extends SavedData {
 
     public static WorldConfig load(CompoundTag nbt) {
         WorldConfig config = new WorldConfig();
+
         loadPositions(nbt, "playerSpawnerPositions", config.playerSpawnerPositions);
         loadPositions(nbt, "mysteryBoxPositions", config.mysteryBoxPositions);
         loadPositions(nbt, "powerSwitchPositions", config.powerSwitchPositions);
         loadPositions(nbt, "wunderfizzPositions", config.wunderfizzPositions);
         loadPositions(nbt, "pathPositions", config.pathPositions); 
-        
+
         if (nbt.contains("activeWunderfizzPosition", 10)) {
             CompoundTag posTag = nbt.getCompound("activeWunderfizzPosition");
             config.activeWunderfizzPosition = new BlockPos(posTag.getInt("x"), posTag.getInt("y"), posTag.getInt("z"));
@@ -111,6 +117,7 @@ public class WorldConfig extends SavedData {
 
         config.loadEditable(nbt);
         config.rebuildChunkCounts();
+
         return config;
     }
 
@@ -147,6 +154,7 @@ public class WorldConfig extends SavedData {
         if (nbt.contains("customFogB")) customFogB = nbt.getFloat("customFogB");
         if (nbt.contains("customFogNear")) customFogNear = nbt.getFloat("customFogNear");
         if (nbt.contains("customFogFar")) customFogFar = nbt.getFloat("customFogFar");
+
         if (nbt.contains("starterItem")) starterItem = new ResourceLocation(nbt.getString("starterItem"));
         if (nbt.contains("dayNightMode")) dayNightMode = nbt.getString("dayNightMode");
 
@@ -163,7 +171,7 @@ public class WorldConfig extends SavedData {
 
         if (nbt.contains("baseZombies")) baseZombies = nbt.getInt("baseZombies");
         if (nbt.contains("maxActiveMobsPerPlayer")) maxActiveMobsPerPlayer = nbt.getInt("maxActiveMobsPerPlayer");
-        
+
         if (nbt.contains("zombieBaseHealth")) zombieBaseHealth = nbt.getFloat("zombieBaseHealth");
         if (nbt.contains("zombieMaxHealth")) zombieMaxHealth = nbt.getFloat("zombieMaxHealth");
         if (nbt.contains("hellhoundBaseHealth")) hellhoundBaseHealth = nbt.getFloat("hellhoundBaseHealth");
@@ -222,6 +230,11 @@ public class WorldConfig extends SavedData {
             ListTag list = nbt.getList("mysteryBoxTags", 8);
             for (int i = 0; i < list.size(); i++) mysteryBoxTags.add(list.getString(i));
         }
+        if (nbt.contains("enabledUnmappedWeapons", 9)) {
+            enabledUnmappedWeapons.clear();
+            ListTag list = nbt.getList("enabledUnmappedWeapons", 8);
+            for (int i = 0; i < list.size(); i++) enabledUnmappedWeapons.add(new ResourceLocation(list.getString(i)));
+        }
     }
 
     public void saveEditable(CompoundTag compound) {
@@ -231,6 +244,7 @@ public class WorldConfig extends SavedData {
         compound.putFloat("customFogB", customFogB);
         compound.putFloat("customFogNear", customFogNear);
         compound.putFloat("customFogFar", customFogFar);
+
         compound.putString("starterItem", starterItem.toString());
         compound.putString("dayNightMode", dayNightMode);
 
@@ -247,7 +261,7 @@ public class WorldConfig extends SavedData {
 
         compound.putInt("baseZombies", baseZombies);
         compound.putInt("maxActiveMobsPerPlayer", maxActiveMobsPerPlayer);
-        
+
         compound.putFloat("zombieBaseHealth", zombieBaseHealth);
         compound.putFloat("zombieMaxHealth", zombieMaxHealth);
         compound.putFloat("hellhoundBaseHealth", hellhoundBaseHealth);
@@ -299,6 +313,10 @@ public class WorldConfig extends SavedData {
         ListTag boxTags = new ListTag();
         for (String id : mysteryBoxTags) boxTags.add(StringTag.valueOf(id));
         compound.put("mysteryBoxTags", boxTags);
+        
+        ListTag unmappedWpns = new ListTag();
+        for (ResourceLocation id : enabledUnmappedWeapons) unmappedWpns.add(StringTag.valueOf(id.toString()));
+        compound.put("enabledUnmappedWeapons", unmappedWpns);
     }
 
     public void resetGeneral() {
@@ -327,10 +345,12 @@ public class WorldConfig extends SavedData {
         zombieSprintWave = 5;
         zombieSprintChance = 0.5f;
         zombieSprintSpeed = 0.25f;
+
         superSprintersEnabled = false;
         superSprinterActivationWave = 6;
         superSprinterChance = 0.033f;
         superSprinterSpeed = 0.35f;
+
         hellhoundFireVariant = true;
         crawlerGasExplosion = true;
         setDirty();
@@ -354,6 +374,7 @@ public class WorldConfig extends SavedData {
         customBoxWeapons.clear();
         customWonderWeapons.clear();
         mysteryBoxTags.clear();
+        enabledUnmappedWeapons.clear(); // Reset newly added category
         setDirty();
     }
 
@@ -405,19 +426,25 @@ public class WorldConfig extends SavedData {
 
     public String getFogPreset() { return fogPreset; }
     public void setFogPreset(String fogPreset) { this.fogPreset = fogPreset; this.setDirty(); }
+
     public float getCustomFogR() { return customFogR; }
     public void setCustomFogR(float customFogR) { this.customFogR = customFogR; this.setDirty(); }
+
     public float getCustomFogG() { return customFogG; }
     public void setCustomFogG(float customFogG) { this.customFogG = customFogG; this.setDirty(); }
+
     public float getCustomFogB() { return customFogB; }
     public void setCustomFogB(float customFogB) { this.customFogB = customFogB; this.setDirty(); }
+
     public float getCustomFogNear() { return customFogNear; }
     public void setCustomFogNear(float customFogNear) { this.customFogNear = customFogNear; this.setDirty(); }
+
     public float getCustomFogFar() { return customFogFar; }
     public void setCustomFogFar(float customFogFar) { this.customFogFar = customFogFar; this.setDirty(); }
-    
+
     public ResourceLocation getStarterItem() { return starterItem; }
     public void setStarterItem(ResourceLocation starterItem) { this.starterItem = starterItem; this.setDirty(); }
+
     public String getDayNightMode() { return dayNightMode; }
     public void setDayNightMode(String dayNightMode) { this.dayNightMode = dayNightMode; this.setDirty(); }
 
@@ -430,6 +457,9 @@ public class WorldConfig extends SavedData {
 
     public Set<ResourceLocation> getCustomWonderWeapons() { return customWonderWeapons; }
     public void setCustomWonderWeapons(Set<ResourceLocation> set) { customWonderWeapons = new HashSet<>(set); setDirty(); }
+    
+    public Set<ResourceLocation> getEnabledUnmappedWeapons() { return enabledUnmappedWeapons; }
+    public void setEnabledUnmappedWeapons(Set<ResourceLocation> set) { enabledUnmappedWeapons = new HashSet<>(set); setDirty(); }
 
     public Set<String> getDisabledBonuses() { return disabledBonuses; }
     public boolean isBonusDisabled(String id) { return disabledBonuses.contains(id); }
@@ -448,7 +478,7 @@ public class WorldConfig extends SavedData {
     public String getParticleMode() { return particleMode; }
     public void enableParticles(ResourceLocation typeId, String density, String mode) { this.particlesEnabled = true; this.particleTypeId = typeId; this.particleDensity = density; this.particleMode = mode; this.setDirty(); }
     public void disableParticles() { this.particlesEnabled = false; this.particleTypeId = null; this.particleDensity = "normal"; this.particleMode = "global"; this.setDirty(); }
-    
+
     public String getMusicPreset() { return musicPreset; }
     public void setMusicPreset(String musicPreset) { this.musicPreset = musicPreset; this.setDirty(); }
 
@@ -487,7 +517,6 @@ public class WorldConfig extends SavedData {
             if (newCount == 1 && level != null) level.getChunkSource().addRegionTicket(PATH_TICKET, chunkPos, 2, chunkPos);
         }
     }
-    
     public void removePathPosition(BlockPos pos, ServerLevel level) {
         if (chunkPathCounts == null) rebuildChunkCounts();
         ChunkPos chunkPos = new ChunkPos(pos);
@@ -502,7 +531,6 @@ public class WorldConfig extends SavedData {
             }
         }
     }
-
     public Set<BlockPos> getPathPositions() { return Collections.unmodifiableSet(pathPositions); }
 
     public void setActiveWunderfizzPosition(BlockPos pos, ServerLevel level) {
@@ -513,7 +541,6 @@ public class WorldConfig extends SavedData {
             new me.cryo.zombierool.network.SyncActiveWunderfizzPositionPacket(pos)
         );
     }
-
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void onPlayerJoin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
@@ -526,7 +553,6 @@ public class WorldConfig extends SavedData {
             );
         }
     }
-
     public BlockPos getActiveWunderfizzPosition() { return activeWunderfizzPosition; }
     public boolean isWunderfizzActive(BlockPos pos) { return pos.equals(activeWunderfizzPosition); }
     public void clearActiveWunderfizz() { this.activeWunderfizzPosition = null; this.setDirty(); }

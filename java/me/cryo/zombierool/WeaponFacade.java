@@ -7,27 +7,19 @@ import me.cryo.zombierool.integration.TacZIntegration;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class WeaponFacade {
-
-    private static List<ResourceLocation> unmappedTaczGunsCache = null;
 
     public static boolean isWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
@@ -37,10 +29,13 @@ public class WeaponFacade {
     public static boolean isTaczWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (stack.hasTag() && stack.getTag().getBoolean("zombierool:is_tacz")) return true;
+        
         ResourceLocation registryName = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return registryName != null
-            && registryName.getNamespace().equals("tacz")
-            && registryName.getPath().equals("modern_kinetic_gun");
+        if (registryName != null && registryName.getNamespace().equals("tacz") && registryName.getPath().equals("modern_kinetic_gun")) {
+            stack.getOrCreateTag().putBoolean("zombierool:is_tacz", true);
+            return true;
+        }
+        return false;
     }
 
     public static boolean isHandgun(ItemStack stack) {
@@ -52,33 +47,25 @@ public class WeaponFacade {
         return false;
     }
 
-    public static Item getAmmoItemForGun(ItemStack stack) {
-        WeaponSystem.Definition def = getDefinition(stack);
-        if (def != null && def.tacz != null && def.tacz.ammo_id != null) {
-            String[] parts = def.tacz.ammo_id.split(":");
-            if (parts.length == 2) {
-                return ForgeRegistries.ITEMS.getValue(new ResourceLocation(parts[0], parts[1]));
-            }
-        }
+    public static String getWeaponId(ItemStack stack) {
         if (isTaczWeapon(stack)) {
-            ResourceLocation ammoId = TacZIntegration.getAmmoIdForGun(stack);
-            if (ammoId != null) {
-                return ForgeRegistries.ITEMS.getValue(ammoId);
-            }
+            return stack.getOrCreateTag().getString("GunId");
         }
-        return null;
+        WeaponSystem.Definition def = getDefinition(stack);
+        if (def != null) return def.id;
+        ResourceLocation rl = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return rl != null ? rl.toString() : "";
     }
 
     public static WeaponSystem.Definition getDefinition(ItemStack stack) {
-        if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
-            return gun.getDefinition();
-        }
+        if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) return gun.getDefinition();
+        
         if (isTaczWeapon(stack)) {
             String wId = stack.hasTag() ? stack.getTag().getString("zombierool:weapon_id") : "";
             if (!wId.isEmpty()) {
                 return WeaponSystem.Loader.LOADED_DEFINITIONS.get(wId.replace("zombierool:", ""));
             }
-
+            
             String gunId = stack.getOrCreateTag().getString("GunId");
             if (!gunId.isEmpty()) {
                 for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
@@ -93,94 +80,26 @@ public class WeaponFacade {
         return null;
     }
 
-    public static List<ResourceLocation> getUnmappedTaczGuns() {
-        if (unmappedTaczGunsCache != null) return unmappedTaczGunsCache;
-        unmappedTaczGunsCache = new ArrayList<>();
-        if (!ModList.get().isLoaded("tacz")) return unmappedTaczGunsCache;
-
-        List<ResourceLocation> allTaczGuns = TacZIntegration.getAllTacZGunIds();
-        Set<String> mappedIds = new HashSet<>();
-
-        for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
-            if (def.tacz != null && def.tacz.gun_id != null) mappedIds.add(def.tacz.gun_id);
-        }
-
-        for (ResourceLocation rl : allTaczGuns) {
-            if (!mappedIds.contains(rl.toString())) unmappedTaczGunsCache.add(rl);
-        }
-        return unmappedTaczGunsCache;
-    }
-
     public static ItemStack createUnmappedTaczWeaponStack(ResourceLocation gunId, boolean pap) {
         Item taczItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation("tacz:modern_kinetic_gun"));
         if (taczItem == null || taczItem == Items.AIR) return ItemStack.EMPTY;
-
+        
         ItemStack stack = new ItemStack(taczItem);
         CompoundTag tag = stack.getOrCreateTag();
         tag.putString("GunId", gunId.toString());
         tag.putBoolean("zombierool:is_tacz", true);
         tag.putBoolean("zombierool:unmapped", true);
-        tag.putBoolean("HasBulletInBarrel", true);
-        tag.putString("GunFireMode", "AUTO");
-
-        tag.putInt("GunCurrentAmmoCount", pap ? 60 : 30);
-        setReserve(stack, pap ? 240 : 120);
-
-        if (pap) tag.putBoolean("zombierool:pap", true);
-
+        tag.putBoolean("HasBulletInBarrel", false); 
+        
+        TacZIntegration.applyUnmappedTaczProperties(stack, gunId);
+        
+        int baseAmmo = TacZIntegration.getTacZWeaponBaseAmmo(stack);
+        tag.putInt("GunCurrentAmmoCount", pap ? baseAmmo * 2 : baseAmmo);
+        setReserve(stack, pap ? baseAmmo * 8 : baseAmmo * 4);
+        
+        if (pap) TacZIntegration.applyTaczPap(stack, null);
+        
         return stack;
-    }
-
-    private static String formatAttachmentType(String type) {
-        if (type == null || type.isEmpty()) return "";
-        if (type.equalsIgnoreCase("extendedmag") || type.equalsIgnoreCase("extended_mag"))
-            return "EXTENDED_MAG";
-        return type.toUpperCase(java.util.Locale.US);
-    }
-
-    private static void applyTaczAttachments(CompoundTag tag, Map<String, String> attachmentsMap) {
-        if (attachmentsMap == null || attachmentsMap.isEmpty()) return;
-
-        for (Map.Entry<String, String> entry : attachmentsMap.entrySet()) {
-            String type = formatAttachmentType(entry.getKey());
-            String idStr = entry.getValue();
-
-            if (idStr.equalsIgnoreCase("none") || idStr.isEmpty()) {
-                CompoundTag emptyNbt = new CompoundTag();
-                ItemStack.EMPTY.save(emptyNbt);
-                tag.put("Attachment" + type, emptyNbt);
-                continue;
-            }
-
-            ResourceLocation attId = new ResourceLocation(idStr.contains(":") ? idStr : "tacz:" + idStr);
-            boolean exists = true;
-
-            if (ModList.get().isLoaded("tacz")) {
-                try {
-                    Class<?> apiClass = Class.forName("com.tacz.guns.api.TimelessAPI");
-                    Optional<?> opt = (Optional<?>) apiClass.getMethod("getCommonAttachmentIndex", ResourceLocation.class).invoke(null, attId);
-                    if (opt.isEmpty()) {
-                        exists = false;
-                        me.cryo.zombierool.ZombieroolMod.LOGGER.warn("[ZR] L'accessoire {} n'existe pas dans TacZ, remplacé par vide pour éviter une texture manquante.", attId);
-                    }
-                } catch (Exception e) {}
-            }
-
-            if (exists) {
-                CompoundTag attNbt = new CompoundTag();
-                attNbt.putString("id", "tacz:attachment");
-                attNbt.putByte("Count", (byte) 1);
-                CompoundTag attTag = new CompoundTag();
-                attTag.putString("AttachmentId", attId.toString());
-                attNbt.put("tag", attTag);
-
-                tag.put("Attachment" + type, attNbt);
-            } else {
-                CompoundTag emptyNbt = new CompoundTag();
-                ItemStack.EMPTY.save(emptyNbt);
-                tag.put("Attachment" + type, emptyNbt);
-            }
-        }
     }
 
     public static ItemStack createWeaponStack(String zrId, boolean pap) {
@@ -196,32 +115,33 @@ public class WeaponFacade {
                 tag.putString("GunId", def.tacz.gun_id);
                 tag.putBoolean("zombierool:is_tacz", true);
                 tag.putString("zombierool:weapon_id", cleanId);
-                tag.putBoolean("HasBulletInBarrel", true);
-
-                if (def.tags != null && def.tags.contains("automatic"))
-                    tag.putString("GunFireMode", "AUTO");
-                else if (def.burst != null && def.burst.count > 1)
-                    tag.putString("GunFireMode", "BURST");
-                else
-                    tag.putString("GunFireMode", "SEMI");
-
-                int maxAmmo = pap ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size;
-                tag.putInt("GunCurrentAmmoCount", maxAmmo);
-
-                if (pap) {
-                    applyTaczPap(taczStack, def);
-                } else {
-                    setReserve(taczStack, def.ammo.max_reserve);
-                    if (def.tacz.attachments != null && !def.tacz.attachments.isEmpty()) {
-                        applyTaczAttachments(tag, def.tacz.attachments);
-                    }
+                tag.putBoolean("HasBulletInBarrel", false); 
+                
+                String mode = "SEMI";
+                if (def.burst != null && def.burst.count > 1) {
+                    mode = "BURST";
+                } else if (def.stats.fire_rate <= 5) {
+                    mode = "AUTO";
                 }
+                tag.putString("GunFireMode", mode);
+                
+                TacZIntegration.applyDefaultAttachments(taczStack, def);
+                
+                int maxAmmo = TacZIntegration.getTacZWeaponMaxAmmo(taczStack, def);
+                tag.putInt("GunCurrentAmmoCount", maxAmmo);
+                
+                if (pap) {
+                    TacZIntegration.applyTaczPap(taczStack, def);
+                } else {
+                    setReserve(taczStack, TacZIntegration.getTacZWeaponMaxReserve(taczStack, def));
+                    taczStack.setHoverName(net.minecraft.network.chat.Component.literal("§a" + def.name));
+                }
+                
                 return taczStack;
             }
         }
 
-        ResourceLocation zrLoc = new ResourceLocation(
-            def.id != null && def.id.contains(":") ? def.id : "zombierool:" + cleanId);
+        ResourceLocation zrLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + cleanId);
         Item zrItem = ForgeRegistries.ITEMS.getValue(zrLoc);
         if (zrItem != null && zrItem != Items.AIR) {
             ItemStack stack = new ItemStack(zrItem);
@@ -233,32 +153,10 @@ public class WeaponFacade {
         return ItemStack.EMPTY;
     }
 
-    public static void applyTaczPap(ItemStack stack, WeaponSystem.Definition def) {
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putBoolean("zombierool:pap", true);
-
-        if (def != null) {
-            tag.putInt("GunCurrentAmmoCount", def.ammo.clip_size + def.pap.clip_bonus);
-            setReserve(stack, def.ammo.max_reserve + def.pap.reserve_bonus);
-
-            if (def.tacz != null && def.tacz.pap_attachments != null && !def.tacz.pap_attachments.isEmpty()) {
-                applyTaczAttachments(tag, def.tacz.pap_attachments);
-            }
-        } else {
-            tag.putInt("GunCurrentAmmoCount", 60);
-            setReserve(stack, 240);
-        }
-    }
-
     public static boolean isPackAPunched(ItemStack stack) {
         if (stack.getItem() instanceof IPackAPunchable pap) return pap.isPackAPunched(stack);
         if (isTaczWeapon(stack)) return stack.getOrCreateTag().getBoolean("zombierool:pap");
         return false;
-    }
-
-    public static void applyPackAPunch(ItemStack stack) {
-        if (stack.getItem() instanceof IPackAPunchable pap) pap.applyPackAPunch(stack);
-        else if (isTaczWeapon(stack)) applyTaczPap(stack, getDefinition(stack));
     }
 
     public static boolean canBePackAPunched(ItemStack stack) {
@@ -280,7 +178,14 @@ public class WeaponFacade {
 
     public static int getReserve(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getReserve(stack);
-        if (isTaczWeapon(stack)) return stack.getOrCreateTag().getInt("DummyAmmo");
+        if (isTaczWeapon(stack)) {
+            CompoundTag tag = stack.getOrCreateTag();
+            if (!tag.contains("DummyAmmo")) {
+                int max = getMaxReserve(stack);
+                tag.putInt("DummyAmmo", max);
+            }
+            return tag.getInt("DummyAmmo");
+        }
         return 0;
     }
 
@@ -289,38 +194,50 @@ public class WeaponFacade {
             r.setReserve(stack, reserve);
         } else if (isTaczWeapon(stack)) {
             stack.getOrCreateTag().putInt("DummyAmmo", Math.max(0, reserve));
-            WeaponSystem.Definition def = getDefinition(stack);
-            int max = def != null ? (isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve) : 9999;
-            stack.getOrCreateTag().putInt("MaxDummyAmmo", max);
         }
     }
 
     public static int getMaxAmmo(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getMaxAmmo(stack);
         WeaponSystem.Definition def = getDefinition(stack);
+        if (isTaczWeapon(stack)) {
+            return TacZIntegration.getTacZWeaponMaxAmmo(stack, def);
+        }
         if (def != null) return isPackAPunched(stack) ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size;
-        if (isTaczWeapon(stack) && stack.getOrCreateTag().getBoolean("zombierool:unmapped"))
-            return isPackAPunched(stack) ? 60 : 30;
         return 0;
     }
 
     public static int getMaxReserve(ItemStack stack) {
         if (stack.getItem() instanceof IReloadable r) return r.getMaxReserve(stack);
         WeaponSystem.Definition def = getDefinition(stack);
+        if (isTaczWeapon(stack)) {
+            return TacZIntegration.getTacZWeaponMaxReserve(stack, def);
+        }
         if (def != null) return isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve;
-        if (isTaczWeapon(stack) && stack.getOrCreateTag().getBoolean("zombierool:unmapped"))
-            return isPackAPunched(stack) ? 240 : 120;
         return 0;
     }
 
-    public static void refillAllTaczAmmo(Player player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (isTaczWeapon(stack)) {
-                setAmmo(stack, getMaxAmmo(stack));
-                setReserve(stack, getMaxReserve(stack));
+    public static Item getAmmoItemForGun(ItemStack stack) {
+        return TacZIntegration.getAmmoItemForGun(stack);
+    }
+
+    public static List<ResourceLocation> getUnmappedTaczGuns() {
+        List<ResourceLocation> unmapped = new ArrayList<>();
+        if (!ModList.get().isLoaded("tacz")) return unmapped;
+        
+        List<ResourceLocation> allTacz = TacZIntegration.getAllTacZGunIds();
+        Set<String> mappedTaczIds = new HashSet<>();
+        for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
+            if (def.tacz != null && def.tacz.gun_id != null) {
+                mappedTaczIds.add(def.tacz.gun_id);
             }
         }
+        for (ResourceLocation taczId : allTacz) {
+            if (!mappedTaczIds.contains(taczId.toString())) {
+                unmapped.add(taczId);
+            }
+        }
+        return unmapped;
     }
 
     public static void refillHeldTaczAmmo(Player player, ItemStack stack) {
@@ -329,41 +246,60 @@ public class WeaponFacade {
         setReserve(stack, getMaxReserve(stack));
     }
 
+    public static void refillAllTaczAmmo(Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (isTaczWeapon(stack)) {
+                refillHeldTaczAmmo(player, stack);
+            }
+        }
+    }
+
+    public static void applyPackAPunch(ItemStack stack) {
+        if (stack.getItem() instanceof IPackAPunchable pap) pap.applyPackAPunch(stack);
+        else if (isTaczWeapon(stack)) TacZIntegration.applyTaczPap(stack, getDefinition(stack));
+    }
+
+    public static ResourceLocation getTaczIcon(ResourceLocation gunId) {
+        return TacZIntegration.getGunIcon(gunId);
+    }
+
     public static void shootCustomTaczProjectile(ServerPlayer player, ItemStack stack, WeaponSystem.Definition def) {
         boolean isPap = isPackAPunched(stack);
-        float damage = def.stats.damage + (isPap ? def.pap.damage_bonus : 0);
+        float damage = def.stats.damage;
+        if (isPap) damage += def.pap.damage_bonus;
+
         float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
         float velocity = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity;
         int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
-        int penetration = def.stats.penetration + (isPap ? def.pap.penetration_bonus : 0);
+
+        int penetration = def.stats.penetration;
+        if (isPap) penetration += def.pap.penetration_bonus;
 
         for (int i = 0; i < count; i++) {
-            Arrow projectile = new Arrow(player.level(), player);
+            net.minecraft.world.entity.projectile.Arrow projectile = new net.minecraft.world.entity.projectile.Arrow(player.level(), player);
             projectile.setBaseDamage(0); 
 
-            Vec3 eyePos = player.getEyePosition(1.0F);
-            Vec3 look = player.getViewVector(1.0F);
-            Vec3 right = look.cross(new Vec3(0, 1, 0)).normalize();
-            Vec3 up = right.cross(look).normalize();
-
-            Vec3 startPos = eyePos.add(right.scale(0.45f)).add(up.scale(-0.35)).add(look.scale(0.6));
-            projectile.setPos(startPos.x, startPos.y, startPos.z);
-
-            float yaw = player.getYRot();
+            net.minecraft.world.phys.Vec3 eyePos = player.getEyePosition();
+            projectile.setPos(eyePos.x, eyePos.y - 0.1, eyePos.z);
+            
+            float currentYaw = player.getYRot();
             if (count == 3 && isPap) {
-                if (i == 0) yaw -= 10.0f;
-                else if (i == 2) yaw += 10.0f;
+                if (i == 0) currentYaw -= 10.0f;
+                else if (i == 2) currentYaw += 10.0f;
             }
 
-            projectile.shootFromRotation(player, player.getXRot(), yaw, 0.0F, velocity, spread);
+            projectile.shootFromRotation(player, player.getXRot(), currentYaw, 0.0F, velocity, spread);
             projectile.setSilent(true);
-            projectile.pickup = AbstractArrow.Pickup.DISALLOWED;
-            if (penetration > 0) projectile.setPierceLevel((byte) Math.min(127, penetration));
+            projectile.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.DISALLOWED;
+            if (penetration > 0) {
+                projectile.setPierceLevel((byte) Math.min(127, penetration));
+            }
 
-            CompoundTag nbt = projectile.getPersistentData();
+            net.minecraft.nbt.CompoundTag nbt = projectile.getPersistentData();
             nbt.putBoolean("zombierool:custom_projectile", true);
             nbt.putFloat("zombierool:damage", damage);
-            nbt.putBoolean("zombierool:invisible", true);
+            nbt.putBoolean("zombierool:invisible", true); 
             nbt.putBoolean("zombierool:pap", isPap);
             nbt.putString("zombierool:trail_vfx", def.ballistics.trail_vfx);
 
@@ -381,17 +317,5 @@ public class WeaponFacade {
             if (!def.ballistics.gravity) projectile.setNoGravity(true);
             player.level().addFreshEntity(projectile);
         }
-
-        String soundId = isPap ? def.sounds.fire_pap : def.sounds.fire;
-        if (soundId != null && !soundId.isEmpty()) {
-            net.minecraft.sounds.SoundEvent evt = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(soundId));
-            if (evt != null) {
-                player.level().playSound(null, player.blockPosition(), evt, SoundSource.PLAYERS, 1f, 1f);
-            }
-        }
-    }
-
-    public static void clearCache() {
-        unmappedTaczGunsCache = null;
     }
 }

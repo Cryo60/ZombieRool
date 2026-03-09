@@ -96,10 +96,10 @@
     "usa",
     "ww2",
     "tacz",
-    "tacz_tacz"
+    "tacz_hamster"
   ],
   "tacz": {
-    "gun_id": "tacz:springfield1873",
+    "gun_id": "hamster:m1903",
     "ammo_id": "lesraisins:792x57"
   }
 }
