@@ -9,15 +9,12 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
-
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-
 import me.cryo.zombierool.entity.ZombieEntity;
 import me.cryo.zombierool.client.model.ModelZombieArmsFront;
+import me.cryo.zombierool.core.manager.DynamicResourceManager;
 
 public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
-
     private static final ResourceLocation[] ZOMBIE_SKINS = {
         new ResourceLocation("zombierool", "textures/entities/zombie_32_0.png"),
         new ResourceLocation("zombierool", "textures/entities/zombie_32_1.png"),
@@ -25,37 +22,33 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
         new ResourceLocation("zombierool", "textures/entities/zombie_32_3.png"),
         new ResourceLocation("zombierool", "textures/entities/zombie_32_4.png")
     };
-
-    private static final ResourceLocation EYE_TEXTURE_RED = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_red.png");
-    private static final ResourceLocation EYE_TEXTURE_BLUE = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_blue.png");
-    private static final ResourceLocation EYE_TEXTURE_GREEN = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_green.png");
     private static final ResourceLocation EYE_TEXTURE_DEFAULT = new ResourceLocation("zombierool", "textures/entities/zombie_e_32.png");
-
     private static ResourceLocation currentEyeTexture = EYE_TEXTURE_DEFAULT; 
 
     public ZombieRenderer(EntityRendererProvider.Context context) {
         super(context, new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5f);
-
         this.addLayer(new HumanoidArmorLayer<>(
             this,
             new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE_INNER_ARMOR)),
             new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE_OUTER_ARMOR)),
             context.getModelManager()
         ));
-
         this.addLayer(new EyesLayer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>>(this) {
             @Override
             public RenderType renderType() {
                 return RenderType.eyes(currentEyeTexture);
             }
         });
-        
-        // 🎃 NOUVEAU : Layer pour l'effet émissif de la BLACK_PUMPKIN
         this.addLayer(new EmissivePumpkinHeadLayer<>(this));
     }
 
     @Override
     public ResourceLocation getTextureLocation(ZombieEntity entity) {
+        String customSkin = entity.getCustomSkin();
+        if (customSkin != null && !customSkin.isEmpty()) {
+            ResourceLocation dyn = DynamicResourceManager.getClientSkin("zombie", customSkin);
+            if (dyn != null) return dyn;
+        }
         int skinIndex = Math.abs(entity.getId() % ZOMBIE_SKINS.length);
         return ZOMBIE_SKINS[skinIndex];
     }
@@ -63,16 +56,12 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     @Override
     public void render(ZombieEntity entity, float yaw, float partialTicks, PoseStack matrixStack,
                        MultiBufferSource buffer, int packedLight) {
-        
        if (entity.isDeadOrDying() && entity.isHeadshotDeath()) {
             boolean headVisible = this.model.head.visible;
             boolean hatVisible = this.model.hat.visible;
-        
             this.model.head.visible = false;
             this.model.hat.visible = false;
-        
             super.render(entity, yaw, partialTicks, matrixStack, buffer, packedLight);
-        
             this.model.head.visible = headVisible;
             this.model.hat.visible = hatVisible;
         } else {
@@ -80,17 +69,16 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
         }
     }
 
-    // Méthode publique statique pour définir la texture d'œil, appelée par le NetworkHandler
     public static void setEyeTexture(String preset) {
         switch (preset.toLowerCase()) {
             case "red":
-                currentEyeTexture = EYE_TEXTURE_RED;
+                currentEyeTexture = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_red.png");
                 break;
             case "blue":
-                currentEyeTexture = EYE_TEXTURE_BLUE;
+                currentEyeTexture = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_blue.png");
                 break;
             case "green":
-                currentEyeTexture = EYE_TEXTURE_GREEN;
+                currentEyeTexture = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_green.png");
                 break;
             case "default":
             default:

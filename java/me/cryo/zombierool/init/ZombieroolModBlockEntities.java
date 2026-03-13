@@ -12,9 +12,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.Block;
 
 import me.cryo.zombierool.block.entity.TraitorBlockEntity;
-import me.cryo.zombierool.block.entity.SpawnerZombieBlockEntity;
-import me.cryo.zombierool.block.entity.SpawnerDogBlockEntity;
-import me.cryo.zombierool.block.entity.SpawnerCrawlerBlockEntity;
 import me.cryo.zombierool.block.entity.PunchPackBlockEntity;
 import me.cryo.zombierool.block.entity.PerksLowerBlockEntity;
 import me.cryo.zombierool.block.entity.ObstacleDoorBlockEntity;
@@ -26,9 +23,6 @@ import me.cryo.zombierool.ZombieroolMod;
 public class ZombieroolModBlockEntities {
 	public static final DeferredRegister<BlockEntityType<?>> REGISTRY = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ZombieroolMod.MODID);
 	public static final RegistryObject<BlockEntityType<?>> OBSTACLE_DOOR = register("obstacle_door", ZombieroolModBlocks.OBSTACLE_DOOR, ObstacleDoorBlockEntity::new);
-	public static final RegistryObject<BlockEntityType<?>> SPAWNER_ZOMBIE = register("spawner_zombie", ZombieroolModBlocks.SPAWNER_ZOMBIE, SpawnerZombieBlockEntity::new);
-	public static final RegistryObject<BlockEntityType<?>> SPAWNER_CRAWLER = register("spawner_crawler", ZombieroolModBlocks.SPAWNER_CRAWLER, SpawnerCrawlerBlockEntity::new);
-	public static final RegistryObject<BlockEntityType<?>> SPAWNER_DOG = register("spawner_dog", ZombieroolModBlocks.SPAWNER_DOG, SpawnerDogBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> TRAITOR = register("traitor", ZombieroolModBlocks.TRAITOR, TraitorBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> BUY_WALL_WEAPON = register("buy_wall_weapon", ZombieroolModBlocks.BUY_WALL_WEAPON, BuyWallWeaponBlockEntity::new);
 	public static final RegistryObject<BlockEntityType<?>> PUNCH_PACK = register("punch_pack", ZombieroolModBlocks.PUNCH_PACK, PunchPackBlockEntity::new);

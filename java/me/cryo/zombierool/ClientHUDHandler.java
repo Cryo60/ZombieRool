@@ -35,6 +35,7 @@ public class ClientHUDHandler {
 
     private static long startGameAnimationStartTime = -1;
     private static int startGameAnimationWave = 0;
+    
     private static final long START_ANIM_FADE_DURATION_TICKS = 40;
     private static final long START_ANIM_TRANSLATION_DURATION_TICKS = 30;
     private static final long START_ANIM_TOTAL_DURATION_TICKS = START_ANIM_FADE_DURATION_TICKS + START_ANIM_TRANSLATION_DURATION_TICKS;
@@ -44,7 +45,7 @@ public class ClientHUDHandler {
     private static int waveChangeFromWave = 0;
     private static int waveChangeToWave = 0;
     private static final long WAVE_BLINK_DURATION = 60;
-
+    
     private static final double WALL_PURCHASE_MAX_DIST = 2.5;
 
     public static void triggerStartGameAnimation(int wave) {
@@ -71,32 +72,16 @@ public class ClientHUDHandler {
     @SubscribeEvent
     public static void onRenderOverlayPre(RenderGuiOverlayEvent.Pre event) {
         if (ClientSniperHandler.isScoping()) return; 
-
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (mc.level == null || player == null || mc.options.hideGui) return;
-
-        ItemStack mainHand = player.getMainHandItem();
-        if (WeaponFacade.isTaczWeapon(mainHand)) {
-            ResourceLocation overlayId = event.getOverlay().id();
-            
-            if (overlayId.getNamespace().equals("tacz")) {
-                event.setCanceled(true);
-            }
-            
-            if (overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.PLAYER_HEALTH.id()) ||
-                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.ARMOR_LEVEL.id()) ||
-                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.FOOD_LEVEL.id()) ||
-                overlayId.equals(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.AIR_LEVEL.id())) {
-                event.setCanceled(true);
-            }
-        }
+        // Laissons le HUD Vanilla (Coeurs/Faim) et le HUD de TacZ intacts
     }
 
     @SubscribeEvent
     public static void onRenderGuiPost(RenderGuiEvent.Post event) {
         if (ClientSniperHandler.isScoping()) return; 
-
+        
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (mc.level == null || player == null || mc.options.hideGui) return;
@@ -113,6 +98,7 @@ public class ClientHUDHandler {
 
     private static void renderTopLeftHUD(GuiGraphics gui, Minecraft mc, LocalPlayer player) {
         int yPosTopLeft = 10;
+        
         int score = PointManager.getScore(player);
         String scoreText = Component.translatable("zombierool.hud.score").getString();
         if (scoreText.equals("zombierool.hud.score")) scoreText = "Score";
@@ -146,6 +132,7 @@ public class ClientHUDHandler {
         int paddingX = 10;
         int bottomPadding = 20;
         int spacingBetweenElements = 5;
+        
         int drawY = height - bottomPadding;
         int textHeight = mc.font.lineHeight;
         int barHeight = 8;
@@ -164,9 +151,10 @@ public class ClientHUDHandler {
 
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty() || !WeaponFacade.isWeapon(held)) return;
-
+        
+        // Empêcher l'affichage du HUD de munitions ZombieRool pour les armes TacZ
         if (WeaponFacade.isTaczWeapon(held)) return;
-
+        
         boolean hasDurability = held.getItem() instanceof WeaponSystem.BaseGunItem gunD && gunD.hasDurability();
         boolean hasOverheat = held.getItem() instanceof WeaponSystem.BaseGunItem gunO && gunO.hasOverheat();
 
@@ -174,25 +162,26 @@ public class ClientHUDHandler {
             WeaponSystem.BaseGunItem gun = (WeaponSystem.BaseGunItem) held.getItem();
             int dur = gun.getDurability(held);
             int maxDur = gun.getMaxDurability(held);
-
+            
             int barY = drawY - barHeight;
             int textY = barY - textHeight - 2;
             int x = width - barWidth - paddingX;
-
+            
             float ratio = (float) dur / maxDur;
             int filledWidth = (int)(barWidth * ratio);
+            
             int borderColor = 0xFF555555;
             int fillColor = ratio > 0.6f ? 0xFF00FF00 : (ratio > 0.3f ? 0xFFFFFF00 : 0xFFFF0000);
-
+            
             gui.fill(x, barY, x + barWidth, barY + barHeight, borderColor);
             gui.fill(x, barY, x + filledWidth, barY + barHeight, fillColor);
-
+            
             String durTxt = Component.translatable("zombierool.hud.energy").getString();
             if (durTxt.equals("zombierool.hud.energy")) durTxt = "Énergie";
             String fullText = durTxt + ": " + dur + " / " + maxDur;
             int textWidthDisplay = mc.font.width(fullText);
             gui.drawString(mc.font, fullText, x + (barWidth / 2) - (textWidthDisplay / 2), textY, 0xFFFFFFFF, true);
-
+            
             drawY = textY - spacingBetweenElements;
         }
 
@@ -200,25 +189,26 @@ public class ClientHUDHandler {
             WeaponSystem.BaseGunItem gun = (WeaponSystem.BaseGunItem) held.getItem();
             int heat = gun.getOverheat(held);
             int maxHeat = gun.getMaxOverheat();
-
+            
             int barY = drawY - barHeight;
             int textY = barY - textHeight - 2;
             int x = width - barWidth - paddingX;
-
+            
             float ratio = (float) heat / maxHeat;
             int filledWidth = (int)(barWidth * ratio);
+            
             int borderColor = 0xFF555555;
             int fillColor = ratio < 0.3f ? 0xFF00FF00 : (ratio < 0.6f ? 0xFFFFFF00 : 0xFFFF0000);
-
+            
             gui.fill(x, barY, x + barWidth, barY + barHeight, borderColor);
             gui.fill(x, barY, x + filledWidth, barY + barHeight, fillColor);
-
+            
             String heatTxt = Component.translatable("zombierool.hud.overheat").getString();
             if (heatTxt.equals("zombierool.hud.overheat")) heatTxt = "Surchauffe";
             String fullText = heatTxt + ": " + (int)(ratio * 100) + "%";
             int textWidthDisplay = mc.font.width(fullText);
             gui.drawString(mc.font, fullText, x + (barWidth / 2) - (textWidthDisplay / 2), textY, 0xFFFFFFFF, true);
-
+            
             drawY = textY - spacingBetweenElements;
         }
 
@@ -227,6 +217,7 @@ public class ClientHUDHandler {
             int maxAmmo = WeaponFacade.getMaxAmmo(held);
             int reserveAmmo = WeaponFacade.getReserve(held);
             boolean isInfinite = false;
+            
             if (held.getItem() instanceof IReloadable rel) isInfinite = rel.isInfinite(held);
 
             String currentAmmoStr;
@@ -236,12 +227,12 @@ public class ClientHUDHandler {
             } else {
                 currentAmmoStr = String.valueOf(currentAmmo);
             }
-
             String maxAmmoStr = " / " + maxAmmo;
             String reserveAmmoText = isInfinite ? "∞" : String.valueOf(reserveAmmo);
 
             float scaleFactor = 0.7f;
             int mainAmmoTextY = drawY - textHeight;
+
             int currentAmmoWidth = mc.font.width(currentAmmoStr);
             int maxAmmoWidth = mc.font.width(maxAmmoStr);
 
@@ -272,10 +263,8 @@ public class ClientHUDHandler {
 
         if (startGameAnimationStartTime != -1) {
             long timeElapsed = time - startGameAnimationStartTime;
-
             if (timeElapsed <= START_ANIM_TOTAL_DURATION_TICKS + 1) {
                 String waveChar = getWaveDisplayText(startGameAnimationWave);
-                
                 float scaledMancheWidth = mc.font.width(mancheText) * START_ANIM_TEXT_SCALE;
                 float scaledWaveCharWidth = mc.font.width(waveChar) * START_ANIM_TEXT_SCALE;
                 float scaledHeight = mc.font.lineHeight * START_ANIM_TEXT_SCALE;
@@ -289,7 +278,6 @@ public class ClientHUDHandler {
                 int redColor = 0xFFFF0000;
 
                 gui.pose().pushPose();
-
                 if (timeElapsed < START_ANIM_FADE_DURATION_TICKS) {
                     float progress = (float) timeElapsed / START_ANIM_FADE_DURATION_TICKS;
                     int currentColor = interpolateColor(whiteColor, redColor, progress);
@@ -310,7 +298,7 @@ public class ClientHUDHandler {
                     float progress = Math.min(1.0f, (float) translationTime / START_ANIM_TRANSLATION_DURATION_TICKS);
                     
                     float ease = progress * progress * (3 - 2 * progress); 
-
+                    
                     float startScale = START_ANIM_TEXT_SCALE;
                     float endScale = 1.5f;
                     float currentScale = startScale + (endScale - startScale) * ease;
@@ -326,7 +314,6 @@ public class ClientHUDHandler {
                     gui.drawString(mc.font, mancheText + " " + waveChar, 0, 0, currentAnimColor, true);
                     gui.pose().popPose();
                 }
-
                 gui.pose().popPose();
                 return; 
             } else {
@@ -364,7 +351,7 @@ public class ClientHUDHandler {
 
     private static void renderWallWeaponHint(GuiGraphics gui, Minecraft mc, LocalPlayer player, int width, int height) {
         if (player.isCreative()) return;
-
+        
         HitResult ray = mc.hitResult;
         if (!(ray instanceof BlockHitResult bhr)) return;
 
@@ -395,7 +382,7 @@ public class ClientHUDHandler {
                 weaponOnWall = new ItemStack(item);
             }
         }
-
+        
         if (weaponOnWall.isEmpty()) return;
 
         boolean isTacz = WeaponFacade.isTaczWeapon(weaponOnWall);

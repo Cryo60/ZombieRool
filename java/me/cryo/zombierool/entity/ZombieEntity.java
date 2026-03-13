@@ -35,12 +35,12 @@ import java.util.Random;
 
 public class ZombieEntity extends AbstractZombieRoolEntity {
     public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
-    
+
     private int ambientSoundCooldown = 0;
     private double baseSpeed = 0.18;
     private static final Random STATIC_RANDOM = new Random();
-    private int lightUpdateTimer = 0;
 
+    private int lightUpdateTimer = 0;
     private static final EntityDataAccessor<Boolean> IS_SUPER_SPRINTER = SynchedEntityData.defineId(ZombieEntity.class, EntityDataSerializers.BOOLEAN);
 
     private int behindYouSoundCooldown = 0;
@@ -105,7 +105,6 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 0.15, 0.1, 0.15,
                 0.001
             );
-            
             if (this.random.nextFloat() < 0.3f) {
                 serverLevel.sendParticles(
                     ParticleTypes.LAVA,
@@ -158,7 +157,6 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         if (this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 32.0, false) == null) {
             return;
         }
-
         double currentSpeed = this.getAttribute(Attributes.MOVEMENT_SPEED).getValue();
         SoundEvent sound = null;
 
@@ -177,13 +175,17 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity entity) {
-        boolean flag = super.doHurtTarget(entity);
+        // Fix des dégâts : le Zombie inflige toujours 2.0 (1 coeur entier)
+        float damage = this.isSuperSprinter() ? 4.0f : 2.0f;
+        boolean flag = entity.hurt(this.damageSources().mobAttack(this), damage);
+
         if (flag && !this.level().isClientSide) {
             int idx = 1 + this.random.nextInt(16);
             SoundEvent attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
             if (attackSound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), attackSound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }
+
             if (entity instanceof Player) {
                 if (STATIC_RANDOM.nextInt(20) == 0) {
                     SoundEvent punchSound = ZombieroolModSounds.PUNCH.get();
@@ -275,6 +277,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                         int cooldown = this.random.nextInt(
                             BEHIND_YOU_MAX_COOLDOWN_TICKS - BEHIND_YOU_MIN_COOLDOWN_TICKS
                         ) + BEHIND_YOU_MIN_COOLDOWN_TICKS;
+                        
                         this.behindYouSoundCooldown = cooldown;
                         globalBehindYouSoundCooldown = cooldown;
                         break;
@@ -290,14 +293,11 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
             for (ZombieEntity other : nearbyZombies) {
                 if (other == this) continue;
                 double distSqr = this.distanceToSqr(other);
-
                 if (distSqr < 0.25) {
                     Vec3 direction = this.position().subtract(other.position()).normalize();
                     float push = 0.025f;
-                    
                     other.push(direction.x * push, 0, direction.z * push);
                     this.push(-direction.x * push, 0, -direction.z * push);
-                    
                     if (Math.abs(direction.x) < 0.1) {
                         this.push((this.random.nextBoolean() ? 1 : -1) * 0.02, 0, 0);
                     }
@@ -306,7 +306,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                     }
                 }
             }
-
+            
             updateHalloweenLight();
         }
     }

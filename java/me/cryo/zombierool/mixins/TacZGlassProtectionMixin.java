@@ -7,10 +7,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = DestroyGlassBlock.class, remap = false)
+@Mixin(value = DestroyGlassBlock.class)
 public abstract class TacZGlassProtectionMixin {
-
-    @Inject(method = "onAmmoHitBlock", at = @At("HEAD"), cancellable = true)
+    
+    @Inject(method = "onAmmoHitBlock", at = @At("HEAD"), cancellable = true, remap = false)
     private static void zombierool_protectGlass(AmmoHitBlockEvent event, CallbackInfo ci) {
         ci.cancel();
     }

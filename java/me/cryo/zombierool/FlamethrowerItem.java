@@ -86,6 +86,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity ent, int slot, boolean sel) {
         super.inventoryTick(stack, level, ent, slot, sel); 
+        
         if (!(ent instanceof Player p)) return;
 
         int currentOverheat = getOverheat(stack);
@@ -149,24 +150,24 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         Vec3 maxEndPos = eyePos.add(lookVec.scale(7.5));
         
         net.minecraft.world.phys.HitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
-            eyePos, maxEndPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, player
+            eyePos, maxEndPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, null 
         ));
         
         Vec3 finalEndPos = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? maxEndPos : hit.getLocation();
+        
         AABB flameArea = new AABB(eyePos, finalEndPos).inflate(1.75);
 
         Vec3 stepVec = lookVec.scale(1.5); 
         Vec3 groundCheckPos = eyePos;
-
         for (int j = 0; j < 5; j++) {
             groundCheckPos = groundCheckPos.add(stepVec);
             if (groundCheckPos.distanceToSqr(eyePos) > eyePos.distanceToSqr(finalEndPos)) break; 
-
+            
             net.minecraft.world.phys.BlockHitResult groundHit = player.level().clip(new net.minecraft.world.level.ClipContext(
                 groundCheckPos, groundCheckPos.subtract(0, 4.0, 0),
                 net.minecraft.world.level.ClipContext.Block.COLLIDER, 
                 net.minecraft.world.level.ClipContext.Fluid.NONE,
-                player
+                null 
             ));
 
             if (groundHit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
@@ -188,10 +189,11 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
             long lastDmg = target.getPersistentData().getLong("LastFlameDmgTick");
             if (currentTick - lastDmg >= 5) {
                 target.getPersistentData().putLong("LastFlameDmgTick", currentTick);
-                
                 float totalDamage = flatDamage + (target.getMaxHealth() * percentageDamage);
                 
                 target.getPersistentData().putBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG, true);
+                target.getPersistentData().putBoolean("zombierool:no_gore", true);
+                
                 me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, player.level().damageSources().playerAttack(player), totalDamage);
                 
                 if (target instanceof Monster) {
@@ -199,9 +201,8 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                     me.cryo.zombierool.PointManager.modifyScore(player, 10);
                 }
             }
-
+            
             target.setSecondsOnFire(8);
-
             if (isPap) {
                 if (!target.getPersistentData().getBoolean("BlueFire")) {
                     target.getPersistentData().putBoolean("BlueFire", true);
@@ -317,7 +318,6 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                     return;
                 }
             }
-
             if (activePatches.size() >= MAX_FIRE_PATCHES) {
                 activePatches.remove(0); 
             }
@@ -356,13 +356,14 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                             patch.pos.x - 1.0, patch.pos.y - 0.2, patch.pos.z - 1.0,
                             patch.pos.x + 1.0, patch.pos.y + 1.5, patch.pos.z + 1.0
                     );
-
                     List<LivingEntity> entities = patch.level.getEntitiesOfClass(LivingEntity.class, damageBox);
+
                     for (LivingEntity target : entities) {
                         if (!target.isAlive() || target.isSpectator()) continue;
                         if (target instanceof me.cryo.zombierool.entity.WhiteKnightEntity) continue;
 
                         float finalDamage = patch.damage;
+
                         if (target instanceof Player p) {
                             if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                                 continue;
@@ -386,6 +387,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                                 }
                             }
                         }
+
                         me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, patch.level.damageSources().onFire(), finalDamage);
                     }
                 }

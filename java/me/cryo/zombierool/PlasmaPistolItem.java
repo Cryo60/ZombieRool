@@ -34,7 +34,6 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	public static final String TAG_IS_OVERCHARGED = "zombierool:is_overcharged";
 	public static final String TAG_OVERHEAT_LOCKED = "OverheatLocked";
 	public static final String TAG_WAS_OVERHEATED_FLAG = "WasOverheatedFlag";
-
 	private static final int CHARGE_TIME_TICKS = 20;
 	private static final float MIN_CHARGE_FOR_OVERCHARGE = 0.25f; 
 
@@ -160,15 +159,10 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	    if (!player.isCreative()) {
 	        int newHeat = getOverheat(stack) + heatCost;
 	        setOverheat(stack, newHeat);
-
 	        setDurability(stack, getDurability(stack) - durabilityDrain);
-	        if (getDurability(stack) <= 0) {
-	            if (!player.level().isClientSide) {
-	                player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 1.0f, 1.0f);
-	            }
-	            stack.shrink(1);
-	        }
-
+            
+            // Retrait de stack.shrink(1)
+            
 	        if (newHeat >= getMaxOverheat()) {
 	            setOverheatLocked(stack, true);
 	            setWasOverheatedFlag(stack, true);
@@ -194,8 +188,9 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 
 	    boolean isOvercharged = charge >= MIN_CHARGE_FOR_OVERCHARGE;
 	    boolean isPap = isPackAPunched(stack);
-
+	    
 	    float actualDamage = def.stats.damage;
+
 	    if (isOvercharged) {
 	        float overchargeFactor = (charge - MIN_CHARGE_FOR_OVERCHARGE) / (1.0f - MIN_CHARGE_FOR_OVERCHARGE);
 	        actualDamage = def.stats.damage * 1.5f + (def.stats.damage * 1.5f * overchargeFactor); 
@@ -206,7 +201,7 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 
 	    Vec3 start = player.getEyePosition(1F);
 	    Vec3 dir   = player.getViewVector(1F);
-
+	    
 	    float velocity = isOvercharged ? def.ballistics.velocity * 1.5f : def.ballistics.velocity;
 	    float spread = isOvercharged ? def.ballistics.spread * 0.125f : def.ballistics.spread;
 
@@ -232,8 +227,9 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	    arrow.getPersistentData().putBoolean("zombierool:plasma_pap", isPap);
 
 	    arrow.setInvisible(false);
-
+	    
 	    float yawOffset = isLeft ? -3.0f : 3.0f;
+
 	    arrow.shootFromRotation(player, player.getXRot(), player.getYRot() + yawOffset, 0.0F, velocity, spread);
 	    level.addFreshEntity(arrow);
 
@@ -264,7 +260,7 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 
 	    public static void handleTick(Minecraft mc, Player player, ItemStack stack, boolean attackDown) {
 	        PlasmaPistolItem gun = (PlasmaPistolItem) stack.getItem();
-
+	        
 	        if (player.getCooldowns().isOnCooldown(gun) || gun.isOverheatLocked(stack) || gun.getDurability(stack) <= 0) {
 	            stopSound();
 	            chargeTicks = 0;
@@ -276,16 +272,16 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	            chargeTicks++;
 	            if (chargeTicks >= 5) {
 	                keepSoundAlive(player);
-	                float chargeRatio = Math.min(1.0f, (float)(chargeTicks - 5) / 15.0f);
 
+	                float chargeRatio = Math.min(1.0f, (float)(chargeTicks - 5) / 15.0f);
 	                Vec3 eye = player.getEyePosition();
 	                Vec3 look = player.getViewVector(1.0f);
 	                Vec3 right = look.cross(new Vec3(0, 1, 0)).normalize();
 	                Vec3 up = right.cross(look).normalize();
+
 	                Vec3 barrel = eye.add(look.scale(0.8)).add(right.scale(0.35)).add(up.scale(-0.25));
 
 	                boolean isPap = gun.isPackAPunched(stack);
-
 	                for(int i = 0; i < 2; i++) {
 	                    double spread = 0.25 * chargeRatio;
 	                    double ox = (mc.level.random.nextDouble() - 0.5) * spread;
@@ -308,7 +304,7 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	                boolean isOvercharged = charge >= MIN_CHARGE_FOR_OVERCHARGE;
 	                int heatCost = isOvercharged ? (int)(10 + (25 * charge)) : 10;
 	                if (gun.isPackAPunched(stack)) heatCost = (int)(heatCost * 0.75);
-
+	                
 	                int newHeat = gun.getOverheat(stack) + heatCost;
 	                gun.setOverheat(stack, Math.min(gun.getMaxOverheat(), newHeat));
 	                stack.getOrCreateTag().putLong(WeaponSystem.BaseGunItem.TAG_LAST_FIRE, player.level().getGameTime());
@@ -328,7 +324,6 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
 	                stopSound();
 	            }
 	        }
-
 	        wasAttackDownLastTick = attackDown;
 	    }
 

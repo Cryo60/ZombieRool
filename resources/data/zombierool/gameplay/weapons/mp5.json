@@ -104,7 +104,7 @@
       "muzzle": "tacz:muzzle_silencer_ptilopsis"
     },
     "pap_attachments": {
-      "scope": "tacz:red_dot"
+      "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }
 }

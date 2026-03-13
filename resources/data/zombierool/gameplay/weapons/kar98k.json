@@ -99,6 +99,9 @@
     "tacz_ww"
   ],
   "tacz": {
-    "gun_id": "ww:kar98k"
+    "gun_id": "ww:kar98k",
+	"pap_attachments": {
+      "scope": "tacz:scope_mk5hd"
+    }
   }
 }

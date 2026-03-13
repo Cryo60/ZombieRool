@@ -12,31 +12,26 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = LivingEntityBolt.class, remap = false)
+@Mixin(value = LivingEntityBolt.class)
 public abstract class TacZActionTickMixin {
-
-    @Shadow
-    @org.spongepowered.asm.mixin.Final
-    private LivingEntity shooter;
-
-    @Shadow
-    @org.spongepowered.asm.mixin.Final
-    private ShooterDataHolder data;
-
-    @Inject(method = "tickBolt", at = @At("HEAD"))
+    
+    @Shadow(remap = false)
+    protected LivingEntity shooter;
+    
+    @Shadow(remap = false)
+    protected ShooterDataHolder data;
+    
+    @Inject(method = "tickBolt", at = @At("HEAD"), remap = false)
     private void zombierool_accelerateBoltPumpAction(CallbackInfo ci) {
-        // Sécurité pour s'assurer que le joueur est bien en train d'actionner le verrou
         if (this.shooter == null || this.data == null || !this.data.isBolting) return;
         if (this.data.currentGunItem == null) return;
         
         ItemStack gunItem = this.data.currentGunItem.get();
         if (gunItem == null || gunItem.isEmpty()) return;
         if (!WeaponFacade.isTaczWeapon(gunItem)) return;
-
+        
         boolean hasDoubleTap = this.shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get());
         if (hasDoubleTap) {
-            // Accélère artificiellement la complétion de l'action de pompe/verrou
-            // En repoussant le point de départ de l'action de 25ms dans le passé chaque tick.
             this.data.boltTimestamp -= 25;
         }
     }

@@ -1,5 +1,4 @@
 package me.cryo.zombierool.core.manager;
-
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.api.IHeadshotWeapon;
@@ -23,7 +22,6 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public class DamageManager {
-
     public static final String HEADSHOT_TAG = "zombierool:is_headshot_damage";
     public static final String GUN_DAMAGE_TAG = "zombierool:damage_by_gun";
 
@@ -38,12 +36,13 @@ public class DamageManager {
         if (isHeadshot) {
             float globalMultiplier = 2.0f; 
             float flatBonus = 0.0f; 
+
             if (weapon != null) {
                 WeaponSystem.Definition def = WeaponFacade.getDefinition(weapon);
                 if (def != null && "SNIPER".equalsIgnoreCase(def.type)) {
                     globalMultiplier = 3.0f;
                 }
-                
+
                 if (weapon.getItem() instanceof IHeadshotWeapon headshotWeapon) {
                     flatBonus += headshotWeapon.getHeadshotBaseDamage(weapon); 
                     if (WeaponFacade.isPackAPunched(weapon)) {
@@ -56,22 +55,24 @@ public class DamageManager {
                     }
                 }
             }
+
             damage = (baseGunDamage + flatBonus) * globalMultiplier;
         }
 
         if (BonusManager.isInstaKillActive(attacker)) {
             damage = 100000f;
         }
+
         return damage;
     }
 
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent event) {
         if (event.getEntity().level().isClientSide) return;
+
         LivingEntity target = event.getEntity();
         DamageSource source = event.getSource();
 
-        // Désactivation du PVP
         if (target instanceof Player && source.getEntity() instanceof Player && target != source.getEntity()) {
             event.setCanceled(true);
             return;
@@ -97,26 +98,29 @@ public class DamageManager {
 
         LivingEntity target = event.getEntity();
         DamageSource source = event.getSource();
-        
+
         if (!isValidTarget(target)) return;
 
         Entity attackerEntity = source.getEntity();
         if (!(attackerEntity instanceof ServerPlayer player)) return;
 
         int points = 50; 
+
         boolean isGunDamage = target.getPersistentData().getBoolean(GUN_DAMAGE_TAG);
         boolean isHeadshot = target.getPersistentData().getBoolean(HEADSHOT_TAG);
         boolean isExplosive = target.getPersistentData().getBoolean("zombierool:explosive_damage");
 
         if (isGunDamage) {
             points = isHeadshot ? 100 : 50;
-
-            if (isHeadshot) {
-                if (target.getRandom().nextFloat() <= 0.3f) {
-                    GoreManager.triggerHeadExplosion(target);
+            
+            if (!target.getPersistentData().getBoolean("zombierool:no_gore")) {
+                if (isHeadshot) {
+                    if (target.getRandom().nextFloat() <= 0.3f) {
+                        GoreManager.triggerHeadExplosion(target);
+                    }
+                } else {
+                    GoreManager.tryDismemberLimb(target, 100f );
                 }
-            } else {
-                GoreManager.tryDismemberLimb(target, 100f );
             }
         } else if (isExplosive) {
             points = 50;
@@ -129,6 +133,7 @@ public class DamageManager {
         target.getPersistentData().remove(HEADSHOT_TAG);
         target.getPersistentData().remove(GUN_DAMAGE_TAG);
         target.getPersistentData().remove("zombierool:explosive_damage");
+        target.getPersistentData().remove("zombierool:no_gore");
     }
 
     private static boolean isValidTarget(LivingEntity entity) {

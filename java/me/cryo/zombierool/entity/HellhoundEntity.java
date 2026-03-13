@@ -37,7 +37,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.player.PlayerDownManager;
-
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -46,6 +45,7 @@ import java.util.stream.Collectors;
 import java.util.Comparator;
 import net.minecraft.world.level.GameType;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 public class HellhoundEntity extends AbstractZombieRoolEntity {
     private int breathSoundCooldown = 0;
@@ -100,7 +100,9 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
         this.targetSelector.addGoal(1, new TargetGoal(this, false, false) {
             @Override
             public boolean canUse() {
+                if (!HellhoundEntity.this.isRevealedClient()) return false;
                 if (HellhoundEntity.this.assignedTarget == null) return false;
+                
                 Player p = HellhoundEntity.this.level().getPlayerByUUID(HellhoundEntity.this.assignedTarget);
                 if (p != null && p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p)) {
                     if (p instanceof ServerPlayer sp) {
@@ -113,14 +115,27 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
                 }
                 return false;
             }
-
             @Override
             public boolean canContinueToUse() {
                 return canUse();
             }
         });
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false));
-        this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false) {
+            @Override
+            public boolean canUse() {
+                return HellhoundEntity.this.isRevealedClient() && super.canUse();
+            }
+            @Override
+            public boolean canContinueToUse() {
+                return HellhoundEntity.this.isRevealedClient() && super.canContinueToUse();
+            }
+        });
+        this.goalSelector.addGoal(4, new RandomLookAroundGoal(this) {
+            @Override
+            public boolean canUse() {
+                return HellhoundEntity.this.isRevealedClient() && super.canUse();
+            }
+        });
     }
 
     @Override
@@ -144,7 +159,8 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity target) {
-        boolean flag = super.doHurtTarget(target);
+        if (!this.isRevealedClient()) return false;
+        boolean flag = target.hurt(this.damageSources().mobAttack(this), 1.0f);
         if (flag) {
             this.playSound(ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:hellhound_bite")), 1.0f, 1.0f);
         }
@@ -153,6 +169,8 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (!this.isRevealedClient()) return false;
+        
         if (source.is(DamageTypes.IN_FIRE) ||
             source.is(DamageTypes.FALL) ||
             source.is(DamageTypes.DROWN) ||
@@ -166,6 +184,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     @Override
     public void die(DamageSource cause) {
         super.die(cause); 
+        
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             if (isFireVariant) {
                 ExplosionControl.doCustomExplosion(this.level(), this, this.position(), 15.0f, 2.5f, 1.0f, 0.0f, 0.0f, 0.5f, "EXPLOSION", "NONE", false);
@@ -198,37 +217,47 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     private void validateOrAssignTarget() {
         ServerLevel serverLevel = (ServerLevel) this.level();
-        
+
         if (assignedTarget != null) {
             ServerPlayer p = serverLevel.getServer().getPlayerList().getPlayer(assignedTarget);
             if (p != null && p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)) {
                 return; 
             }
         }
-        
+
         List<ServerPlayer> validPlayers = serverLevel.getServer().getPlayerList().getPlayers().stream()
             .filter(p -> p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE))
             .collect(Collectors.toList());
-            
+
         if (!validPlayers.isEmpty()) {
             Map<UUID, Integer> targetCounts = new HashMap<>();
             for (ServerPlayer p : validPlayers) targetCounts.put(p.getUUID(), 0);
-            
+
             List<HellhoundEntity> hounds = serverLevel.getEntitiesOfClass(HellhoundEntity.class, this.getBoundingBox().inflate(200));
             for (HellhoundEntity h : hounds) {
                 if (h != this && h.assignedTarget != null && targetCounts.containsKey(h.assignedTarget)) {
                     targetCounts.put(h.assignedTarget, targetCounts.get(h.assignedTarget) + 1);
                 }
             }
-            
+
             ServerPlayer chosen = validPlayers.stream()
                 .min(Comparator.comparingInt(p -> targetCounts.get(p.getUUID())))
                 .orElse(validPlayers.get(this.random.nextInt(validPlayers.size())));
-                
+            
             assignedTarget = chosen.getUUID();
         } else {
             assignedTarget = null;
         }
+    }
+
+    @Override
+    public void travel(Vec3 travelVector) {
+        if (!this.isRevealedClient()) {
+            this.setDeltaMovement(Vec3.ZERO);
+            super.travel(Vec3.ZERO);
+            return;
+        }
+        super.travel(travelVector);
     }
 
     @Override
@@ -242,8 +271,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             }
             this.setInvisible(true);
             this.entityData.set(REVEALED, false);
-            spawnTimer = 20;
-
+            spawnTimer = 40;
             this.level().playSound(
                 null, this.blockPosition(),
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_prespawn")),
@@ -251,20 +279,27 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             );
         }
 
+        if (this.level().isClientSide() && this.isAlive() && !this.entityData.get(REVEALED)) {
+            for (int i = 0; i < 5; i++) {
+                this.level().addParticle(ParticleTypes.FLAME, this.getRandomX(1.0), this.getY() + this.random.nextDouble() * 2.0, this.getRandomZ(1.0), 0, 0.1, 0);
+            }
+        }
+
         if (!this.level().isClientSide() && spawnInitialized && !this.entityData.get(REVEALED)) {
+            this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
+
             if (spawnTimer-- <= 0) {
                 this.setInvisible(false);
                 this.entityData.set(REVEALED, true);
                 if (isFireVariant) {
                     this.setSecondsOnFire(15);
                 }
-
                 this.level().playSound(
                     null, this.blockPosition(),
                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_strike")),
                     this.getSoundSource(), 1.0f, 1.0f
                 );
-
+                
                 if (this.level() instanceof ServerLevel serverLevel) {
                     for (int i = 0; i < 50; i++) {
                         double dx = (this.random.nextDouble() - 0.5) * 1.5;

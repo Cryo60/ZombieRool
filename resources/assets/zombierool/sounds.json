@@ -4386,5 +4386,29 @@
         "stream": false
       }
     ]
+  },
+  "easter_egg_confirm": {
+    "sounds": [
+      {
+        "name": "zombierool:easter_egg_confirm",
+        "stream": false
+      }
+    ]
+  },
+  "meteorite_ambient": {
+    "sounds": [
+      {
+        "name": "zombierool:meteorite_ambient",
+        "stream": false
+      }
+    ]
+  },
+  "secret_song": {
+    "sounds": [
+      {
+        "name": "zombierool:secret_song",
+        "stream": true
+      }
+    ]
   }
 }

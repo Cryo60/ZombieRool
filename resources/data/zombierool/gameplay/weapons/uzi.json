@@ -98,6 +98,9 @@
 	"tacz_tacz"
   ],
   "tacz": {
-    "gun_id": "tacz:uzi"
+    "gun_id": "tacz:uzi",
+	"pap_attachments": {
+      "scope": "gucci_attachments:sight_holosun_reddot"
+    }
   }
 }

@@ -36,14 +36,10 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModBlocks.ULTIMA_RECEPTOR.get().asItem());
 				tabData.accept(ZombieroolModItems.HELLHOUND_SPAWN_EGG.get());
 				tabData.accept(ZombieroolModItems.CRAWLER_SPAWN_EGG.get());
-				tabData.accept(ZombieroolModBlocks.SPAWNER_ZOMBIE.get().asItem());
-				tabData.accept(ZombieroolModBlocks.SPAWNER_CRAWLER.get().asItem());
-				tabData.accept(ZombieroolModBlocks.SPAWNER_DOG.get().asItem());
 				tabData.accept(ZombieroolModBlocks.TRAITOR.get().asItem());
 				tabData.accept(ZombieroolModBlocks.BUY_WALL_WEAPON.get().asItem());
 				tabData.accept(ZombieroolModBlocks.PUNCH_PACK_CORPSE.get().asItem());
 				tabData.accept(ZombieroolModBlocks.PUNCH_PACK.get().asItem());
-				tabData.accept(ZombieroolModBlocks.PLAYER_SPAWNER.get().asItem());
 				tabData.accept(ZombieroolModBlocks.ZOMBIE_PASS.get().asItem());
 				tabData.accept(ZombieroolModBlocks.AMMO_CRATE.get().asItem());
 				tabData.accept(ZombieroolModItems.BLOOD_BRUSH.get());

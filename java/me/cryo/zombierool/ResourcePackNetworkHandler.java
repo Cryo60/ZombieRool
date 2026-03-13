@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 
 public class ResourcePackNetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
+
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
         new ResourceLocation("zombierool", "resourcepack"),
         () -> PROTOCOL_VERSION,
@@ -20,6 +21,7 @@ public class ResourcePackNetworkHandler {
     );
 
     private static int packetId = 0;
+
     private static int id() {
         return packetId++;
     }
@@ -29,7 +31,7 @@ public class ResourcePackNetworkHandler {
             RequestResourcePackMessage::encode,
             RequestResourcePackMessage::decode,
             RequestResourcePackMessage::handle);
-
+        
         INSTANCE.registerMessage(id(), ResourcePackInfoMessage.class,
             ResourcePackInfoMessage::encode,
             ResourcePackInfoMessage::decode,
@@ -83,8 +85,9 @@ public class ResourcePackNetworkHandler {
         }
 
         public static void encode(ResourcePackInfoMessage msg, FriendlyByteBuf buf) {
-            buf.writeBoolean(msg.url != null);
-            if (msg.url != null) {
+            boolean hasRP = msg.url != null && !msg.url.trim().isEmpty() && msg.name != null && !msg.name.trim().isEmpty();
+            buf.writeBoolean(hasRP);
+            if (hasRP) {
                 buf.writeUtf(msg.url);
                 buf.writeUtf(msg.name);
             }
@@ -100,7 +103,7 @@ public class ResourcePackNetworkHandler {
 
         public static void handle(ResourcePackInfoMessage msg, Supplier<NetworkEvent.Context> ctx) {
             ctx.get().enqueueWork(() -> {
-                if (msg.url != null && msg.name != null) {
+                if (msg.url != null && !msg.url.trim().isEmpty() && msg.name != null && !msg.name.trim().isEmpty()) {
                     me.cryo.zombierool.client.MultiplayerResourcePackHandler.showPrompt(msg.url, msg.name);
                 }
             });

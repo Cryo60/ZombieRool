@@ -12,6 +12,7 @@ import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.block.*;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
 import me.cryo.zombierool.block.entity.BuyWallWeaponBlockEntity;
 import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
 import me.cryo.zombierool.block.entity.ObstacleDoorBlockEntity;
@@ -21,7 +22,7 @@ import me.cryo.zombierool.init.ZombieroolModMobEffects;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.logic.PackAPunchManager;
 import me.cryo.zombierool.network.*;
-
+import me.cryo.zombierool.util.PlayerVoiceManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -71,6 +72,15 @@ public class ServerInteractionHandler {
             case PACK_A_PUNCH -> handlePackAPunch(player, level, pos);
             case AMMO_CRATE -> handleAmmoCrate(player, level, pos);
             case REPAIR_BARRICADE -> handleRepairBarricade(player, level, pos);
+            case METEORITE -> handleMeteorite(player, level, pos);
+        }
+    }
+
+    private static void handleMeteorite(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof MeteoriteEasterEgg.MeteoriteBlock && state.getValue(MeteoriteEasterEgg.MeteoriteBlock.ACTIVE)) {
+            level.setBlock(pos, state.setValue(MeteoriteEasterEgg.MeteoriteBlock.ACTIVE, false), 3);
+            MeteoriteEasterEgg.onMeteoriteFound(level, player);
         }
     }
 
@@ -132,6 +142,7 @@ public class ServerInteractionHandler {
                     "§cPas assez de points pour recharger (" + balance + " / " + halfPrice + ")",
                     "§cNot enough points to reload (" + balance + " / " + halfPrice + ")"
                 ));
+                PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             } else {
                 PointManager.modifyScore(player, -halfPrice);
@@ -142,6 +153,7 @@ public class ServerInteractionHandler {
             if (existing.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
                 gun.setDurability(existing, gun.getMaxDurability(existing));
             }
+
             if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
 
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
@@ -150,6 +162,7 @@ public class ServerInteractionHandler {
                 "§aReloaded: " + existing.getHoverName().getString() + (hasIngot ? " for 1 ingot" : " for " + halfPrice + " points")
             ));
             player.inventoryMenu.broadcastChanges();
+
         } else {
             if (hasIngot) {
                 consumeIngot(player);
@@ -158,6 +171,7 @@ public class ServerInteractionHandler {
                     "§cPas assez de points (" + balance + " / " + basePrice + ")",
                     "§cNot enough points (" + balance + " / " + basePrice + ")"
                 ));
+                PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             } else {
                 PointManager.modifyScore(player, -basePrice);
@@ -165,7 +179,6 @@ public class ServerInteractionHandler {
 
             ItemStack stackToGive = weaponToSell.copy();
             stackToGive.setCount(1);
-
             if (def != null) {
                 stackToGive = WeaponFacade.createWeaponStack(def.id, false);
                 if (stackToGive.isEmpty()) stackToGive = new ItemStack(weaponToSell.getItem(), 1);
@@ -185,6 +198,7 @@ public class ServerInteractionHandler {
 
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "weapon")), SoundSource.PLAYERS, 1f, 1f);
+
             player.sendSystemMessage(getTranslatedComponent(player,
                 "§aAcheté : " + stackToGive.getHoverName().getString() + (hasIngot ? " pour 1 ingot" : " pour " + basePrice + " points"),
                 "§aPurchased: " + stackToGive.getHoverName().getString() + (hasIngot ? " for 1 ingot" : " for " + basePrice + " points")
@@ -204,7 +218,6 @@ public class ServerInteractionHandler {
             player.sendSystemMessage(getTranslatedComponent(player, "§cLa Mystery Box est en train de se déplacer... attendez !", "§cThe Mystery Box is moving... wait!").withStyle(ChatFormatting.RED));
             return;
         }
-
         if (manager.isAwaitingWeapon) {
             player.sendSystemMessage(getTranslatedComponent(player, "§cLa Mystery Box prépare déjà votre arme... un instant !", "§cThe Mystery Box is already preparing your weapon... just a moment!").withStyle(ChatFormatting.YELLOW));
             return;
@@ -228,6 +241,7 @@ public class ServerInteractionHandler {
         } else {
             if (PointManager.getScore(player) < cost) {
                 player.sendSystemMessage(getTranslatedComponent(player, "§cPas assez de points ! (" + cost + " points requis)", "§cNot enough points! (" + cost + " points required)").withStyle(ChatFormatting.RED));
+                PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             }
             manager.startMysteryBoxInteraction(level, player, false);
@@ -285,6 +299,7 @@ public class ServerInteractionHandler {
 
         if (!hasIngot && balance < price) {
             player.displayClientMessage(getTranslatedComponent(player, "§cVous n'avez pas assez de points ou de lingots !", "§cYou don't have enough points or ingots!"), true);
+            PlayerVoiceManager.playNoMoneySound(player, level);
             return;
         }
 
@@ -363,6 +378,7 @@ public class ServerInteractionHandler {
         } else {
             if (PointManager.getScore(player) < cost) {
                 player.displayClientMessage(getTranslatedComponent(player, "§cPas assez de points ! (1500 requis)", "§cNot enough points! (1500 required)"), true);
+                PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             }
             PointManager.modifyScore(player, -cost);
@@ -458,7 +474,6 @@ public class ServerInteractionHandler {
 
         long lastTime = lastRepairTimes.getOrDefault(playerId, 0L);
         if (now - lastTime < effectiveCooldown) return;
-
         lastRepairTimes.put(playerId, now);
 
         BlockState state = level.getBlockState(pos);

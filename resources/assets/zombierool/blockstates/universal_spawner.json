@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "active=false,mob_type=zombie": {
+      "model": "zombierool:block/universal_spawner_zombie"
+    },
+    "active=true,mob_type=zombie": {
+      "model": "zombierool:block/universal_spawner_zombie_active"
+    },
+    "active=false,mob_type=crawler": {
+      "model": "zombierool:block/universal_spawner_crawler"
+    },
+    "active=true,mob_type=crawler": {
+      "model": "zombierool:block/universal_spawner_crawler_active"
+    },
+    "active=false,mob_type=hellhound": {
+      "model": "zombierool:block/universal_spawner_hellhound"
+    },
+    "active=true,mob_type=hellhound": {
+      "model": "zombierool:block/universal_spawner_hellhound_active"
+    },
+    "active=false,mob_type=player": {
+      "model": "zombierool:block/universal_spawner_player"
+    },
+    "active=true,mob_type=player": {
+      "model": "zombierool:block/universal_spawner_player_active"
+    }
+  }
+}

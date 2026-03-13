@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "zombierool:block/sandbags" },
+    "facing=east":  { "model": "zombierool:block/sandbags", "y": 90 },
+    "facing=south": { "model": "zombierool:block/sandbags", "y": 180 },
+    "facing=west":  { "model": "zombierool:block/sandbags", "y": 270 }
+  }
+}

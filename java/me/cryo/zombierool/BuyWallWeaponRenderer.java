@@ -27,7 +27,6 @@ import com.mojang.math.Axis;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +45,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.ItemStackHandler;
 
 public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponBlockEntity> {
 	private static final Map<ResourceLocation, ResourceLocation> OUTLINE_CACHE = new HashMap<>();
@@ -83,7 +81,7 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	public void render(BuyWallWeaponBlockEntity entity, float partialTicks,
 	                   PoseStack poseStack, MultiBufferSource buffer,
 	                   int combinedLight, int combinedOverlay) {
-
+	    
 	    Direction face = entity.getBlockState().getValue(BuyWallWeaponBlock.FACING);
 	    BlockPos frontPos = entity.getBlockPos().relative(face);
 	    int frontLight = LevelRenderer.getLightColor(entity.getLevel(), frontPos);
@@ -160,6 +158,7 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        double x = 0.5 + face.getStepX() * offset;
 	        double y = 0.5;
 	        double z = 0.5 + face.getStepZ() * offset;
+
 	        poseStack.translate(x, y, z);
 
 	        float angle = switch(face) {
@@ -171,7 +170,7 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        };
 	        poseStack.mulPose(Axis.YP.rotationDegrees(angle));
 
-	        if (outlineTexture == null && !isTacz) {
+	        if (outlineTexture == null) {
 	            poseStack.pushPose();
 	            poseStack.mulPose(Axis.YP.rotationDegrees(180)); 
 	            float scaleXY = 0.5f;
@@ -198,36 +197,22 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	            float s = 0.6f;
 	            poseStack.scale(s, s, 0.01f);
 	            poseStack.mulPose(Axis.YP.rotationDegrees(180));
+	            
+                if (hasPurchased && fullTexture != null) {
+                    poseStack.pushPose();
+                    poseStack.translate(0, 0, -0.002);
+                    renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
+                    poseStack.popPose();
 
-	            if (outlineTexture != null) {
-	                if (hasPurchased && fullTexture != null) {
-	                    poseStack.pushPose();
-	                    poseStack.translate(0, 0, -0.002);
-	                    renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
-	                    poseStack.popPose();
-
-	                    poseStack.pushPose();
-	                    poseStack.scale(0.95f, 0.95f, 1.0f); 
-	                    poseStack.translate(0, 0, 0.002);
-	                    renderChalkQuad(poseStack, buffer, fullTexture, frontLight, 0, 1, 0, 1);
-	                    poseStack.popPose();
-	                } else {
-	                    renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
-	                }
-	            } else {
-	                TextureAtlasSprite iconSprite = Minecraft.getInstance().getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS).apply(originalTexture);
-	                VertexConsumer consumer = buffer.getBuffer(RenderType.cutout());
-	                Matrix4f matrix = poseStack.last().pose();
-	                float size = 0.5f;
-	                int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
-	                
-	                consumer.vertex(matrix, -size, -size, 0).color(255, 255, 255, 255).uv(iconSprite.getU1(), iconSprite.getV1()).overlayCoords(overlay).uv2(frontLight).normal(0, 0, 1).endVertex();
-	                consumer.vertex(matrix, size, -size, 0).color(255, 255, 255, 255).uv(iconSprite.getU0(), iconSprite.getV1()).overlayCoords(overlay).uv2(frontLight).normal(0, 0, 1).endVertex();
-	                consumer.vertex(matrix, size, size, 0).color(255, 255, 255, 255).uv(iconSprite.getU0(), iconSprite.getV0()).overlayCoords(overlay).uv2(frontLight).normal(0, 0, 1).endVertex();
-	                consumer.vertex(matrix, -size, size, 0).color(255, 255, 255, 255).uv(iconSprite.getU1(), iconSprite.getV0()).overlayCoords(overlay).uv2(frontLight).normal(0, 0, 1).endVertex();
-	            }
+                    poseStack.pushPose();
+                    poseStack.scale(0.95f, 0.95f, 1.0f); 
+                    poseStack.translate(0, 0, 0.002);
+                    renderChalkQuad(poseStack, buffer, fullTexture, frontLight, 0, 1, 0, 1);
+                    poseStack.popPose();
+                } else {
+                    renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
+                }
 	        }
-
 	        poseStack.popPose();
 	    }
 	}
@@ -236,7 +221,6 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	    if (texture == null) return;
 	    VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(texture));
 	    Matrix4f matrix = poseStack.last().pose();
-
 	    float size = 0.5f;
 	    int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
 
@@ -287,6 +271,7 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	    if (OUTLINE_CACHE.containsKey(originalTexture)) {
 	        return OUTLINE_CACHE.get(originalTexture);
 	    }
+
 	    if (FAILED_TEXTURES.contains(originalTexture)) {
 	        return null;
 	    }
@@ -299,15 +284,14 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        }
 
 	        NativeImage outline = createChalkOutline(original);
-
 	        DynamicTexture dynamicTexture = new DynamicTexture(outline);
 	        ResourceLocation outlineLocation = new ResourceLocation("zombierool", "dynamic/chalk_outline_" + textureCounter++);
+	        
 	        Minecraft.getInstance().getTextureManager().register(outlineLocation, dynamicTexture);
-
 	        OUTLINE_CACHE.put(originalTexture, outlineLocation);
+	        
 	        original.close(); 
 	        return outlineLocation;
-
 	    } catch (Exception e) {
 	        FAILED_TEXTURES.add(originalTexture);
 	        return null;
@@ -318,10 +302,11 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	private static ResourceLocation getOrCreateFullTexture(ResourceLocation originalTexture) {
 	    String cacheKey = originalTexture.toString() + "_full";
 	    ResourceLocation lookupKey = new ResourceLocation("zombierool", cacheKey.replace(":", "_").replace("/", "_"));
-
+	    
 	    if (OUTLINE_CACHE.containsKey(lookupKey)) {
 	        return OUTLINE_CACHE.get(lookupKey);
 	    }
+
 	    if (FAILED_TEXTURES.contains(originalTexture)) {
 	        return null;
 	    }
@@ -338,7 +323,6 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        int maxSize = Math.max(width, height);
 
 	        NativeImage squared = new NativeImage(maxSize, maxSize, true);
-	        
 	        for (int y = 0; y < maxSize; y++) {
 	            for (int x = 0; x < maxSize; x++) {
 	                squared.setPixelRGBA(x, y, 0);
@@ -347,7 +331,7 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 
 	        int offsetX = (maxSize - width) / 2;
 	        int offsetY = (maxSize - height) / 2;
-	        
+
 	        for (int y = 0; y < height; y++) {
 	            for (int x = 0; x < width; x++) {
 	                squared.setPixelRGBA(x + offsetX, y + offsetY, original.getPixelRGBA(x, y));
@@ -357,11 +341,10 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        DynamicTexture dynamicTexture = new DynamicTexture(squared);
 	        ResourceLocation fullLocation = new ResourceLocation("zombierool", "dynamic/full_texture_" + textureCounter++);
 	        Minecraft.getInstance().getTextureManager().register(fullLocation, dynamicTexture);
-
 	        OUTLINE_CACHE.put(lookupKey, fullLocation);
+
 	        original.close();
 	        return fullLocation;
-
 	    } catch (Exception e) {
 	        FAILED_TEXTURES.add(originalTexture);
 	        return null;
@@ -375,7 +358,6 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	        String namespace = location.getNamespace();
 	        String path = location.getPath();
 	        String cleanPath = path.replace("gun/icon/", "").replace("textures/", "").replace(".png", "");
-	        
 	        if (cleanPath.startsWith("icon/")) {
 	            cleanPath = cleanPath.substring(5);
 	        }
@@ -405,10 +387,10 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	    int height = original.getHeight();
 	    
 	    int thickness = Math.max(1, width / 64); 
-
+	    
 	    int maxSize = Math.max(width, height);
 	    NativeImage outline = new NativeImage(maxSize, maxSize, true);
-
+	    
 	    int offsetX = (maxSize - width) / 2;
 	    int offsetY = (maxSize - height) / 2;
 
@@ -448,11 +430,14 @@ public class BuyWallWeaponRenderer implements BlockEntityRenderer<BuyWallWeaponB
 	    for (int dy = -1; dy <= 1; dy++) {
 	        for (int dx = -1; dx <= 1; dx++) {
 	            if (dx == 0 && dy == 0) continue;
+	            
 	            int nx = x + dx;
 	            int ny = y + dy;
+
 	            if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
 	                return true;
 	            }
+
 	            if (getAlpha(image, nx, ny) == 0) {
 	                return true;
 	            }

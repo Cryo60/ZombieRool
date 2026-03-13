@@ -389,4 +389,7 @@ public class ZombieroolModSounds {
 	public static final RegistryObject<SoundEvent> STORM_RIFLE_FIRE = REGISTRY.register("storm_rifle_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "storm_rifle_fire")));
 	public static final RegistryObject<SoundEvent> VANDAL_FIRE = REGISTRY.register("vandal_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_fire")));
 	public static final RegistryObject<SoundEvent> VANDAL_RELOAD = REGISTRY.register("vandal_reload", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_reload")));
+	public static final RegistryObject<SoundEvent> EASTER_EGG_CONFIRM = REGISTRY.register("easter_egg_confirm", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "easter_egg_confirm")));
+	public static final RegistryObject<SoundEvent> METEORITE_AMBIENT = REGISTRY.register("meteorite_ambient", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "meteorite_ambient")));
+	public static final RegistryObject<SoundEvent> SECRET_SONG = REGISTRY.register("secret_song", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "secret_song")));
 }

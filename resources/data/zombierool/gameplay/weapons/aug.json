@@ -101,7 +101,7 @@
     "gun_id": "tacz:aug",
     "ammo_id": "tacz:556x45",
     "pap_attachments": {
-      "scope": "tacz:acog"
+      "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }
 }

@@ -1,4 +1,5 @@
 package me.cryo.zombierool.client.particle;
+
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -25,11 +26,8 @@ public class BlackCrowParticle extends TextureSheetParticle {
         }
     }
 
-    private final SpriteSet spriteSet;
-
     protected BlackCrowParticle(ClientLevel world, double x, double y, double z, double vx, double vy, double vz, SpriteSet spriteSet) {
         super(world, x, y, z);
-        this.spriteSet = spriteSet;
         this.quadSize = 0.8f + this.random.nextFloat() * 0.4f; 
         this.setSize(0.3f, 0.3f);
         this.lifetime = 20 + this.random.nextInt(20); 
@@ -38,19 +36,39 @@ public class BlackCrowParticle extends TextureSheetParticle {
         this.xd = vx;
         this.yd = vy;
         this.zd = vz;
-        this.setSpriteFromAge(spriteSet);
+        this.pickSprite(spriteSet); 
     }
 
     @Override
     public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override
-    public void tick() {
-        super.tick();
-        if (!this.removed) {
-            this.setSprite(this.spriteSet.get((this.age) % 9 + 1, 9));
-        }
+    protected float getU0() {
+        return this.sprite.getU0();
+    }
+
+    @Override
+    protected float getU1() {
+        return this.sprite.getU1();
+    }
+
+    @Override
+    protected float getV0() {
+        float v0 = this.sprite.getV0();
+        float v1 = this.sprite.getV1();
+        float frameHeight = (v1 - v0) / 9.0F;
+        int currentFrame = (this.age / 2) % 9; 
+        return v0 + currentFrame * frameHeight;
+    }
+
+    @Override
+    protected float getV1() {
+        float v0 = this.sprite.getV0();
+        float v1 = this.sprite.getV1();
+        float frameHeight = (v1 - v0) / 9.0F;
+        int currentFrame = (this.age / 2) % 9;
+        return v0 + (currentFrame + 1) * frameHeight;
     }
 }

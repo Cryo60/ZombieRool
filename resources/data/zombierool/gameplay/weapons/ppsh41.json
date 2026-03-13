@@ -95,10 +95,9 @@
     "ussr_russia",
     "ww2",
     "tacz",
-    "tacz_bo6"
+    "tacz_ww"
   ],
   "tacz": {
-    "gun_id": "bo6:ppsh_41_helical_mag",
-    "ammo_id": "lesraisins:762x25"
+    "gun_id": "ww:pps"
   }
 }

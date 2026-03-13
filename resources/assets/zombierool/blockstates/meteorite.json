@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=true": {
+      "model": "zombierool:block/meteorite"
+    },
+    "active=false": {
+      "model": "zombierool:block/meteorite"
+    }
+  }
+}

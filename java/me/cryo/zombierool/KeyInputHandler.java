@@ -1,4 +1,5 @@
 package me.cryo.zombierool.handlers;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -13,10 +14,12 @@ import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 import me.cryo.zombierool.block.DerWunderfizzBlock;
 import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
 import me.cryo.zombierool.client.DrinkPerkAnimationHandler;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
 import me.cryo.zombierool.block.PunchPackBlock;
 import me.cryo.zombierool.block.PerksLowerBlock;
 import me.cryo.zombierool.block.entity.PerksLowerBlockEntity;
@@ -32,6 +35,7 @@ import me.cryo.zombierool.network.C2SRequestAmmoCrateInfoPacket;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.PerksManager;
 import me.cryo.zombierool.player.PlayerDownManager;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.LocalPlayer;
 import java.util.UUID;
@@ -55,11 +59,13 @@ public class KeyInputHandler {
 	private static boolean clientCanPurchaseAmmo = true;
 	private static int ammoCrateInfoRequestCooldown = 0;
 	private static String clientAmmoCrateHudMessage = null;
-
+	
 	private static boolean keyWasDown = false;
+	
 	private static int updateTick = 0;
 	private static final int UPDATE_INTERVAL = 5;
 	private static final List<String> activeHUDMessages = new ArrayList<>();
+	
 	private static BlockPos clientActiveWunderfizzPosition = null;
 
 	private static long clientReviveDuration = PlayerDownManager.BASE_REVIVE_DURATION_TICKS;
@@ -73,6 +79,7 @@ public class KeyInputHandler {
 	private static boolean isEnglishClient() {
 	    return Minecraft.getInstance().options.languageCode.startsWith("en");
 	}
+
 	private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
 	    return isEnglishClient() ? englishMessage : frenchMessage;
 	}
@@ -90,7 +97,6 @@ public class KeyInputHandler {
 	    if (event.phase != TickEvent.Phase.END) return;
 	    Minecraft mc = Minecraft.getInstance();
 	    if (mc.player == null || mc.level == null) return;
-
 	    LocalPlayer player = mc.player;
 	    BlockPos playerPos = player.blockPosition();
 
@@ -166,7 +172,6 @@ public class KeyInputHandler {
 	                boolean powered = state.getValue(PerksLowerBlock.POWERED);
 	                String perkId = perksBE.getSavedPerkId();
 	                PerksManager.Perk perk = PerksManager.ALL_PERKS.get(perkId);
-
 	                if (perk != null) {
 	                    if (!powered) {
 	                        activeHUDMessages.add(getTranslatedMessage("§cVous devez d'abord activer le courant !", "§cYou must activate the power first!"));
@@ -203,7 +208,7 @@ public class KeyInputHandler {
 	        if (block instanceof DerWunderfizzBlock && distanceSq <= 2.25) {
 	            DerWunderfizzBlock.WunderfizzPerk perkType = state.getValue(DerWunderfizzBlock.PERK_TYPE);
 	            boolean isActivePosition = clientActiveWunderfizzPosition != null && clientActiveWunderfizzPosition.equals(pos);
-
+	            
 	            if (perkType == DerWunderfizzBlock.WunderfizzPerk.IDLE) {
 	                if (!isActivePosition) {
 	                    activeHUDMessages.add(getTranslatedMessage("§cLa Wunderfizz est ailleurs !", "§cThe Wunderfizz is elsewhere!"));
@@ -256,6 +261,20 @@ public class KeyInputHandler {
 	    if (isLocalPlayerDown) return;
 	    if (!isJustPressed) return;
 
+        // VERIFICATION DE LA METEORITE EN PREMIER AVEC LE RAYTRACE !
+        HitResult hitResult = mc.hitResult;
+        if (hitResult instanceof BlockHitResult bhr) {
+            BlockPos hitPos = bhr.getBlockPos();
+            BlockState hitState = mc.level.getBlockState(hitPos);
+            if (hitState.getBlock() instanceof MeteoriteEasterEgg.MeteoriteBlock && hitState.getValue(MeteoriteEasterEgg.MeteoriteBlock.ACTIVE)) {
+                // Vérification de la distance pour ne pas interagir à 20 mètres
+                if (player.getEyePosition().distanceToSqr(hitResult.getLocation()) <= 16.0) { // Environ 4 blocs de portée
+                    NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(hitPos, InteractionType.METEORITE));
+                    return; // On stoppe là
+                }
+            }
+        }
+
 	    BlockPos repairPos = DefenseDoorSystem.DefenseDoorBlock.getDoorInRepairZone(mc.level, playerPos);
 	    if (repairPos != null) {
 	        NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(repairPos, InteractionType.REPAIR_BARRICADE));
@@ -281,10 +300,9 @@ public class KeyInputHandler {
 	        }
 	    }
 
-	    HitResult hitResult = mc.hitResult;
-	    BlockHitResult bhr = (hitResult instanceof BlockHitResult b) ? b : null;
-	    if (bhr != null && mc.level.getBlockState(bhr.getBlockPos()).getBlock() instanceof PunchPackBlock) {
-	        BlockPos pos = bhr.getBlockPos();
+	    BlockHitResult actionBhr = (hitResult instanceof BlockHitResult b) ? b : null;
+	    if (actionBhr != null && mc.level.getBlockState(actionBhr.getBlockPos()).getBlock() instanceof PunchPackBlock) {
+	        BlockPos pos = actionBhr.getBlockPos();
 	        NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(pos, InteractionType.PACK_A_PUNCH));
 	        return;
 	    }
@@ -292,11 +310,11 @@ public class KeyInputHandler {
 	    for (BlockPos pos : BlockPos.betweenClosed(playerPos.offset(-2, -2, -2), playerPos.offset(2, 2, 2))) {
 	        BlockState state = mc.level.getBlockState(pos);
 	        if (!(state.getBlock() instanceof AmmoCrateBlock)) continue;
+	        
 	        double distanceSq = player.position().distanceToSqr(pos.getCenter());
 	        if (distanceSq > 4.0) continue;
-	        
-	        HitResult lookResult = mc.hitResult;
-	        if (lookResult instanceof BlockHitResult blockHit && blockHit.getBlockPos().equals(pos)) {
+
+	        if (actionBhr != null && actionBhr.getBlockPos().equals(pos)) {
 	            NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(pos, InteractionType.AMMO_CRATE));
 	            return;
 	        }
@@ -362,7 +380,7 @@ public class KeyInputHandler {
 	private static void renderPackAPunchHint(RenderGuiOverlayEvent.Post event, Minecraft mc, LocalPlayer player) {
 	    HitResult hit = mc.hitResult;
 	    if (!(hit instanceof BlockHitResult bhr)) return;
-
+	    
 	    BlockPos pos = bhr.getBlockPos();
 	    Block block = mc.level.getBlockState(pos).getBlock();
 	    if (!(block instanceof PunchPackBlock)) return;
@@ -399,7 +417,7 @@ public class KeyInputHandler {
 	    int height = mc.getWindow().getGuiScaledHeight();
 	    int y = (height / 2) + 30;
 	    int x = (width - font.width(text)) / 2;
-	    
+
 	    event.getGuiGraphics().drawString(font, text, x, y, 0xFFFFFF);
 	}
 
@@ -464,7 +482,7 @@ public class KeyInputHandler {
 	        int barHeight = 10;
 	        int barX = (width - barWidth) / 2;
 	        int barY = (height / 2) + 55;
-	        
+
 	        event.getGuiGraphics().fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF000000);
 	        int filledWidth = (int) (barWidth * progress);
 	        event.getGuiGraphics().fill(barX + 1, barY + 1, barX + filledWidth - 1, barY + barHeight - 1, 0xFF00FF00);

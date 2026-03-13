@@ -1,15 +1,16 @@
 {
   "replace": false,
   "values": [
-  	"zombierool:defense_door",
-  	"zombierool:defense_door_opened",
+    "zombierool:defense_door",
+    "zombierool:defense_door_opened",
     "zombierool:path",
     "zombierool:obstacle_door",
     "zombierool:spawner_dog",
     "zombierool:spawner_crawler",
     "zombierool:spawner_zombie",
+    "zombierool:player_spawner",
+    "zombierool:universal_spawner",
     "zombierool:traitor",
-    "zombierool:zombie_pass",
-    "zombierool:player_spawner"
+    "zombierool:zombie_pass"
   ]
 }

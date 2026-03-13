@@ -96,10 +96,10 @@
     "sniper",
     "usa",
 	"tacz",
-	"tacz_tacz"
+	"tacz_mw19"
   ],
   "tacz" : {
-	"gun_id": "tacz:m95",
+	"gun_id": "mw19:amr",
     "attachments": {
       "scope": "tacz:scope_mk5hd"
     }

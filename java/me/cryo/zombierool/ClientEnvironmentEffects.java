@@ -13,7 +13,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -26,14 +25,13 @@ public class ClientEnvironmentEffects {
 	public static String currentFogPreset = "normal";
 	public static boolean enableFog = true;
 	public static boolean enableMoonRenderer = true;
-
 	public static float fogNearPlane = 0.5F;
 	public static float fogFarPlane = 18.0F;
+
 	public static float fogColorRed = 0f;
 	public static float fogColorGreen = 0f;
 	public static float fogColorBlue = 0f;
 	public static float fogColorAlpha = 0.9f;
-
 	public static boolean enableFogPulse = true;
 
 	public static float customFogR = 0f, customFogG = 0f, customFogB = 0f;
@@ -53,7 +51,6 @@ public class ClientEnvironmentEffects {
 	    enableFog = true;
 	    enableMoonRenderer = true;
 	    enableFogPulse = false;
-
 		customFogR = r; customFogG = g; customFogB = b;
 		customFogNear = near; customFogFar = far;
 
@@ -134,6 +131,7 @@ public class ClientEnvironmentEffects {
 	@SubscribeEvent
 	public static void onRenderFog(ViewportEvent.RenderFog event) {
 	    Player player = Minecraft.getInstance().player;
+
 	    if (player == null || player.isCreative() || player.isSpectator()
 	            || player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
 	            || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER)) {
@@ -181,6 +179,7 @@ public class ClientEnvironmentEffects {
 	        Minecraft mc = Minecraft.getInstance();
 	        ClientLevel level = mc.level;
 	        Player player = mc.player;
+	        
 	        if (level == null || player == null || mc.isPaused()) return;
 
 	        int particlesToSpawn = switch (clientParticleDensity) {
@@ -194,27 +193,21 @@ public class ClientEnvironmentEffects {
 	        RandomSource random = level.random;
 
 	        for (int i = 0; i < particlesToSpawn; ++i) {
-	            // Génération homogène dans un cercle de rayon 32 autour du joueur
 	            double angle = random.nextDouble() * Math.PI * 2.0;
 	            double radius = Math.sqrt(random.nextDouble()) * 32.0;
-
 	            double px = player.getX() + Math.cos(angle) * radius;
 	            double pz = player.getZ() + Math.sin(angle) * radius;
 	            double py;
-
+	            
 	            BlockPos pos = BlockPos.containing(px, player.getY(), pz);
-
 	            if (clientParticleMode.equals("atmospheric")) {
 	                int topY = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY();
-	                
 	                if (player.getY() < topY - 15) {
-	                    continue; // Empêche le spawn des particules de météo si on est au fond d'une grotte/bâtiment
+	                    continue; 
 	                }
-	                
 	                double baseSpawnY = Math.max(player.getY() + 8.0, topY);
 	                py = baseSpawnY + random.nextDouble() * 20.0;
 	            } else {
-	                // Global : Apparaît partout sauf DANS les murs
 	                py = player.getY() + (random.nextDouble() - 0.5) * 32.0;
 	                BlockPos checkPos = BlockPos.containing(px, py, pz);
 	                if (level.getBlockState(checkPos).isSolidRender(level, checkPos)) {
@@ -222,7 +215,6 @@ public class ClientEnvironmentEffects {
 	                }
 	            }
 
-	            // Gravité et vent : x, z aléatoires légers, y chute naturelle constante
 	            double vx = (random.nextDouble() - 0.5) * 0.1;
 	            double vy = -0.05 - random.nextDouble() * 0.1; 
 	            double vz = (random.nextDouble() - 0.5) * 0.1;
@@ -253,25 +245,4 @@ public class ClientEnvironmentEffects {
             activeParticleType = null;
         }
     }
-
-	@SubscribeEvent
-	public static void onClientChatReceived(ClientChatReceivedEvent event) {
-	    String message = event.getMessage().getString();
-        if (message.startsWith("ZOMBIEROOL_GAME_PAUSED:")) {
-            event.setCanceled(true); 
-            String[] parts = message.split(":");
-            if (parts.length == 2) {
-                ZombieSoundHandler.isGamePausedClient = Boolean.parseBoolean(parts[1]);
-                ZombieSoundHandler.tickCounter = 100;
-            }
-        }
-        else if (message.startsWith("ZOMBIEROOL_MUSIC_PRESET:")) {
-            event.setCanceled(true); 
-            String[] parts = message.split(":");
-            if (parts.length == 2) {
-                ZombieSoundHandler.currentClientMusicPreset = parts[1];
-                ZombieSoundHandler.tickCounter = 100; 
-            }
-        }
-	}
 }

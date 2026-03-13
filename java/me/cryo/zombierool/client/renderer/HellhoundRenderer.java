@@ -1,4 +1,5 @@
 package me.cryo.zombierool.client.renderer;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.renderer.entity.layers.EyesLayer;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -8,6 +9,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.client.model.Modelwolf;
+import me.cryo.zombierool.core.manager.DynamicResourceManager;
 
 public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<HellhoundEntity>> {
     public HellhoundRenderer(EntityRendererProvider.Context ctx) {
@@ -26,25 +28,26 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
                              partialTicks, ageInTicks,
                              netHeadYaw, headPitch);
             }
-
             @Override
             public RenderType renderType() {
                 return RenderType.eyes(new ResourceLocation("zombierool:textures/entities/dark_hellhound_eyes.png"));
             }
         });
     }
-
     @Override
     public void render(HellhoundEntity entity, float entityYaw, float partialTicks, PoseStack matrixStack, MultiBufferSource buffer, int packedLight) {
         if (!entity.isRevealedClient()) return;
         super.render(entity, entityYaw, partialTicks, matrixStack, buffer, packedLight);
     }
-
     @Override
-    public ResourceLocation getTextureLocation(HellhoundEntity e) {
+    public ResourceLocation getTextureLocation(HellhoundEntity entity) {
+        String customSkin = entity.getCustomSkin();
+        if (customSkin != null && !customSkin.isEmpty()) {
+            ResourceLocation dyn = DynamicResourceManager.getClientSkin("hellhound", customSkin);
+            if (dyn != null) return dyn;
+        }
         return new ResourceLocation("zombierool:textures/entities/carrie-the-dark-puppy.png");
     }
-
     @Override
     protected void scale(HellhoundEntity e, PoseStack ms, float pt) {
         ms.scale(1.5F,1.2F,1.5F);

@@ -6,6 +6,8 @@ import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.SetFogPresetPacket;
 import me.cryo.zombierool.network.packet.SyncWeatherPacket;
+import me.cryo.zombierool.network.packet.SyncDynamicSkinPacket;
+import me.cryo.zombierool.core.manager.DynamicResourceManager;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -38,17 +40,15 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ServerEventHandler {
-
 	public static final String OBJECTIVE_ID = "zr_score"; 
-
 	private static final TagKey<EntityType<?>> ALLOWED_MOBS = TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation("zombierool", "allowed_mobs"));
 	private static final TagKey<Item> ALLOWED_ITEMS = TagKey.create(Registries.ITEM, new ResourceLocation("zombierool", "allowed_items"));
-
 	private static final Queue<ServerPlayer> playersToUpdateFog = new ConcurrentLinkedQueue<>();
 
 	@SubscribeEvent
@@ -70,13 +70,45 @@ public class ServerEventHandler {
 	    if (!event.getLevel().isClientSide() && event.getLevel() instanceof ServerLevel serverLevel) {
 	        MinecraftServer server = serverLevel.getServer();
 	        if (server == null) return;
+	        
+            if (serverLevel.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+                DynamicResourceManager.loadWorldResources(serverLevel);
+            }
 
 	        GameRules gameRules = serverLevel.getGameRules();
 	        if (gameRules.getBoolean(GameRules.RULE_DOMOBSPAWNING)) {
 	            gameRules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
 	        }
-	        
-	        WorldConfig.get(serverLevel).refreshAllChunkTickets(serverLevel);
+	        WorldConfig config = WorldConfig.get(serverLevel);
+	        config.refreshAllChunkTickets(serverLevel);
+            try {
+                java.io.File worldDir = serverLevel.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
+                java.io.File mapJson = new java.io.File(worldDir, "zombierool_map.json");
+                if (mapJson.exists()) {
+                    try (java.io.FileReader reader = new java.io.FileReader(mapJson)) {
+                        com.google.gson.JsonObject json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+                        if (json.has("id")) config.setMapId(json.get("id").getAsString());
+                        if (json.has("resource_pack")) {
+                            com.google.gson.JsonObject rp = json.getAsJsonObject("resource_pack");
+                            if (rp.has("url")) config.setResourcePackUrl(rp.get("url").getAsString());
+                            if (rp.has("name")) config.setResourcePackName(rp.get("name").getAsString());
+                        } else {
+                            if (json.has("resource_pack_url")) config.setResourcePackUrl(json.get("resource_pack_url").getAsString());
+                            if (json.has("resource_pack_name")) config.setResourcePackName(json.get("resource_pack_name").getAsString());
+                        }
+                        if (json.has("overrides")) {
+                            com.google.gson.JsonObject overrides = json.getAsJsonObject("overrides");
+                            if (overrides.has("spooky_ambience")) config.setSpookyAmbience(overrides.get("spooky_ambience").getAsBoolean());
+                            if (overrides.has("force_halloween")) config.setForceHalloween(overrides.get("force_halloween").getAsBoolean());
+                        } else {
+                            if (json.has("spooky_ambience")) config.setSpookyAmbience(json.get("spooky_ambience").getAsBoolean());
+                            if (json.has("force_halloween")) config.setForceHalloween(json.get("force_halloween").getAsBoolean());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 	    }
 	}
 
@@ -85,7 +117,6 @@ public class ServerEventHandler {
 	    if (event.getEntity() instanceof ServerPlayer player) {
 	        ServerLevel level = player.serverLevel();
 	        Scoreboard scoreboard = level.getScoreboard();
-
 	        var objective = scoreboard.getObjective(OBJECTIVE_ID);
 	        if (objective != null) {
 	            var score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
@@ -94,15 +125,12 @@ public class ServerEventHandler {
 	            }
 	            scoreboard.setDisplayObjective(1, objective);
 	        }
-
 	        WorldConfig worldConfig = WorldConfig.get(level);
 	        playersToUpdateFog.add(player);
-
 	        boolean particlesEnabled = worldConfig.areParticlesEnabled();
 	        ResourceLocation particleTypeId = worldConfig.getParticleTypeId();
 	        String particleDensity = worldConfig.getParticleDensity();
 	        String particleMode = worldConfig.getParticleMode();
-
 	        if (particlesEnabled && particleTypeId != null) {
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), 
                     new SyncWeatherPacket(true, particleTypeId.toString(), particleDensity, particleMode));
@@ -110,6 +138,28 @@ public class ServerEventHandler {
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), 
                     new SyncWeatherPacket(false, "", "", ""));
 	        }
+
+            for (Map.Entry<String, Map<String, byte[]>> entry : DynamicResourceManager.getAllServerSkins().entrySet()) {
+                String mobType = entry.getKey();
+                for (Map.Entry<String, byte[]> skinEntry : entry.getValue().entrySet()) {
+                    String skinId = skinEntry.getKey();
+                    byte[] data = skinEntry.getValue();
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new SyncDynamicSkinPacket(mobType, skinId, data));
+                }
+            }
+
+            if (DynamicResourceManager.isWebServerRunning()) {
+                try {
+                    String ip = java.net.InetAddress.getLocalHost().getHostAddress();
+                    int port = DynamicResourceManager.getWebServerPort();
+                    String url = "http://" + ip + ":" + port + "/pack.zip";
+                    String hash = DynamicResourceManager.getPackHash();
+                    
+                    player.connection.send(new net.minecraft.network.protocol.game.ClientboundResourcePackPacket(url, hash, false, Component.literal("Pack Audio Custom Zombierool")));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
 	    }
 	}
 
@@ -123,28 +173,23 @@ public class ServerEventHandler {
 	@SubscribeEvent
 	public static void onServerTick(TickEvent.ServerTickEvent event) {
 	    if (event.phase != TickEvent.Phase.END) return;
-
 	    while (!playersToUpdateFog.isEmpty()) {
 	        ServerPlayer player = playersToUpdateFog.poll();
 	        if (player != null && player.isAlive()) {
 	            updateFogForPlayer(player);
 	        }
 	    }
-
 	    for (ServerLevel level : event.getServer().getAllLevels()) {
 	        WorldConfig worldConfig = WorldConfig.get(level);
 	        String dayNightMode = worldConfig.getDayNightMode();
-
 	        switch (dayNightMode) {
 	            case "day" -> level.setDayTime(6000);
 	            case "night" -> level.setDayTime(18000);
 	            case "cycle" -> {} 
 	        }
-
 	        if (level.getGameTime() % 40 == 0) {
 	            List<Entity> entities = new ArrayList<>();
 	            level.getAllEntities().forEach(entities::add);
-
 	            for (Entity entity : entities) {
 	                if (shouldDespawn(entity)) {
 	                    entity.remove(Entity.RemovalReason.DISCARDED);
@@ -161,10 +206,30 @@ public class ServerEventHandler {
 	        ServerLevel level = (ServerLevel) player.level();
 	        WorldConfig worldConfig = WorldConfig.get(level);
 
+            long now = level.getGameTime();
+            if (now % 10 == 0) {
+                net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(15.0);
+                boolean seesZombie = level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, box, e -> 
+                    (e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity) && player.hasLineOfSight(e)
+                ).size() > 0;
+                
+                if (seesZombie) {
+                    me.cryo.zombierool.util.PlayerVoiceManager.onPlayerSeeZombie(player);
+                }
+            }
+            
+            long lastShot = me.cryo.zombierool.util.PlayerVoiceManager.getLastShotTime(player);
+            long lastSeen = me.cryo.zombierool.util.PlayerVoiceManager.getLastZombieSeenTime(player);
+            
+            if (now - lastShot > 600 && now - lastSeen > 600) {
+                me.cryo.zombierool.util.PlayerVoiceManager.playRandomChatter(player, level);
+                me.cryo.zombierool.util.PlayerVoiceManager.onPlayerShoot(player);
+                me.cryo.zombierool.util.PlayerVoiceManager.onPlayerSeeZombie(player);
+            }
+
 	        if (worldConfig.isColdWaterEffectEnabled()) {
 	            boolean inWater = player.isUnderWater() || player.isInWater();
 	            ColdWaterEffectManager.updateIntensity(level, player, inWater);
-
 	            final float SLOWNESS_THRESHOLD = 0.20f;
 	            if (ColdWaterEffectManager.getIntensity(player) >= SLOWNESS_THRESHOLD) {
 	                if (!player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) || player.getEffect(MobEffects.MOVEMENT_SLOWDOWN).getAmplifier() < 2) {
@@ -201,13 +266,11 @@ public class ServerEventHandler {
 	private static void updateFogForPlayer(ServerPlayer player) {
 	    WorldConfig worldConfig = WorldConfig.get(player.serverLevel());
 	    String clientFogPreset;
-
 	    if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
 	        clientFogPreset = "none";
 	    } else {
 	        clientFogPreset = worldConfig.getFogPreset();
 	    }
-
 	    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new SetFogPresetPacket(
             clientFogPreset, 
             worldConfig.getCustomFogR(), worldConfig.getCustomFogG(), worldConfig.getCustomFogB(), 

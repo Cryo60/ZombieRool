@@ -11,6 +11,7 @@ import net.minecraftforge.api.distmarker.Dist;
 
 import me.cryo.zombierool.client.particle.ZombieBloodParticle;
 import me.cryo.zombierool.client.particle.WishParticle;
+import me.cryo.zombierool.client.particle.ToxicSmokeParticle;
 import me.cryo.zombierool.client.particle.OnTheHouseParticle;
 import me.cryo.zombierool.client.particle.NukeParticle;
 import me.cryo.zombierool.client.particle.MaxammoParticle;
@@ -34,5 +35,6 @@ public class ZombieroolModParticles {
 		event.registerSpriteSet(ZombieroolModParticleTypes.WISH.get(), WishParticle::provider);
 		event.registerSpriteSet(ZombieroolModParticleTypes.ON_THE_HOUSE.get(), OnTheHouseParticle::provider);
 		event.registerSpriteSet(ZombieroolModParticleTypes.BLACK_CROW.get(), BlackCrowParticle::provider);
+		event.registerSpriteSet(ZombieroolModParticleTypes.TOXIC_SMOKE.get(), ToxicSmokeParticle::provider);
 	}
 }

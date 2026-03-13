@@ -38,14 +38,10 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> ULTIMA_RECEPTOR = block(ZombieroolModBlocks.ULTIMA_RECEPTOR);
 	public static final RegistryObject<Item> HELLHOUND_SPAWN_EGG = REGISTRY.register("hellhound_spawn_egg", () -> new ForgeSpawnEggItem(ZombieroolModEntities.HELLHOUND, -10066432, -16751002, new Item.Properties()));
 	public static final RegistryObject<Item> CRAWLER_SPAWN_EGG = REGISTRY.register("crawler_spawn_egg", () -> new ForgeSpawnEggItem(ZombieroolModEntities.CRAWLER, -13369549, -16764109, new Item.Properties()));
-	public static final RegistryObject<Item> SPAWNER_ZOMBIE = block(ZombieroolModBlocks.SPAWNER_ZOMBIE);
-	public static final RegistryObject<Item> SPAWNER_CRAWLER = block(ZombieroolModBlocks.SPAWNER_CRAWLER);
-	public static final RegistryObject<Item> SPAWNER_DOG = block(ZombieroolModBlocks.SPAWNER_DOG);
 	public static final RegistryObject<Item> TRAITOR = block(ZombieroolModBlocks.TRAITOR);
 	public static final RegistryObject<Item> BUY_WALL_WEAPON = block(ZombieroolModBlocks.BUY_WALL_WEAPON);
 	public static final RegistryObject<Item> PUNCH_PACK_CORPSE = block(ZombieroolModBlocks.PUNCH_PACK_CORPSE);
 	public static final RegistryObject<Item> PUNCH_PACK = block(ZombieroolModBlocks.PUNCH_PACK);
-	public static final RegistryObject<Item> PLAYER_SPAWNER = block(ZombieroolModBlocks.PLAYER_SPAWNER);
 	public static final RegistryObject<Item> WHITE_KNIGHT_SPAWN_EGG = REGISTRY.register("white_knight_spawn_egg", () -> new ForgeSpawnEggItem(ZombieroolModEntities.WHITE_KNIGHT, -1, -1, new Item.Properties()));
 	public static final RegistryObject<Item> EMPTYMYSTERYBOX = block(ZombieroolModBlocks.EMPTYMYSTERYBOX);
 	public static final RegistryObject<Item> ZOMBIE_PASS = block(ZombieroolModBlocks.ZOMBIE_PASS);

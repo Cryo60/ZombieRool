@@ -99,6 +99,9 @@
   ],
   "tacz": {
     "gun_id": "tacz:ump45",
-    "ammo_id": "tacz:9mm"
+    "ammo_id": "tacz:9mm",
+	"pap_attachments": {
+      "scope": "gucci_attachments:sight_holosun_reddot"
+    }
   }
 }

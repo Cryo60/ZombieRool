@@ -98,6 +98,9 @@
 	"tacz_rainforest"
   ],
   "tacz": {
-    "gun_id": "rainforest:l85a1"
+    "gun_id": "rainforest:l85a1",
+	"pap_attachments": {
+      "scope": "tacz:scope_acog_ta31"
+    }
   }
 }

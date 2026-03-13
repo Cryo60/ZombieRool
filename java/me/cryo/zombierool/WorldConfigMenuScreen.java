@@ -1,4 +1,5 @@
 package me.cryo.zombierool.client.gui;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
@@ -61,25 +62,32 @@ public class WorldConfigMenuScreen extends Screen {
     @Override
     protected void init() {
         this.clearWidgets();
-        int btnWidth = 55;
-        int startX = this.width / 2 - (btnWidth * 8) / 2;
+        int tabsPerRow = (this.width > 500) ? 8 : 4;
+        int btnWidth = Math.min(65, (this.width - 20) / tabsPerRow);
+        int startX = (this.width - (btnWidth * tabsPerRow)) / 2;
+        int startY = 5;
         Tab[] tabs = Tab.values();
         for (int i = 0; i < tabs.length; i++) {
             Tab t = tabs[i];
+            int row = i / tabsPerRow;
+            int col = i % tabsPerRow;
+            int xPos = startX + (btnWidth * col);
+            int yPos = startY + (row * 22);
             Button b = Button.builder(Component.literal(t.name()), btn -> {
                 currentTab = t; this.rebuildWidgets();
-            }).bounds(startX + (btnWidth * i), 5, btnWidth - 2, 20).build();
+            }).bounds(xPos, yPos, btnWidth - 2, 20).build();
             b.active = currentTab != t;
             this.addRenderableWidget(b);
         }
+        int listTopMargin = startY + ((tabs.length / tabsPerRow) + 1) * 22 + 5;
         if (currentTab == Tab.SYSTEM) {
-            initGameControl();
+            initGameControl(listTopMargin);
         } else if (currentTab == Tab.FOG) {
-            initFog();
+            initFog(listTopMargin);
         } else if (currentTab == Tab.WEATHER) {
-            initWeather();
+            initWeather(listTopMargin);
         } else {
-            this.listWidget = new ConfigListWidget(this.minecraft, this.width, this.height, 35, this.height - 35, 25);
+            this.listWidget = new ConfigListWidget(this.minecraft, this.width, this.height, listTopMargin, this.height - 35, 25);
             this.addWidget(this.listWidget);
             buildListContent();
         }
@@ -117,40 +125,51 @@ public class WorldConfigMenuScreen extends Screen {
     private void buildListContent() {
         switch (currentTab) {
             case GENERAL -> {
-                addCycleRow("dayNightMode", "Time Flow", Arrays.asList("day", "night", "cycle"), "Gère le passage du temps dans le monde.");
-                addCycleRow("musicPreset", "Background Music", Arrays.asList("default", "illusion", "none"), "Définit la musique de fond ambiante.");
-                addCycleRow("eyeColorPreset", "Zombie Eye Color", Arrays.asList("red", "blue", "green", "default"), "Couleur des yeux des zombies.");
-                addCycleRow("voicePreset", "Announcer Voice", Arrays.asList("uk", "us", "ru", "fr", "ger", "none"), "Voix de l'annonceur de la map.");
-                addCycleRow("deathPenalty", "Penalty On Death", Arrays.asList("respawn", "spectator", "kick"), "Sanction à la mort permanente.");
-                addBoolRow("coldWaterEffectEnabled", "Cold Water Slowdown", "L'eau ralentit les joueurs.");
-                addBoolRow("sprintBgSounds", "Sprint Ambience", "Bruitages stressants (zombies qui courent).");
-                addStringRow("starterItem", "Starter Weapon", "ID de l'arme de départ (ex: zombierool:m1911)");
+                String mapIdRaw = workingData.getString("mapId");
+                String mapIdDisplay = mapIdRaw.startsWith("zr_") ? mapIdRaw.substring(3) : mapIdRaw;
+                listWidget.addEntry(new StringEntry("Map ID (zr_...)", mapIdDisplay, newVal -> {
+                    workingData.putString("mapId", "zr_" + newVal);
+                }, Component.literal("Unique map ID. Auto-generated if left empty.")));
+
+                addStringRow("resourcePackUrl", "Resource Pack URL", "Direct download link for RP (.zip)");
+                addStringRow("resourcePackName", "Resource Pack Name", "Name of the RP file");
+                addBoolRow("spookyAmbience", "Spooky Ambience", "Plays creepy sounds randomly");
+                addBoolRow("forceHalloween", "Force Halloween", "Forces Halloween visual overrides");
+                
+                addCycleRow("dayNightMode", "Time Flow", Arrays.asList("day", "night", "cycle"), "Day/Night Cycle Strategy");
+                addCycleRow("musicPreset", "Background Music", Arrays.asList("default", "illusion", "none"), "Ambient BGM");
+                addCycleRow("eyeColorPreset", "Zombie Eye Color", Arrays.asList("red", "blue", "green", "default"), "Zombie Glow Color");
+                addCycleRow("voicePreset", "Voice", Arrays.asList("uk", "us", "ru", "fr", "ger", "none"), "Character Callouts");
+                addCycleRow("deathPenalty", "Penalty On Death", Arrays.asList("respawn", "spectator", "kick"), "Permanent Death Penalty");
+                addBoolRow("coldWaterEffectEnabled", "Cold Water Slowdown", "Water heavily slows down players");
+                addBoolRow("sprintBgSounds", "Sprint Ambience", "Intense background sounds when chased");
+                addStringRow("starterItem", "Starter Weapon", "ID of the starting weapon");
             }
             case MOBS -> {
-                addFloatRow("zombieBaseHealth", "Zombie Starting HP", 1f, 100f, "Santé de base des zombies (Manche 1).");
-                addFloatRow("zombieMaxHealth", "Zombie Max HP Cap", 100f, 5000f, "Plafond maximum de santé des zombies.");
-                addFloatRow("crawlerBaseHealth", "Crawler Starting HP", 1f, 100f, "Santé de base des rampants.");
-                addFloatRow("crawlerMaxHealth", "Crawler Max HP Cap", 100f, 5000f, "Plafond maximum de santé des rampants.");
-                addFloatRow("hellhoundBaseHealth", "Hellhound Starting HP", 1f, 100f, "Santé de base des chiens.");
-                addFloatRow("hellhoundMaxHealth", "Hellhound Max HP Cap", 100f, 5000f, "Plafond maximum de santé des chiens.");
-                addBoolRow("zombiesCanSprint", "Allow Zombie Sprinting", "Autorise les zombies à courir à haut niveau.");
-                addIntRow("zombieSprintWave", "Sprint Start Wave", 1, 100, "Manche où les zombies commencent à courir.");
-                addFloatRow("zombieSprintChance", "Zombie Sprint Chance", 0.0f, 1.0f, "Probabilité qu'un zombie se mette à courir.");
-                addFloatRow("zombieSprintSpeed", "Zombie Sprint Speed", 0.1f, 1.0f, "Vitesse de sprint des zombies classiques.");
-                addBoolRow("superSprintersEnabled", "Enable Super Sprinters", "Active les super sprinters enragés.");
-                addIntRow("superSprinterActivationWave", "Super Sprint Start Wave", 1, 100, "Manche d'apparition des super sprinters.");
-                addFloatRow("superSprinterChance", "Super Sprint Chance", 0f, 1f, "Probabilité d'apparition d'un super sprinter.");
-                addFloatRow("superSprinterSpeed", "Super Sprint Speed", 0.1f, 1.5f, "Vitesse extrême des super sprinters.");
-                addBoolRow("hellhoundFireVariant", "Hellhounds Can Explode", "Certains chiens explosent en feu à leur mort.");
-                addBoolRow("crawlerGasExplosion", "Crawlers Explode Gas", "Les rampants explosent en gaz toxique.");
+                addFloatRow("zombieBaseHealth", "Zombie Starting HP", 1f, 100f, "Wave 1 HP");
+                addFloatRow("zombieMaxHealth", "Zombie Max HP Cap", 100f, 5000f, "Absolute Maximum HP Cap");
+                addFloatRow("crawlerBaseHealth", "Crawler Starting HP", 1f, 100f, "Wave 1 HP");
+                addFloatRow("crawlerMaxHealth", "Crawler Max HP Cap", 100f, 5000f, "Absolute Maximum HP Cap");
+                addFloatRow("hellhoundBaseHealth", "Hellhound Starting HP", 1f, 100f, "Wave 1 HP");
+                addFloatRow("hellhoundMaxHealth", "Hellhound Max HP Cap", 100f, 5000f, "Absolute Maximum HP Cap");
+                addBoolRow("zombiesCanSprint", "Allow Zombie Sprinting", "Standard zombies can sprint");
+                addIntRow("zombieSprintWave", "Sprint Start Wave", 1, 100, "Wave to start sprinting");
+                addFloatRow("zombieSprintChance", "Zombie Sprint Chance", 0.0f, 1.0f, "Probability of sprinting");
+                addFloatRow("zombieSprintSpeed", "Zombie Sprint Speed", 0.1f, 1.0f, "Movement speed multiplier");
+                addBoolRow("superSprintersEnabled", "Enable Super Sprinters", "Ultra-fast raging variants");
+                addIntRow("superSprinterActivationWave", "Super Sprint Start Wave", 1, 100, "Wave to introduce super sprinters");
+                addFloatRow("superSprinterChance", "Super Sprint Chance", 0f, 1f, "Probability of variant");
+                addFloatRow("superSprinterSpeed", "Super Sprint Speed", 0.1f, 1.5f, "Movement speed multiplier");
+                addBoolRow("hellhoundFireVariant", "Hellhounds Can Explode", "Some drop fire on death");
+                addBoolRow("crawlerGasExplosion", "Crawlers Explode Gas", "Leaves toxic clouds");
             }
             case WAVES -> {
-                addIntRow("baseZombies", "Base Zombies (Wave 1)", 1, 100, "Nombre de zombies générés à la manche 1.");
-                addIntRow("maxActiveMobsPerPlayer", "Max Mobs Alive Per Player", 1, 100, "Limite d'entités simultanées en vie par joueur.");
-                addIntRow("specialWaveStart", "First Special Wave", 1, 100, "Première manche spéciale (Chiens).");
-                addIntRow("specialWaveInterval", "Special Wave Interval", 1, 100, "Ecart entre chaque manche spéciale.");
-                addBoolRow("hellhoundsInNormalWaves", "Dogs in Normal Waves", "Intégrer les chiens dans les manches standards.");
-                addIntRow("hellhoundsInNormalWavesStart", "Dogs in Normal Start Wave", 1, 100, "Manche où les chiens se joignent aux hordes.");
+                addIntRow("baseZombies", "Base Zombies (Wave 1)", 1, 100, "Zombies spawned on wave 1");
+                addIntRow("maxActiveMobsPerPlayer", "Max Mobs Alive Per Player", 1, 100, "Global concurrent limit");
+                addIntRow("specialWaveStart", "First Special Wave", 1, 100, "E.g. Dogs at wave 6");
+                addIntRow("specialWaveInterval", "Special Wave Interval", 1, 100, "Every X waves after the first");
+                addBoolRow("hellhoundsInNormalWaves", "Dogs in Normal Waves", "Mixes dogs with zombies");
+                addIntRow("hellhoundsInNormalWavesStart", "Dogs in Normal Start Wave", 1, 100, "Wave to start mixing");
             }
             case WEAPONS -> {
                 boolean tagsExpanded = expandedCategories.contains("Tags");
@@ -265,8 +284,8 @@ public class WorldConfigMenuScreen extends Screen {
                             tp.add(Component.literal(taczId.toString()).withStyle(ChatFormatting.GOLD));
                             if (state == ItemState.ENABLED) tp.add(Component.literal("Status: Enabled").withStyle(ChatFormatting.GREEN));
                             else tp.add(Component.literal("Status: Disabled (Default)").withStyle(ChatFormatting.RED));
-                            tp.add(Component.literal("Clic-Gauche: Activer/Désactiver").withStyle(ChatFormatting.GRAY));
-                            tp.add(Component.literal("Clic-Droit: Générer un mapping JSON").withStyle(ChatFormatting.AQUA));
+                            tp.add(Component.literal("Left-Click: Toggle").withStyle(ChatFormatting.GRAY));
+                            tp.add(Component.literal("Right-Click: Generate JSON Template").withStyle(ChatFormatting.AQUA));
                             taczIcons.add(new GridItem(
                                 displayStack, null, state,
                                 () -> {
@@ -287,7 +306,7 @@ public class WorldConfigMenuScreen extends Screen {
                 }
             }
             case EXTRAS -> {
-                addBoolRow("bonusDropsEnabled", "Bonus Drops Enabled", "Les zombies laissent-ils tomber des Power-Ups ?");
+                addBoolRow("bonusDropsEnabled", "Bonus Drops Enabled", "Allow Zombies to drop power-ups");
                 listWidget.addEntry(new TitleEntry("--- Perks ---"));
                 List<GridItem> perkIcons = new ArrayList<>();
                 Set<String> disPerks = getSet("disabledRandomPerks");
@@ -357,15 +376,14 @@ public class WorldConfigMenuScreen extends Screen {
             listWidget.addEntry(new GridRowEntry(items.subList(i, end)));
         }
     }
-    private void initFog() {
-        int leftX = this.width / 2 - 160;
-        int rightX = this.width / 2 + 10;
+    private void initFog(int startY) {
         int btnWidth = 150;
-        int startY = 45;
+        int leftX = (this.width / 2) - btnWidth - 10;
+        int rightX = (this.width / 2) + 10;
         int yOffset = 24;
         List<String> fogs = new ArrayList<>(BUILT_IN_FOGS);
         fogs.addAll(CustomFogManager.getCustomPresets().keySet());
-        fogList = new FogPresetList(this.minecraft, 150, this.height, 45, this.height - 35, 20, leftX, fogs);
+        fogList = new FogPresetList(this.minecraft, btnWidth, this.height, startY, this.height - 35, 20, leftX, fogs);
         this.addWidget(fogList);
         sliderR = new FogSlider(rightX, startY, btnWidth, 20, "Red", 0, 1, workingData.getFloat("customFogR"));
         startY += yOffset;
@@ -409,16 +427,15 @@ public class WorldConfigMenuScreen extends Screen {
             }
         }).bounds(rightX + btnWidth / 2 + 2, startY, btnWidth / 2 - 2, 20).build());
     }
-    private void initWeather() {
-        int leftX = this.width / 2 - 160;
-        int rightX = this.width / 2 + 10;
+    private void initWeather(int startY) {
         int btnWidth = 150;
-        int startY = 45;
+        int leftX = (this.width / 2) - btnWidth - 10;
+        int rightX = (this.width / 2) + 10;
         int yOffset = 24;
         List<String> allParticles = ForgeRegistries.PARTICLE_TYPES.getKeys().stream()
                                     .map(ResourceLocation::toString).sorted().collect(Collectors.toList());
         if (allParticles.isEmpty()) allParticles.add("none");
-        particleList = new ParticlePresetList(this.minecraft, 150, this.height, 45, this.height - 35, 20, leftX, allParticles);
+        particleList = new ParticlePresetList(this.minecraft, btnWidth, this.height, startY, this.height - 35, 20, leftX, allParticles);
         this.addWidget(particleList);
         this.addRenderableWidget(CycleButton.onOffBuilder(workingData.getBoolean("particlesEnabled"))
             .create(rightX, startY, btnWidth, 20, Component.literal("Enable Particles"), (b, val) -> {
@@ -477,9 +494,8 @@ public class WorldConfigMenuScreen extends Screen {
         workingData.putFloat("customFogNear", (float)sliderNear.getRealValue());
         workingData.putFloat("customFogFar", (float)sliderFar.getRealValue());
     }
-    private void initGameControl() {
+    private void initGameControl(int startY) {
         int startX = this.width / 2 - 100;
-        int startY = 50;
         Button startBtn = Button.builder(Component.literal("Start Game"), btn -> {
             sendWaveCmd("start");
             this.onClose();
@@ -517,7 +533,9 @@ public class WorldConfigMenuScreen extends Screen {
         }
         if (currentTab == Tab.SYSTEM) {
             String status = initData.isGameRunning ? "§aRunning" : "§cStopped";
-            graphics.drawCenteredString(this.font, "Game Status: " + status, this.width / 2, 35, 0xFFFFFF);
+            int tabsPerRow = (this.width > 500) ? 8 : 4;
+            int titleY = 5 + ((Tab.values().length / tabsPerRow) + 1) * 22 + 5;
+            graphics.drawCenteredString(this.font, "Game Status: " + status, this.width / 2, titleY - 20, 0xFFFFFF);
         } else if (currentTab == Tab.FOG) {
             if (fogList != null) fogList.render(graphics, mouseX, mouseY, partialTick);
         } else if (currentTab == Tab.WEATHER) {
@@ -576,12 +594,10 @@ public class WorldConfigMenuScreen extends Screen {
             this.setRenderTopAndBottom(false);
         }
         public int addEntry(ConfigEntry entry) { return super.addEntry(entry); }
-        public void clearAllEntries() {
-            this.clearEntries();
-        }
+        public void clearAllEntries() { this.clearEntries(); }
         @Override protected void renderBackground(GuiGraphics graphics) { graphics.fill(this.x0, this.y0, this.x1, this.y1, 0x44000000); }
-        @Override public int getRowWidth() { return 300; }
-        @Override protected int getScrollbarPosition() { return this.width / 2 + 155; }
+        @Override public int getRowWidth() { return Math.min(300, this.width - 20); }
+        @Override protected int getScrollbarPosition() { return this.width / 2 + getRowWidth() / 2 + 5; }
     }
     abstract class ConfigEntry extends ContainerObjectSelectionList.Entry<ConfigEntry> {}
     class TitleEntry extends ConfigEntry {
@@ -604,7 +620,9 @@ public class WorldConfigMenuScreen extends Screen {
         }
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
-            btn.setX(left + width / 2 - 100);
+            int w = Math.min(200, width);
+            btn.setWidth(w);
+            btn.setX(left + width / 2 - w / 2);
             btn.setY(top);
             btn.render(g, mouseX, mouseY, pt);
         }
@@ -693,7 +711,7 @@ public class WorldConfigMenuScreen extends Screen {
                     else { currentSuggestion = ""; box.setSuggestion(""); }
                 }
             });
-            wonderBtn = CycleButton.builder((Boolean b) -> Component.literal(b ? "W: ON" : "W: OFF")).withValues(false, true).withInitialValue(false).create(0, 0, 42, 20, Component.empty(), (b, val) -> isWonder = val);
+            wonderBtn = CycleButton.builder((Boolean b) -> Component.literal(b ? "W: ON" : "W: OFF")).withValues(false, true).withInitialValue(false).create(0, 0, 50, 20, Component.empty(), (b, val) -> isWonder = val);
             btn = Button.builder(Component.literal("Add"), b -> {
                 String val = box.getValue();
                 ResourceLocation loc = ResourceLocation.tryParse(val);
@@ -703,14 +721,16 @@ public class WorldConfigMenuScreen extends Screen {
                     box.setValue(""); currentSuggestion = "minecraft:diamond_sword"; box.setSuggestion(currentSuggestion);
                     refreshList();
                 }
-            }).bounds(0, 0, 32, 20).build();
+            }).bounds(0, 0, 40, 20).build();
         }
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
-            g.drawString(minecraft.font, "Add Item", left + 5, top + 6, 0xFFFFFF);
-            box.setX(left + 75); box.setY(top + 2); box.render(g, mouseX, mouseY, pt);
-            wonderBtn.setX(left + 223); wonderBtn.setY(top + 2); wonderBtn.render(g, mouseX, mouseY, pt);
-            btn.setX(left + 268); btn.setY(top + 2); btn.render(g, mouseX, mouseY, pt);
+            int currentLeft = left + (width - 300) / 2; 
+            if (currentLeft < left) currentLeft = left;
+            g.drawString(minecraft.font, "Add Item", currentLeft + 5, top + 6, 0xFFFFFF);
+            box.setX(currentLeft + 55); box.setY(top + 2); box.render(g, mouseX, mouseY, pt);
+            wonderBtn.setX(currentLeft + 205); wonderBtn.setY(top + 2); wonderBtn.render(g, mouseX, mouseY, pt);
+            btn.setX(currentLeft + 260); btn.setY(top + 2); btn.render(g, mouseX, mouseY, pt);
         }
         @Override public List<? extends GuiEventListener> children() { return Arrays.asList(box, wonderBtn, btn); }
         @Override public List<? extends NarratableEntry> narratables() { return Arrays.asList(box, wonderBtn, btn); }
@@ -734,7 +754,7 @@ public class WorldConfigMenuScreen extends Screen {
         public StringEntry(String label, String initial, java.util.function.Consumer<String> onChange, Component tooltip) {
             this.label = label; this.tooltip = tooltip;
             this.box = new EditBox(minecraft.font, 0, 0, 100, 20, Component.empty());
-            this.box.setValue(initial); this.box.setMaxLength(256); this.box.setResponder(onChange);
+            this.box.setValue(initial); this.box.setMaxLength(1024); this.box.setResponder(onChange);
         }
         @Override public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
             g.drawString(minecraft.font, label, left + 10, top + 6, 0xFFFFFF);
@@ -787,8 +807,8 @@ public class WorldConfigMenuScreen extends Screen {
     }
     class GridColumnControlsEntry extends ConfigEntry {
         List<GridItem> allItems;
-        int itemSize = 18; int spacing = 4; int columns = 12;
-        private int lastTop = -1; private int lastLeft = -1; private int lastWidth = -1;
+        int itemSize = 18; int spacing = 4;
+        private int lastTop = -1; private int lastLeft = -1; private int lastWidth = -1; private int columns = 12;
         public GridColumnControlsEntry(List<GridItem> allItems) {
             this.allItems = allItems;
         }
@@ -797,6 +817,7 @@ public class WorldConfigMenuScreen extends Screen {
             this.lastTop = top;
             this.lastLeft = left;
             this.lastWidth = width;
+            this.columns = Math.min(12, width / (itemSize + spacing));
             int startX = left + (width - (columns * (itemSize + spacing))) / 2;
             for (int i = 0; i < columns; i++) {
                 int ix = startX + i * (itemSize + spacing);
@@ -831,14 +852,15 @@ public class WorldConfigMenuScreen extends Screen {
     class GridRowEntry extends ConfigEntry {
         List<GridItem> items;
         int itemSize = 18; int spacing = 4;
-        private int lastTop = -1; private int lastLeft = -1; private int lastWidth = -1;
+        private int lastTop = -1; private int lastLeft = -1; private int lastWidth = -1; private int columns = 12;
         public GridRowEntry(List<GridItem> items) { this.items = items; }
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
             this.lastTop = top;
             this.lastLeft = left;
             this.lastWidth = width;
-            int startX = left + (width - (12 * (itemSize + spacing))) / 2; 
+            this.columns = Math.min(12, width / (itemSize + spacing));
+            int startX = left + (width - (columns * (itemSize + spacing))) / 2; 
             int rowBtnX = startX - 16;
             boolean rowHover = mouseX >= rowBtnX && mouseX < rowBtnX + 12 && mouseY >= top + 3 && mouseY < top + 15;
             g.fill(rowBtnX, top + 3, rowBtnX + 12, top + 15, rowHover ? 0xFFFFFF00 : 0xFFAAAAAA);
@@ -869,7 +891,7 @@ public class WorldConfigMenuScreen extends Screen {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (lastTop == -1) return false;
-            int startX = lastLeft + (lastWidth - (12 * (itemSize + spacing))) / 2;
+            int startX = lastLeft + (lastWidth - (columns * (itemSize + spacing))) / 2;
             int rowBtnX = startX - 16;
             if (mouseX >= rowBtnX && mouseX < rowBtnX + 12 && mouseY >= lastTop + 3 && mouseY < lastTop + 15) {
                 if (button == 0) {

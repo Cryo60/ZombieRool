@@ -8,7 +8,6 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
-
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -44,8 +43,7 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Nacht der Untoten not found, downloading from GitHub...");
-
-                // Load maps.json
+                
                 URL jsonUrl = new URL(MAPS_JSON_URL);
                 HttpURLConnection jsonConn = (HttpURLConnection) jsonUrl.openConnection();
                 jsonConn.setRequestMethod("GET");
@@ -64,7 +62,6 @@ public class WorldMapLoader {
                 JsonObject json = gson.fromJson(response.toString(), JsonObject.class);
                 JsonArray mapsArray = json.getAsJsonArray("maps");
 
-                // Find Nacht der Untoten
                 String downloadUrl = null;
                 for (int i = 0; i < mapsArray.size(); i++) {
                     JsonObject mapObj = mapsArray.get(i).getAsJsonObject();
@@ -81,7 +78,6 @@ public class WorldMapLoader {
 
                 System.out.println("[ZombieRool] Downloading from: " + downloadUrl);
 
-                // Download the map
                 URL mapUrl = new URL(downloadUrl);
                 HttpURLConnection mapConn = (HttpURLConnection) mapUrl.openConnection();
                 mapConn.setRequestMethod("GET");
@@ -90,11 +86,9 @@ public class WorldMapLoader {
                 mapConn.setReadTimeout(30000);
                 mapConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                 mapConn.setRequestProperty("Accept", "*/*");
-
                 mapConn.connect();
 
                 int responseCode = mapConn.getResponseCode();
-                
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
                     responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                     responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
@@ -110,7 +104,6 @@ public class WorldMapLoader {
                     return;
                 }
 
-                // Save to temp file
                 File tempDir = new File(FMLPaths.GAMEDIR.get().toFile(), "temp_downloads");
                 tempDir.mkdirs();
                 File zipFile = new File(tempDir, TARGET_MAP_NAME + ".zip");
@@ -122,6 +115,7 @@ public class WorldMapLoader {
                     byte[] buffer = new byte[8192];
                     int bytesRead;
                     long totalRead = 0;
+
                     while ((bytesRead = in.read(buffer)) != -1) {
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
@@ -132,20 +126,18 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Download complete, extracting...");
-
-                // Extract to saves
+                
                 Path savesPath = FMLPaths.GAMEDIR.get().resolve("saves");
                 if (!Files.exists(savesPath)) {
                     Files.createDirectories(savesPath);
                 }
-
+                
                 File targetDir = new File(savesPath.toFile(), TARGET_MAP_NAME);
                 extractZip(zipFile, targetDir);
 
-                // Cleanup
                 zipFile.delete();
                 tempDir.delete();
-
+                
                 System.out.println("[ZombieRool] Nacht der Untoten installed successfully!");
 
             } catch (java.net.SocketTimeoutException e) {
@@ -163,7 +155,6 @@ public class WorldMapLoader {
         if (!destDir.exists()) {
             destDir.mkdirs();
         }
-
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {

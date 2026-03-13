@@ -101,7 +101,7 @@
     "gun_id": "elitex:m16",
     "ammo_id": "tacz:556x45",
     "pap_attachments": {
-      "scope": "tacz:acog"
+      "scope": "tacz:scope_acog_ta31"
     }
   }
 }

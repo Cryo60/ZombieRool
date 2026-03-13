@@ -101,7 +101,7 @@
     "gun_id": "lradd:acr",
     "ammo_id": "tacz:556x45",
     "pap_attachments": {
-      "scope": "tacz:red_dot"
+      "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }
 }

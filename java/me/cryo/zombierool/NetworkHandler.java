@@ -1,4 +1,5 @@
 package me.cryo.zombierool.network;
+
 import me.cryo.zombierool.network.packet.SyncColdWaterStatePacket;
 import me.cryo.zombierool.SetWallWeaponConfigPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -15,7 +16,7 @@ import me.cryo.zombierool.network.MeleeAttackPacket;
 import me.cryo.zombierool.network.packet.SetEyeColorPacket;
 import me.cryo.zombierool.network.handler.SetEyeColorPacketHandler;
 import me.cryo.zombierool.network.ObstacleDoorGUIPacket;
-import me.cryo.zombierool.network.SetSpawnerChannelMessage;
+import me.cryo.zombierool.network.SetUniversalSpawnerConfigPacket;
 import me.cryo.zombierool.network.ReloadWeaponMessage;
 import me.cryo.zombierool.network.CaptureWallTexturePacket;
 import me.cryo.zombierool.network.SpecialWavePacket;
@@ -45,11 +46,14 @@ import me.cryo.zombierool.network.packet.RequestConfigMenuPacket;
 import me.cryo.zombierool.network.packet.SyncWeatherPacket;
 import me.cryo.zombierool.network.packet.GenerateWeaponMappingPacket;
 import me.cryo.zombierool.network.packet.ReloadWeaponsPacket;
+import me.cryo.zombierool.network.packet.SyncDynamicSkinPacket;
+
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NetworkHandler {
 	private static boolean alreadyRegistered = false;
 	private static final String PROTOCOL_VERSION = "1";
 	public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation("zombierool", "main"), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
+
 	@SubscribeEvent
 	public static void register(FMLCommonSetupEvent event) {
 	    if (alreadyRegistered) return;
@@ -59,7 +63,7 @@ public class NetworkHandler {
 	        int id = 0;
 	        INSTANCE.registerMessage(id++, C2SUnifiedInteractPacket.class, C2SUnifiedInteractPacket::encode, C2SUnifiedInteractPacket::decode, C2SUnifiedInteractPacket::handle);
 	        INSTANCE.registerMessage(id++, ObstacleDoorGUIPacket.class, ObstacleDoorGUIPacket::encode, ObstacleDoorGUIPacket::decode, ObstacleDoorGUIPacket::handle);
-	        INSTANCE.registerMessage(id++, SetSpawnerChannelMessage.class, SetSpawnerChannelMessage::encode, SetSpawnerChannelMessage::decode, SetSpawnerChannelMessage::handle);
+	        INSTANCE.registerMessage(id++, SetUniversalSpawnerConfigPacket.class, SetUniversalSpawnerConfigPacket::encode, SetUniversalSpawnerConfigPacket::decode, SetUniversalSpawnerConfigPacket::handle);
 	        INSTANCE.registerMessage(id++, ReloadWeaponMessage.class, ReloadWeaponMessage::encode, ReloadWeaponMessage::decode, ReloadWeaponMessage::handler);
 	        INSTANCE.registerMessage(id++, SetWallWeaponConfigPacket.class, SetWallWeaponConfigPacket::encode, SetWallWeaponConfigPacket::decode, SetWallWeaponConfigPacket::handle);
 	        INSTANCE.registerMessage(id++, CaptureWallTexturePacket.class, CaptureWallTexturePacket::encode, CaptureWallTexturePacket::decode, CaptureWallTexturePacket::handle);
@@ -106,6 +110,7 @@ public class NetworkHandler {
 	        INSTANCE.registerMessage(id++, SyncWeatherPacket.class, SyncWeatherPacket::encode, SyncWeatherPacket::decode, SyncWeatherPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
 	        INSTANCE.registerMessage(id++, GenerateWeaponMappingPacket.class, GenerateWeaponMappingPacket::encode, GenerateWeaponMappingPacket::decode, GenerateWeaponMappingPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
 	        INSTANCE.registerMessage(id++, ReloadWeaponsPacket.class, ReloadWeaponsPacket::encode, ReloadWeaponsPacket::decode, ReloadWeaponsPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+	        INSTANCE.registerMessage(id++, SyncDynamicSkinPacket.class, SyncDynamicSkinPacket::encode, SyncDynamicSkinPacket::decode, SyncDynamicSkinPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
 	    });
 	}
 }

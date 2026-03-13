@@ -100,6 +100,9 @@
   ],
   "tacz": {
     "gun_id": "hamster:mosin9130",
-    "ammo_id": "lesraisins:792x57"
+    "ammo_id": "lesraisins:792x57",
+	"pap_attachments": {
+      "scope": "tacz:scope_mk5hd"
+    }
   }
 }

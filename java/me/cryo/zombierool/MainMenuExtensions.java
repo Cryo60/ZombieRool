@@ -11,9 +11,9 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -30,18 +30,9 @@ import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber
 public class MainMenuExtensions {
-
     private static final Logger LOGGER = LogManager.getLogger();
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd_HHmm");
     private static String selectedWorldName = null;
-
-    private static boolean isEnglishClient() {
-        return Minecraft.getInstance().options.languageCode.startsWith("en");
-    }
-
-    private static MutableComponent getTranslatedComponent(String french, String english) {
-        return Component.literal(isEnglishClient() ? english : french);
-    }
 
     @SubscribeEvent
     public static void onInitScreen(ScreenEvent.Init.Post event) {
@@ -49,33 +40,51 @@ public class MainMenuExtensions {
             return;
         }
 
-        int buttonWidth = 200;
         int buttonHeight = 20;
-        int spacing = 24;
+        int spacing = 4;
         
-        // --- Calcul positions ---
-        int lowestMainMenuButtonY = screen.height / 4 + 48 + (spacing * 5);
-        int startY = lowestMainMenuButtonY + spacing;
-        int x = screen.width / 2 - (buttonWidth / 2);
+        int lowestMainMenuButtonY = screen.height / 4 + 48 + (24 * 5) + 16;
+        int availableHeight = screen.height - lowestMainMenuButtonY - 10;
+        
+        boolean useGrid = availableHeight < ((buttonHeight + spacing) * 4);
+        int buttonWidth = useGrid ? 145 : 200;
+        
+        int startX = screen.width / 2 - (buttonWidth / 2);
+        int startY = lowestMainMenuButtonY;
 
-        // Ajustement si l'écran est trop petit
-        int totalCustomHeight = (buttonHeight * 3) + spacing;
-        if (startY + totalCustomHeight > screen.height - 20) {
-            startY = screen.height - totalCustomHeight - 20;
-            if (startY < lowestMainMenuButtonY) startY = lowestMainMenuButtonY;
+        if (useGrid) {
+            startX = screen.width / 2 - buttonWidth - (spacing / 2);
         }
 
-        // --- Bouton "Official Maps" ---
-        int officialMapY = startY - buttonHeight - (spacing / 2); 
-        if (officialMapY < lowestMainMenuButtonY) officialMapY = lowestMainMenuButtonY;
+        int currentY = startY;
+        int col = 0;
 
-        event.addListener(Button.builder(getTranslatedComponent("Maps Officielles", "Official Maps"), btn -> {
+        if (ModList.get().isLoaded("tacz")) {
+            event.addListener(Button.builder(Component.literal("TacZ & Gunpacks"), btn -> {
+                playSound();
+                Minecraft.getInstance().setScreen(new TacZPackDownloaderScreen(screen));
+            }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
+            
+            if (useGrid) {
+                col++;
+            } else {
+                currentY += buttonHeight + spacing;
+            }
+        }
+
+        // Modifié ici : "Official Maps" renommé en "Maps"
+        event.addListener(Button.builder(Component.literal("Maps"), btn -> {
             playSound();
             Minecraft.getInstance().setScreen(new MapDownloaderScreen(screen));
-        }).bounds(x, officialMapY, buttonWidth, buttonHeight).build());
+        }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
 
+        if (useGrid) {
+            col = 0;
+            currentY += buttonHeight + spacing;
+        } else {
+            currentY += buttonHeight + spacing;
+        }
 
-        // --- Logique Copie de Monde ---
         File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
         if (savesDir.exists() && savesDir.isDirectory()) {
             File[] worldFolders = savesDir.listFiles(File::isDirectory);
@@ -91,21 +100,25 @@ public class MainMenuExtensions {
                         selectedWorldName = worldNames.get(0);
                     }
 
-                    // Sélecteur de monde
                     event.addListener(CycleButton.builder(Component::literal)
                             .withValues(worldNames)
                             .withInitialValue(selectedWorldName)
-                            .create(x, startY, buttonWidth, buttonHeight, getTranslatedComponent("Monde à copier", "World to copy"),
+                            .create(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight, Component.literal("World to copy"),
                                     (btn, value) -> {
                                         selectedWorldName = value;
-                                        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_SELECT.get(), 1.0F));
+                                        playSound();
                                     }));
+                                    
+                    if (useGrid) {
+                        col++;
+                    } else {
+                        currentY += buttonHeight + spacing;
+                    }
 
-                    // Bouton Copier
-                    event.addListener(Button.builder(getTranslatedComponent("Copier le monde sélectionné", "Copy Selected World"), btn -> {
+                    event.addListener(Button.builder(Component.literal("Copy Selected World"), btn -> {
                         playSound();
                         copySelectedWorld(savesDir);
-                    }).bounds(x, startY + spacing, buttonWidth, buttonHeight).build());
+                    }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
                 }
             }
         }
@@ -123,11 +136,10 @@ public class MainMenuExtensions {
         try {
             String baseCopyName = selectedWorldName + "_Copy_" + DATE_FORMAT.format(new Date());
             File target = getNextAvailableFolder(savesDir, baseCopyName);
-            
-            showNotification(getTranslatedComponent("Copie en cours...", "Copying world..."), 0xFFADD8E6);
+
+            showNotification(Component.literal("Copying world..."), 0xFFADD8E6);
             FileUtils.copyDirectory(source, target);
 
-            // Mise à jour level.dat
             File levelDat = new File(target, "level.dat");
             if (levelDat.exists()) {
                 CompoundTag root = NbtIo.readCompressed(levelDat);
@@ -136,10 +148,10 @@ public class MainMenuExtensions {
                 NbtIo.writeCompressed(root, levelDat);
             }
 
-            showNotification(getTranslatedComponent("Succès : " + target.getName(), "Success: " + target.getName()), 0xFF00FF00);
+            showNotification(Component.literal("Success: " + target.getName()), 0xFF00FF00);
         } catch (IOException e) {
             LOGGER.error("Failed to copy world", e);
-            showNotification(getTranslatedComponent("Erreur lors de la copie", "Error copying world"), 0xFFFF0000);
+            showNotification(Component.literal("Error copying world"), 0xFFFF0000);
         }
     }
 

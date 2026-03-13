@@ -5,7 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity; // Import for LivingEntity
+import net.minecraft.world.entity.LivingEntity; 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -32,16 +32,16 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
+
 import me.cryo.zombierool.GlobalSwitchState;
-import me.cryo.zombierool.WorldConfig; // Import WorldConfig
+import me.cryo.zombierool.WorldConfig; 
+import me.cryo.zombierool.util.PlayerVoiceManager;
 
 import java.util.Collections;
 import java.util.List;
-
-import net.minecraft.network.chat.Component; // Import for Component
-import net.minecraft.world.item.TooltipFlag; // Import for TooltipFlag
-import net.minecraft.client.Minecraft; // Import for Minecraft client
-
+import net.minecraft.network.chat.Component; 
+import net.minecraft.world.item.TooltipFlag; 
+import net.minecraft.client.Minecraft; 
 
 public class PowerSwitchBlock extends Block {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -61,11 +61,6 @@ public class PowerSwitchBlock extends Block {
             .setValue(POWERED, false));
     }
 
-    /**
-     * Helper method to check if the client's language is English.
-     * This is crucial for dynamic translation of item names and tooltips.
-     * @return true if the client's language code starts with "en", false otherwise.
-     */
     private static boolean isEnglishClient() {
         if (Minecraft.getInstance() == null) {
             return false;
@@ -73,12 +68,6 @@ public class PowerSwitchBlock extends Block {
         return Minecraft.getInstance().options.languageCode.startsWith("en");
     }
 
-    /**
-     * Helper method for dynamic translation based on the client's language.
-     * @param frenchMessage The message to display if the client's language is French or not English.
-     * @param englishMessage The message to display if the client's language is English.
-     * @return The appropriate translated message.
-     */
     private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
         return isEnglishClient() ? englishMessage : frenchMessage;
     }
@@ -92,7 +81,6 @@ public class PowerSwitchBlock extends Block {
         list.add(Component.literal(getTranslatedMessage("§cNe peut pas être désactivé en mode Survie.", "§cCannot be deactivated in Survival mode.")));
         list.add(Component.literal(getTranslatedMessage("§7(Peut être désactivé en mode Créatif pour la réinitialisation du jeu).", "§7(Can be deactivated in Creative mode for game reset).")));
     }
-
 
     @Override
     public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
@@ -232,9 +220,6 @@ public class PowerSwitchBlock extends Block {
                 .setValue(POWERED, false);
     }
 
-    /**
-     * Called after the block is placed. This is the ideal place to register its position.
-     */
     @Override
     public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, world, pos, oldState, isMoving);
@@ -274,23 +259,19 @@ public class PowerSwitchBlock extends Block {
     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!world.isClientSide) {
             boolean newState = !state.getValue(POWERED);
-            
-            // Only allow switching if newState is true (activating) or if player is creative (for deactivating too)
-            // This prevents regular players from deactivating it once activated unless it's a game reset
             if (newState || player.isCreative()) {
                 world.setBlock(pos, state.setValue(POWERED, newState), 3);
                 GlobalSwitchState.setActivated(world, newState);
-                
-                // Play power sound when activating
+
                 if (newState) {
                     world.playSound(
                         null, pos,
                         ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "power")),
                         SoundSource.BLOCKS, 1f, 1f
                     );
+                    PlayerVoiceManager.playPowerOnSound(player, world);
                 }
-                
-                // Update all activators (e.g., doors linked to this switch)
+
                 for (BlockPos activatorPos : GlobalSwitchState.getActivatorPositions(world)) {
                     if (world.hasChunkAt(activatorPos)) {
                         world.updateNeighborsAt(activatorPos, this);
@@ -302,18 +283,13 @@ public class PowerSwitchBlock extends Block {
         }
         return InteractionResult.SUCCESS;
     }
-    
-    /**
-     * Called when the block is destroyed by a player. This is the ideal place to unregister its position.
-     */
+
     @Override
     public boolean onDestroyedByPlayer(BlockState state, Level world, BlockPos pos, Player player, boolean willHarvest, net.minecraft.world.level.material.FluidState fluid) {
         if (!world.isClientSide && world instanceof ServerLevel serverLevel) {
-            // If the switch was powered when broken, deactivate the global switch state
             if (state.getValue(POWERED)) {
                 GlobalSwitchState.setActivated(world, false);
             }
-            // Remove the position from WorldConfig
             WorldConfig.get(serverLevel).removePowerSwitchPosition(pos);
         }
         return super.onDestroyedByPlayer(state, world, pos, player, willHarvest, fluid);

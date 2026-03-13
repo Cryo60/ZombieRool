@@ -16,10 +16,13 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.TickEvent.LevelTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.block.PunchPackBlock;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.core.system.WeaponFacade;
+import me.cryo.zombierool.util.PlayerVoiceManager;
+
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -60,11 +63,11 @@ public class PackAPunchManager {
 
         if (!hasIngot && PointManager.getScore(player) < 5000) {
             player.displayClientMessage(getTranslatedComponent(player, "Vous n'avez pas assez de points.", "You don't have enough points."), true);
+            PlayerVoiceManager.playNoMoneySound(player, level);
             return;
         }
 
         ItemStack held = player.getMainHandItem();
-
         if (held.isEmpty() || !WeaponFacade.isWeapon(held)) {
             player.displayClientMessage(getTranslatedComponent(player, "Vous devez tenir une arme !", "You must hold a weapon!"), true);
             return;
@@ -90,13 +93,13 @@ public class PackAPunchManager {
 
         upgradingStack = held.copy();
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-
         isInUse = true;
         currentUser = player.getUUID();
         currentBlock = pos;
         startTick = level.getGameTime();
 
         level.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 1f, 1f);
+
         if (level instanceof ServerLevel serverLevel) {
             serverLevel.sendParticles(
                 ParticleTypes.ENCHANT,
@@ -115,7 +118,6 @@ public class PackAPunchManager {
         if (level.isClientSide || !isInUse) return;
 
         long now = level.getGameTime();
-
         if (now - startTick >= 60) {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(currentUser);
             if (player != null && !upgradingStack.isEmpty()) {

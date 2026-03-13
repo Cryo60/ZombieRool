@@ -1,0 +1,23 @@
+{
+  "parent": "zombierool:block/universal_spawner_zombie",
+  "overrides": [
+    {
+      "predicate": {
+        "zombierool:spawner_type": 0.1
+      },
+      "model": "zombierool:block/universal_spawner_crawler"
+    },
+    {
+      "predicate": {
+        "zombierool:spawner_type": 0.2
+      },
+      "model": "zombierool:block/universal_spawner_hellhound"
+    },
+    {
+      "predicate": {
+        "zombierool:spawner_type": 0.3
+      },
+      "model": "zombierool:block/universal_spawner_player"
+    }
+  ]
+}

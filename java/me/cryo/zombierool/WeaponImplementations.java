@@ -1,4 +1,5 @@
 package me.cryo.zombierool.core.system;
+
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import me.cryo.zombierool.core.manager.BallisticManager;
@@ -30,7 +31,7 @@ public class WeaponImplementations {
 
     public static class HitscanGunItem extends WeaponSystem.BaseGunItem {
         public HitscanGunItem(WeaponSystem.Definition def) { super(def); }
-        
+
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge, boolean isLeft) {
             if (player.level().isClientSide) return;
@@ -38,7 +39,6 @@ public class WeaponImplementations {
             boolean isPap = isPackAPunched(stack);
             float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
             int penetration = def.stats.penetration;
-            
             int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
 
             if (count == 3 && isPap && def.pap.pellet_count_override == 3) {
@@ -52,6 +52,7 @@ public class WeaponImplementations {
                 }
             }
         }
+
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge) {
             performShooting(stack, player, charge, false);
@@ -74,7 +75,6 @@ public class WeaponImplementations {
             if (player.getCooldowns().isOnCooldown(this)) return;
             if (getAmmo(stack) >= getMaxAmmo(stack)) return;
             if (getReserve(stack) <= 0 && !player.isCreative()) return;
-
             getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
 
             float baseTime = def.ammo.reload_time;
@@ -98,7 +98,6 @@ public class WeaponImplementations {
         public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
             super.inventoryTick(stack, level, entity, slot, selected);
             if (!(entity instanceof Player player)) return;
-
             if (!getOrCreateTag(stack).getBoolean(TAG_IS_RELOADING)) return;
 
             int timer = getReloadTimer(stack);
@@ -149,12 +148,10 @@ public class WeaponImplementations {
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge, boolean isLeft) {
             if (player.level().isClientSide) return;
-            
             boolean isPap = isPackAPunched(stack);
             float damage = getWeaponDamage(stack);
             float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
             float velocity = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity; 
-            
             int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
             int penetration = def.stats.penetration;
             if (isPap) penetration += def.pap.penetration_bonus;
@@ -162,7 +159,6 @@ public class WeaponImplementations {
             for (int i = 0; i < count; i++) {
                 Arrow projectile = new Arrow(player.level(), player);
                 projectile.setBaseDamage(0); 
-                
                 Vec3 startPos = getVisualMuzzlePos(player, isLeft);
                 projectile.setPos(startPos.x, startPos.y, startPos.z);
                 
@@ -171,11 +167,12 @@ public class WeaponImplementations {
                     if (i == 0) currentYaw -= 10.0f;
                     else if (i == 2) currentYaw += 10.0f;
                 }
-                
+
                 float yawOffset = isLeft ? -3.0f : 3.0f;
                 projectile.shootFromRotation(player, player.getXRot(), currentYaw + yawOffset, 0.0F, velocity, spread);
                 projectile.setSilent(true);
                 projectile.pickup = AbstractArrow.Pickup.DISALLOWED;
+
                 if (penetration > 0) {
                     projectile.setPierceLevel((byte) Math.min(127, penetration));
                 }
@@ -199,7 +196,6 @@ public class WeaponImplementations {
                 }
 
                 if (!def.ballistics.gravity) projectile.setNoGravity(true);
-
                 player.level().addFreshEntity(projectile);
             }
         }
@@ -267,6 +263,11 @@ public class WeaponImplementations {
                     SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0f, 1.5f);
             }
 
+            // Enlever les balises Gun et Headshot pour éviter le GoreManager sur les kills de mêlée (Épées etc)
+            target.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
+            target.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
+            target.getPersistentData().remove("zombierool:explosive_damage");
+
             me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, player.damageSources().playerAttack(player), actualDamage);
             entitiesHit.incrementAndGet();
 
@@ -280,6 +281,10 @@ public class WeaponImplementations {
                 entity != player && entity.isAlive() && entity != target &&
                 (entity instanceof me.cryo.zombierool.entity.ZombieEntity || entity instanceof me.cryo.zombierool.entity.CrawlerEntity || entity instanceof me.cryo.zombierool.entity.HellhoundEntity || entity instanceof me.cryo.zombierool.entity.DummyEntity)
             ).forEach(entity -> {
+                entity.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
+                entity.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
+                entity.getPersistentData().remove("zombierool:explosive_damage");
+
                 me.cryo.zombierool.core.manager.DamageManager.applyDamage(entity, player.damageSources().playerAttack(player), actualDamage * getCleaveDamagePercentage());
                 entitiesHit.incrementAndGet();
             });
@@ -326,7 +331,7 @@ public class WeaponImplementations {
             if (currentTick - lastDash >= getDashCooldownTicks()) {
                 Vec3 lookVec = player.getViewVector(1.0f).normalize();
                 float dashDist = getDashDistance();
-
+                
                 java.util.Optional<LivingEntity> targetOpt = level.getEntitiesOfClass(LivingEntity.class,
                     player.getBoundingBox().inflate(dashDist), target -> {
                         if (!(target instanceof me.cryo.zombierool.entity.ZombieEntity || target instanceof me.cryo.zombierool.entity.CrawlerEntity || target instanceof me.cryo.zombierool.entity.HellhoundEntity || target instanceof me.cryo.zombierool.entity.DummyEntity)) return false;
@@ -342,15 +347,16 @@ public class WeaponImplementations {
                     LivingEntity target = targetOpt.get();
                     Vec3 dir = target.position().subtract(player.position()).normalize();
                     Vec3 dash = dir.scale(dashDist * 0.8);
-
+                    
                     player.setDeltaMovement(dash.x, player.getDeltaMovement().y, dash.z);
                     player.hurtMarked = true;
                     player.fallDistance = 0;
-
-                    level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0f, 1.0f);
                     
+                    level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0f, 1.0f);
                     getOrCreateTag(stack).putLong(TAG_LAST_DASH_TICK, currentTick);
+                    
                     this.hurtEnemy(stack, target, player);
+                    
                     player.getCooldowns().addCooldown(this, getDashCooldownTicks());
                 }
             }
@@ -358,6 +364,7 @@ public class WeaponImplementations {
 
         @Override
         public void tryShoot(ItemStack stack, Player player, float charge, boolean isLeft) {}
+
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge) {}
     }

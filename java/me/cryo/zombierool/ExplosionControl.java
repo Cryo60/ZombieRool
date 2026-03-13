@@ -1,4 +1,5 @@
 package me.cryo.zombierool;
+
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.WeaponVfxPacket;
 import net.minecraft.core.BlockPos;
@@ -21,6 +22,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.List;
 
 public class ExplosionControl {
+
     public static void doCustomExplosion(Level level, Entity source, Vec3 pos, float baseDamage, float radius, float dmgMult, float selfDmgMult, float selfDmgCap, float kbStrength, String vfxType, String soundId, boolean isPap) {
         if (level.isClientSide) return;
 
@@ -41,6 +43,7 @@ public class ExplosionControl {
         float actualDamage = baseDamage * dmgMult;
         AABB area = new AABB(pos.x - radius, pos.y - radius, pos.z - radius, pos.x + radius, pos.y + radius, pos.z + radius);
         List<Entity> entities = level.getEntities((Entity) null, area);
+
         DamageSource dmgSource = source instanceof Player ? level.damageSources().playerAttack((Player)source) : level.damageSources().generic();
 
         for (Entity entity : entities) {
@@ -48,13 +51,12 @@ public class ExplosionControl {
 
             double distSq = entity.distanceToSqr(pos);
             if (distSq <= radius * radius) {
-                
                 if (entity instanceof Player p) {
                     if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                         continue;
                     }
                 }
-
+                
                 float finalDamage = actualDamage;
 
                 if (entity == source) {
@@ -63,10 +65,13 @@ public class ExplosionControl {
                     entity.invulnerableTime = 0; 
                     continue; 
                 }
-
+                
                 if (entity instanceof Player) {
                     continue; 
                 } else if (entity instanceof LivingEntity le) {
+                    // BUFF DÉGÂTS DES EXPLOSIONS CONTRE LES MONSTRES
+                    // L'explosion de base est indexée sur les dégâts de l'arme, mais comme il n'y a pas de multiplicateur de headshot pour compenser la vie des zombies (jusqu'à 1050hp), on buff globalement de x5.0.
+                    finalDamage = actualDamage * 5.0f;
                     le.getPersistentData().putBoolean("zombierool:explosive_damage", true);
                     me.cryo.zombierool.core.manager.DamageManager.applyDamage(le, dmgSource, finalDamage);
                 } else {
@@ -82,6 +87,7 @@ public class ExplosionControl {
                         entity.setDeltaMovement(entity.getDeltaMovement().add(dx / dist * kbStrength, 0.2, dz / dist * kbStrength));
                     }
                 }
+                
                 entity.hurtMarked = true;
             }
         }

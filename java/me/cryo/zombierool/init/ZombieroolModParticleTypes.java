@@ -25,4 +25,5 @@ public class ZombieroolModParticleTypes {
 	public static final RegistryObject<SimpleParticleType> WISH = REGISTRY.register("wish", () -> new SimpleParticleType(false));
 	public static final RegistryObject<SimpleParticleType> ON_THE_HOUSE = REGISTRY.register("on_the_house", () -> new SimpleParticleType(false));
 	public static final RegistryObject<SimpleParticleType> BLACK_CROW = REGISTRY.register("black_crow", () -> new SimpleParticleType(false));
+	public static final RegistryObject<SimpleParticleType> TOXIC_SMOKE = REGISTRY.register("toxic_smoke", () -> new SimpleParticleType(false));
 }

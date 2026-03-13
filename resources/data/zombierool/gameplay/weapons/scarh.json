@@ -102,7 +102,7 @@
     "gun_id": "tacz:scar_l",
     "ammo_id": "tacz:762x51",
     "pap_attachments": {
-      "scope": "tacz:acog"
+      "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }
 }

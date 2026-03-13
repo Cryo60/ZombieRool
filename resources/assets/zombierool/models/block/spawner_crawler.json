@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/spawnercrawlerblock",
-    "particle": "zombierool:block/spawnercrawlerblock"
-  },
-  "render_type": "translucent"
-}

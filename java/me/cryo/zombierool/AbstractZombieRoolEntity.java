@@ -5,7 +5,6 @@ import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import me.cryo.zombierool.init.ZombieroolModSounds;
-
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
@@ -27,9 +26,12 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3f;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.nbt.CompoundTag;
 
 public abstract class AbstractZombieRoolEntity extends Monster {
-
     protected boolean headshotDeath = false;
     protected int headshotDeathTicks = 0;
     protected DamageSource headshotSource;
@@ -37,15 +39,44 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected int stuckTimer = 0;
     protected Vec3 lastPos = Vec3.ZERO;
 
+    private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
+
     public AbstractZombieRoolEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         setMaxUpStep(1.25f);
         xpReward = 0;
         setNoAi(false);
         setPersistenceRequired();
+
         if (this.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
         }
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(CUSTOM_SKIN, "");
+    }
+
+    public String getCustomSkin() {
+        return this.entityData.get(CUSTOM_SKIN);
+    }
+
+    public void setCustomSkin(String skinId) {
+        this.entityData.set(CUSTOM_SKIN, skinId);
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag compound) {
+        super.addAdditionalSaveData(compound);
+        compound.putString("CustomSkin", getCustomSkin());
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag compound) {
+        super.readAdditionalSaveData(compound);
+        setCustomSkin(compound.getString("CustomSkin"));
     }
 
     public void setHeadshotDeath(boolean value) {
@@ -94,6 +125,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             Vec3 lookVec = player.getViewVector(1.0f);
             Vec3 start = playerEyePos;
             Vec3 end = start.add(lookVec.scale(100));
+
             var hitResult = this.getBoundingBox().clip(start, end);
             if (hitResult.isPresent()) {
                 Vec3 actualHitPos = hitResult.get();
@@ -102,7 +134,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
-        
+
         if (this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG)) {
             headshot = true;
         }
@@ -114,6 +146,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 this.headshotDeath = true;
                 this.headshotDeathTicks = 0;
                 this.hasTriggeredHeadshotKill = false;
+                
                 if (!this.level().isClientSide) {
                     this.level().broadcastEntityEvent(this, (byte) 99);
                 }
@@ -152,8 +185,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             Entity direct = cause.getDirectEntity();
             Entity src = cause.getEntity();
             Player player = null;
-            boolean killedByWhisperLastBullet = this.getPersistentData().getBoolean("zr_whisper_crow_kill");
-
+            
             if (src instanceof Player p1) {
                 player = p1;
             } else if (direct instanceof Projectile proj && proj.getOwner() instanceof Player p2) {
@@ -163,7 +195,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (player != null) {
                 boolean hasIngot = player.getInventory().items.stream()
                     .anyMatch(st -> st.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
-
+                
                 if (!hasIngot && player.level().random.nextFloat() < 0.0015f) {
                     player.getInventory().add(new ItemStack(
                         me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()));
@@ -190,30 +222,13 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                     }
                 }
             }
-
-            if (killedByWhisperLastBullet) {
-                spawnWhisperDeathParticles(serverLevel, this.getX(), this.getY() + this.getBbHeight() / 2.0D, this.getZ());
-            }
         }
-    }
-
-    protected void spawnWhisperDeathParticles(ServerLevel serverLevel, double x, double y, double z) {
-        serverLevel.sendParticles(new DustParticleOptions(new Vector3f(0.01f, 0.01f, 0.01f), 3.0f), x, y, z, 100, 0.5, 0.6, 0.5, 0.15);
-        serverLevel.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 200, 0.6, 0.7, 0.6, 0.3);
-
-        for (int i = 0; i < 40; i++) {
-            double vx = (this.random.nextFloat() - 0.5) * 2.0;
-            double vy = this.random.nextFloat() * 1.5 + 0.5; 
-            double vz = (this.random.nextFloat() - 0.5) * 2.0;
-            serverLevel.sendParticles(ZombieroolModParticleTypes.BLACK_CROW.get(), x, y, z, 0, vx, vy, vz, 1.0);
-        }
-
-        this.level().playSound(null, x, y, z, ZombieroolModSounds.CROW_WAVE.get(), SoundSource.HOSTILE, 1.5f, 0.7f + this.random.nextFloat() * 0.3f);
     }
 
     @Override
     public void tick() {
         super.tick();
+
         if (this.headshotDeath && !hasTriggeredHeadshotKill) {
             headshotDeathTicks++;
             if (headshotDeathTicks >= 5 && !this.level().isClientSide) {
@@ -230,7 +245,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (this.tickCount % 20 == 0) {
                 double distMoved = this.position().distanceToSqr(this.lastPos);
                 boolean nearPlayer = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 20.0, false) != null;
-
+                
                 if (distMoved < 0.01 && !nearPlayer && this.getTarget() != null) {
                     this.stuckTimer += 20;
                 } else {
