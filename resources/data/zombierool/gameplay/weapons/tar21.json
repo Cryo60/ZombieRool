@@ -1,10 +1,10 @@
 {
   "id": "zombierool:tar21",
-  "name": "TAR21",
+  "name": "weapon.zombierool.tar21",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.tar21.lore.0",
+    "weapon.zombierool.tar21.lore.1"
   ],
   "stats": {
     "damage": 7.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 30,
     "max_reserve": 210,
-    "reload_time": 65,
+    "reload_time": 33,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.35
   },
   "pack_a_punch": {
-    "name": "Pump-Action Shotgun",
+    "name": "weapon.zombierool.tar21.pap",
     "damage_bonus": 9.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

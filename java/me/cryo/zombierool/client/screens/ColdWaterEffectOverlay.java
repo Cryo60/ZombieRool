@@ -28,7 +28,7 @@ public class ColdWaterEffectOverlay {
 
     /**
      * Sets the cold water intensity for the client-side overlay and FOV.
-     * Called by the packet handler (SyncColdWaterStatePacket).
+     * Called by the packet handler (S2CSyncColdWaterStatePacket).
      */
     public static void setColdWaterIntensity(float intensity) {
         currentColdWaterIntensity = intensity;

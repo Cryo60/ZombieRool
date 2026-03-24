@@ -8,9 +8,9 @@ import me.cryo.zombierool.entity.CrawlerEntity;
 import me.cryo.zombierool.entity.DummyEntity;
 import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.entity.ZombieEntity;
-import me.cryo.zombierool.network.DisplayHitmarkerPacket;
+import me.cryo.zombierool.network.S2CDisplayHitmarkerPacket;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
@@ -100,7 +100,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                             ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:impact_flesh")),
                             SoundSource.PLAYERS, 0.5f, 1.0f + (currentTarget.getRandom().nextFloat() * 0.2f));
 
-                        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new DisplayHitmarkerPacket());
+                        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new S2CDisplayHitmarkerPacket());
                     }
 
                     AABB searchBox = currentTarget.getBoundingBox().inflate(chainRange);
@@ -123,7 +123,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
 	}
 
 	private void sendLightningVfx(ServerPlayer player, Vec3 start, Vec3 end, boolean isPap) {
-	    WeaponVfxPacket packet = new WeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
+	    S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
 	    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> player.level().getChunkAt(player.blockPosition())), packet);
 	    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
 	}

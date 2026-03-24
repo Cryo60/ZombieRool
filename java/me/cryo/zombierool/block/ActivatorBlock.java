@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import me.cryo.zombierool.GlobalSwitchState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -10,51 +9,26 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.network.chat.Component; // Import for Component
-import net.minecraft.world.item.TooltipFlag; // Import for TooltipFlag
-import net.minecraft.client.Minecraft; // Import for Minecraft client
-import net.minecraft.world.item.ItemStack; // Import for ItemStack
-
-import java.util.List; // Import for List
+import net.minecraft.network.chat.Component; 
+import net.minecraft.world.item.TooltipFlag; 
+import net.minecraft.world.item.ItemStack; 
+import java.util.List; 
 
 public class ActivatorBlock extends Block {
-    
     public ActivatorBlock() {
         super(BlockBehaviour.Properties.of()
-            .sound(SoundType.METAL)
-            .strength(-1, 3600000)
-            .noCollission() // Add noCollission for consistency with other invisible blocks
-            .noOcclusion()); // Add noOcclusion for consistency with other invisible blocks
-    }
-
-    /**
-     * Helper method to check if the client's language is English.
-     * This is crucial for dynamic translation of item names and tooltips.
-     * @return true if the client's language code starts with "en", false otherwise.
-     */
-    private static boolean isEnglishClient() {
-        if (Minecraft.getInstance() == null) {
-            return false;
-        }
-        return Minecraft.getInstance().options.languageCode.startsWith("en");
-    }
-
-    /**
-     * Helper method for dynamic translation based on the client's language.
-     * @param frenchMessage The message to display if the client's language is French or not English.
-     * @param englishMessage The message to display if the client's language is English.
-     * @return The appropriate translated message.
-     */
-    private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
-        return isEnglishClient() ? englishMessage : frenchMessage;
+                .sound(SoundType.METAL)
+                .strength(-1, 3600000)
+                .noCollission() 
+                .noOcclusion()); 
     }
 
     @Override
     public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
         super.appendHoverText(itemstack, world, list, flag);
-        list.add(Component.literal(getTranslatedMessage("§9Bloc Activateur", "§9Activator Block")));
-        list.add(Component.literal(getTranslatedMessage("§7Reçoit un signal du 'Power Switch'.", "§7Receives a signal from the 'Power Switch'.")));
-        list.add(Component.literal(getTranslatedMessage("§7Émet un signal de Redstone lorsqu'activé.", "§7Emits a Redstone signal when activated.")));
+        list.add(Component.translatable("block.zombierool.activator.tooltip.1"));
+        list.add(Component.translatable("block.zombierool.activator.tooltip.2"));
+        list.add(Component.translatable("block.zombierool.activator.tooltip.3"));
     }
 
     @Override
@@ -84,8 +58,6 @@ public class ActivatorBlock extends Block {
         if (world instanceof ServerLevel serverWorld) {
             return GlobalSwitchState.isActivated(serverWorld) ? 15 : 0;
         }
-        // Si ce n'est pas un ServerLevel (donc côté client), on retourne 0
         return 0;
     }
-
 }

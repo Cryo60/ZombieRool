@@ -1,10 +1,10 @@
 {
   "id": "zombierool:battlerifle",
-  "name": "BATTLERIFLE",
+  "name": "weapon.zombierool.battlerifle",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.battlerifle.lore.0",
+    "weapon.zombierool.battlerifle.lore.1"
   ],
   "stats": {
     "damage": 10.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 24,
     "max_reserve": 144,
-    "reload_time": 45,
+    "reload_time": 52,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Vanguard",
+    "name": "weapon.zombierool.battlerifle.pap",
     "damage_bonus": 6.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "medium",
     "sci_fi",
     "unsc",
-	"tacz",
-	"tacz_halor6"
+    "tacz",
+    "tacz_halor6"
   ],
   "tacz": {
     "gun_id": "halor6:br75"

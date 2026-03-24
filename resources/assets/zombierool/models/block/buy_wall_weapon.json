@@ -1,8 +1,6 @@
 {
-  "parent": "block/cube_all",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "zombierool:block/apply_me_texture_b",
-    "particle": "zombierool:block/apply_me_texture_b"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/apply_me_texture_b"
+  }
 }

@@ -1,4 +1,5 @@
 package me.cryo.zombierool.item;
+
 import me.cryo.zombierool.core.manager.BallisticManager;
 import me.cryo.zombierool.core.manager.DamageManager;
 import me.cryo.zombierool.core.system.WeaponSystem;
@@ -6,8 +7,9 @@ import me.cryo.zombierool.entity.CrawlerEntity;
 import me.cryo.zombierool.entity.DummyEntity;
 import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.entity.ZombieEntity;
+import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -17,7 +19,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.network.PacketDistributor;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -32,8 +36,10 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
     @Override
     protected void performShooting(ItemStack stack, Player player, float charge) {
         if (player.level().isClientSide) return;
+
         boolean isPap = isPackAPunched(stack);
         float damage = getWeaponDamage(stack);
+
         int maxChains = isPap ? 24 : 10;
         double chainRange = 8.0;
 
@@ -58,12 +64,15 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
 
                 hitTargets.add(currentTarget);
                 Vec3 targetCenter = currentTarget.position().add(0, currentTarget.getBbHeight() / 2.0, 0);
-                
+
                 sendLightningVfx((ServerPlayer)player, lastPos, targetCenter, isPap);
                 lastPos = targetCenter;
 
                 boolean wouldDie = currentTarget.getHealth() <= damage;
                 DamageManager.applyDamage(currentTarget, player.damageSources().playerAttack(player), damage);
+                
+                // Son électrique
+                currentTarget.level().playSound(null, currentTarget.blockPosition(), ZombieroolModSounds.ZOMBIE_ELEC.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
 
                 if (!wouldDie && currentTarget.isAlive()) {
                     currentTarget.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 9, false, false));
@@ -77,7 +86,7 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
                 );
 
                 if (potentialNext.isEmpty()) break;
-                
+
                 final LivingEntity refTarget = currentTarget;
                 potentialNext.sort(Comparator.comparingDouble(e -> e.distanceToSqr(refTarget)));
                 currentTarget = potentialNext.get(0); 
@@ -86,7 +95,7 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
     }
 
     private void sendLightningVfx(ServerPlayer player, Vec3 start, Vec3 end, boolean isPap) {
-        WeaponVfxPacket packet = new WeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
+        S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> player.level().getChunkAt(player.blockPosition())), packet);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }

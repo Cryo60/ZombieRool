@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m16a4",
-  "name": "M16A4",
+  "name": "weapon.zombierool.m16a4",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m16a4.lore.0",
+    "weapon.zombierool.m16a4.lore.1"
   ],
   "stats": {
     "damage": 9.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 30,
     "max_reserve": 180,
-    "reload_time": 60,
+    "reload_time": 64,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.3
   },
   "pack_a_punch": {
-    "name": "The Suicidal Idiot",
+    "name": "weapon.zombierool.m16a4.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m7smg",
-  "name": "M7SMG",
+  "name": "weapon.zombierool.m7smg",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m7smg.lore.0",
+    "weapon.zombierool.m7smg.lore.1"
   ],
   "stats": {
     "damage": 1.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 60,
     "max_reserve": 240,
-    "reload_time": 40,
+    "reload_time": 35,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.8
   },
   "pack_a_punch": {
-    "name": "Blaze of Glory",
+    "name": "weapon.zombierool.m7smg.pap",
     "damage_bonus": 4.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

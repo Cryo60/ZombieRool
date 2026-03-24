@@ -1,23 +1,45 @@
 package me.cryo.zombierool.core.manager;
 
-import me.cryo.zombierool.init.ZombieroolModParticleTypes;
-import me.cryo.zombierool.init.ZombieroolModSounds;
-import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.DisplayHitmarkerPacket;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
-import me.cryo.zombierool.block.system.DefenseDoorSystem;
-import me.cryo.zombierool.entity.WhiteKnightEntity;
-import me.cryo.zombierool.PointManager;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 
+import javax.annotation.Nullable;
+
+import me.cryo.zombierool.PointManager;
+import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.core.system.WeaponFacade;
+import me.cryo.zombierool.core.system.WeaponSystem;
+import me.cryo.zombierool.entity.CrawlerEntity;
+import me.cryo.zombierool.entity.DummyEntity;
+import me.cryo.zombierool.entity.HellhoundEntity;
+import me.cryo.zombierool.entity.WhiteKnightEntity;
+import me.cryo.zombierool.entity.ZombieEntity;
+import me.cryo.zombierool.network.NetworkHandler;
+import me.cryo.zombierool.network.S2CDisplayHitmarkerPacket;
+import me.cryo.zombierool.network.S2CVisualBlockCrackPacket;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
+import me.cryo.zombierool.scripting.LuaScriptManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -25,24 +47,10 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
-import me.cryo.zombierool.core.system.WeaponSystem;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.core.BlockPos;
-import me.cryo.zombierool.network.VisualBlockCrackPacket;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Collections;
+import org.joml.Vector3f;
 
 public class BallisticManager {
+
     private static final Random RANDOM = new Random();
 
     private static class Impact {
@@ -77,7 +85,6 @@ public class BallisticManager {
 
         float actualYaw = shooter.getYRot() + yawOffset;
         float actualPitch = shooter.getXRot();
-
         float f = actualPitch * ((float)Math.PI / 180F);
         float f1 = -actualYaw * ((float)Math.PI / 180F);
         float f2 = net.minecraft.util.Mth.cos(f1);
@@ -121,16 +128,16 @@ public class BallisticManager {
         double accumulatedDist = 0;
         int maxBounces = isPap && def != null ? def.pap.ricochet_count : 0;
         int bounces = 0;
-
         int safetyLoop = 0;
+
         BlockPos lastHitBlock = null;
 
         while (remainingRange > 0 && safetyLoop < 100) {
             safetyLoop++;
             Vec3 segmentEnd = currentPos.add(currentDir.scale(remainingRange));
-
             BlockHitResult blockHit = level.clip(new ClipContext(currentPos, segmentEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
             Vec3 actualEnd = blockHit.getType() == HitResult.Type.MISS ? segmentEnd : blockHit.getLocation();
+
             double segmentDist = currentPos.distanceTo(actualEnd);
 
             List<EntityHitResult> entityHits = findAllEntitiesOnPath(level, shooter, currentPos, actualEnd, new AABB(currentPos, actualEnd).inflate(1.0));
@@ -140,7 +147,6 @@ public class BallisticManager {
 
             if (blockHit.getType() == HitResult.Type.BLOCK) {
                 BlockPos hitPos = blockHit.getBlockPos();
-                
                 if (hitPos.equals(lastHitBlock)) {
                     double step = 0.1;
                     currentPos = actualEnd.add(currentDir.scale(step));
@@ -162,7 +168,6 @@ public class BallisticManager {
 
                 if (isPenetrable(hitState)) {
                     allImpacts.add(new Impact(actualEnd, accumulatedDist + segmentDist, hitPos));
-                    
                     lastHitBlock = hitPos;
                     double step = 0.1;
                     currentPos = actualEnd.add(currentDir.scale(step));
@@ -180,7 +185,6 @@ public class BallisticManager {
                         bounces++;
                         Vec3 normal = impact.bounceNormal;
                         currentDir = currentDir.subtract(normal.scale(2 * currentDir.dot(normal))).normalize();
-                        
                         lastHitBlock = hitPos;
                         double step = 0.1;
                         currentPos = actualEnd.add(currentDir.scale(step));
@@ -209,6 +213,7 @@ public class BallisticManager {
 
             if (impact.isEntity) {
                 if (impact.entity instanceof WhiteKnightEntity) continue;
+                if (impact.entity instanceof Player && impact.entity != shooter) continue; 
                 if (!impact.entity.isAlive()) continue;
 
                 if (impact.entity instanceof LivingEntity livingTarget) {
@@ -233,22 +238,25 @@ public class BallisticManager {
 
                     float headshotMultipliedDamage = DamageManager.calculateDamage(shooter, livingTarget, baseGunDamage, isHeadshot, weaponStack);
                     float finalDamage = headshotMultipliedDamage + specialBonusDamage;
-
                     boolean willDie = livingTarget.getHealth() - finalDamage <= 0;
 
                     livingTarget.getPersistentData().putBoolean(DamageManager.GUN_DAMAGE_TAG, true);
+                    
                     if (isHeadshot) {
                         livingTarget.getPersistentData().putBoolean(DamageManager.HEADSHOT_TAG, true);
                     } else {
                         livingTarget.getPersistentData().remove(DamageManager.HEADSHOT_TAG);
                     }
+                    
+                    String hitZone = DamageManager.computeHitZone(livingTarget, impact.pos);
+                    livingTarget.getPersistentData().putString(DamageManager.HIT_ZONE_TAG, hitZone);
 
                     if (DamageManager.applyDamage(livingTarget, shooter.damageSources().playerAttack(shooter), finalDamage)) {
                         level.playSound(null, livingTarget.getX(), livingTarget.getY(), livingTarget.getZ(),
-                                ZombieroolModSounds.IMPACT_FLESH.get(),
+                                me.cryo.zombierool.init.ZombieroolModSounds.IMPACT_FLESH.get(),
                                 SoundSource.PLAYERS, 0.5f, 1.0f + (RANDOM.nextFloat() * 0.2f));
 
-                        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), new DisplayHitmarkerPacket());
+                        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), new S2CDisplayHitmarkerPacket());
 
                         float kb = (def != null && isPap) ? def.pap.knockback_bonus : 0.0f;
                         if (kb > 0.0f) {
@@ -287,11 +295,9 @@ public class BallisticManager {
                                     }
                                 }
                             }
-
                             if (isWhisperLastShot) {
                                 me.cryo.zombierool.item.WhisperItem.spawnCrowParticles(livingTarget);
                             }
-
                         } else {
                             if (!isHeadshot) {
                                 me.cryo.zombierool.core.manager.GoreManager.tryDismemberLimb(livingTarget, finalDamage);
@@ -322,11 +328,14 @@ public class BallisticManager {
                 }
             } else {
                 BlockState state = level.getBlockState(impact.blockPos);
+
                 int crackLevel = RANDOM.nextInt(3) + 3;
                 NetworkHandler.INSTANCE.send(
                     PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(impact.blockPos)),
-                    new VisualBlockCrackPacket(impact.blockPos, crackLevel)
+                    new S2CVisualBlockCrackPacket(impact.blockPos, crackLevel)
                 );
+
+                LuaScriptManager.callEvent("OnBlockShot", shooter.getUUID().toString(), impact.blockPos.getX(), impact.blockPos.getY(), impact.blockPos.getZ());
 
                 if (impact.isBounce) {
                     level.playSound(null, impact.pos.x, impact.pos.y, impact.pos.z, SoundEvents.METAL_HIT, SoundSource.PLAYERS, 0.5f, 1.5f);
@@ -370,7 +379,7 @@ public class BallisticManager {
                 for (int i = 0; i < trailPoints.size() - 1; i++) {
                     Vec3 pStart = trailPoints.get(i);
                     Vec3 pEnd = trailPoints.get(i + 1);
-                    WeaponVfxPacket packet = new WeaponVfxPacket(hitscanVfx, pStart, pEnd, isPap, hitHeadshotDuringPath);
+                    S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket(hitscanVfx, pStart, pEnd, isPap, hitHeadshotDuringPath);
                     NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(shooter.blockPosition())), packet);
                     NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), packet);
                 }
@@ -421,11 +430,9 @@ public class BallisticManager {
     private static List<EntityHitResult> findAllEntitiesOnPath(Level level, Entity shooter, Vec3 start, Vec3 end, AABB searchBox) {
         List<Entity> entities = level.getEntities(shooter, searchBox, e -> e instanceof LivingEntity && !e.isSpectator() && e.isAlive());
         List<EntityHitResult> results = new ArrayList<>();
-        
         for (Entity entity : entities) {
             AABB box = entity.getBoundingBox().inflate(0.3);
             Optional<Vec3> hit = box.clip(start, end);
-            
             if (box.contains(start)) {
                 results.add(new EntityHitResult(entity, start));
             } else if (hit.isPresent()) {
@@ -439,15 +446,14 @@ public class BallisticManager {
     private static EntityHitResult findEntityOnPath(Level level, Entity shooter, Vec3 start, Vec3 end, AABB searchBox) {
         List<EntityHitResult> all = findAllEntitiesOnPath(level, shooter, start, end, searchBox);
         if (all.isEmpty()) return null;
-        
         all.sort(Comparator.comparingDouble(h -> start.distanceToSqr(h.getLocation())));
         return all.get(0);
     }
 
     private static boolean isHeadshot(Entity target, Vec3 hitPos, float threshold) {
-        double yHit = hitPos.y;
-        double yBase = target.getY();
-        double height = target.getBbHeight();
-        return (yHit - yBase) > (height * threshold);
+        if (target instanceof LivingEntity le) {
+            return DamageManager.computeHitZone(le, hitPos).equals("head");
+        }
+        return false;
     }
 }

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:magnum",
-  "name": "M6H2 PDW",
+  "name": "weapon.zombierool.magnum",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.magnum.lore.0",
+    "weapon.zombierool.magnum.lore.1"
   ],
   "stats": {
     "damage": 0.6,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 80,
-    "reload_time": 35,
+    "reload_time": 40,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.7
   },
   "pack_a_punch": {
-    "name": "Misriah",
+    "name": "weapon.zombierool.magnum.pap",
     "damage_bonus": 4.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

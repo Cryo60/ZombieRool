@@ -1,10 +1,10 @@
 {
   "id": "zombierool:dragunov",
-  "name": "DRAGUNOV",
+  "name": "weapon.zombierool.dragunov",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.dragunov.lore.0",
+    "weapon.zombierool.dragunov.lore.1"
   ],
   "stats": {
     "damage": 25.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 10,
     "max_reserve": 50,
-    "reload_time": 60,
+    "reload_time": 83,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.1
   },
   "pack_a_punch": {
-    "name": "The Traitor",
+    "name": "weapon.zombierool.dragunov.pap",
     "damage_bonus": 20.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

@@ -1,9 +1,7 @@
 package me.cryo.zombierool.event;
-
 import me.cryo.zombierool.WaveManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.chat.Component;
 import me.cryo.zombierool.spawner.SpawnerRegistry;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,17 +16,6 @@ import net.minecraftforge.event.TickEvent;
 public class SpawnerEventHandler {
     private static ResourceLocation lastLoadedDimension = null;
 
-    private static boolean isEnglishClient(Player player) {
-        return true; 
-    }
-
-    private static Component getTranslatedComponent(Player player, String frenchMessage, String englishMessage) {
-        if (player != null && isEnglishClient(player)) {
-            return Component.literal(englishMessage);
-        }
-        return Component.literal(frenchMessage);
-    }
-
     @SubscribeEvent
     public static void onWorldUnload(LevelEvent.Unload event) {
         if (!event.getLevel().isClientSide()) {
@@ -42,9 +29,9 @@ public class SpawnerEventHandler {
             ResourceLocation dimensionId = serverLevel.dimension().location();
             if (serverLevel.getServer().getPlayerList().getPlayers().size() == 1 && WaveManager.isGameRunning()) {
                 serverLevel.getServer().getPlayerList().getPlayers().forEach(p -> {
-                    p.sendSystemMessage(getTranslatedComponent(p, "§cFin de la partie : Le dernier joueur a quitté le serveur.", "§cGame Over: The last player left the server."));
+                    p.sendSystemMessage(Component.translatable("message.zombierool.game_over.last_left"));
                 });
-                WaveManager.endGame(serverLevel, getTranslatedComponent(null, "§cFin de la partie : Le dernier joueur a quitté le serveur.", "§cGame Over: The last player left the server."));
+                WaveManager.endGame(serverLevel, Component.translatable("message.zombierool.game_over.last_left"));
             }
             if (lastLoadedDimension != null && !lastLoadedDimension.equals(dimensionId)) {
                 SpawnerRegistry.clearRegistry(serverLevel); 
@@ -73,9 +60,9 @@ public class SpawnerEventHandler {
             if (overworld == null) return;
             if (WaveManager.isGameRunning() && overworld.getServer().getPlayerList().getPlayers().isEmpty()) {
                 overworld.getServer().getPlayerList().getPlayers().forEach(p -> {
-                    p.sendSystemMessage(getTranslatedComponent(p, "§4GAME OVER ! Plus de joueurs sur le serveur.", "§4GAME OVER! No more players on the server."));
+                    p.sendSystemMessage(Component.translatable("message.zombierool.game_over.no_players"));
                 });
-                WaveManager.endGame(overworld, getTranslatedComponent(null, "§4GAME OVER ! Plus de joueurs sur le serveur.", "§4GAME OVER! No more players on the server."));
+                WaveManager.endGame(overworld, Component.translatable("message.zombierool.game_over.no_players"));
             }
         }
     }

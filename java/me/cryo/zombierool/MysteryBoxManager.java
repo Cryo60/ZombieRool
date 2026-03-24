@@ -1,13 +1,8 @@
 package me.cryo.zombierool;
-
-import me.cryo.zombierool.block.MysteryBoxBlock;
-import me.cryo.zombierool.block.EmptymysteryboxBlock;
-import me.cryo.zombierool.init.ZombieroolModBlocks;
-import me.cryo.zombierool.init.ZombieroolModSounds;
-import me.cryo.zombierool.item.IngotSaleItem;
+import me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock;
+import me.cryo.zombierool.block.system.MysteryBoxSystem;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.core.system.WeaponFacade;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,42 +11,26 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.Direction;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.registries.ForgeRegistries;
-
+import net.minecraft.ChatFormatting;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class MysteryBoxManager extends SavedData {
-
     private static final String DATA_NAME = "zombierool_mysterybox_manager";
     private static final Random STATIC_RANDOM = new Random();
     public static final Set<Item> WONDER_WEAPONS = new HashSet<>();
 
-    private static boolean isEnglishClient(Player player) {
-        return true; 
-    }
-
-    private static MutableComponent getTranslatedComponent(Player player, String frenchMessage, String englishMessage) {
-        if (player != null && isEnglishClient(player)) {
-            return Component.literal(englishMessage);
-        }
-        return Component.literal(frenchMessage);
-    }
+    public boolean isLocked = false; 
 
     public static class MysteryBoxPair {
         public BlockPos mainPartPos;
@@ -100,8 +79,8 @@ public class MysteryBoxManager extends SavedData {
             if (o == null || getClass() != o.getClass()) return false;
             MysteryBoxPair that = (MysteryBoxPair) o;
             return Objects.equals(mainPartPos, that.mainPartPos) &&
-                Objects.equals(otherPartPos, that.otherPartPos) &&
-                facing == that.facing;
+                   Objects.equals(otherPartPos, that.otherPartPos) &&
+                   facing == that.facing;
         }
 
         @Override
@@ -111,78 +90,41 @@ public class MysteryBoxManager extends SavedData {
     }
 
     private List<MysteryBoxPair> registeredMysteryBoxLocations = new ArrayList<>();
-    private MysteryBoxPair currentActiveMysteryBoxPair = null;
+    public MysteryBoxPair currentActiveMysteryBoxPair = null;
     private Random random = new Random();
-
-    public boolean isMysteryBoxMoving = false;
-    private long moveStartTime = 0;
-    public static final int MOVE_DELAY_TICKS = 13 * 20;
-
-    public boolean isAwaitingWeapon = false;
-    private long jingleStartTime = 0;
-    public static final int JINGLE_DELAY_TICKS = 125; 
-
-    private UUID playerWhoCausedActionUUID = null;
-    private ItemStack weaponToGive = ItemStack.EMPTY;
 
     public MysteryBoxManager() {}
 
     public static MysteryBoxManager get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-            MysteryBoxManager::load,
-            MysteryBoxManager::new,
-            DATA_NAME
-        );
+        return level.getDataStorage().computeIfAbsent(MysteryBoxManager::load, MysteryBoxManager::new, DATA_NAME);
     }
 
     public static MysteryBoxManager load(CompoundTag nbt) {
         MysteryBoxManager manager = new MysteryBoxManager();
+        manager.isLocked = nbt.getBoolean("IsLocked");
         if (nbt.contains("CurrentActiveMysteryBoxPair")) {
             manager.currentActiveMysteryBoxPair = MysteryBoxPair.load(nbt.getCompound("CurrentActiveMysteryBoxPair"));
         }
-        manager.isMysteryBoxMoving = nbt.getBoolean("IsMysteryBoxMoving");
-        manager.moveStartTime = nbt.getLong("MoveStartTime");
-        manager.isAwaitingWeapon = nbt.getBoolean("IsAwaitingWeapon");
-        manager.jingleStartTime = nbt.getLong("JingleStartTime");
-        if (nbt.hasUUID("PlayerWhoCausedActionUUID")) {
-            manager.playerWhoCausedActionUUID = nbt.getUUID("PlayerWhoCausedActionUUID");
-        }
-        if (nbt.contains("WeaponToGive")) {
-            manager.weaponToGive = ItemStack.of(nbt.getCompound("WeaponToGive"));
-        }
-
         if (nbt.contains("RegisteredMysteryBoxLocations", ListTag.TAG_LIST)) {
             ListTag listTag = nbt.getList("RegisteredMysteryBoxLocations", ListTag.TAG_COMPOUND);
             for (int i = 0; i < listTag.size(); i++) {
                 manager.registeredMysteryBoxLocations.add(MysteryBoxPair.load(listTag.getCompound(i)));
             }
         }
-
         return manager;
     }
 
     @Override
     public CompoundTag save(CompoundTag compound) {
+        compound.putBoolean("IsLocked", isLocked);
         if (currentActiveMysteryBoxPair != null) {
             compound.put("CurrentActiveMysteryBoxPair", currentActiveMysteryBoxPair.save());
         }
-        compound.putBoolean("IsMysteryBoxMoving", isMysteryBoxMoving);
-        compound.putLong("MoveStartTime", moveStartTime);
-        compound.putBoolean("IsAwaitingWeapon", isAwaitingWeapon);
-        compound.putLong("JingleStartTime", jingleStartTime);
-        if (playerWhoCausedActionUUID != null) {
-            compound.putUUID("PlayerWhoCausedActionUUID", playerWhoCausedActionUUID);
-        }
-        if (!weaponToGive.isEmpty()) {
-            compound.put("WeaponToGive", weaponToGive.save(new CompoundTag()));
-        }
-
         ListTag listTag = new ListTag();
         for (MysteryBoxPair pair : registeredMysteryBoxLocations) {
             listTag.add(pair.save());
         }
         compound.put("RegisteredMysteryBoxLocations", listTag);
-
         return compound;
     }
 
@@ -210,25 +152,56 @@ public class MysteryBoxManager extends SavedData {
         return STATIC_RANDOM.nextInt(9) + 4;
     }
 
+    public int getRegisteredLocationsCount() {
+        return this.registeredMysteryBoxLocations.size();
+    }
+
+    public void forceLocation(ServerLevel level, BlockPos mainPos, boolean locked) {
+        for (MysteryBoxPair pair : registeredMysteryBoxLocations) {
+            if (pair.mainPartPos.equals(mainPos)) {
+                if (currentActiveMysteryBoxPair != null && !currentActiveMysteryBoxPair.equals(pair)) {
+                    level.setBlock(currentActiveMysteryBoxPair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                        .setValue(MysteryBoxBlock.FACING, currentActiveMysteryBoxPair.facing)
+                        .setValue(MysteryBoxBlock.PART, false)
+                        .setValue(MysteryBoxBlock.ACTIVE, false), 3);
+                    level.setBlock(currentActiveMysteryBoxPair.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                        .setValue(MysteryBoxBlock.FACING, currentActiveMysteryBoxPair.facing)
+                        .setValue(MysteryBoxBlock.PART, true)
+                        .setValue(MysteryBoxBlock.ACTIVE, false), 3);
+                }
+                
+                level.setBlock(pair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                    .setValue(MysteryBoxBlock.FACING, pair.facing)
+                    .setValue(MysteryBoxBlock.PART, false)
+                    .setValue(MysteryBoxBlock.OPEN, false)
+                    .setValue(MysteryBoxBlock.ACTIVE, true), 3);
+                level.setBlock(pair.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                    .setValue(MysteryBoxBlock.FACING, pair.facing)
+                    .setValue(MysteryBoxBlock.PART, true)
+                    .setValue(MysteryBoxBlock.OPEN, false)
+                    .setValue(MysteryBoxBlock.ACTIVE, true), 3);
+                
+                this.currentActiveMysteryBoxPair = pair;
+                this.isLocked = locked;
+                this.setDirty();
+                return;
+            }
+        }
+    }
+
     public void setupInitialMysteryBox(ServerLevel level, int initialScanRadius) {
         this.currentActiveMysteryBoxPair = null;
-        this.isMysteryBoxMoving = false;
-        this.isAwaitingWeapon = false;
-        this.playerWhoCausedActionUUID = null;
-        this.moveStartTime = 0;
-        this.jingleStartTime = 0;
-
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<BlockPos> registeredPositions = worldConfig.getMysteryBoxPositions();
-
+        
         List<MysteryBoxPair> potentialBoxPairs = new ArrayList<>();
         Set<BlockPos> processedMainPositions = new HashSet<>();
 
         for (BlockPos pos : registeredPositions) {
             if (processedMainPositions.contains(pos)) continue;
-
+            
             BlockState state = level.getBlockState(pos);
-            if (state.getBlock() instanceof MysteryBoxBlock || state.getBlock() instanceof EmptymysteryboxBlock) {
+            if (state.getBlock() instanceof MysteryBoxBlock) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
                 BlockPos mainPartPos;
                 BlockPos otherPartPos;
@@ -245,8 +218,8 @@ public class MysteryBoxManager extends SavedData {
                 BlockState mainState = level.getBlockState(mainPartPos);
                 BlockState otherState = level.getBlockState(otherPartPos);
 
-                if ((mainState.getBlock() instanceof MysteryBoxBlock || mainState.getBlock() instanceof EmptymysteryboxBlock) &&
-                    (otherState.getBlock() instanceof MysteryBoxBlock || otherState.getBlock() instanceof EmptymysteryboxBlock) &&
+                if ((mainState.getBlock() instanceof MysteryBoxBlock) &&
+                    (otherState.getBlock() instanceof MysteryBoxBlock) &&
                     mainState.getValue(MysteryBoxBlock.FACING) == facing && !mainState.getValue(MysteryBoxBlock.PART) &&
                     otherState.getValue(MysteryBoxBlock.FACING) == facing && otherState.getValue(MysteryBoxBlock.PART)) {
                     
@@ -268,22 +241,36 @@ public class MysteryBoxManager extends SavedData {
         }
 
         for (MysteryBoxPair pair : this.registeredMysteryBoxLocations) {
-            level.setBlock(pair.mainPartPos, ZombieroolModBlocks.EMPTYMYSTERYBOX.get().defaultBlockState()
-                .setValue(EmptymysteryboxBlock.FACING, pair.facing)
-                .setValue(EmptymysteryboxBlock.PART, false), 3);
-            level.setBlock(pair.otherPartPos, ZombieroolModBlocks.EMPTYMYSTERYBOX.get().defaultBlockState()
-                .setValue(EmptymysteryboxBlock.FACING, pair.facing)
-                .setValue(EmptymysteryboxBlock.PART, true), 3);
+            level.setBlock(pair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                .setValue(MysteryBoxBlock.FACING, pair.facing)
+                .setValue(MysteryBoxBlock.PART, false)
+                .setValue(MysteryBoxBlock.ACTIVE, false), 3);
+            level.setBlock(pair.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                .setValue(MysteryBoxBlock.FACING, pair.facing)
+                .setValue(MysteryBoxBlock.PART, true)
+                .setValue(MysteryBoxBlock.ACTIVE, false), 3);
         }
 
-        MysteryBoxPair chosenPairForActivation = this.registeredMysteryBoxLocations.get(random.nextInt(this.registeredMysteryBoxLocations.size()));
-        
-        level.setBlock(chosenPairForActivation.mainPartPos, ZombieroolModBlocks.MYSTERY_BOX.get().defaultBlockState()
+        List<MysteryBoxPair> availableLocations = new ArrayList<>();
+        for(MysteryBoxPair pair : this.registeredMysteryBoxLocations) {
+            if(!worldConfig.isMysteryBoxExcluded(pair.mainPartPos)) {
+                availableLocations.add(pair);
+            }
+        }
+        if (availableLocations.isEmpty()) availableLocations.addAll(this.registeredMysteryBoxLocations);
+
+        MysteryBoxPair chosenPairForActivation = availableLocations.get(random.nextInt(availableLocations.size()));
+
+        level.setBlock(chosenPairForActivation.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
             .setValue(MysteryBoxBlock.FACING, chosenPairForActivation.facing)
-            .setValue(MysteryBoxBlock.PART, false), 3);
-        level.setBlock(chosenPairForActivation.otherPartPos, ZombieroolModBlocks.MYSTERY_BOX.get().defaultBlockState()
+            .setValue(MysteryBoxBlock.PART, false)
+            .setValue(MysteryBoxBlock.OPEN, false)
+            .setValue(MysteryBoxBlock.ACTIVE, true), 3);
+        level.setBlock(chosenPairForActivation.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
             .setValue(MysteryBoxBlock.FACING, chosenPairForActivation.facing)
-            .setValue(MysteryBoxBlock.PART, true), 3);
+            .setValue(MysteryBoxBlock.PART, true)
+            .setValue(MysteryBoxBlock.OPEN, false)
+            .setValue(MysteryBoxBlock.ACTIVE, true), 3);
 
         this.currentActiveMysteryBoxPair = new MysteryBoxPair(
             chosenPairForActivation.mainPartPos,
@@ -292,12 +279,15 @@ public class MysteryBoxManager extends SavedData {
         );
         this.currentActiveMysteryBoxPair.usesSinceLastMove = 0;
         this.currentActiveMysteryBoxPair.moveThreshold = generateRandomMoveThreshold();
+        this.isLocked = false;
+        
         setDirty();
 
         level.getServer().getPlayerList().broadcastSystemMessage(
-            getTranslatedComponent(null, "La Mystery Box est apparue à : ", "The Mystery Box has appeared at: ")
-            .append(Component.literal(currentActiveMysteryBoxPair.mainPartPos.getX() + " " + currentActiveMysteryBoxPair.mainPartPos.getY() + " " + currentActiveMysteryBoxPair.mainPartPos.getZ()))
-            .withStyle(ChatFormatting.GOLD), false
+            Component.translatable("message.zombierool.mystery_box.appeared", 
+                currentActiveMysteryBoxPair.mainPartPos.getX(), 
+                currentActiveMysteryBoxPair.mainPartPos.getY(), 
+                currentActiveMysteryBoxPair.mainPartPos.getZ()).withStyle(ChatFormatting.GOLD), false
         );
     }
 
@@ -305,14 +295,115 @@ public class MysteryBoxManager extends SavedData {
         return def.is_wonder_weapon || "WONDER".equalsIgnoreCase(def.type);
     }
 
+    private boolean isWeaponOwnedBy(WeaponSystem.Definition def, Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (WeaponFacade.isWeapon(stack)) {
+                WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
+                if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isWeaponOwnedByAnyone(WeaponSystem.Definition def, ServerLevel level) {
+        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
+            if (isWeaponOwnedBy(def, p)) return true;
+        }
+        if (this.currentActiveMysteryBoxPair != null) {
+            BlockEntity be = level.getBlockEntity(this.currentActiveMysteryBoxPair.mainPartPos);
+            if (be instanceof MysteryBoxSystem.MysteryBoxBlockEntity box) {
+                ItemStack finalWep = box.getFinalWeapon();
+                if (!finalWep.isEmpty() && WeaponFacade.isWeapon(finalWep)) {
+                    WeaponSystem.Definition d = WeaponFacade.getDefinition(finalWep);
+                    if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isCustomWeaponOwnedBy(Item customItem, Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).getItem() == customItem) return true;
+        }
+        return false;
+    }
+
+    private boolean isCustomWeaponOwnedByAnyone(Item customItem, ServerLevel level) {
+        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
+            if (isCustomWeaponOwnedBy(customItem, p)) return true;
+        }
+        if (this.currentActiveMysteryBoxPair != null) {
+            BlockEntity be = level.getBlockEntity(this.currentActiveMysteryBoxPair.mainPartPos);
+            if (be instanceof MysteryBoxSystem.MysteryBoxBlockEntity box) {
+                ItemStack finalWep = box.getFinalWeapon();
+                if (!finalWep.isEmpty() && finalWep.getItem() == customItem) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isUnmappedTaczOwnedBy(ResourceLocation unmappedId, Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (WeaponFacade.isTaczWeapon(stack)) {
+                if (stack.getOrCreateTag().getString("GunId").equals(unmappedId.toString())) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isUnmappedTaczOwnedByAnyone(ResourceLocation unmappedId, ServerLevel level) {
+        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
+            if (isUnmappedTaczOwnedBy(unmappedId, p)) return true;
+        }
+        if (this.currentActiveMysteryBoxPair != null) {
+            BlockEntity be = level.getBlockEntity(this.currentActiveMysteryBoxPair.mainPartPos);
+            if (be instanceof MysteryBoxSystem.MysteryBoxBlockEntity box) {
+                ItemStack finalWep = box.getFinalWeapon();
+                if (!finalWep.isEmpty() && WeaponFacade.isTaczWeapon(finalWep)) {
+                    if (finalWep.getOrCreateTag().getString("GunId").equals(unmappedId.toString())) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean playerHasAnyWonderWeapon(Player player, ServerLevel level) {
+        WorldConfig config = WorldConfig.get(level);
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (WeaponFacade.isWeapon(stack)) {
+                WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
+                if (d != null && isWonderWeapon(d)) {
+                    return true;
+                }
+            }
+            for (ResourceLocation customId : config.getCustomWonderWeapons()) {
+                Item customItem = ForgeRegistries.ITEMS.getValue(customId);
+                if (customItem != null && stack.getItem() == customItem) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean hasAvailableWeapons(Player player, ServerLevel level) {
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<String> requiredTags = worldConfig.getMysteryBoxTags();
-        
+        boolean playerHasWW = playerHasAnyWonderWeapon(player, level);
+        boolean preferZr = player != null && player.getPersistentData().getBoolean("zr_prefer_zr_weapons");
+
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             ResourceLocation defLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + def.id);
             if (worldConfig.isBoxWeaponDisabled(defLoc)) continue;
-
+            
             if (requiredTags != null && !requiredTags.isEmpty()) {
                 boolean matchesTag = false;
                 if (def.tags != null) {
@@ -325,75 +416,39 @@ public class MysteryBoxManager extends SavedData {
                 }
                 if (!matchesTag) continue;
             }
-
-            boolean owned = false;
-            for (ItemStack stack : player.getInventory().items) {
-                if (WeaponFacade.isWeapon(stack)) {
-                    WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
-                    if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                        owned = true;
-                        break;
-                    }
-                }
-            }
-            if (owned) continue;
-
+            
+            if (isWeaponOwnedBy(def, player)) continue;
+            
             if (isWonderWeapon(def)) {
-                boolean ownedByAnyone = false;
-                for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
-                    for (ItemStack stack : p.getInventory().items) {
-                        if (WeaponFacade.isWeapon(stack)) {
-                            WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
-                            if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                                ownedByAnyone = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (ownedByAnyone) break;
-                }
-                if (ownedByAnyone) continue;
+                if (playerHasWW) continue;
+                if (isWeaponOwnedByAnyone(def, level)) continue;
             }
+            
             return true;
         }
 
         for (ResourceLocation customId : worldConfig.getCustomBoxWeapons()) {
             Item customItem = ForgeRegistries.ITEMS.getValue(customId);
             if (customItem != null && customItem != net.minecraft.world.item.Items.AIR) {
-                boolean owned = false;
-                for (ItemStack stack : player.getInventory().items) {
-                    if (stack.getItem() == customItem) { owned = true; break; }
-                }
-                if (owned) continue;
-
+                if (isCustomWeaponOwnedBy(customItem, player)) continue;
+                
                 if (worldConfig.getCustomWonderWeapons().contains(customId)) {
-                    boolean ownedByAnyone = false;
-                    for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
-                        for (ItemStack stack : p.getInventory().items) {
-                            if (stack.getItem() == customItem) { ownedByAnyone = true; break; }
-                        }
-                    }
-                    if (ownedByAnyone) continue;
+                    if (playerHasWW) continue;
+                    if (isCustomWeaponOwnedByAnyone(customItem, level)) continue;
                 }
+                
                 return true;
             }
         }
 
-        for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
-            if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
-            if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
-
-            boolean owned = false;
-            for (ItemStack stack : player.getInventory().items) {
-                if (WeaponFacade.isTaczWeapon(stack)) {
-                    String stackGunId = stack.getOrCreateTag().getString("GunId");
-                    if (stackGunId.equals(unmappedId.toString())) {
-                        owned = true;
-                        break;
-                    }
-                }
+        if (!preferZr) {
+            for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
+                if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
+                if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
+                if (isUnmappedTaczOwnedBy(unmappedId, player)) continue;
+                
+                return true;
             }
-            if (!owned) return true;
         }
 
         return false;
@@ -403,7 +458,9 @@ public class MysteryBoxManager extends SavedData {
         List<ItemStack> candidates = new ArrayList<>();
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<String> requiredTags = worldConfig.getMysteryBoxTags();
-        
+        boolean playerHasWW = playerHasAnyWonderWeapon(player, level);
+        boolean preferZr = player != null && player.getPersistentData().getBoolean("zr_prefer_zr_weapons");
+
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             ResourceLocation defLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + def.id);
             if (worldConfig.isBoxWeaponDisabled(defLoc)) continue;
@@ -421,223 +478,61 @@ public class MysteryBoxManager extends SavedData {
                 if (!matchesTag) continue;
             }
 
-            boolean owned = false;
-            for (ItemStack stack : player.getInventory().items) {
-                if (WeaponFacade.isWeapon(stack)) {
-                    WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
-                    if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                        owned = true;
-                        break;
-                    }
-                }
-            }
-            if (owned) continue;
+            if (isWeaponOwnedBy(def, player)) continue;
 
             if (isWonderWeapon(def)) {
-                boolean ownedByAnyone = false;
-                for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
-                    for (ItemStack stack : p.getInventory().items) {
-                        if (WeaponFacade.isWeapon(stack)) {
-                            WeaponSystem.Definition d = WeaponFacade.getDefinition(stack);
-                            if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                                ownedByAnyone = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (ownedByAnyone) break;
-                }
-                if (ownedByAnyone) continue;
+                if (playerHasWW) continue;
+                if (isWeaponOwnedByAnyone(def, level)) continue;
             }
 
-            ItemStack wep = WeaponFacade.createWeaponStack(def.id, false);
+            ItemStack wep = WeaponFacade.createWeaponStack(def.id, false, player);
             if (wep != null && !wep.isEmpty()) candidates.add(wep);
         }
 
         for (ResourceLocation customId : worldConfig.getCustomBoxWeapons()) {
             Item customItem = ForgeRegistries.ITEMS.getValue(customId);
             if (customItem != null && customItem != net.minecraft.world.item.Items.AIR) {
-                boolean owned = false;
-                for (ItemStack stack : player.getInventory().items) {
-                    if (stack.getItem() == customItem) { owned = true; break; }
-                }
-                if (owned) continue;
-
+                if (isCustomWeaponOwnedBy(customItem, player)) continue;
                 if (worldConfig.getCustomWonderWeapons().contains(customId)) {
-                    boolean ownedByAnyone = false;
-                    for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
-                        for (ItemStack stack : p.getInventory().items) {
-                            if (stack.getItem() == customItem) { ownedByAnyone = true; break; }
-                        }
-                    }
-                    if (ownedByAnyone) continue;
+                    if (playerHasWW) continue;
+                    if (isCustomWeaponOwnedByAnyone(customItem, level)) continue;
                 }
                 candidates.add(new ItemStack(customItem));
             }
         }
 
-        for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
-            if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
-            if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
-
-            boolean owned = false;
-            for (ItemStack stack : player.getInventory().items) {
-                if (WeaponFacade.isTaczWeapon(stack)) {
-                    String stackGunId = stack.getOrCreateTag().getString("GunId");
-                    if (stackGunId.equals(unmappedId.toString())) {
-                        owned = true;
-                        break;
-                    }
-                }
+        if (!preferZr) {
+            for (ResourceLocation unmappedId : WeaponFacade.getUnmappedTaczGuns()) {
+                if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
+                if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
+                if (isUnmappedTaczOwnedBy(unmappedId, player)) continue;
+                
+                ItemStack wep = WeaponFacade.createUnmappedTaczWeaponStack(unmappedId, false);
+                if (wep != null && !wep.isEmpty()) candidates.add(wep);
             }
-            if (owned) continue;
-
-            ItemStack wep = WeaponFacade.createUnmappedTaczWeaponStack(unmappedId, false);
-            if (wep != null && !wep.isEmpty()) candidates.add(wep);
         }
 
         if (candidates.isEmpty()) {
             return ItemStack.EMPTY; 
         }
-
         return candidates.get(random.nextInt(candidates.size()));
     }
 
-    public void startMysteryBoxInteraction(ServerLevel level, ServerPlayer player, boolean useIngot) {
-        if (currentActiveMysteryBoxPair == null) return;
-        if (isMysteryBoxMoving || isAwaitingWeapon) return;
-
-        int cost = 950;
-
-        if (useIngot) {
-            for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (stack.getItem() instanceof IngotSaleItem) {
-                    stack.shrink(1);
-                    break;
-                }
-            }
-        } else {
-            if (me.cryo.zombierool.PointManager.getScore(player) < cost) return;
-            me.cryo.zombierool.PointManager.modifyScore(player, -cost);
-        }
-
-        level.playSound(
-            null,
-            currentActiveMysteryBoxPair.mainPartPos.getX() + 0.5,
-            currentActiveMysteryBoxPair.mainPartPos.getY() + 0.5,
-            currentActiveMysteryBoxPair.mainPartPos.getZ() + 0.5,
-            ZombieroolModSounds.MYSTERY_BOX_JINGLE.get(),
-            SoundSource.MASTER,
-            1.0F,
-            1.0F
-        );
-
-        isAwaitingWeapon = true;
-        jingleStartTime = level.getGameTime();
-        playerWhoCausedActionUUID = player.getUUID();
-        
-        try {
-            weaponToGive = getRandomWeapon(player, level);
-            if (weaponToGive.isEmpty()) {
-                weaponToGive = WeaponFacade.createWeaponStack("m1911", false);
-                if (weaponToGive.isEmpty()) weaponToGive = new ItemStack(net.minecraft.world.item.Items.WOODEN_SWORD);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            weaponToGive = new ItemStack(net.minecraft.world.item.Items.WOODEN_SWORD);
-        }
-        
-        setDirty();
-    }
-
-    public void finalizeMysteryBoxInteraction(ServerLevel level, Player player) {
-        if (currentActiveMysteryBoxPair == null || player == null) return;
-        
-        isAwaitingWeapon = false;
-        jingleStartTime = 0;
-        
-        currentActiveMysteryBoxPair.usesSinceLastMove++;
-        setDirty();
-
-        if (currentActiveMysteryBoxPair.usesSinceLastMove >= currentActiveMysteryBoxPair.moveThreshold) {
-            List<MysteryBoxPair> potentialMoveLocations = registeredMysteryBoxLocations.stream()
-                .filter(pair -> !pair.equals(currentActiveMysteryBoxPair))
-                .collect(Collectors.toList());
-
-            if (potentialMoveLocations.isEmpty()) {
-                currentActiveMysteryBoxPair.usesSinceLastMove = 0;
-                currentActiveMysteryBoxPair.moveThreshold = generateRandomMoveThreshold();
-                giveWeapon(player);
-            } else {
-                startActualMysteryBoxMove(level, player);
-            }
-        } else {
-            giveWeapon(player);
-        }
-        setDirty();
-    }
-
-    private void giveWeapon(Player player) {
-        if (player == null) return;
-        if (!weaponToGive.isEmpty()) {
-            ItemHandlerHelper.giveItemToPlayer(player, weaponToGive);
-        }
-        weaponToGive = ItemStack.EMPTY;
-        setDirty();
-    }
-
-    private void startActualMysteryBoxMove(ServerLevel level, Player player) {
-        isMysteryBoxMoving = true;
-        moveStartTime = level.getGameTime();
-        setDirty();
-
-        if (currentActiveMysteryBoxPair.mainPartPos != null) {
-            level.playSound(null, currentActiveMysteryBoxPair.mainPartPos, ZombieroolModSounds.MYSTERY_BOX_BYBYE.get(), SoundSource.MASTER, 1.0F, 1.0F);
-        }
-
-        if (currentActiveMysteryBoxPair != null) {
-            level.setBlock(currentActiveMysteryBoxPair.otherPartPos, ZombieroolModBlocks.EMPTYMYSTERYBOX.get().defaultBlockState()
-                .setValue(EmptymysteryboxBlock.FACING, currentActiveMysteryBoxPair.facing)
-                .setValue(EmptymysteryboxBlock.PART, true), 3);
-            level.setBlock(currentActiveMysteryBoxPair.mainPartPos, ZombieroolModBlocks.EMPTYMYSTERYBOX.get().defaultBlockState()
-                .setValue(EmptymysteryboxBlock.FACING, currentActiveMysteryBoxPair.facing)
-                .setValue(EmptymysteryboxBlock.PART, false), 3);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
-            if (overworld == null) return;
-
-            MysteryBoxManager manager = MysteryBoxManager.get(overworld);
-            long currentTime = overworld.getGameTime();
-
-            if (manager.isAwaitingWeapon) {
-                if (currentTime - manager.jingleStartTime >= JINGLE_DELAY_TICKS) {
-                    try {
-                        ServerPlayer player = overworld.getServer().getPlayerList().getPlayer(manager.playerWhoCausedActionUUID);
-                        manager.finalizeMysteryBoxInteraction(overworld, player);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        manager.isAwaitingWeapon = false;
-                        manager.weaponToGive = ItemStack.EMPTY;
-                        manager.setDirty();
+    public void moveMysteryBox(ServerLevel level, boolean usedIngot, int cost, UUID buyerId) {
+        if (buyerId != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(buyerId);
+            if (player != null) {
+                if (usedIngot) {
+                    if (!player.getInventory().add(new ItemStack(me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()))) {
+                        player.drop(new ItemStack(me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()), false);
                     }
+                } else {
+                    me.cryo.zombierool.PointManager.modifyScore(player, cost);
                 }
-            }
-
-            if (manager.isMysteryBoxMoving) {
-                if (currentTime - manager.moveStartTime >= MOVE_DELAY_TICKS) {
-                    manager.moveMysteryBox(overworld);
-                }
+                player.sendSystemMessage(Component.translatable("message.zombierool.mystery_box.refunded").withStyle(ChatFormatting.GREEN));
             }
         }
-    }
 
-    public void moveMysteryBox(ServerLevel level) {
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<BlockPos> worldConfigBoxPositions = worldConfig.getMysteryBoxPositions();
         
@@ -646,9 +541,9 @@ public class MysteryBoxManager extends SavedData {
 
         for (BlockPos pos : worldConfigBoxPositions) {
             if (processedMainPositions.contains(pos)) continue;
-
+            
             BlockState state = level.getBlockState(pos);
-            if ((state.getBlock() instanceof MysteryBoxBlock || state.getBlock() instanceof EmptymysteryboxBlock)) {
+            if (state.getBlock() instanceof MysteryBoxBlock) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
                 BlockPos mainPartPos;
                 BlockPos otherPartPos;
@@ -670,9 +565,27 @@ public class MysteryBoxManager extends SavedData {
             }
         }
 
-        List<MysteryBoxPair> availableLocations = new ArrayList<>(registeredMysteryBoxLocations);
+        List<MysteryBoxPair> availableLocations = new ArrayList<>();
+        for(MysteryBoxPair pair : registeredMysteryBoxLocations) {
+            if(!worldConfig.isMysteryBoxExcluded(pair.mainPartPos) && (currentActiveMysteryBoxPair == null || !pair.equals(currentActiveMysteryBoxPair))) {
+                availableLocations.add(pair);
+            }
+        }
+        
+        if (availableLocations.isEmpty()) {
+            availableLocations.addAll(registeredMysteryBoxLocations);
+            if (currentActiveMysteryBoxPair != null) availableLocations.remove(currentActiveMysteryBoxPair);
+        }
+
         if (currentActiveMysteryBoxPair != null) {
-            availableLocations.removeIf(pair -> pair.equals(currentActiveMysteryBoxPair));
+            level.setBlock(currentActiveMysteryBoxPair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                .setValue(MysteryBoxBlock.FACING, currentActiveMysteryBoxPair.facing)
+                .setValue(MysteryBoxBlock.PART, false)
+                .setValue(MysteryBoxBlock.ACTIVE, false), 3);
+            level.setBlock(currentActiveMysteryBoxPair.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
+                .setValue(MysteryBoxBlock.FACING, currentActiveMysteryBoxPair.facing)
+                .setValue(MysteryBoxBlock.PART, true)
+                .setValue(MysteryBoxBlock.ACTIVE, false), 3);
         }
 
         MysteryBoxPair chosenNewLocationPair;
@@ -683,13 +596,17 @@ public class MysteryBoxManager extends SavedData {
         }
 
         if (chosenNewLocationPair != null) {
-            level.setBlock(chosenNewLocationPair.mainPartPos, ZombieroolModBlocks.MYSTERY_BOX.get().defaultBlockState()
+            level.setBlock(chosenNewLocationPair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
                 .setValue(MysteryBoxBlock.FACING, chosenNewLocationPair.facing)
-                .setValue(MysteryBoxBlock.PART, false), 3);
-            level.setBlock(chosenNewLocationPair.otherPartPos, ZombieroolModBlocks.MYSTERY_BOX.get().defaultBlockState()
+                .setValue(MysteryBoxBlock.PART, false)
+                .setValue(MysteryBoxBlock.OPEN, false)
+                .setValue(MysteryBoxBlock.ACTIVE, true), 3);
+            level.setBlock(chosenNewLocationPair.otherPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
                 .setValue(MysteryBoxBlock.FACING, chosenNewLocationPair.facing)
-                .setValue(MysteryBoxBlock.PART, true), 3);
-
+                .setValue(MysteryBoxBlock.PART, true)
+                .setValue(MysteryBoxBlock.OPEN, false)
+                .setValue(MysteryBoxBlock.ACTIVE, true), 3);
+            
             this.currentActiveMysteryBoxPair = new MysteryBoxPair(
                 chosenNewLocationPair.mainPartPos,
                 chosenNewLocationPair.otherPartPos,
@@ -697,21 +614,15 @@ public class MysteryBoxManager extends SavedData {
             );
             this.currentActiveMysteryBoxPair.usesSinceLastMove = 0;
             this.currentActiveMysteryBoxPair.moveThreshold = generateRandomMoveThreshold();
-
+            
             level.getServer().getPlayerList().broadcastSystemMessage(
-                getTranslatedComponent(null, "La Mystery Box est réapparue à : ", "The Mystery Box has reappeared at: ")
-                .append(Component.literal(currentActiveMysteryBoxPair.mainPartPos.getX() + " " + currentActiveMysteryBoxPair.mainPartPos.getY() + " " + currentActiveMysteryBoxPair.mainPartPos.getZ()))
-                .withStyle(ChatFormatting.AQUA), false
+                Component.translatable("message.zombierool.mystery_box.reappeared", 
+                    currentActiveMysteryBoxPair.mainPartPos.getX(), 
+                    currentActiveMysteryBoxPair.mainPartPos.getY(), 
+                    currentActiveMysteryBoxPair.mainPartPos.getZ()).withStyle(ChatFormatting.AQUA), false
             );
         }
-
-        this.isMysteryBoxMoving = false;
-        this.playerWhoCausedActionUUID = null;
-        this.moveStartTime = 0;
+        
         setDirty();
-    }
-
-    public BlockPos getCurrentActiveMysteryBoxLocation() {
-        return currentActiveMysteryBoxPair != null ? currentActiveMysteryBoxPair.mainPartPos : null;
     }
 }

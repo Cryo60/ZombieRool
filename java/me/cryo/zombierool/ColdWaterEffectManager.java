@@ -6,7 +6,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.SyncColdWaterStatePacket;
+import me.cryo.zombierool.network.packet.S2CSyncColdWaterStatePacket;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer; // NEW: Import ServerPlayer
@@ -65,7 +65,7 @@ public class ColdWaterEffectManager {
             // Send packet to client only if intensity has changed
             // Ensure the player is a ServerPlayer before sending the packet
             if (player instanceof ServerPlayer serverPlayer) {
-                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new SyncColdWaterStatePacket(newIntensity));
+                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CSyncColdWaterStatePacket(newIntensity));
             }
         }
     }
@@ -86,7 +86,7 @@ public class ColdWaterEffectManager {
             // Send packet to reset client display
             // Ensure the player is a ServerPlayer before sending the packet
             if (player instanceof ServerPlayer serverPlayer) {
-                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new SyncColdWaterStatePacket(0.0f));
+                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CSyncColdWaterStatePacket(0.0f));
             }
         }
     }

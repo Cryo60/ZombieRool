@@ -1,0 +1,11 @@
+{
+  "id": "juggernog",
+  "name": "perk.zombierool.juggernog.name",
+  "texture_path": "zombierool:textures/block/perks/perks_juggernog.png",
+  "skin_texture": "zombierool:juggernog_skin",
+  "sign_texture": "zombierool:juggernog_sign",
+  "effect_id": "zombierool:perks_effect_juggernog",
+  "duration": 2147483647,
+  "amplifier": 0,
+  "description": "perk.zombierool.juggernog.desc"
+}

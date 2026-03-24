@@ -1,10 +1,10 @@
 {
   "id": "zombierool:mg42",
-  "name": "MG42",
+  "name": "weapon.zombierool.mg42",
   "type": "RIFLE",
   "lore": [
-    "Arme lourde",
-    "Balles rebondissantes si améliorée"
+    "weapon.zombierool.mg42.lore.0",
+    "weapon.zombierool.mg42.lore.1"
   ],
   "stats": {
     "damage": 8.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 150,
     "max_reserve": 750,
-    "reload_time": 60,
+    "reload_time": 39,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.2
   },
   "pack_a_punch": {
-    "name": "Panzer-42",
+    "name": "weapon.zombierool.mg42.pap",
     "damage_bonus": 18.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

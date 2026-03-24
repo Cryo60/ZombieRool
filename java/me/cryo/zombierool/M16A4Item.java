@@ -16,7 +16,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 public class M16A4Item extends WeaponImplementations.HitscanGunItem {
-
 	public M16A4Item(WeaponSystem.Definition def) {
 	    super(def);
 	}
@@ -24,12 +23,11 @@ public class M16A4Item extends WeaponImplementations.HitscanGunItem {
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
 	    ItemStack stack = player.getItemInHand(hand);
-	    
 	    if (hand == InteractionHand.MAIN_HAND && isPackAPunched(stack)) {
 	        if (!player.getCooldowns().isOnCooldown(this)) {
 	            if (getAmmo(stack) >= 3 || player.isCreative()) {
 	                if (!level.isClientSide) {
-                        int multiplier = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get()) ? 2 : 1;
+                        int multiplier = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get()) ? 2 : 1;
                         for (int m = 0; m < multiplier; m++) {
 	                        shootGrenade(stack, player);
                         }
@@ -47,7 +45,6 @@ public class M16A4Item extends WeaponImplementations.HitscanGunItem {
 	            }
 	        }
 	    }
-	    
 	    return super.use(level, player, hand);
 	}
 
@@ -57,14 +54,13 @@ public class M16A4Item extends WeaponImplementations.HitscanGunItem {
         projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 2.0f, 1.0f);
         projectile.setSilent(true);
         projectile.pickup = AbstractArrow.Pickup.DISALLOWED;
-        
+
         CompoundTag nbt = projectile.getPersistentData();
         nbt.putBoolean("zombierool:custom_projectile", true);
         nbt.putFloat("zombierool:damage", getWeaponDamage(stack) * 5.0f);
         nbt.putBoolean("zombierool:invisible", true);
         nbt.putBoolean("zombierool:pap", true);
         nbt.putString("zombierool:trail_vfx", "RPG");
-
         nbt.putBoolean("zombierool:explosive", true);
         nbt.putFloat("zr_exp_radius", 3.5f);
         nbt.putFloat("zr_exp_dmg_mult", 1.0f);

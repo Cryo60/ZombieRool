@@ -21,7 +21,7 @@ import me.cryo.zombierool.player.PlayerDownManager;
 @Mixin(Mob.class)
 public abstract class CustomMobMixin {
 
-    private static final double SCAN_RADIUS = 1024.0; // OMNISCIENT SCAN
+    private static final double SCAN_RADIUS = 1024.0; 
 
     @Shadow
     @Nullable
@@ -94,7 +94,6 @@ public abstract class CustomMobMixin {
                 nearest = player;
             }
         }
-
         return nearest;
     }
 
@@ -118,7 +117,6 @@ public abstract class CustomMobMixin {
                 nearest = wk;
             }
         }
-
         return nearest;
     }
 

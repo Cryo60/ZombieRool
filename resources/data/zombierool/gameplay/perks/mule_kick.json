@@ -1,0 +1,11 @@
+{
+  "id": "mule_kick",
+  "name": "perk.zombierool.mule_kick.name",
+  "texture_path": "zombierool:textures/block/perks/perks_mule_kick.png",
+  "skin_texture": "zombierool:mule_kick_skin",
+  "sign_texture": "zombierool:mule_kick_sign",
+  "effect_id": "zombierool:perks_effect_mule_kick",
+  "duration": 2147483647,
+  "amplifier": 0,
+  "description": "perk.zombierool.mule_kick.desc"
+}

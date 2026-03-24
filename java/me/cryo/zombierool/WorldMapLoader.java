@@ -8,6 +8,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -18,7 +19,7 @@ import java.util.zip.ZipInputStream;
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class WorldMapLoader {
 
-    private static final String MAPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/maps.json";
+    private static final String MAPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/refs/heads/main/maps.json";
     private static final String TARGET_MAP_ID = "zr_nacht";
     private static final String TARGET_MAP_NAME = "Nacht der Untoten";
 
@@ -43,7 +44,7 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Nacht der Untoten not found, downloading from GitHub...");
-                
+
                 URL jsonUrl = new URL(MAPS_JSON_URL);
                 HttpURLConnection jsonConn = (HttpURLConnection) jsonUrl.openConnection();
                 jsonConn.setRequestMethod("GET");
@@ -115,7 +116,6 @@ public class WorldMapLoader {
                     byte[] buffer = new byte[8192];
                     int bytesRead;
                     long totalRead = 0;
-
                     while ((bytesRead = in.read(buffer)) != -1) {
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
@@ -126,18 +126,18 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Download complete, extracting...");
-                
+
                 Path savesPath = FMLPaths.GAMEDIR.get().resolve("saves");
                 if (!Files.exists(savesPath)) {
                     Files.createDirectories(savesPath);
                 }
-                
+
                 File targetDir = new File(savesPath.toFile(), TARGET_MAP_NAME);
                 extractZip(zipFile, targetDir);
 
                 zipFile.delete();
                 tempDir.delete();
-                
+
                 System.out.println("[ZombieRool] Nacht der Untoten installed successfully!");
 
             } catch (java.net.SocketTimeoutException e) {
@@ -160,6 +160,13 @@ public class WorldMapLoader {
             while ((entry = zis.getNextEntry()) != null) {
                 File file = new File(destDir, entry.getName());
                 
+                // PROTECTION ANTI ZIP SLIP
+                String canonicalDestPath = destDir.getCanonicalPath();
+                String canonicalFilePath = file.getCanonicalPath();
+                if (!canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
+                    throw new IOException("Zip Slip detected: " + entry.getName());
+                }
+
                 if (entry.isDirectory()) {
                     file.mkdirs();
                 } else {

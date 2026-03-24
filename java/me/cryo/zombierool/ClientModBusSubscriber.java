@@ -11,8 +11,15 @@ import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
 import me.cryo.zombierool.block.entity.TraitorBlockEntity;
-import me.cryo.zombierool.block.entity.BuyWallWeaponBlockEntity;
-import me.cryo.zombierool.block.entity.ObstacleDoorBlockEntity;
+import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
+import me.cryo.zombierool.block.system.BlindBuySystem;
+import me.cryo.zombierool.block.system.BuyWallWeaponSystem;
+import me.cryo.zombierool.block.system.MysteryBoxSystem;
+import me.cryo.zombierool.block.system.ObstacleDoorSystem;
+import me.cryo.zombierool.block.system.PerksSystem;
+import me.cryo.zombierool.block.system.UniversalSpawnerSystem;
+import me.cryo.zombierool.block.system.PackAPunchSystem;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
@@ -27,9 +34,27 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientModBusSubscriber {
+
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            MenuScreens.register(BlindBuySystem.MENU.get(), BlindBuySystem.BlindBuyManagerScreen::new);
+            ItemBlockRenderTypes.setRenderLayer(BlindBuySystem.BLOCK.get(), RenderType.cutout());
+            MenuScreens.register(BuyWallWeaponSystem.MENU.get(), BuyWallWeaponSystem.WallWeaponManagerScreen::new);
+            ItemBlockRenderTypes.setRenderLayer(BuyWallWeaponSystem.BLOCK.get(), RenderType.cutout());
+            MenuScreens.register(ObstacleDoorSystem.MENU.get(), ObstacleDoorSystem.ObstacleDoorManagerScreen::new);
+            ItemBlockRenderTypes.setRenderLayer(ObstacleDoorSystem.BLOCK.get(), RenderType.cutout());
+            MenuScreens.register(PerksSystem.MENU.get(), PerksSystem.PerksInterfaceScreen::new);
+            ItemBlockRenderTypes.setRenderLayer(PerksSystem.BLOCK.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(PerksSystem.LEGACY_PERKS_LOWER.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(PerksSystem.LEGACY_PERKS_UPPER.get(), RenderType.cutout());
+            MenuScreens.register(UniversalSpawnerSystem.UNIVERSAL_SPAWNER_MENU.get(), UniversalSpawnerSystem.UniversalSpawnerManagerScreen::new);
+            ItemBlockRenderTypes.setRenderLayer(UniversalSpawnerSystem.UNIVERSAL_SPAWNER_BLOCK.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(UniversalSpawnerSystem.LEGACY_ZOMBIE_BLOCK.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(UniversalSpawnerSystem.LEGACY_CRAWLER_BLOCK.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(UniversalSpawnerSystem.LEGACY_DOG_BLOCK.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(UniversalSpawnerSystem.LEGACY_PLAYER_BLOCK.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(MysteryBoxSystem.MYSTERY_BOX.get(), RenderType.cutout());
         });
     }
 
@@ -47,16 +72,16 @@ public class ClientModBusSubscriber {
     @SuppressWarnings("unchecked")
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ZombieroolModEntities.ZOMBIE.get(), ZombieRenderer::new);
-        event.registerEntityRenderer(ZombieroolModEntities.HELLHOUND.get(), HellhoundRenderer::new);
-        event.registerEntityRenderer(ZombieroolModEntities.CRAWLER.get(), CrawlerRenderer::new);
-        event.registerEntityRenderer(ZombieroolModEntities.WHITE_KNIGHT.get(), WhiteKnightRenderer::new);
-        event.registerEntityRenderer(ZombieroolModEntities.DUMMY.get(), DummyRenderer::new);
-
         event.registerBlockEntityRenderer((BlockEntityType<TraitorBlockEntity>)(Object)ZombieroolModBlockEntities.TRAITOR.get(), TraitorBlockRenderer::new);
-        event.registerBlockEntityRenderer((BlockEntityType<BuyWallWeaponBlockEntity>)(Object)ZombieroolModBlockEntities.BUY_WALL_WEAPON.get(), BuyWallWeaponRenderer::new);
-        event.registerBlockEntityRenderer((BlockEntityType<ObstacleDoorBlockEntity>)(Object)ZombieroolModBlockEntities.OBSTACLE_DOOR.get(), ObstacleDoorBlockRenderer::new);
         event.registerBlockEntityRenderer(me.cryo.zombierool.init.ZombieroolModExtraBlockEntities.DEFENSE_DOOR.get(), DefenseDoorSystem.DefenseDoorRenderer::new);
+        event.registerBlockEntityRenderer(BlindBuySystem.BE.get(), BlindBuySystem.BlindBuyCabinetRenderer::new);
+        event.registerBlockEntityRenderer(BuyWallWeaponSystem.BE.get(), BuyWallWeaponSystem.BuyWallWeaponRenderer::new);
+        event.registerBlockEntityRenderer(ObstacleDoorSystem.BE.get(), ObstacleDoorSystem.ObstacleDoorBlockRenderer::new);
+        event.registerBlockEntityRenderer(MysteryBoxSystem.MYSTERY_BOX_BE.get(), MysteryBoxSystem.MysteryBoxRenderer::new);
+        event.registerBlockEntityRenderer((BlockEntityType<DerWunderfizzBlockEntity>)(Object)ZombieroolModBlockEntities.DER_WUNDERFIZZ.get(), DerWunderfizzRenderer::new);
+        
+        // Nouvel enregistrement du renderer Pack-A-Punch
+        event.registerBlockEntityRenderer(PackAPunchSystem.BE.get(), PackAPunchSystem.PackAPunchRenderer::new);
     }
 
     @SubscribeEvent
@@ -70,6 +95,6 @@ public class ClientModBusSubscriber {
         event.registerSpriteSet(ZombieroolModParticleTypes.ZOMBIE_BLOOD.get(), ZombieBloodParticle::provider);
         event.registerSpriteSet(ZombieroolModParticleTypes.WISH.get(), WishParticle::provider);
         event.registerSpriteSet(ZombieroolModParticleTypes.ON_THE_HOUSE.get(), OnTheHouseParticle::provider);
-        event.registerSpriteSet(ZombieroolModParticleTypes.BLACK_CROW.get(), BlackCrowParticle::provider); // ICI AUSSI
+        event.registerSpriteSet(ZombieroolModParticleTypes.BLACK_CROW.get(), BlackCrowParticle::provider); 
     }
 }

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:gewehr43",
-  "name": "GEWEHR43",
+  "name": "weapon.zombierool.gewehr43",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.gewehr43.lore.0",
+    "weapon.zombierool.gewehr43.lore.1"
   ],
   "stats": {
     "damage": 6.6,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 10,
     "max_reserve": 60,
-    "reload_time": 55,
+    "reload_time": 63,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.6
   },
   "pack_a_punch": {
-    "name": "The Prussian Marksman",
+    "name": "weapon.zombierool.gewehr43.pap",
     "damage_bonus": 6.2,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -93,8 +93,8 @@
     "germany",
     "medium",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:g43"

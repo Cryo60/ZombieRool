@@ -1,10 +1,10 @@
 {
   "id": "zombierool:deagle",
-  "name": "DEAGLE",
+  "name": "weapon.zombierool.deagle",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.deagle.lore.0",
+    "weapon.zombierool.deagle.lore.1"
   ],
   "stats": {
     "damage": 16.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 7,
     "max_reserve": 84,
-    "reload_time": 50,
+    "reload_time": 62,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.0
   },
   "pack_a_punch": {
-    "name": "The Golden Talon",
+    "name": "weapon.zombierool.deagle.pap",
     "damage_bonus": 18.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

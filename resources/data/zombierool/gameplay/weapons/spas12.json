@@ -1,10 +1,10 @@
 {
   "id": "zombierool:spas12",
-  "name": "SPAS-12",
+  "name": "weapon.zombierool.spas12",
   "type": "SHOTGUN",
   "lore": [
-    "Fusil à pompe semi-auto",
-    "Rechargement manuel"
+    "weapon.zombierool.spas12.lore.0",
+    "weapon.zombierool.spas12.lore.1"
   ],
   "stats": {
     "damage": 13.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 10,
     "max_reserve": 80,
-    "reload_time": 12,
+    "reload_time": 23,
     "ammo_per_shot": 1,
     "reload_type": "SHELL"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Master Hunter",
+    "name": "weapon.zombierool.spas12.pap",
     "damage_bonus": 10.0,
     "clip_bonus": 16,
     "reserve_bonus": 72,

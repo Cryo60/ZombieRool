@@ -1,10 +1,10 @@
 {
   "id": "zombierool:percepteur",
-  "name": "The Collector",
+  "name": "weapon.zombierool.percepteur",
   "type": "RIFLE",
   "lore": [
-    "Exécute les cibles faibles",
-    "Bonus de points"
+    "weapon.zombierool.percepteur.lore.0",
+    "weapon.zombierool.percepteur.lore.1"
   ],
   "stats": {
     "damage": 19.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 6,
     "max_reserve": 42,
-    "reload_time": 110,
+    "reload_time": 147,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "The Soul Reaper",
+    "name": "weapon.zombierool.percepteur.pap",
     "damage_bonus": 24.0,
     "clip_bonus": 5,
     "reserve_bonus": 50,

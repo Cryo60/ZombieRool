@@ -1,10 +1,10 @@
 {
   "id": "zombierool:famas",
-  "name": "FAMAS",
+  "name": "weapon.zombierool.famas",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.famas.lore.0",
+    "weapon.zombierool.famas.lore.1"
   ],
   "stats": {
     "damage": 6.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 30,
     "max_reserve": 210,
-    "reload_time": 60,
+    "reload_time": 77,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "G11000",
+    "name": "weapon.zombierool.famas.pap",
     "damage_bonus": 12.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

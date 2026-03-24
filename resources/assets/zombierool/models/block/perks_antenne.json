@@ -1,8 +1,0 @@
-{
-  "parent": "block/cross",
-  "textures": {
-    "cross": "zombierool:block/perks_block_antenne",
-    "particle": "zombierool:block/perks_block_antenne"
-  },
-  "render_type": "cutout"
-}

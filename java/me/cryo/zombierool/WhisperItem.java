@@ -5,7 +5,7 @@ import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.StopFourIsReadySoundPacket;
+import me.cryo.zombierool.network.S2CStopFourIsReadySoundPacket;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -40,7 +40,7 @@ public class WhisperItem extends WeaponImplementations.PistolGunItem {
 
     private void stopFourIsReadySound(Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
-            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new StopFourIsReadySoundPacket());
+            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CStopFourIsReadySoundPacket());
         }
     }
 

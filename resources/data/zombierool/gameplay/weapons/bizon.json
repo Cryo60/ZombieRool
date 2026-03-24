@@ -1,10 +1,10 @@
 {
   "id": "zombierool:bizon",
-  "name": "BIZON",
+  "name": "weapon.zombierool.bizon",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.bizon.lore.0",
+    "weapon.zombierool.bizon.lore.1"
   ],
   "stats": {
     "damage": 5.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 64,
     "max_reserve": 256,
-    "reload_time": 70,
+    "reload_time": 39,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "Bizon-1000",
+    "name": "weapon.zombierool.bizon.pap",
     "damage_bonus": 7.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:bar",
-  "name": "BAR",
+  "name": "weapon.zombierool.bar",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.bar.lore.0",
+    "weapon.zombierool.bar.lore.1"
   ],
   "stats": {
     "damage": 18.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 20,
     "max_reserve": 160,
-    "reload_time": 60,
+    "reload_time": 38,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.3
   },
   "pack_a_punch": {
-    "name": "Powder Beast",
+    "name": "weapon.zombierool.bar.pap",
     "damage_bonus": 20.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "medium",
     "usa",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:m1918a2"

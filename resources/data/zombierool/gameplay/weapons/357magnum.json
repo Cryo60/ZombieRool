@@ -1,10 +1,10 @@
 {
   "id": "zombierool:357magnum",
-  "name": ".357 Magnum",
+  "name": "weapon.zombierool.357magnum",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.357magnum.lore.0",
+    "weapon.zombierool.357magnum.lore.1"
   ],
   "stats": {
     "damage": 14.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 6,
     "max_reserve": 60,
-    "reload_time": 60,
+    "reload_time": 50,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.8
   },
   "pack_a_punch": {
-    "name": "Python",
+    "name": "weapon.zombierool.357magnum.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 0,
     "reserve_bonus": 30,
@@ -64,9 +64,9 @@
     "pap_bonus_damage": 0.0
   },
   "sounds": {
-    "fire": "zombierool:troicinqsept_fire",
+    "fire": "zombierool:revolver_fire",
     "fire_pap": "zombierool:gun_fire_upgraded",
-    "reload": "zombierool:troicinqsept_reloading",
+    "reload": "zombierool:revolver_reloading",
     "dry": "zombierool:rifle_dry",
     "equip": "zombierool:weapon_in_hand",
     "pump": ""

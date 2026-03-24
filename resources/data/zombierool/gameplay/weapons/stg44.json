@@ -1,10 +1,10 @@
 {
   "id": "zombierool:stg44",
-  "name": "STG44",
+  "name": "weapon.zombierool.stg44",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.stg44.lore.0",
+    "weapon.zombierool.stg44.lore.1"
   ],
   "stats": {
     "damage": 12.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 25,
     "max_reserve": 150,
-    "reload_time": 55,
+    "reload_time": 45,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "Sturm-Schraube",
+    "name": "weapon.zombierool.stg44.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "germany",
     "medium",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:stg44"

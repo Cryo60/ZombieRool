@@ -1,10 +1,10 @@
 {
   "id": "zombierool:doublebarrel",
-  "name": "Double Barrel",
+  "name": "weapon.zombierool.doublebarrel",
   "type": "SHOTGUN",
   "lore": [
-    "Canon scié",
-    "Dégâts massifs à bout portant"
+    "weapon.zombierool.doublebarrel.lore.0",
+    "weapon.zombierool.doublebarrel.lore.1"
   ],
   "stats": {
     "damage": 12.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 2,
     "max_reserve": 24,
-    "reload_time": 50,
+    "reload_time": 3,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.0
   },
   "pack_a_punch": {
-    "name": "24 Bore Long Range",
+    "name": "weapon.zombierool.doublebarrel.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 0,
     "reserve_bonus": 40,

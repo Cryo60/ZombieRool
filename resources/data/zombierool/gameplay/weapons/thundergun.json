@@ -1,10 +1,10 @@
 {
   "id": "zombierool:thundergun",
-  "name": "Thunder Gun",
+  "name": "weapon.zombierool.thundergun",
   "type": "WONDER",
   "lore": [
-    "Wonder Weapon",
-    "Projette les ennemis"
+    "weapon.zombierool.thundergun.lore.0",
+    "weapon.zombierool.thundergun.lore.1"
   ],
   "stats": {
     "damage": 100.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 2,
     "max_reserve": 8,
-    "reload_time": 80,
+    "reload_time": 90,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "Zeus Cannon",
+    "name": "weapon.zombierool.thundergun.pap",
     "damage_bonus": 100.0,
     "clip_bonus": 2,
     "reserve_bonus": 12,

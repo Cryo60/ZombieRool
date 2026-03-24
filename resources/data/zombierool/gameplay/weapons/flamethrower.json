@@ -1,10 +1,10 @@
 {
   "id": "zombierool:flamethrower",
-  "name": "Flamethrower",
+  "name": "weapon.zombierool.flamethrower",
   "type": "RIFLE",
   "lore": [
-    "Lance-flammes",
-    "Dégâts de feu sur la durée"
+    "weapon.zombierool.flamethrower.lore.0",
+    "weapon.zombierool.flamethrower.lore.1"
   ],
   "stats": {
     "damage": 3.0,
@@ -40,7 +40,7 @@
     "yaw": 0.0
   },
   "pack_a_punch": {
-    "name": "FIEND FIRE",
+    "name": "weapon.zombierool.flamethrower.pap",
     "damage_bonus": 5.0,
     "clip_bonus": 60,
     "reserve_bonus": 360,

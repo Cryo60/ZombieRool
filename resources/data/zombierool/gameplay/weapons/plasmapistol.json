@@ -1,10 +1,10 @@
 {
   "id": "zombierool:plasmapistol",
-  "name": "Plasma Pistol",
+  "name": "weapon.zombierool.plasmapistol",
   "type": "PISTOL",
   "lore": [
-    "Arme à charge",
-    "Surchauffe possible"
+    "weapon.zombierool.plasmapistol.lore.0",
+    "weapon.zombierool.plasmapistol.lore.1"
   ],
   "stats": {
     "damage": 4.5,
@@ -40,7 +40,7 @@
     "yaw": 0.3
   },
   "pack_a_punch": {
-    "name": "Pew Pew",
+    "name": "weapon.zombierool.plasmapistol.pap",
     "damage_bonus": 3.5,
     "clip_bonus": 0,
     "reserve_bonus": 0,

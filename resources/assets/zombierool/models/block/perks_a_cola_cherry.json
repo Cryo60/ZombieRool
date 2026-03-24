@@ -1,0 +1,7 @@
+{
+  "parent": "zombierool:block/perks_a_cola",
+  "textures": {
+    "12": "zombierool:block/perks/perks_cherry",
+    "particle": "zombierool:block/perks/perks_cherry"
+  }
+}

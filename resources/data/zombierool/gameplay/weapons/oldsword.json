@@ -1,10 +1,10 @@
 {
   "id": "zombierool:oldsword",
-  "name": "Sword",
+  "name": "weapon.zombierool.oldsword",
   "type": "MELEE",
   "lore": [
-    "Arme de corps à corps",
-    "Tranchant ancien"
+    "weapon.zombierool.oldsword.lore.0",
+    "weapon.zombierool.oldsword.lore.1"
   ],
   "stats": {
     "damage": 3.0,
@@ -40,7 +40,7 @@
     "yaw": 0.0
   },
   "pack_a_punch": {
-    "name": "Refined Old Sword",
+    "name": "weapon.zombierool.oldsword.pap",
     "damage_bonus": 7.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

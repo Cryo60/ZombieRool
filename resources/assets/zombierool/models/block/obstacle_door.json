@@ -1,8 +1,6 @@
 {
-  "parent": "block/fence_side",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "texture": "zombierool:block/deco/obstacledoor_texture",
-    "particle": "zombierool:block/deco/obstacledoor_texture"
-  },
-  "render_type": "solid"
+    "all": "zombierool:block/apply_me_texture_o"
+  }
 }

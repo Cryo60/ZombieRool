@@ -1,42 +1,40 @@
 package me.cryo.zombierool.item;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
-
 import me.cryo.zombierool.core.system.WeaponSystem;
-import me.cryo.zombierool.network.SyncBlueFirePacket;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
+import me.cryo.zombierool.network.S2CSyncBlueFirePacket;
+import net.minecraft.ChatFormatting;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.UUID;
+import java.util.*;
 
 public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
 
@@ -85,8 +83,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
 
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity ent, int slot, boolean sel) {
-        super.inventoryTick(stack, level, ent, slot, sel); 
-        
+        super.inventoryTick(stack, level, ent, slot, sel);
         if (!(ent instanceof Player p)) return;
 
         int currentOverheat = getOverheat(stack);
@@ -110,7 +107,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
     @Override
     protected boolean executeShot(ItemStack stack, Player player, float charge, boolean isLeft) {
         if (isOverheatLocked(stack) || getOverheat(stack) >= 990) {
-            playSound(player.level(), player, def.sounds.dry);
+            playSound(player.level(), player, getDefinition().sounds.dry);
             return false;
         }
 
@@ -120,11 +117,9 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
             long now = player.level().getGameTime();
             long lastFire = getOrCreateTag(stack).getLong(isLeft ? TAG_LAST_FIRE_LEFT : TAG_LAST_FIRE);
             int heatAdd = getOverheatPerShot(stack);
-            
-            if (now - lastFire > def.stats.fire_rate * 2) {
-                heatAdd *= 2; 
+            if (now - lastFire > getDefinition().stats.fire_rate * 2) {
+                heatAdd *= 2;
             }
-            
             setOverheat(stack, Math.min(getMaxOverheat(), getOverheat(stack) + heatAdd));
         }
 
@@ -135,103 +130,109 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
     protected void performShooting(ItemStack stack, Player player, float charge) {
         if (!(player.level() instanceof ServerLevel serverLevel)) return;
 
+        WeaponSystem.Definition currentDef = getDefinition();
         boolean isPap = isPackAPunched(stack);
-        float flatDamage = def.stats.damage;
-        float percentageDamage = 0.015f; 
+        float flatDamage = currentDef.stats.damage;
+        float percentageDamage = 0.015f;
 
         if (isPap) {
-            flatDamage += def.pap.damage_bonus;
+            flatDamage += currentDef.pap.damage_bonus;
             percentageDamage += 0.008f;
         }
 
         Vec3 eyePos = player.getEyePosition(1.0F);
         Vec3 lookVec = player.getViewVector(1.0F);
         Vec3 visualStartPos = getVisualMuzzlePos(player);
+
         Vec3 maxEndPos = eyePos.add(lookVec.scale(7.5));
-        
         net.minecraft.world.phys.HitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
-            eyePos, maxEndPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, null 
+                eyePos, maxEndPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, null
         ));
-        
         Vec3 finalEndPos = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? maxEndPos : hit.getLocation();
-        
+
         AABB flameArea = new AABB(eyePos, finalEndPos).inflate(1.75);
 
-        Vec3 stepVec = lookVec.scale(1.5); 
+        Vec3 stepVec = lookVec.scale(1.5);
         Vec3 groundCheckPos = eyePos;
+
         for (int j = 0; j < 5; j++) {
             groundCheckPos = groundCheckPos.add(stepVec);
-            if (groundCheckPos.distanceToSqr(eyePos) > eyePos.distanceToSqr(finalEndPos)) break; 
-            
+            if (groundCheckPos.distanceToSqr(eyePos) > eyePos.distanceToSqr(finalEndPos)) break;
+
             net.minecraft.world.phys.BlockHitResult groundHit = player.level().clip(new net.minecraft.world.level.ClipContext(
-                groundCheckPos, groundCheckPos.subtract(0, 4.0, 0),
-                net.minecraft.world.level.ClipContext.Block.COLLIDER, 
-                net.minecraft.world.level.ClipContext.Fluid.NONE,
-                null 
+                    groundCheckPos, groundCheckPos.subtract(0, 4.0, 0),
+                    net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                    net.minecraft.world.level.ClipContext.Fluid.NONE,
+                    null
             ));
 
             if (groundHit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                Vec3 firePos = groundHit.getLocation().add(0, 0.05, 0); 
+                Vec3 firePos = groundHit.getLocation().add(0, 0.05, 0);
                 VirtualFireManager.addFirePatch(serverLevel, firePos, player.getUUID(), flatDamage, 60, isPap);
             }
         }
 
         List<LivingEntity> hitEntities = player.level().getEntitiesOfClass(LivingEntity.class, flameArea,
-            target -> target != player && target.isAlive() && !(target instanceof Player)
-                      && !(target instanceof net.minecraft.world.entity.TamableAnimal && ((net.minecraft.world.entity.TamableAnimal)target).isTame())
-                      && target.getBoundingBox().intersects(flameArea)
-                      && player.hasLineOfSight(target)
+                target -> target != player && target.isAlive() && !(target instanceof Player)
+                        && !(target instanceof net.minecraft.world.entity.TamableAnimal && ((net.minecraft.world.entity.TamableAnimal)target).isTame())
+                        && target.getBoundingBox().intersects(flameArea)
+                        && player.hasLineOfSight(target)
         );
 
         long currentTick = player.level().getGameTime();
-
         for (LivingEntity target : hitEntities) {
             long lastDmg = target.getPersistentData().getLong("LastFlameDmgTick");
             if (currentTick - lastDmg >= 5) {
                 target.getPersistentData().putLong("LastFlameDmgTick", currentTick);
+
                 float totalDamage = flatDamage + (target.getMaxHealth() * percentageDamage);
-                
                 target.getPersistentData().putBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG, true);
                 target.getPersistentData().putBoolean("zombierool:no_gore", true);
-                
+
                 me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, player.level().damageSources().playerAttack(player), totalDamage);
-                
+
                 if (target instanceof Monster) {
                     target.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 10, 0));
                     me.cryo.zombierool.PointManager.modifyScore(player, 10);
                 }
             }
-            
+
             target.setSecondsOnFire(8);
+
             if (isPap) {
                 if (!target.getPersistentData().getBoolean("BlueFire")) {
                     target.getPersistentData().putBoolean("BlueFire", true);
-                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new SyncBlueFirePacket(target.getId(), true));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new S2CSyncBlueFirePacket(target.getId(), true));
                 }
             } else {
                 if (target.getPersistentData().getBoolean("BlueFire")) {
                     target.getPersistentData().remove("BlueFire");
-                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new SyncBlueFirePacket(target.getId(), false));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new S2CSyncBlueFirePacket(target.getId(), false));
                 }
             }
         }
 
-        WeaponVfxPacket packet = new WeaponVfxPacket("FLAMETHROWER", visualStartPos, finalEndPos, isPap, false);
+        S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("FLAMETHROWER", visualStartPos, finalEndPos, isPap, false);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> serverLevel.getChunkAt(player.blockPosition())), packet);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), packet);
     }
 
     @Override
     public Component getName(ItemStack stack) {
+        WeaponSystem.Definition currentDef = getDefinition();
         boolean upgraded = isPackAPunched(stack);
-        String baseName = upgraded ? (def.pap.name != null ? def.pap.name : "Le Carbonisateur") : def.name;
-        net.minecraft.network.chat.MutableComponent nameComponent = Component.literal((upgraded ? "§6" : "§4") + baseName);
+        String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
+        if (nameKey == null) nameKey = "Unknown Weapon";
+        
+        MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
+                Component.translatable(nameKey) : Component.literal(nameKey);
+        MutableComponent nameComponent = Component.literal((upgraded ? "§6" : "§4")).append(baseComp);
 
         int currentOverheat = getOverheat(stack);
         if (isOverheatLocked(stack)) {
-            nameComponent.append(Component.literal(" §8(Surchauffé !)"));
+            nameComponent.append(Component.literal(" ").append(Component.translatable("message.zombierool.weapon.overheated").withStyle(ChatFormatting.DARK_RED)));
         } else if (currentOverheat > 990 * 0.75) {
-            nameComponent.append(Component.literal(" §e(Chauffe !)"));
+            nameComponent.append(Component.literal(" ").append(Component.translatable("message.zombierool.weapon.heating").withStyle(ChatFormatting.YELLOW)));
         }
 
         return nameComponent;
@@ -250,8 +251,8 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
 
             if (currentLoopSoundInstance == null || !mc.getSoundManager().isActive(currentLoopSoundInstance)) {
                 currentLoopSoundInstance = new LoopingFlamethrowerSound(
-                    ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:flamethrower_loop")), 
-                    player);
+                        ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:flamethrower_loop")),
+                        player);
                 mc.getSoundManager().play(currentLoopSoundInstance);
             }
         }
@@ -308,18 +309,18 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         }
 
         private static final List<FirePatch> activePatches = new ArrayList<>();
-        private static final int MAX_FIRE_PATCHES = 40; 
+        private static final int MAX_FIRE_PATCHES = 40;
 
         public static void addFirePatch(ServerLevel level, Vec3 pos, UUID owner, float damage, int duration, boolean isBlue) {
             for (FirePatch patch : activePatches) {
                 if (patch.level == level && patch.pos.distanceToSqr(pos) < 1.0) {
                     patch.ticksRemaining = Math.max(patch.ticksRemaining, duration);
-                    patch.isBlue = isBlue; 
+                    patch.isBlue = isBlue;
                     return;
                 }
             }
             if (activePatches.size() >= MAX_FIRE_PATCHES) {
-                activePatches.remove(0); 
+                activePatches.remove(0);
             }
             activePatches.add(new FirePatch(level, pos, owner, damage, duration, isBlue));
         }
@@ -363,27 +364,32 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                         if (target instanceof me.cryo.zombierool.entity.WhiteKnightEntity) continue;
 
                         float finalDamage = patch.damage;
-
                         if (target instanceof Player p) {
                             if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                                 continue;
                             }
                             if (p.getUUID().equals(patch.owner)) {
-                                finalDamage = 0.5f; 
+                                long now = patch.level.getGameTime();
+                                long lastSelfFire = p.getPersistentData().getLong("zr_last_self_fire");
+                                if (now - lastSelfFire >= 20) {
+                                    p.getPersistentData().putLong("zr_last_self_fire", now);
+                                    me.cryo.zombierool.core.manager.DamageManager.applyDamage(p, patch.level.damageSources().onFire(), 0.5f);
+                                }
+                                continue;
                             } else {
-                                continue; 
+                                continue;
                             }
                         } else if (target instanceof Monster) {
                             target.setSecondsOnFire(4);
                             if (patch.isBlue) {
                                 if (!target.getPersistentData().getBoolean("BlueFire")) {
                                     target.getPersistentData().putBoolean("BlueFire", true);
-                                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new SyncBlueFirePacket(target.getId(), true));
+                                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new S2CSyncBlueFirePacket(target.getId(), true));
                                 }
                             } else {
                                 if (target.getPersistentData().getBoolean("BlueFire")) {
                                     target.getPersistentData().remove("BlueFire");
-                                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new SyncBlueFirePacket(target.getId(), false));
+                                    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> target), new S2CSyncBlueFirePacket(target.getId(), false));
                                 }
                             }
                         }
@@ -399,7 +405,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
             LivingEntity entity = event.getEntity();
             if (!entity.level().isClientSide && entity.getRemainingFireTicks() <= 0 && entity.getPersistentData().getBoolean("BlueFire")) {
                 entity.getPersistentData().remove("BlueFire");
-                NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), new SyncBlueFirePacket(entity.getId(), false));
+                NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), new S2CSyncBlueFirePacket(entity.getId(), false));
             }
         }
 
@@ -407,7 +413,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         public static void onStartTracking(PlayerEvent.StartTracking event) {
             if (event.getTarget() instanceof LivingEntity entity && !event.getEntity().level().isClientSide) {
                 if (entity.getPersistentData().getBoolean("BlueFire")) {
-                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new SyncBlueFirePacket(entity.getId(), true));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new S2CSyncBlueFirePacket(entity.getId(), true));
                 }
             }
         }

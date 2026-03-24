@@ -7,9 +7,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import me.cryo.zombierool.block.AbstractTechnicalBlock;
-import me.cryo.zombierool.block.ObstacleDoorBlock;
+import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock;
 import me.cryo.zombierool.block.system.UniversalSpawnerSystem.UniversalSpawnerBlock;
-import me.cryo.zombierool.block.entity.ObstacleDoorBlockEntity;
+import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntity;
 import me.cryo.zombierool.block.system.UniversalSpawnerSystem.UniversalSpawnerBlockEntity;
 import me.cryo.zombierool.init.KeyBindings;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
@@ -36,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,8 +43,10 @@ import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = "zombierool", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class LinkRenderer {
+
     public static List<BlockPos> clientPlayerSpawners = new ArrayList<>();
     public static boolean isSurvivalViewEnabled = false;
+
     private static int selectedChannelFilter = -1;
     private static int maxChannelFound = 0;
 
@@ -69,25 +70,29 @@ public class LinkRenderer {
     public static void onKeyInput(InputEvent.Key event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !mc.player.isCreative()) return;
+
         if (KeyBindings.CYCLE_CHANNEL_KEY.consumeClick()) {
             selectedChannelFilter++;
             if (selectedChannelFilter > maxChannelFound) {
                 selectedChannelFilter = -1;
             }
             String msg = (selectedChannelFilter == -1)
-                    ? "Tous les canaux"
+                    ? Component.translatable("message.zombierool.link_filter.all").getString()
                     : String.valueOf(selectedChannelFilter);
             mc.player.displayClientMessage(
-                    Component.literal("§eFiltre des Liens : " + msg),
+                    Component.translatable("message.zombierool.link_filter", msg).withStyle(net.minecraft.ChatFormatting.YELLOW),
                     true
             );
         }
+
         if (KeyBindings.TOGGLE_SURVIVAL_VIEW_KEY.consumeClick()) {
             isSurvivalViewEnabled = !isSurvivalViewEnabled;
             mc.levelRenderer.allChanged();
-            String status = isSurvivalViewEnabled ? "Activée" : "Désactivée";
+            String status = isSurvivalViewEnabled 
+                    ? Component.translatable("message.zombierool.enabled").getString() 
+                    : Component.translatable("message.zombierool.disabled").getString();
             mc.player.displayClientMessage(
-                    Component.literal("§eVue Survie : " + status),
+                    Component.translatable("message.zombierool.survival_view", status).withStyle(net.minecraft.ChatFormatting.YELLOW),
                     true
             );
         }
@@ -102,9 +107,11 @@ public class LinkRenderer {
         if (mc.player == null || !mc.player.isCreative() || mc.level == null) {
             return;
         }
+
         ItemStack mainStack = mc.player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack offStack = mc.player.getItemInHand(InteractionHand.OFF_HAND);
         boolean holdingTool = isConfigItem(mainStack) || isConfigItem(offStack);
+
         if (!holdingTool) {
             return;
         }
@@ -112,6 +119,7 @@ public class LinkRenderer {
         Level level = mc.level;
         List<SpawnerInfo> spawnersToRender = new ArrayList<>();
         Map<Integer, List<BlockPos>> obstaclesByChannel = new HashMap<>();
+
         int currentMaxChannel = 0;
         ChunkPos center = mc.player.chunkPosition();
         int renderDistance = mc.options.getEffectiveRenderDistance();
@@ -122,20 +130,20 @@ public class LinkRenderer {
                     LevelChunk chunk = level.getChunk(x, z);
                     for (BlockEntity be : chunk.getBlockEntities().values()) {
                         if (be.isRemoved()) continue;
-
+                        
                         if (be instanceof UniversalSpawnerBlockEntity spawner) {
                             List<Integer> starts = spawner.getParsedChannels(spawner.getStartChannels());
                             List<Integer> stops = spawner.getParsedChannels(spawner.getStopChannels());
                             
                             float r = 0, g = 0, b = 0;
                             switch (spawner.getMobType()) {
-                                case ZOMBIE -> { r = 0.0f; g = 0.0f; b = 1.0f; } // Blue
-                                case CRAWLER -> { r = 0.0f; g = 1.0f; b = 0.0f; } // Green
-                                case HELLHOUND -> { r = 1.0f; g = 0.0f; b = 0.0f; } // Red
-                                case PLAYER -> { r = 1.0f; g = 1.0f; b = 0.0f; } // Yellow
+                                case ZOMBIE -> { r = 0.0f; g = 0.0f; b = 1.0f; } 
+                                case CRAWLER -> { r = 0.0f; g = 1.0f; b = 0.0f; } 
+                                case HELLHOUND -> { r = 1.0f; g = 0.0f; b = 0.0f; } 
+                                case PLAYER -> { r = 1.0f; g = 1.0f; b = 0.0f; } 
                             }
-                            spawnersToRender.add(new SpawnerInfo(be.getBlockPos(), starts, stops, r, g, b));
                             
+                            spawnersToRender.add(new SpawnerInfo(be.getBlockPos(), starts, stops, r, g, b));
                             for (int c : starts) currentMaxChannel = Math.max(currentMaxChannel, c);
                             for (int c : stops) currentMaxChannel = Math.max(currentMaxChannel, c);
                             
@@ -150,10 +158,12 @@ public class LinkRenderer {
                 }
             }
         }
-
+        
         maxChannelFound = currentMaxChannel;
+
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
+
         Vec3 camPos = event.getCamera().getPosition();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = poseStack.last().pose();
@@ -188,13 +198,14 @@ public class LinkRenderer {
                 if (stopCh > 0 && (selectedChannelFilter == -1 || stopCh == selectedChannelFilter)) {
                     BlockPos targetPos = getClosest(spawner.pos, obstaclesByChannel.get(stopCh));
                     if (targetPos != null) {
-                        drawSegmentedLine(level, buffer, matrix, spawner.pos, targetPos, 1.0f, 0.0f, 1.0f); // Magenta
+                        drawSegmentedLine(level, buffer, matrix, spawner.pos, targetPos, 1.0f, 0.0f, 1.0f); 
                     }
                 }
             }
         }
 
         tesselator.end();
+
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
@@ -217,7 +228,7 @@ public class LinkRenderer {
         Item item = stack.getItem();
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
         if (id == null) return false;
-        return id.getPath().equals("universal_spawner") || item == ZombieroolModBlocks.OBSTACLE_DOOR.get().asItem();
+        return id.getPath().equals("universal_spawner") || item == me.cryo.zombierool.block.system.ObstacleDoorSystem.ITEM.get();
     }
 
     private static boolean isVisualObstacle(Level level, BlockPos pos) {
@@ -232,14 +243,17 @@ public class LinkRenderer {
     private static void drawSegmentedLine(Level level, BufferBuilder buffer, Matrix4f matrix, BlockPos start, BlockPos end, float r, float g, float b) {
         Vec3 startVec = new Vec3(start.getX() + 0.5, start.getY() + 0.5, start.getZ() + 0.5);
         Vec3 endVec = new Vec3(end.getX() + 0.5, end.getY() + 0.5, end.getZ() + 0.5);
+
         Vec3 diff = endVec.subtract(startVec);
         double dist = diff.length();
         Vec3 dir = diff.normalize();
         double stepSize = 0.5;
+
         for (double d = 0; d < dist; d += stepSize) {
             Vec3 p1 = startVec.add(dir.scale(d));
             double nextD = Math.min(d + stepSize, dist);
             Vec3 p2 = startVec.add(dir.scale(nextD));
+
             BlockPos checkPos = BlockPos.containing(p1);
             if (!isVisualObstacle(level, checkPos)) {
                 buffer.vertex(matrix, (float)p1.x, (float)p1.y, (float)p1.z).color(r, g, b, 1.0f).endVertex();

@@ -1,11 +1,11 @@
 {
   "id": "zombierool:scarh",
-  "name": "SCARH",
+  "name": "weapon.zombierool.scarh",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Tire des arcs de foudre en chaîne",
-    "Transperce jusqu'à 3 cibles si améliorée"
+    "weapon.zombierool.scarh.lore.0",
+    "weapon.zombierool.scarh.lore.1",
+    "weapon.zombierool.scarh.lore.2"
   ],
   "stats": {
     "damage": 14.0,
@@ -19,7 +19,7 @@
   "ammo": {
     "clip_size": 20,
     "max_reserve": 120,
-    "reload_time": 70,
+    "reload_time": 49,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -41,7 +41,7 @@
     "yaw": 0.7
   },
   "pack_a_punch": {
-    "name": "The Scourge of Destiny",
+    "name": "weapon.zombierool.scarh.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

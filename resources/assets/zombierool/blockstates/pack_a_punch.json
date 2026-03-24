@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "zombierool:block/pack_a_punch" },
+    "facing=east":  { "model": "zombierool:block/pack_a_punch", "y": 90 },
+    "facing=south": { "model": "zombierool:block/pack_a_punch", "y": 180 },
+    "facing=west":  { "model": "zombierool:block/pack_a_punch", "y": 270 }
+  }
+}

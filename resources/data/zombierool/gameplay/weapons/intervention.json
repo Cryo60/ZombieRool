@@ -1,10 +1,10 @@
 {
   "id": "zombierool:intervention",
-  "name": "INTERVENTION",
+  "name": "weapon.zombierool.intervention",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.intervention.lore.0",
+    "weapon.zombierool.intervention.lore.1"
   ],
   "stats": {
     "damage": 25.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 7,
     "max_reserve": 56,
-    "reload_time": 80,
+    "reload_time": 54,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.1
   },
   "pack_a_punch": {
-    "name": "Nostalgia",
+    "name": "weapon.zombierool.intervention.pap",
     "damage_bonus": 35.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

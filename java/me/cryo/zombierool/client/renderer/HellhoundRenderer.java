@@ -23,22 +23,25 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
                 if (!entity.isRevealedClient()) {
                     return;
                 }
-                super.render(ms, buffers, packedLight,
-                             entity, limbSwing, limbSwingAmt,
-                             partialTicks, ageInTicks,
-                             netHeadYaw, headPitch);
+                ResourceLocation customEye = DynamicResourceManager.getClientSkin("hellhound_eyes", entity.getCustomSkin());
+                RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(new ResourceLocation("zombierool:textures/entities/dark_hellhound_eyes.png"));
+                com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = buffers.getBuffer(renderType);
+                this.getParentModel().renderToBuffer(ms, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
             }
+
             @Override
             public RenderType renderType() {
                 return RenderType.eyes(new ResourceLocation("zombierool:textures/entities/dark_hellhound_eyes.png"));
             }
         });
     }
+
     @Override
     public void render(HellhoundEntity entity, float entityYaw, float partialTicks, PoseStack matrixStack, MultiBufferSource buffer, int packedLight) {
         if (!entity.isRevealedClient()) return;
         super.render(entity, entityYaw, partialTicks, matrixStack, buffer, packedLight);
     }
+
     @Override
     public ResourceLocation getTextureLocation(HellhoundEntity entity) {
         String customSkin = entity.getCustomSkin();
@@ -48,8 +51,10 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
         }
         return new ResourceLocation("zombierool:textures/entities/carrie-the-dark-puppy.png");
     }
+
     @Override
     protected void scale(HellhoundEntity e, PoseStack ms, float pt) {
-        ms.scale(1.5F,1.2F,1.5F);
+        float s = e.getScale();
+        ms.scale(1.5F * s, 1.2F * s, 1.5F * s);
     }
 }

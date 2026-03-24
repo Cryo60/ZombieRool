@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import me.cryo.zombierool.WorldConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -33,10 +31,10 @@ public class LimitBlock extends AbstractTechnicalBlock {
 
     @Override
     protected void addTechnicalTooltip(List<Component> list) {
-        list.add(Component.literal(getTranslatedMessage("§9Bloc de Limite", "§9Limit Block")));
-        list.add(Component.literal(getTranslatedMessage("§7À placer généralement au plafond, au-dessus des blocs de chemin.", "§7Typically placed on the ceiling, above Path Blocks.")));
-        list.add(Component.literal(getTranslatedMessage("§7Empêche les entités hostiles d'utiliser les chemins de l'étage inférieur.", "§7Prevents hostile entities from using paths on the floor below.")));
-        list.add(Component.literal(getTranslatedMessage("§7Invisible et non-collidable pour les joueurs en mode Survie.", "§7Invisible and non-collidable for players in Survival mode.")));
+        list.add(Component.translatable("block.zombierool.limit.tooltip.1"));
+        list.add(Component.translatable("block.zombierool.limit.tooltip.2"));
+        list.add(Component.translatable("block.zombierool.limit.tooltip.3"));
+        list.add(Component.translatable("block.zombierool.limit.tooltip.4"));
     }
 
     @Override

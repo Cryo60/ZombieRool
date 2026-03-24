@@ -1,10 +1,9 @@
-// [FILE:\main\java\me\cryo\zombierool\block\system\MeteoriteEasterEgg.java]
 package me.cryo.zombierool.block.system;
-
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.WaveManager;
+import me.cryo.zombierool.core.capability.ZombieCapabilitySystem.PickableManager;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.PlayGlobalSoundPacket;
+import me.cryo.zombierool.network.packet.S2CPlayGlobalSoundPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -35,34 +34,28 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.client.Minecraft;
-
 import javax.annotation.Nullable;
+import net.minecraft.ChatFormatting;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
 public class MeteoriteEasterEgg {
-
-    public static void onMeteoriteFound(ServerLevel level, ServerPlayer player) {
-        WorldConfig config = WorldConfig.get(level);
-        int found = config.getMeteoriteFragmentsFound() + 1;
-        
-        // Permet de boucler pour pouvoir re-déclencher l'easter egg si le joueur place de nouveaux blocs en créatif
-        if (found > 3) {
-            found = 1;
-        }
-
-        config.setMeteoriteFragmentsFound(found);
+    public static void onMeteoriteFound(ServerLevel level, ServerPlayer player, BlockPos pos) {
+        PickableManager.collect(level, "meteorite", pos.asLong() + "");
+        int found = PickableManager.getCollectedCount("meteorite");
+        int total = PickableManager.getTotalCount("meteorite");
 
         ResourceLocation confirmSoundLoc = new ResourceLocation("zombierool", "easter_egg_confirm");
 
-        if (found < 3) {
+        if (found < total) {
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), 
-                new PlayGlobalSoundPacket(confirmSoundLoc, 1.0f, 1.0f));
-        } else if (found == 3) {
+                new S2CPlayGlobalSoundPacket(confirmSoundLoc, 1.0f, 1.0f));
+        } else if (found == total && total > 0) {
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), 
-                new PlayGlobalSoundPacket(confirmSoundLoc, 1.0f, 1.0f));
+                new S2CPlayGlobalSoundPacket(confirmSoundLoc, 1.0f, 1.0f));
+
             WaveManager.currentSessionMusic = "secret";
             level.getServer().getPlayerList().getPlayers().forEach(p -> {
                 p.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:secret"));
@@ -72,18 +65,17 @@ public class MeteoriteEasterEgg {
 
     public static class MeteoriteBlock extends Block {
         public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
-
-        private static final VoxelShape SHAPE = Block.box(4.0D, 0.0D, 4.0D, 12.0D, 6.0D, 12.0D);
+        private static final VoxelShape SHAPE = Shapes.block();
 
         @OnlyIn(Dist.CLIENT)
         private static final Map<BlockPos, MeteoriteSoundInstance> activeSounds = new HashMap<>();
 
         public MeteoriteBlock() {
             super(BlockBehaviour.Properties.of()
-                    .sound(SoundType.STONE)
-                    .strength(-1, 3600000)
-                    .noCollission()
-                    .noOcclusion());
+                .sound(SoundType.STONE)
+                .strength(-1, 3600000)
+                .noCollission()
+                .noOcclusion());
             this.registerDefaultState(this.stateDefinition.any().setValue(ACTIVE, true));
         }
 
@@ -92,7 +84,6 @@ public class MeteoriteEasterEgg {
             builder.add(ACTIVE);
         }
 
-        // Permet au joueur de poser un bloc par-dessus la météorite une fois qu'elle est désactivée (invisible)
         @Override
         public boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
             if (!state.getValue(ACTIVE)) {
@@ -101,25 +92,13 @@ public class MeteoriteEasterEgg {
             return super.canBeReplaced(state, context);
         }
 
-        private static boolean isEnglishClient() {
-            if (Minecraft.getInstance() == null) return false;
-            return Minecraft.getInstance().options.languageCode.startsWith("en");
-        }
-
         @Override
         public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip, TooltipFlag flag) {
             super.appendHoverText(stack, level, tooltip, flag);
-            if (isEnglishClient()) {
-                tooltip.add(Component.literal("§9Meteorite (Easter Egg)"));
-                tooltip.add(Component.literal("§7Interactive block to activate a secret song."));
-                tooltip.add(Component.literal("§7Place 3 meteorites on the map."));
-                tooltip.add(Component.literal("§7Player must look at it and press Action (F)."));
-            } else {
-                tooltip.add(Component.literal("§9Météorite (Easter Egg)"));
-                tooltip.add(Component.literal("§7Bloc interactif permettant d'activer une musique secrète."));
-                tooltip.add(Component.literal("§7Placer 3 météorites sur la carte."));
-                tooltip.add(Component.literal("§7Le joueur doit la regarder et appuyer sur Action (F)."));
-            }
+            tooltip.add(Component.translatable("block.zombierool.meteorite.tooltip.1").withStyle(ChatFormatting.BLUE));
+            tooltip.add(Component.translatable("block.zombierool.meteorite.tooltip.2").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("block.zombierool.meteorite.tooltip.3").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("block.zombierool.meteorite.tooltip.4").withStyle(ChatFormatting.GRAY));
         }
 
         @Override
@@ -156,7 +135,6 @@ public class MeteoriteEasterEgg {
         @OnlyIn(Dist.CLIENT)
         public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
             if (!state.getValue(ACTIVE)) return;
-
             if (!activeSounds.containsKey(pos) || activeSounds.get(pos).isStopped()) {
                 SoundEvent ambientSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "meteorite_ambient"));
                 if (ambientSound != null) {
@@ -165,7 +143,6 @@ public class MeteoriteEasterEgg {
                     activeSounds.put(pos.immutable(), sound);
                 }
             }
-
             if (random.nextInt(3) == 0) {
                 level.addParticle(ParticleTypes.PORTAL, 
                     pos.getX() + 0.5 + (random.nextDouble() - 0.5), 

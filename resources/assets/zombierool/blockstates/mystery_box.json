@@ -1,19 +1,39 @@
 {
-    "variants": {
-        "facing=north": {
-            "model": "zombierool:block/mystery_box"
-        },
-        "facing=east": {
-            "model": "zombierool:block/mystery_box",
-            "y": 90
-        },
-        "facing=south": {
-            "model": "zombierool:block/mystery_box",
-            "y": 180
-        },
-        "facing=west": {
-            "model": "zombierool:block/mystery_box",
-            "y": 270
-        }
-    }
+  "variants": {
+    "active=false,facing=north,open=false,part=false": { "model": "zombierool:block/mystery_box_empty" },
+    "active=true,facing=north,open=false,part=false": { "model": "zombierool:block/mystery_box" },
+    "active=false,facing=north,open=true,part=false": { "model": "zombierool:block/mystery_box_empty" },
+    "active=true,facing=north,open=true,part=false": { "model": "zombierool:block/mystery_box_opened" },
+    "active=false,facing=north,open=false,part=true": { "model": "zombierool:block/mystery_box_empty" },
+    "active=true,facing=north,open=false,part=true": { "model": "zombierool:block/mystery_box_empty" },
+    "active=false,facing=north,open=true,part=true": { "model": "zombierool:block/mystery_box_empty" },
+    "active=true,facing=north,open=true,part=true": { "model": "zombierool:block/mystery_box_empty" },
+    
+    "active=false,facing=east,open=false,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    "active=true,facing=east,open=false,part=false": { "model": "zombierool:block/mystery_box", "y": 90 },
+    "active=false,facing=east,open=true,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    "active=true,facing=east,open=true,part=false": { "model": "zombierool:block/mystery_box_opened", "y": 90 },
+    "active=false,facing=east,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    "active=true,facing=east,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    "active=false,facing=east,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    "active=true,facing=east,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 90 },
+    
+    "active=false,facing=south,open=false,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    "active=true,facing=south,open=false,part=false": { "model": "zombierool:block/mystery_box", "y": 180 },
+    "active=false,facing=south,open=true,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    "active=true,facing=south,open=true,part=false": { "model": "zombierool:block/mystery_box_opened", "y": 180 },
+    "active=false,facing=south,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    "active=true,facing=south,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    "active=false,facing=south,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    "active=true,facing=south,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 180 },
+    
+    "active=false,facing=west,open=false,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 270 },
+    "active=true,facing=west,open=false,part=false": { "model": "zombierool:block/mystery_box", "y": 270 },
+    "active=false,facing=west,open=true,part=false": { "model": "zombierool:block/mystery_box_empty", "y": 270 },
+    "active=true,facing=west,open=true,part=false": { "model": "zombierool:block/mystery_box_opened", "y": 270 },
+    "active=false,facing=west,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 270 },
+    "active=true,facing=west,open=false,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 270 },
+    "active=false,facing=west,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 270 },
+    "active=true,facing=west,open=true,part=true": { "model": "zombierool:block/mystery_box_empty", "y": 270 }
+  }
 }

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:mauserc96",
-  "name": "MAUSERC96",
+  "name": "weapon.zombierool.mauserc96",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.mauserc96.lore.0",
+    "weapon.zombierool.mauserc96.lore.1"
   ],
   "stats": {
     "damage": 0.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 10,
     "max_reserve": 80,
-    "reload_time": 35,
+    "reload_time": 32,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "The Scarred One",
+    "name": "weapon.zombierool.mauserc96.pap",
     "damage_bonus": 3.5,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "light",
     "pistol",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:c96"

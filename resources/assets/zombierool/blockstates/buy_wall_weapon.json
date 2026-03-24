@@ -1,7 +1,19 @@
 {
-    "variants": {
-        "": {
-            "model": "zombierool:block/buy_wall_weapon"
-        }
+  "variants": {
+    "facing=north": {
+      "model": "zombierool:block/buy_wall_weapon"
+    },
+    "facing=east": {
+      "model": "zombierool:block/buy_wall_weapon",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zombierool:block/buy_wall_weapon",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zombierool:block/buy_wall_weapon",
+      "y": 270
     }
+  }
 }

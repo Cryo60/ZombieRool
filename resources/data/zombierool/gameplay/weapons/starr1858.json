@@ -1,10 +1,10 @@
 {
   "id": "zombierool:starr1858",
-  "name": "STARR1858",
+  "name": "weapon.zombierool.starr1858",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.starr1858.lore.0",
+    "weapon.zombierool.starr1858.lore.1"
   ],
   "stats": {
     "damage": 0.7,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 6,
     "max_reserve": 18,
-    "reload_time": 80,
+    "reload_time": 52,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.8
   },
   "pack_a_punch": {
-    "name": "The Old Clunker",
+    "name": "weapon.zombierool.starr1858.pap",
     "damage_bonus": 5.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

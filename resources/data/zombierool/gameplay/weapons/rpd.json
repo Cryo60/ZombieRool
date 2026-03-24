@@ -1,10 +1,10 @@
 {
   "id": "zombierool:rpd",
-  "name": "RPD",
+  "name": "weapon.zombierool.rpd",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.rpd.lore.0",
+    "weapon.zombierool.rpd.lore.1"
   ],
   "stats": {
     "damage": 8.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 100,
     "max_reserve": 600,
-    "reload_time": 90,
+    "reload_time": 91,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.7
   },
   "pack_a_punch": {
-    "name": "Big Thunder",
+    "name": "weapon.zombierool.rpd.pap",
     "damage_bonus": 12.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "heavy",
     "lmg",
     "ussr_russia",
-	"tacz",
-	"tacz_rainforest"
+    "tacz",
+    "tacz_rainforest"
   ],
   "tacz": {
     "gun_id": "rainforest:rpd"

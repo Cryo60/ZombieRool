@@ -17,7 +17,14 @@
     "TacZGlassProtectionMixin",
     "TacZShootIntervalMixin",
     "TacZReloadOperatorMixin",
-    "TacZActionTickMixin"
+    "TacZActionTickMixin",
+    "LivingEntityMixin",
+    "SoundManagerMixin",
+    "SoundBufferLibraryMixin",
+    "PlayerModelMixin",
+    "ItemInHandLayerMixin",
+    "CameraMixin",
+    "ClientLanguageMixin"
   ],
   "client": [],
   "minVersion": "0.8"

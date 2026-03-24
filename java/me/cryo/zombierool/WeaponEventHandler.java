@@ -1,22 +1,26 @@
 package me.cryo.zombierool.core.system;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import me.cryo.zombierool.ZombieroolMod;
-import me.cryo.zombierool.core.network.PacketShoot;
-import me.cryo.zombierool.item.PlasmaPistolItem;
-import me.cryo.zombierool.item.FlamethrowerItem;
-import me.cryo.zombierool.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import com.mojang.blaze3d.vertex.PoseStack;
+import me.cryo.zombierool.ZombieroolMod;
+import me.cryo.zombierool.init.ZombieroolModMobEffects;
+import me.cryo.zombierool.item.FlamethrowerItem;
+import me.cryo.zombierool.item.PlasmaPistolItem;
+import me.cryo.zombierool.network.NetworkHandler;
+import me.cryo.zombierool.core.network.C2SShootPacket;
+import me.cryo.zombierool.handlers.LethalWeaponManager;
+import me.cryo.zombierool.client.ThirdPersonAnimHandler;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class WeaponEventHandler {
@@ -25,29 +29,29 @@ public class WeaponEventHandler {
     public static class ClientHandlers {
 
         private static boolean canClientShoot(WeaponSystem.BaseGunItem gun, ItemStack stack, Player player, boolean isLeft) {
+            if (LethalWeaponManager.isCooking(player.getUUID())) return false;
+
             boolean canShoot = true;
             if (gun.hasOverheat()) {
                 canShoot = !stack.getOrCreateTag().getBoolean(WeaponSystem.BaseGunItem.TAG_IS_OVERHEATED) && gun.getOverheat(stack) < gun.getMaxOverheat();
             }
-            
             if (canShoot && gun.hasDurability()) {
                 canShoot = gun.getDurability(stack) > 0;
             }
-            
             if (canShoot && !gun.hasDurability() && !gun.hasOverheat()) {
                 int ammo = isLeft ? gun.getAmmoLeft(stack) : gun.getAmmo(stack);
                 canShoot = ammo > 0;
             }
-            
             return canShoot;
         }
 
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
-
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.screen != null) return;
+
+            if (LethalWeaponManager.isCooking(mc.player.getUUID())) return;
 
             ItemStack stack = mc.player.getMainHandItem();
             boolean attackDown = mc.options.keyAttack.isDown(); 
@@ -69,7 +73,7 @@ public class WeaponEventHandler {
                         if (attackDown) {
                             long lastFireLeft = stack.getOrCreateTag().getLong("LastFireLeftClient");
                             if (now - lastFireLeft >= gun.getFireRate(stack, mc.player)) {
-                                NetworkHandler.INSTANCE.sendToServer(new PacketShoot(0f, true));
+                                NetworkHandler.INSTANCE.sendToServer(new C2SShootPacket(0f, true));
                                 stack.getOrCreateTag().putLong("LastFireLeftClient", now);
                                 if (canClientShoot(gun, stack, mc.player, true)) applyRecoil(mc.player, gun, stack);
                             }
@@ -77,7 +81,7 @@ public class WeaponEventHandler {
                         if (useDown) {
                             long lastFireRight = stack.getOrCreateTag().getLong("LastFireRightClient");
                             if (now - lastFireRight >= gun.getFireRate(stack, mc.player)) {
-                                NetworkHandler.INSTANCE.sendToServer(new PacketShoot(0f, false));
+                                NetworkHandler.INSTANCE.sendToServer(new C2SShootPacket(0f, false));
                                 stack.getOrCreateTag().putLong("LastFireRightClient", now);
                                 if (canClientShoot(gun, stack, mc.player, false)) applyRecoil(mc.player, gun, stack);
                             }
@@ -86,7 +90,7 @@ public class WeaponEventHandler {
                         if (attackDown) {
                             long lastFire = stack.getOrCreateTag().getLong("LastFireClient");
                             if (now - lastFire >= gun.getFireRate(stack, mc.player)) {
-                                NetworkHandler.INSTANCE.sendToServer(new PacketShoot(0f, false));
+                                NetworkHandler.INSTANCE.sendToServer(new C2SShootPacket(0f, false));
                                 stack.getOrCreateTag().putLong("LastFireClient", now);
                                 if (canClientShoot(gun, stack, mc.player, false)) applyRecoil(mc.player, gun, stack);
                             }
@@ -106,6 +110,7 @@ public class WeaponEventHandler {
                 yawRecoil *= gun.getDefinition().pap.recoil_mult;
             }
             float yawOffset = (player.getRandom().nextBoolean() ? 1 : -1) * yawRecoil;
+
             player.setXRot(player.getXRot() - pitchRecoil);
             player.setYRot(player.getYRot() + yawOffset);
         }
@@ -113,6 +118,14 @@ public class WeaponEventHandler {
         @SubscribeEvent
         public static void onInputInteraction(InputEvent.InteractionKeyMappingTriggered event) {
             if (Minecraft.getInstance().player != null) {
+                if (LethalWeaponManager.isCooking(Minecraft.getInstance().player.getUUID())) {
+                    if (event.isAttack() || event.isUseItem()) {
+                        event.setCanceled(true);
+                        event.setSwingHand(false);
+                    }
+                    return;
+                }
+
                 ItemStack stack = Minecraft.getInstance().player.getMainHandItem();
                 if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
                     if (gun instanceof WeaponImplementations.MeleeWeaponItem) {
@@ -134,6 +147,14 @@ public class WeaponEventHandler {
         public static void onRenderHand(RenderHandEvent event) {
             Player player = Minecraft.getInstance().player;
             if (player != null) {
+                if (LethalWeaponManager.isCooking(player.getUUID())) {
+                    // Si l'animation JSON prend le relais, on laisse passer pour qu'elle puisse annuler elle-même
+                    if (!ThirdPersonAnimHandler.isAnimationPlaying(player.getUUID())) {
+                        event.setCanceled(true);
+                    }
+                    return;
+                }
+
                 ItemStack mainStack = player.getMainHandItem();
                 if (mainStack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
                     if (event.getHand() == InteractionHand.MAIN_HAND) {
@@ -142,8 +163,10 @@ public class WeaponEventHandler {
                             event.getPoseStack().translate(0.0, -0.5, 0.0);
                         }
                     }
+
                     if (event.getHand() == InteractionHand.OFF_HAND && gun.isAkimbo(mainStack)) {
                         event.setCanceled(true);
+
                         PoseStack poseStack = event.getPoseStack();
                         poseStack.pushPose();
 
@@ -153,6 +176,7 @@ public class WeaponEventHandler {
                         float f = -0.4F * Mth.sin(Mth.sqrt(swingProgress) * (float)Math.PI);
                         float f1 = 0.2F * Mth.sin(Mth.sqrt(swingProgress) * ((float)Math.PI * 2F));
                         float f2 = -0.2F * Mth.sin(swingProgress * (float)Math.PI);
+
                         poseStack.translate(f, f1, f2);
                         poseStack.translate(-0.56F, -0.52F + equipProgress * -0.6F, -0.72F);
 
@@ -170,6 +194,7 @@ public class WeaponEventHandler {
                             event.getMultiBufferSource(),
                             event.getPackedLight()
                         );
+
                         poseStack.popPose();
                     }
                 }

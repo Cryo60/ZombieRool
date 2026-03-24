@@ -20,8 +20,6 @@ import net.minecraft.Util;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -29,12 +27,15 @@ import java.util.zip.ZipInputStream;
 import java.util.concurrent.*;
 
 public class MapDownloaderScreen extends Screen {
-    private static final String MAPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/maps.json";
+
+    private static final String OFFICIAL_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/maps.json";
+    private static final String COMMUNITY_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-community-hub/main/maps.json";
     private static final String FEATURED_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/main/featured.json";
-    private static final String GITHUB_MAPS_URL = "https://github.com/Cryo60/zombierool-maps/tree/main";
+    private static final String GITHUB_OFFICIAL_URL = "https://github.com/Cryo60/zombierool-maps";
+    private static final String PUBLISH_APP_URL = "https://zombierool-community.onrender.com/auth/discord/callback";
     private static final String DISCORD_MESSAGE = "Join our Discord for community-made maps!";
-    private static final String DISCORD_INVITE = "https://discord.gg/wK5z899M75";
-    
+    private static final String DISCORD_INVITE = "https://discord.gg/QxsqH2FhFq";
+
     private static final long MAX_FILE_SIZE = 500L * 1024L * 1024L;
     private static final int CONNECT_TIMEOUT = 30000;
     private static final int READ_TIMEOUT = 60000;
@@ -42,18 +43,17 @@ public class MapDownloaderScreen extends Screen {
 
     private final Screen lastScreen;
     private MapList mapList;
-    
     private Button officialTabButton;
     private Button communityTabButton;
     private Button downloadButton;
     private Button downloadAllButton;
     private Button openGithubButton;
+    private Button publishButton;
     private Button backButton;
     private Button downloadFeaturedButton;
-    
+
     private List<MapEntry> maps = new ArrayList<>();
     private FeaturedMap featuredMap = null;
-    
     private DynamicTexture featuredTexture = null;
     private ResourceLocation featuredTextureLocation = null;
 
@@ -61,15 +61,15 @@ public class MapDownloaderScreen extends Screen {
     private boolean loadingFeatured = true;
     private String errorMessage = null;
     private String statusMessage = null;
+
     private float downloadProgress = 0.0f;
     private boolean isDownloading = false;
     private int consecutiveFailures = 0;
     private boolean networkIssuesDetected = false;
-
     private int discordLinkX;
     private int discordLinkY;
     private int discordLinkWidth;
-    
+
     private boolean isOfficialTab = true;
 
     public enum MapInstallState {
@@ -79,24 +79,21 @@ public class MapDownloaderScreen extends Screen {
     }
 
     public MapDownloaderScreen(Screen lastScreen) {
-        super(Component.literal("Maps"));
+        super(Component.translatable("gui.zombierool.downloader.maps.title"));
         this.lastScreen = lastScreen;
     }
 
-    // NOUVEAU SYSTEME UNIFIE : zombierool_map.json
     private void saveUnifiedMetadata(MapEntry map, File worldDir) {
         try {
             File metaFile = new File(worldDir, "zombierool_map.json");
             JsonObject json = new JsonObject();
-            
-            // On préserve les données existantes (ex: config du créateur pour le Spooky Mode)
             if (metaFile.exists()) {
                 try (FileReader reader = new FileReader(metaFile)) {
                     json = new Gson().fromJson(reader, JsonObject.class);
                     if (json == null) json = new JsonObject();
                 } catch (Exception ignored) {}
             }
-            
+
             json.addProperty("id", map.id);
             json.addProperty("sha256", map.sha256 != null ? map.sha256 : "");
             
@@ -104,7 +101,7 @@ public class MapDownloaderScreen extends Screen {
                 json.addProperty("resource_pack_url", map.resourcePackUrl);
                 json.addProperty("resource_pack_name", map.resourcePackName != null ? map.resourcePackName : map.name);
             }
-            
+
             try (FileWriter writer = new FileWriter(metaFile)) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(json, writer);
             }
@@ -115,21 +112,16 @@ public class MapDownloaderScreen extends Screen {
 
     @Override
     protected void init() {
-        loadFeaturedMap();
-        loadMapsFromGithub();
-
         int topMargin = 32;
 
-        this.officialTabButton = Button.builder(Component.literal("Official Maps"), btn -> {
+        this.officialTabButton = Button.builder(Component.translatable("gui.zombierool.downloader.official"), btn -> {
             playSound();
-            isOfficialTab = true;
-            updateTabStates();
+            switchTab(true);
         }).bounds(this.width / 2 - 105, topMargin, 100, 20).build();
 
-        this.communityTabButton = Button.builder(Component.literal("Community Maps"), btn -> {
+        this.communityTabButton = Button.builder(Component.translatable("gui.zombierool.downloader.community"), btn -> {
             playSound();
-            isOfficialTab = false;
-            updateTabStates();
+            switchTab(false);
         }).bounds(this.width / 2 + 5, topMargin, 100, 20).build();
 
         this.addRenderableWidget(officialTabButton);
@@ -137,28 +129,26 @@ public class MapDownloaderScreen extends Screen {
 
         int featuredHeight = 120;
         int listTop = topMargin + 25 + featuredHeight + 10;
-        
         int buttonsPerRow = (this.width > 450) ? 4 : 2;
         int spacing = 5;
         int buttonWidth = Math.min(120, (this.width - 20) / buttonsPerRow - spacing);
         int buttonHeight = 20;
-        
         int rows = (int) Math.ceil(4.0 / buttonsPerRow);
         int totalButtonAreaHeight = rows * (buttonHeight + spacing);
         int listHeight = this.height - listTop - totalButtonAreaHeight - 40; 
-        
+
         this.mapList = new MapList(this.minecraft, this.width, listHeight, listTop, listTop + listHeight, 36);
         this.addWidget(this.mapList);
 
         int startX = (this.width - (buttonsPerRow * buttonWidth + (buttonsPerRow - 1) * spacing)) / 2;
         int startY = this.height - totalButtonAreaHeight - 30;
 
-        this.downloadButton = Button.builder(Component.literal("Download"), btn -> {
+        this.downloadButton = Button.builder(Component.translatable("gui.zombierool.downloader.download"), btn -> {
             playSound();
             downloadAndInstallMap();
         }).bounds(startX, startY, buttonWidth, buttonHeight).build();
 
-        this.downloadAllButton = Button.builder(Component.literal("Update All"), btn -> {
+        this.downloadAllButton = Button.builder(Component.translatable("gui.zombierool.downloader.update_all"), btn -> {
             playSound();
             downloadAllMaps();
         }).bounds(startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight).build();
@@ -166,12 +156,17 @@ public class MapDownloaderScreen extends Screen {
         int row2Y = (buttonsPerRow == 2) ? startY + buttonHeight + spacing : startY;
         int row2X = (buttonsPerRow == 2) ? startX : startX + (buttonWidth + spacing) * 2;
 
-        this.openGithubButton = Button.builder(Component.literal("Open GitHub"), btn -> {
+        this.openGithubButton = Button.builder(Component.translatable("gui.zombierool.downloader.github"), btn -> {
             playSound();
-            Util.getPlatform().openUri(GITHUB_MAPS_URL);
+            Util.getPlatform().openUri(GITHUB_OFFICIAL_URL);
+        }).bounds(row2X, row2Y, buttonWidth, buttonHeight).build();
+        
+        this.publishButton = Button.builder(Component.translatable("gui.zombierool.downloader.publish"), btn -> {
+            playSound();
+            Util.getPlatform().openUri(PUBLISH_APP_URL);
         }).bounds(row2X, row2Y, buttonWidth, buttonHeight).build();
 
-        this.backButton = Button.builder(Component.literal("Back"), btn -> {
+        this.backButton = Button.builder(Component.translatable("gui.zombierool.downloader.back"), btn -> {
             playSound();
             this.minecraft.setScreen(lastScreen);
         }).bounds(row2X + buttonWidth + spacing, row2Y, buttonWidth, buttonHeight).build();
@@ -179,31 +174,64 @@ public class MapDownloaderScreen extends Screen {
         this.addRenderableWidget(downloadButton);
         this.addRenderableWidget(downloadAllButton);
         this.addRenderableWidget(openGithubButton);
+        this.addRenderableWidget(publishButton);
         this.addRenderableWidget(backButton);
 
-        if (featuredMap != null) {
-            int featuredButtonWidth = 100;
-            int featuredButtonX = this.width - featuredButtonWidth - 30;
-            int featuredButtonY = topMargin + 25 + 40;
-            this.downloadFeaturedButton = Button.builder(Component.literal("Download"), btn -> {
-                playSound();
-                downloadFeaturedMap();
-            }).bounds(featuredButtonX, featuredButtonY, featuredButtonWidth, 20).build();
-            this.addRenderableWidget(downloadFeaturedButton);
-        }
+        // Featured Map button (dynamically added/shown based on load)
+        int featuredButtonWidth = 100;
+        int featuredButtonX = this.width - featuredButtonWidth - 30;
+        int featuredButtonY = topMargin + 25 + 40;
+        this.downloadFeaturedButton = Button.builder(Component.translatable("gui.zombierool.downloader.download"), btn -> {
+            playSound();
+            downloadFeaturedMap();
+        }).bounds(featuredButtonX, featuredButtonY, featuredButtonWidth, 20).build();
+        this.addRenderableWidget(downloadFeaturedButton);
 
+        switchTab(isOfficialTab);
+    }
+
+    private void switchTab(boolean official) {
+        this.isOfficialTab = official;
+        this.loading = true;
+        this.errorMessage = null;
+        this.maps.clear();
+        if (this.mapList != null) this.mapList.refreshList();
+        
         updateTabStates();
+        
+        if (isOfficialTab && featuredMap == null) {
+            loadFeaturedMap();
+        }
+        
+        loadMapsFromGithub(isOfficialTab ? OFFICIAL_JSON_URL : COMMUNITY_JSON_URL);
     }
 
     private void updateTabStates() {
         officialTabButton.active = !isOfficialTab;
         communityTabButton.active = isOfficialTab;
-        downloadButton.visible = isOfficialTab;
-        downloadAllButton.visible = isOfficialTab;
+        
         openGithubButton.visible = isOfficialTab;
+        publishButton.visible = !isOfficialTab;
+        
         if (downloadFeaturedButton != null) {
             downloadFeaturedButton.visible = isOfficialTab && featuredMap != null;
         }
+        
+        if (!isOfficialTab) {
+            int featuredHeight = 120;
+            int listTop = 32 + 25; 
+            int buttonsPerRow = (this.width > 450) ? 4 : 2;
+            int totalButtonAreaHeight = (int) Math.ceil(4.0 / buttonsPerRow) * 25;
+            int listHeight = this.height - listTop - totalButtonAreaHeight - 40;
+            mapList.updatePosition(listTop, listTop + listHeight);
+        } else {
+            int listTop = 32 + 25 + 120 + 10;
+            int buttonsPerRow = (this.width > 450) ? 4 : 2;
+            int totalButtonAreaHeight = (int) Math.ceil(4.0 / buttonsPerRow) * 25;
+            int listHeight = this.height - listTop - totalButtonAreaHeight - 40;
+            mapList.updatePosition(listTop, listTop + listHeight);
+        }
+
         updateButtonStates();
     }
 
@@ -242,16 +270,18 @@ public class MapDownloaderScreen extends Screen {
                     if (rpObj.has("url")) resourcePackUrl = rpObj.get("url").getAsString();
                     if (rpObj.has("name")) resourcePackName = rpObj.get("name").getAsString();
                 }
-
                 String sha256 = json.has("sha256") ? json.get("sha256").getAsString() : null;
 
                 featuredMap = new FeaturedMap(id, name, description, downloadUrl, 
-                                             resourcePackUrl, resourcePackName, sha256, previewUrl);
+                    resourcePackUrl, resourcePackName, sha256, previewUrl);
                 
                 downloadFeaturedPreview(previewUrl);
+
                 loadingFeatured = false;
-                
-                this.minecraft.execute(this::checkDownloadedMaps);
+                this.minecraft.execute(() -> {
+                    checkDownloadedMaps();
+                    updateTabStates();
+                });
 
             } catch (Exception e) {
                 loadingFeatured = false;
@@ -295,7 +325,6 @@ public class MapDownloaderScreen extends Screen {
     private void downloadFeaturedMap() {
         if (featuredMap == null || isDownloading) return;
         MapEntry mapEntry = featuredMap.toMapEntry();
-        
         if (featuredMap.state == MapInstallState.INSTALLED || featuredMap.state == MapInstallState.UPDATE_AVAILABLE) {
             this.minecraft.setScreen(new OverwriteConfirmScreen(this, mapEntry));
         } else if (mapEntry.hasResourcePack()) {
@@ -311,11 +340,11 @@ public class MapDownloaderScreen extends Screen {
         );
     }
 
-    private void loadMapsFromGithub() {
+    private void loadMapsFromGithub(String jsonUrl) {
         new Thread(() -> {
             try {
                 System.setProperty("java.net.preferIPv4Stack", "true");
-                URL url = new URL(MAPS_JSON_URL);
+                URL url = new URL(jsonUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(CONNECT_TIMEOUT);
@@ -337,6 +366,7 @@ public class MapDownloaderScreen extends Screen {
                 maps.clear();
                 for (int i = 0; i < mapsArray.size(); i++) {
                     JsonObject mapObj = mapsArray.get(i).getAsJsonObject();
+                    
                     String resourcePackUrl = null;
                     String resourcePackName = null;
                     if (mapObj.has("resource_pack")) {
@@ -369,7 +399,7 @@ public class MapDownloaderScreen extends Screen {
                 });
 
             } catch (Exception e) {
-                errorMessage = "Failed to load maps. Click 'Open GitHub' to download manually.";
+                errorMessage = "Failed to load maps. Check your internet connection.";
                 loading = false;
                 networkIssuesDetected = true;
             }
@@ -383,14 +413,16 @@ public class MapDownloaderScreen extends Screen {
         for (MapEntry map : maps) {
             checkStateForMap(map, savesDir, gson);
         }
+
         if (featuredMap != null) {
             checkStateForMap(featuredMap, savesDir, gson);
             if (downloadFeaturedButton != null) {
-                if (featuredMap.state == MapInstallState.NOT_INSTALLED) downloadFeaturedButton.setMessage(Component.literal("Download"));
-                else if (featuredMap.state == MapInstallState.UPDATE_AVAILABLE) downloadFeaturedButton.setMessage(Component.literal("Update"));
-                else downloadFeaturedButton.setMessage(Component.literal("Reinstall"));
+                if (featuredMap.state == MapInstallState.NOT_INSTALLED) downloadFeaturedButton.setMessage(Component.translatable("gui.zombierool.downloader.download"));
+                else if (featuredMap.state == MapInstallState.UPDATE_AVAILABLE) downloadFeaturedButton.setMessage(Component.translatable("gui.zombierool.downloader.update"));
+                else downloadFeaturedButton.setMessage(Component.translatable("gui.zombierool.downloader.reinstall"));
             }
         }
+
         if (mapList != null) mapList.refreshList();
         updateButtonStates();
     }
@@ -398,7 +430,7 @@ public class MapDownloaderScreen extends Screen {
     private void checkStateForMap(Object mapObj, File savesDir, Gson gson) {
         String name = mapObj instanceof MapEntry ? ((MapEntry)mapObj).name : ((FeaturedMap)mapObj).name;
         String sha256 = mapObj instanceof MapEntry ? ((MapEntry)mapObj).sha256 : ((FeaturedMap)mapObj).sha256;
-        
+
         File mapDir = new File(savesDir, name);
         MapInstallState state = MapInstallState.NOT_INSTALLED;
 
@@ -411,6 +443,7 @@ public class MapDownloaderScreen extends Screen {
                 try (FileReader reader = new FileReader(targetFile)) {
                     JsonObject vJson = gson.fromJson(reader, JsonObject.class);
                     String localSha = vJson.has("sha256") ? vJson.get("sha256").getAsString() : "";
+                    
                     if (sha256 != null && !sha256.isEmpty() && !localSha.equalsIgnoreCase(sha256)) {
                         state = MapInstallState.UPDATE_AVAILABLE;
                     } else {
@@ -423,7 +456,7 @@ public class MapDownloaderScreen extends Screen {
                 state = MapInstallState.UPDATE_AVAILABLE;
             }
         }
-        
+
         if (mapObj instanceof MapEntry) ((MapEntry)mapObj).state = state;
         else ((FeaturedMap)mapObj).state = state;
     }
@@ -443,21 +476,18 @@ public class MapDownloaderScreen extends Screen {
 
     private void downloadAllMaps() {
         if (isDownloading) return;
-        
         List<MapEntry> mapsToDownload = new ArrayList<>();
         for (MapEntry map : maps) {
             if (map.state == MapInstallState.UPDATE_AVAILABLE) {
                 mapsToDownload.add(map);
             }
         }
-        
         if (mapsToDownload.isEmpty()) {
             this.minecraft.execute(() -> statusMessage = "All maps are up to date!");
             return;
         }
 
         CompletableFuture<Void> downloadChain = CompletableFuture.completedFuture(null);
-
         for (MapEntry map : mapsToDownload) {
             downloadChain = downloadChain.thenCompose(v -> {
                 if (consecutiveFailures >= 2) {
@@ -467,7 +497,6 @@ public class MapDownloaderScreen extends Screen {
                     });
                     return CompletableFuture.completedFuture(null);
                 }
-                
                 CompletableFuture<Void> future = new CompletableFuture<>();
                 new Thread(() -> {
                     downloadMapInternal(map, map.hasResourcePack());
@@ -520,8 +549,8 @@ public class MapDownloaderScreen extends Screen {
             }
 
             consecutiveFailures = 0;
-
             String resourcePackFileName = null;
+
             if (includeResourcePack && map.hasResourcePack()) {
                 this.minecraft.execute(() -> {
                     statusMessage = "Downloading resource pack...";
@@ -530,9 +559,10 @@ public class MapDownloaderScreen extends Screen {
 
                 String rpName = map.resourcePackName != null ? map.resourcePackName : map.name;
                 resourcePackFileName = rpName + ".zip";
+
                 final String finalRpName = rpName;
                 final String finalRpFileName = resourcePackFileName;
-
+                
                 executor = Executors.newSingleThreadExecutor();
                 Future<Boolean> rpFuture = executor.submit(() -> 
                     downloadFile(map.resourcePackUrl, finalRpName, false, finalRpFileName, null, null)
@@ -591,9 +621,10 @@ public class MapDownloaderScreen extends Screen {
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0");
                 conn.setRequestProperty("Accept", "*/*");
                 conn.setRequestProperty("Connection", "close");
-                conn.connect();
 
+                conn.connect();
                 int responseCode = conn.getResponseCode();
+
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
                     responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                     responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
@@ -626,7 +657,6 @@ public class MapDownloaderScreen extends Screen {
 
                 try (InputStream in = conn.getInputStream();
                      FileOutputStream out = new FileOutputStream(zipFile)) {
-                    
                     byte[] buffer = new byte[8192];
                     int bytesRead;
                     long totalRead = 0;
@@ -635,7 +665,6 @@ public class MapDownloaderScreen extends Screen {
                     while ((bytesRead = in.read(buffer)) != -1) {
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
-                        
                         if (totalRead > MAX_FILE_SIZE) throw new IOException("Limit exceeded");
 
                         long now = System.currentTimeMillis();
@@ -652,12 +681,11 @@ public class MapDownloaderScreen extends Screen {
                     this.minecraft.execute(() -> statusMessage = "Installing " + name + "...");
                     File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
                     File targetDir = new File(savesDir, name);
-
+                    
                     if (targetDir.exists()) {
                         deleteDirectory(targetDir);
                     }
                     targetDir.mkdirs();
-
                     extractZip(zipFile, targetDir);
 
                     if (sha256Hash != null && !sha256Hash.isEmpty()) {
@@ -669,22 +697,19 @@ public class MapDownloaderScreen extends Screen {
                             return false;
                         }
                     }
-                    
+
                     if (mapRef != null) {
                         saveUnifiedMetadata(mapRef, targetDir);
                     }
-
                     zipFile.delete();
                 } else {
                     this.minecraft.execute(() -> statusMessage = "Installing RP...");
                     File resourcePacksDir = new File(Minecraft.getInstance().gameDirectory, "resourcepacks");
                     resourcePacksDir.mkdirs();
                     File targetFile = new File(resourcePacksDir, fileName);
-                    
                     if (targetFile.exists()) targetFile.delete();
-                    Files.move(zipFile.toPath(), targetFile.toPath());
+                    java.nio.file.Files.move(zipFile.toPath(), targetFile.toPath());
                 }
-
                 return true;
 
             } catch (Exception e) {
@@ -711,7 +736,7 @@ public class MapDownloaderScreen extends Screen {
 
     private String calculateSHA256(File file) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             try (FileInputStream fis = new FileInputStream(file)) {
                 byte[] buffer = new byte[8192];
                 int n;
@@ -762,29 +787,32 @@ public class MapDownloaderScreen extends Screen {
         MapEntry selected = mapList != null ? mapList.getSelected() : null;
         
         if (downloadButton != null) {
-            if (selected != null && !isDownloading && isOfficialTab) {
+            if (selected != null && !isDownloading) {
                 downloadButton.active = true;
-                if (selected.state == MapInstallState.NOT_INSTALLED) downloadButton.setMessage(Component.literal("Download"));
-                else if (selected.state == MapInstallState.UPDATE_AVAILABLE) downloadButton.setMessage(Component.literal("Update"));
-                else downloadButton.setMessage(Component.literal("Reinstall"));
+                if (selected.state == MapInstallState.NOT_INSTALLED) downloadButton.setMessage(Component.translatable("gui.zombierool.downloader.download"));
+                else if (selected.state == MapInstallState.UPDATE_AVAILABLE) downloadButton.setMessage(Component.translatable("gui.zombierool.downloader.update"));
+                else downloadButton.setMessage(Component.translatable("gui.zombierool.downloader.reinstall"));
             } else {
                 downloadButton.active = false;
-                downloadButton.setMessage(Component.literal("Download"));
+                downloadButton.setMessage(Component.translatable("gui.zombierool.downloader.download"));
             }
         }
 
         if (downloadAllButton != null) {
             boolean hasUpdates = maps.stream().anyMatch(m -> m.state == MapInstallState.UPDATE_AVAILABLE);
-            downloadAllButton.active = !isDownloading && hasUpdates && isOfficialTab;
+            downloadAllButton.active = !isDownloading && hasUpdates;
         }
 
         if (downloadFeaturedButton != null && featuredMap != null) {
             downloadFeaturedButton.active = !isDownloading && isOfficialTab;
         }
-        
+
         if (backButton != null) {
             backButton.active = !isDownloading;
         }
+        
+        if (officialTabButton != null) officialTabButton.active = !isOfficialTab && !isDownloading;
+        if (communityTabButton != null) communityTabButton.active = isOfficialTab && !isDownloading;
     }
 
     @Override
@@ -801,7 +829,6 @@ public class MapDownloaderScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
-
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
 
         if (isOfficialTab) {
@@ -810,7 +837,7 @@ public class MapDownloaderScreen extends Screen {
                 int featuredY = 32 + 25; 
                 int featuredWidth = this.width - 40;
                 int featuredHeight = 100;
-                
+
                 graphics.fill(featuredX, featuredY, featuredX + featuredWidth, featuredY + featuredHeight, 0xAA000000);
                 graphics.renderOutline(featuredX, featuredY, featuredWidth, featuredHeight, 0xFFFFAA00);
 
@@ -823,16 +850,15 @@ public class MapDownloaderScreen extends Screen {
 
                 int textX = featuredX + 105;
                 int textY = featuredY + 10;
-                
-                graphics.drawString(this.font, "⭐ FEATURED MAP", textX, textY, 0xFFFFAA00);
+                graphics.drawString(this.font, Component.translatable("gui.zombierool.downloader.featured"), textX, textY, 0xFFFFAA00);
                 
                 String displayName = featuredMap.name;
-                if (featuredMap.state == MapInstallState.UPDATE_AVAILABLE) displayName += " [Update Available]";
-                else if (featuredMap.state == MapInstallState.INSTALLED) displayName += " [Installed]";
-
+                if (featuredMap.state == MapInstallState.UPDATE_AVAILABLE) displayName += Component.translatable("gui.zombierool.downloader.status.update").getString();
+                else if (featuredMap.state == MapInstallState.INSTALLED) displayName += Component.translatable("gui.zombierool.downloader.status.installed").getString();
+                
                 int color = featuredMap.state == MapInstallState.UPDATE_AVAILABLE ? 0xFFFFAA00 : 
                            (featuredMap.state == MapInstallState.INSTALLED ? 0xFF00FF00 : 0xFFFFFFFF);
-
+                
                 String trimmedName = this.font.plainSubstrByWidth(displayName, featuredWidth - 120 - 120);
                 if (!trimmedName.equals(displayName)) trimmedName += "...";
                 graphics.drawString(this.font, trimmedName, textX, textY + 15, color);
@@ -840,26 +866,23 @@ public class MapDownloaderScreen extends Screen {
                 String desc = featuredMap.description;
                 int maxWidth = featuredWidth - 120 - 120; 
                 List<String> wrappedDesc = wrapText(desc, maxWidth);
-                
                 int descY = textY + 30;
                 for (int i = 0; i < Math.min(3, wrappedDesc.size()); i++) {
                     graphics.drawString(this.font, wrappedDesc.get(i), textX, descY + (i * 10), 0xFFAAAAAA);
                 }
 
                 if (featuredMap.hasResourcePack()) {
-                    graphics.drawString(this.font, "[Includes Resource Pack]", textX, textY + 70, 0xFFFFAA00);
+                    graphics.drawString(this.font, Component.translatable("gui.zombierool.downloader.includes_rp"), textX, textY + 70, 0xFFFFAA00);
                 }
             }
+        }
 
-            if (loading) {
-                graphics.drawCenteredString(this.font, "Loading maps...", this.width / 2, this.height / 2, 0xFFFFFF);
-            } else if (errorMessage != null) {
-                graphics.drawCenteredString(this.font, errorMessage, this.width / 2, this.height / 2 - 10, 0xFF5555);
-            } else if (mapList != null) {
-                this.mapList.render(graphics, mouseX, mouseY, partialTick);
-            }
-        } else {
-            graphics.drawCenteredString(this.font, "Coming soon...", this.width / 2, this.height / 2, 0xAAAAAA);
+        if (loading) {
+            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.downloader.loading"), this.width / 2, this.height / 2, 0xAAAAAA);
+        } else if (errorMessage != null) {
+            graphics.drawCenteredString(this.font, errorMessage, this.width / 2, this.height / 2 - 10, 0xFF5555);
+        } else if (mapList != null) {
+            this.mapList.render(graphics, mouseX, mouseY, partialTick);
         }
 
         String warning = networkIssuesDetected ? 
@@ -871,10 +894,11 @@ public class MapDownloaderScreen extends Screen {
         discordLinkWidth = this.font.width(DISCORD_MESSAGE);
         discordLinkX = (this.width - discordLinkWidth) / 2;
         discordLinkY = this.height - 65;
+
         boolean hovering = mouseX >= discordLinkX && mouseX <= discordLinkX + discordLinkWidth &&
-                          mouseY >= discordLinkY && mouseY <= discordLinkY + 9;
-        
+                           mouseY >= discordLinkY && mouseY <= discordLinkY + 9;
         int dcColor = hovering ? 0x5555FF : 0xAAAAAA;
+        
         graphics.drawCenteredString(this.font, DISCORD_MESSAGE, this.width / 2, discordLinkY, dcColor);
         if (hovering) {
             graphics.fill(discordLinkX, discordLinkY + 9, discordLinkX + discordLinkWidth, discordLinkY + 10, 0xFF5555FF);
@@ -946,32 +970,25 @@ public class MapDownloaderScreen extends Screen {
             }
         }
 
+        public void updatePosition(int top, int bottom) {
+            this.y0 = top;
+            this.y1 = bottom;
+        }
+
         @Override
         public void setSelected(MapEntry entry) {
             super.setSelected(entry);
             updateButtonStates();
         }
-        
+
         @Override
         public int getRowWidth() {
             return this.width - 40;
         }
-        
+
         @Override
         protected int getScrollbarPosition() {
             return this.width - 15;
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (!isOfficialTab) return false;
-            return super.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-            if (!isOfficialTab) return false;
-            return super.mouseScrolled(mouseX, mouseY, delta);
         }
     }
 
@@ -986,7 +1003,7 @@ public class MapDownloaderScreen extends Screen {
         public MapInstallState state = MapInstallState.NOT_INSTALLED;
 
         public MapEntry(String id, String name, String description, String downloadUrl, 
-                       String resourcePackUrl, String resourcePackName, String sha256) {
+                        String resourcePackUrl, String resourcePackName, String sha256) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -1002,30 +1019,29 @@ public class MapDownloaderScreen extends Screen {
 
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, 
-                          int mouseX, int mouseY, boolean hovering, float partialTick) {
+                           int mouseX, int mouseY, boolean hovering, float partialTick) {
             
             int color = 0xFFFFFF;
             String status = "";
             if (state == MapInstallState.INSTALLED) {
                 color = 0x00FF00;
-                status = " [Installed]";
+                status = Component.translatable("gui.zombierool.downloader.status.installed").getString();
             } else if (state == MapInstallState.UPDATE_AVAILABLE) {
                 color = 0xFFFFAA00;
-                status = " [Update Available]";
+                status = Component.translatable("gui.zombierool.downloader.status.update").getString();
             }
 
             String rpIndicator = hasResourcePack() ? " [RP]" : "";
-            
             String fullTitle = name + status + rpIndicator;
             String trimmedTitle = font.plainSubstrByWidth(fullTitle, width - 10);
             if (!trimmedTitle.equals(fullTitle)) trimmedTitle += "...";
             
             graphics.drawString(font, trimmedTitle, left + 5, top + 2, color);
-            
+
             String trimmedDesc = font.plainSubstrByWidth(description, width - 10);
             if (!trimmedDesc.equals(description)) trimmedDesc += "...";
             graphics.drawString(font, trimmedDesc, left + 5, top + 14, 0xAAAAAA);
-            
+
             graphics.renderOutline(left, top, width, height - 2, 0xFF444444);
             graphics.fill(left + 1, top + 1, left + width - 1, top + height - 3, 0x44000000);
         }
@@ -1047,7 +1063,7 @@ public class MapDownloaderScreen extends Screen {
         public MapInstallState state = MapInstallState.NOT_INSTALLED;
 
         public FeaturedMap(String id, String name, String description, String downloadUrl,
-                          String resourcePackUrl, String resourcePackName, String sha256, String previewUrl) {
+                           String resourcePackUrl, String resourcePackName, String sha256, String previewUrl) {
             this.id = id; this.name = name; this.description = description; this.downloadUrl = downloadUrl;
             this.resourcePackUrl = resourcePackUrl; this.resourcePackName = resourcePackName;
             this.sha256 = sha256; this.previewUrl = previewUrl;
@@ -1062,54 +1078,14 @@ public class MapDownloaderScreen extends Screen {
         }
     }
 
-    // Secondary UI Screens for Confirmation
-    private class ResourcePackConfirmScreen extends Screen {
-        private final MapDownloaderScreen parent;
-        private final MapEntry map;
-
-        protected ResourcePackConfirmScreen(MapDownloaderScreen parent, MapEntry map) {
-            super(Component.literal("Resource Pack Available"));
-            this.parent = parent;
-            this.map = map;
-        }
-
-        @Override
-        protected void init() {
-            int buttonWidth = 100;
-            int buttonHeight = 20;
-            int spacing = 10;
-            int startX = (this.width - (buttonWidth * 2 + spacing)) / 2;
-            int buttonY = this.height / 2 + 20;
-
-            this.addRenderableWidget(Button.builder(Component.literal("Yes"), btn -> {
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
-                minecraft.setScreen(parent);
-                parent.downloadMap(map, true);
-            }).bounds(startX, buttonY, buttonWidth, buttonHeight).build());
-
-            this.addRenderableWidget(Button.builder(Component.literal("No"), btn -> {
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
-                minecraft.setScreen(parent);
-                parent.downloadMap(map, false);
-            }).bounds(startX + buttonWidth + spacing, buttonY, buttonWidth, buttonHeight).build());
-        }
-
-        @Override
-        public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            this.renderBackground(graphics);
-            graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
-            graphics.drawCenteredString(this.font, "This map includes a custom resource pack.", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
-            graphics.drawCenteredString(this.font, "Would you like to download it?", this.width / 2, this.height / 2 + 5, 0xAAAAAA);
-            super.render(graphics, mouseX, mouseY, partialTick);
-        }
-    }
-
+    // -- Écrans de confirmation (écrasement, resource pack) --
+    
     private class OverwriteConfirmScreen extends Screen {
         private final MapDownloaderScreen parent;
         private final MapEntry map;
 
         protected OverwriteConfirmScreen(MapDownloaderScreen parent, MapEntry map) {
-            super(Component.literal("Overwrite Save"));
+            super(Component.translatable("gui.zombierool.overwrite.title"));
             this.parent = parent;
             this.map = map;
         }
@@ -1121,13 +1097,13 @@ public class MapDownloaderScreen extends Screen {
             int startX = (this.width - (buttonWidth * 2 + spacing)) / 2;
             int buttonY = this.height / 2 + 30;
 
-            this.addRenderableWidget(Button.builder(Component.literal("Yes, Overwrite"), btn -> {
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.overwrite.yes"), btn -> {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
                 if (map.hasResourcePack()) minecraft.setScreen(new ResourcePackConfirmScreen(parent, map));
                 else { minecraft.setScreen(parent); parent.downloadMap(map, false); }
             }).bounds(startX, buttonY, buttonWidth, 20).build());
 
-            this.addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> {
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.overwrite.cancel"), btn -> {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
                 minecraft.setScreen(parent);
             }).bounds(startX + buttonWidth + spacing, buttonY, buttonWidth, 20).build());
@@ -1137,8 +1113,48 @@ public class MapDownloaderScreen extends Screen {
         public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             this.renderBackground(graphics);
             graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFF5555);
-            graphics.drawCenteredString(this.font, "Updating this map will completely DELETE your local save progress.", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
-            graphics.drawCenteredString(this.font, "Are you sure you want to proceed?", this.width / 2, this.height / 2 + 5, 0xFFFFFF);
+            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.overwrite.warning1"), this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.overwrite.warning2"), this.width / 2, this.height / 2 + 5, 0xFFFFFF);
+            super.render(graphics, mouseX, mouseY, partialTick);
+        }
+    }
+
+    private class ResourcePackConfirmScreen extends Screen {
+        private final MapDownloaderScreen parent;
+        private final MapEntry map;
+
+        protected ResourcePackConfirmScreen(MapDownloaderScreen parent, MapEntry map) {
+            super(Component.translatable("gui.zombierool.rp_confirm.title"));
+            this.parent = parent;
+            this.map = map;
+        }
+
+        @Override
+        protected void init() {
+            int buttonWidth = 100;
+            int spacing = 10;
+            int startX = (this.width - (buttonWidth * 2 + spacing)) / 2;
+            int buttonY = this.height / 2 + 30;
+
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.yes"), btn -> {
+                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
+                minecraft.setScreen(parent);
+                parent.downloadMap(map, true);
+            }).bounds(startX, buttonY, buttonWidth, 20).build());
+
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.no"), btn -> {
+                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
+                minecraft.setScreen(parent);
+                parent.downloadMap(map, false);
+            }).bounds(startX + buttonWidth + spacing, buttonY, buttonWidth, 20).build());
+        }
+
+        @Override
+        public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            this.renderBackground(graphics);
+            graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFAA00);
+            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.rp_confirm.desc1"), this.width / 2, this.height / 2 - 10, 0xFFFFFF);
+            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.rp_confirm.desc2"), this.width / 2, this.height / 2 + 5, 0xAAAAAA);
             super.render(graphics, mouseX, mouseY, partialTick);
         }
     }

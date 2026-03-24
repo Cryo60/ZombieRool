@@ -15,16 +15,21 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.WallSide;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -45,7 +50,53 @@ public class MimicSystem {
 	    void setMimic(@Nullable BlockState state);
 	}
 
+    public static BlockState getStateForMimic(Player player, InteractionHand hand, ItemStack held, BlockHitResult hit, Block blockToCopy) {
+        BlockPlaceContext ctx = new BlockPlaceContext(player, hand, held, hit);
+        BlockState placementState = blockToCopy.getStateForPlacement(ctx);
+
+        if (placementState == null) {
+            placementState = blockToCopy.defaultBlockState();
+        }
+
+        try {
+            Direction playerLookDir = player.getDirection();
+            Direction overrideDir = playerLookDir.getOpposite(); 
+            
+            if (blockToCopy instanceof me.cryo.zombierool.core.block.ZRSandbagBlock) {
+                overrideDir = playerLookDir.getClockWise(); 
+            }
+
+            for (net.minecraft.world.level.block.state.properties.Property<?> prop : placementState.getProperties()) {
+                if (prop.getName().equals("facing") && prop.getValueClass() == Direction.class) {
+                    net.minecraft.world.level.block.state.properties.DirectionProperty dirProp = 
+                        (net.minecraft.world.level.block.state.properties.DirectionProperty) prop;
+                    
+                    Direction finalDir = overrideDir;
+                    
+                    if (!dirProp.getPossibleValues().contains(finalDir)) {
+                        if (finalDir.getAxis() == Direction.Axis.Y) {
+                            finalDir = playerLookDir.getOpposite();
+                        }
+                    }
+
+                    if (dirProp.getPossibleValues().contains(finalDir)) {
+                        placementState = placementState.setValue(dirProp, finalDir);
+                    }
+                } else if (prop.getName().equals("axis") && prop.getValueClass() == Direction.Axis.class) {
+                    net.minecraft.world.level.block.state.properties.EnumProperty<Direction.Axis> axisProp = 
+                        (net.minecraft.world.level.block.state.properties.EnumProperty<Direction.Axis>) prop;
+                    if (axisProp.getPossibleValues().contains(hit.getDirection().getAxis())) {
+                        placementState = placementState.setValue(axisProp, hit.getDirection().getAxis());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return placementState;
+    }
+
 	public abstract static class AbstractMimicBlock extends Block implements EntityBlock, IMimicBlock {
+
 	    public AbstractMimicBlock(Properties properties) {
 	        super(properties
 	                .isSuffocating(AbstractMimicBlock::isSuffocatingPredicate)
@@ -214,8 +265,10 @@ public class MimicSystem {
 	public static void renderMimic(BlockState state, BlockPos pos, Level level, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
 	    if (state == null) return;
 	    if (state.getBlock() instanceof IMimicBlock) return;
+
 	    BlockState renderState = getConnectedState(state, level, pos);
 	    poseStack.pushPose();
+
 	    BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
 	    for (RenderType type : ItemBlockRenderTypes.getRenderLayers(renderState)) {
 	        VertexConsumer vertexConsumer = buffer.getBuffer(type);
@@ -253,40 +306,70 @@ public class MimicSystem {
 	public static BlockState getConnectedState(BlockState state, BlockGetter level, BlockPos pos) {
 	    Block block = state.getBlock();
 	    if (block instanceof WallBlock) {
-	        boolean wallAbove = isWallOrMimicWall(level, pos.above());
 	        boolean n = connectsTo(state, level, pos, Direction.NORTH);
 	        boolean e = connectsTo(state, level, pos, Direction.EAST);
 	        boolean s = connectsTo(state, level, pos, Direction.SOUTH);
 	        boolean w = connectsTo(state, level, pos, Direction.WEST);
+
+            boolean isStraightX = e && w && !n && !s;
+            boolean isStraightZ = n && s && !e && !w;
+            boolean up = !isStraightX && !isStraightZ;
+
 	        BlockState newState = state;
-	        newState = newState.setValue(WallBlock.UP, false);
-	        newState = newState.setValue(WallBlock.NORTH_WALL, n ? (wallAbove ? WallSide.TALL : WallSide.LOW) : WallSide.NONE);
-	        newState = newState.setValue(WallBlock.EAST_WALL, e ? (wallAbove ? WallSide.TALL : WallSide.LOW) : WallSide.NONE);
-	        newState = newState.setValue(WallBlock.SOUTH_WALL, s ? (wallAbove ? WallSide.TALL : WallSide.LOW) : WallSide.NONE);
-	        newState = newState.setValue(WallBlock.WEST_WALL, w ? (wallAbove ? WallSide.TALL : WallSide.LOW) : WallSide.NONE);
+	        newState = newState.setValue(WallBlock.UP, up);
+	        newState = newState.setValue(WallBlock.NORTH_WALL, n ? WallSide.TALL : WallSide.NONE);
+	        newState = newState.setValue(WallBlock.EAST_WALL, e ? WallSide.TALL : WallSide.NONE);
+	        newState = newState.setValue(WallBlock.SOUTH_WALL, s ? WallSide.TALL : WallSide.NONE);
+	        newState = newState.setValue(WallBlock.WEST_WALL, w ? WallSide.TALL : WallSide.NONE);
+
 	        return newState;
 	    } else if (block instanceof CrossCollisionBlock) {
 	        boolean n = connectsTo(state, level, pos, Direction.NORTH);
 	        boolean e = connectsTo(state, level, pos, Direction.EAST);
 	        boolean s = connectsTo(state, level, pos, Direction.SOUTH);
 	        boolean w = connectsTo(state, level, pos, Direction.WEST);
+
 	        BlockState newState = state;
-	        if (newState.hasProperty(PipeBlock.NORTH)) newState = newState.setValue(PipeBlock.NORTH, n);
-	        if (newState.hasProperty(PipeBlock.EAST)) newState = newState.setValue(PipeBlock.EAST, e);
-	        if (newState.hasProperty(PipeBlock.SOUTH)) newState = newState.setValue(PipeBlock.SOUTH, s);
-	        if (newState.hasProperty(PipeBlock.WEST)) newState = newState.setValue(PipeBlock.WEST, w);
+	        if (newState.hasProperty(BlockStateProperties.NORTH)) newState = newState.setValue(BlockStateProperties.NORTH, n);
+	        if (newState.hasProperty(BlockStateProperties.EAST))  newState = newState.setValue(BlockStateProperties.EAST, e);
+	        if (newState.hasProperty(BlockStateProperties.SOUTH)) newState = newState.setValue(BlockStateProperties.SOUTH, s);
+	        if (newState.hasProperty(BlockStateProperties.WEST))  newState = newState.setValue(BlockStateProperties.WEST, w);
+
 	        return newState;
+	    } else if (block instanceof me.cryo.zombierool.core.block.ZRSandbagBlock) {
+	        boolean n = connectsToSandbag(level, pos.relative(Direction.NORTH));
+	        boolean s = connectsToSandbag(level, pos.relative(Direction.SOUTH));
+	        boolean e = connectsToSandbag(level, pos.relative(Direction.EAST));
+	        boolean w = connectsToSandbag(level, pos.relative(Direction.WEST));
+	        int count = (n ? 1 : 0) + (s ? 1 : 0) + (e ? 1 : 0) + (w ? 1 : 0);
+
+	        if (count == 4) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CROSS);
+	        if (count == 3) {
+	            Direction open = !n ? Direction.NORTH 
+	                           : !s ? Direction.SOUTH
+	                           : !e ? Direction.EAST
+	                           :      Direction.WEST;
+	            return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.T_JUNCTION).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, open);
+	        }
+	        if ((n && s) || (!e && !w && (n || s)))
+	            return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.STRAIGHT).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.NORTH);
+	        if ((e && w) || (!n && !s && (e || w)))
+	            return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.STRAIGHT).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.EAST);
+	        if (s && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.WEST);  
+	        if (s && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.NORTH); 
+	        if (n && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.EAST);  
+	        if (n && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.SOUTH); 
 	    }
+
 	    return state;
 	}
 
-	private static boolean isWallOrMimicWall(BlockGetter level, BlockPos pos) {
+	private static boolean connectsToSandbag(BlockGetter level, BlockPos pos) {
 	    BlockState state = level.getBlockState(pos);
-	    if (state.is(BlockTags.WALLS)) return true;
-	    BlockEntity be = level.getBlockEntity(pos);
-	    if (be instanceof IMimicContainer container) {
+	    if (state.getBlock() instanceof me.cryo.zombierool.core.block.ZRSandbagBlock) return true;
+	    if (level.getBlockEntity(pos) instanceof IMimicContainer container) {
 	        BlockState mimic = container.getMimic();
-	        return mimic != null && mimic.is(BlockTags.WALLS);
+	        return mimic != null && mimic.getBlock() instanceof me.cryo.zombierool.core.block.ZRSandbagBlock;
 	    }
 	    return false;
 	}
@@ -294,13 +377,16 @@ public class MimicSystem {
 	private static boolean connectsTo(BlockState mimicState, BlockGetter level, BlockPos pos, Direction dir) {
 	    BlockPos neighborPos = pos.relative(dir);
 	    BlockState neighborState = level.getBlockState(neighborPos);
+
 	    if (level.getBlockEntity(neighborPos) instanceof IMimicContainer container) {
 	        BlockState mimic = container.getMimic();
 	        if (mimic != null) {
 	            neighborState = mimic;
 	        }
 	    }
+
 	    Block mimicBlock = mimicState.getBlock();
+
 	    if (mimicBlock instanceof WallBlock) {
 	        return neighborState.is(BlockTags.WALLS) ||
 	                (neighborState.getBlock() instanceof FenceGateBlock && FenceGateBlock.connectsToDirection(neighborState, dir.getOpposite())) ||
@@ -308,15 +394,16 @@ public class MimicSystem {
 	    }
 	    if (mimicBlock instanceof FenceBlock) {
 	        return neighborState.is(BlockTags.FENCES) ||
+	                neighborState.getBlock() instanceof FenceBlock ||
 	                (neighborState.getBlock() instanceof FenceGateBlock && FenceGateBlock.connectsToDirection(neighborState, dir.getOpposite())) ||
-	                (neighborState.is(BlockTags.WOODEN_FENCES) && mimicState.is(BlockTags.WOODEN_FENCES));
-	    }
-	    if (mimicBlock instanceof IronBarsBlock) {
-	        return neighborState.is(mimicBlock) ||
-	                neighborState.is(BlockTags.WALLS) ||
-	                neighborState.is(BlockTags.FENCES) ||
 	                neighborState.isFaceSturdy(level, neighborPos, dir.getOpposite());
 	    }
+	    if (mimicBlock instanceof IronBarsBlock) {
+	        return neighborState.getBlock() instanceof IronBarsBlock ||
+	                neighborState.getBlock() instanceof GlassBlock ||
+	                neighborState.isFaceSturdy(level, neighborPos, dir.getOpposite());
+	    }
+
 	    return false;
 	}
 }

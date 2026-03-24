@@ -1,10 +1,10 @@
 {
   "id": "zombierool:fiveseven",
-  "name": "FIVESEVEN",
+  "name": "weapon.zombierool.fiveseven",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.fiveseven.lore.0",
+    "weapon.zombierool.fiveseven.lore.1"
   ],
   "stats": {
     "damage": 8.3,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 20,
     "max_reserve": 140,
-    "reload_time": 30,
+    "reload_time": 44,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.3
   },
   "pack_a_punch": {
-    "name": "The Five-Seven of the Night",
+    "name": "weapon.zombierool.fiveseven.pap",
     "damage_bonus": 12.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

@@ -1,41 +1,47 @@
 package me.cryo.zombierool.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.WaveManager;
-import me.cryo.zombierool.api.IOverheatable;
-import me.cryo.zombierool.api.IReloadable;
-import me.cryo.zombierool.block.BuyWallWeaponBlock;
-import me.cryo.zombierool.block.entity.BuyWallWeaponBlockEntity;
-import me.cryo.zombierool.api.IPackAPunchable;
+import me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlock;
+import me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlockEntity;
+import me.cryo.zombierool.block.system.PackAPunchSystem.PackAPunchBlock;
+import me.cryo.zombierool.block.system.PackAPunchSystem.PackAPunchBlockEntity;
 import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.item.BulletVestTier1Item;
+import me.cryo.zombierool.api.IReloadable;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.ChatFormatting;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientHUDHandler {
 
     private static long startGameAnimationStartTime = -1;
     private static int startGameAnimationWave = 0;
-    
     private static final long START_ANIM_FADE_DURATION_TICKS = 40;
     private static final long START_ANIM_TRANSLATION_DURATION_TICKS = 30;
     private static final long START_ANIM_TOTAL_DURATION_TICKS = START_ANIM_FADE_DURATION_TICKS + START_ANIM_TRANSLATION_DURATION_TICKS;
@@ -45,8 +51,10 @@ public class ClientHUDHandler {
     private static int waveChangeFromWave = 0;
     private static int waveChangeToWave = 0;
     private static final long WAVE_BLINK_DURATION = 60;
-    
+
     private static final double WALL_PURCHASE_MAX_DIST = 2.5;
+
+    private static final ResourceLocation WIDGETS_LOCATION = new ResourceLocation("textures/gui/widgets.png");
 
     public static void triggerStartGameAnimation(int wave) {
         Minecraft mc = Minecraft.getInstance();
@@ -71,17 +79,122 @@ public class ClientHUDHandler {
 
     @SubscribeEvent
     public static void onRenderOverlayPre(RenderGuiOverlayEvent.Pre event) {
-        if (ClientSniperHandler.isScoping()) return; 
+        if (ClientSniperHandler.isScoping()) return;
+
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (mc.level == null || player == null || mc.options.hideGui) return;
-        // Laissons le HUD Vanilla (Coeurs/Faim) et le HUD de TacZ intacts
+
+        if (event.getOverlay().id().equals(VanillaGuiOverlay.HOTBAR.id())) {
+            if (WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
+                event.setCanceled(true);
+                renderCustomHotbar(event.getGuiGraphics(), mc, player);
+            }
+        }
+    }
+
+    private static void renderCustomHotbar(GuiGraphics guiGraphics, Minecraft mc, LocalPlayer player) {
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+
+        int limit = WeaponFacade.getWeaponLimit(player);
+
+        List<Integer> validSlots = new ArrayList<>();
+        validSlots.add(0);
+        for (int i = 1; i <= limit; i++) validSlots.add(i);
+
+        for (int i = limit + 1; i < 9; i++) {
+            if (!player.getInventory().getItem(i).isEmpty()) {
+                validSlots.add(i);
+            }
+        }
+
+        int slotCount = validSlots.size();
+        int weaponCount = limit;
+        int utilityCount = slotCount - limit - 1;
+
+        int gap = 10;
+        int hotbarWidth = 22;
+        if (weaponCount > 0) hotbarWidth += gap + (weaponCount * 20 + 2);
+        if (utilityCount > 0) hotbarWidth += gap + (utilityCount * 20 + 2);
+
+        int startX = (screenWidth - hotbarWidth) / 2;
+        int y = screenHeight - 22;
+
+        guiGraphics.blit(WIDGETS_LOCATION, startX, y, 0, 0, 22, 22);
+        guiGraphics.blit(WIDGETS_LOCATION, startX + 21, y, 181, 0, 1, 22);
+
+        int weaponStartX = startX + 22 + gap;
+        if (weaponCount > 0) {
+            guiGraphics.blit(WIDGETS_LOCATION, weaponStartX, y, 0, 0, 21, 22);
+            for (int i = 1; i < weaponCount - 1; i++) {
+                guiGraphics.blit(WIDGETS_LOCATION, weaponStartX + i * 20 + 1, y, 21, 0, 20, 22);
+            }
+            if (weaponCount > 1) {
+                guiGraphics.blit(WIDGETS_LOCATION, weaponStartX + (weaponCount - 1) * 20 + 1, y, 161, 0, 21, 22);
+            } else {
+                guiGraphics.blit(WIDGETS_LOCATION, weaponStartX + 1, y, 161, 0, 21, 22);
+            }
+        }
+
+        if (utilityCount > 0) {
+            int utilStartX = weaponStartX + (weaponCount * 20 + 2) + gap;
+            guiGraphics.blit(WIDGETS_LOCATION, utilStartX, y, 0, 0, 21, 22);
+            for (int i = 1; i < utilityCount - 1; i++) {
+                guiGraphics.blit(WIDGETS_LOCATION, utilStartX + i * 20 + 1, y, 21, 0, 20, 22);
+            }
+            if (utilityCount == 1) {
+                guiGraphics.blit(WIDGETS_LOCATION, utilStartX + 1, y, 161, 0, 21, 22);
+            } else {
+                guiGraphics.blit(WIDGETS_LOCATION, utilStartX + (utilityCount - 1) * 20 + 1, y, 161, 0, 21, 22);
+            }
+        }
+
+        int selected = player.getInventory().selected;
+        int selectorXPos;
+        if (selected == 0) {
+            selectorXPos = startX - 1;
+        } else if (selected >= 1 && selected <= limit) {
+            selectorXPos = weaponStartX - 1 + (selected - 1) * 20;
+        } else {
+            int utilIndex = validSlots.indexOf(selected) - (limit + 1);
+            if (utilIndex < 0) utilIndex = 0;
+            int utilStartX = weaponStartX + (weaponCount * 20 + 2) + gap;
+            selectorXPos = utilStartX - 1 + utilIndex * 20;
+        }
+        guiGraphics.blit(WIDGETS_LOCATION, selectorXPos, y - 1, 0, 22, 24, 24);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        for (int i = 0; i < slotCount; i++) {
+            int slotIndex = validSlots.get(i);
+            int itemX;
+
+            if (i == 0) {
+                itemX = startX + 3;
+            } else if (i <= limit) {
+                itemX = weaponStartX + 3 + (i - 1) * 20;
+            } else {
+                int utilIndex = i - (limit + 1);
+                int utilStartX = weaponStartX + (weaponCount * 20 + 2) + gap;
+                itemX = utilStartX + 3 + utilIndex * 20;
+            }
+
+            ItemStack stack = player.getInventory().getItem(slotIndex);
+            if (!stack.isEmpty()) {
+                guiGraphics.renderItem(stack, itemX, y + 3);
+                guiGraphics.renderItemDecorations(mc.font, stack, itemX, y + 3);
+            }
+        }
+
+        RenderSystem.disableBlend();
     }
 
     @SubscribeEvent
     public static void onRenderGuiPost(RenderGuiEvent.Post event) {
-        if (ClientSniperHandler.isScoping()) return; 
-        
+        if (ClientSniperHandler.isScoping()) return;
+
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (mc.level == null || player == null || mc.options.hideGui) return;
@@ -98,27 +211,27 @@ public class ClientHUDHandler {
 
     private static void renderTopLeftHUD(GuiGraphics gui, Minecraft mc, LocalPlayer player) {
         int yPosTopLeft = 10;
-        
         int score = PointManager.getScore(player);
         String scoreText = Component.translatable("zombierool.hud.score").getString();
         if (scoreText.equals("zombierool.hud.score")) scoreText = "Score";
         scoreText = scoreText + ": " + score;
+
         gui.drawString(mc.font, scoreText, 10, yPosTopLeft, 0xFFFFFF, true);
 
         PointManager.PointGainInfo gainInfo = PointManager.getLastPointGain(player);
         if (gainInfo != null) {
             long timeElapsed = mc.level.getGameTime() - gainInfo.timestamp;
-            long displayDuration = 20; 
+            long displayDuration = 20;
 
             if (timeElapsed < displayDuration) {
                 float progress = (float) timeElapsed / displayDuration;
                 float alpha = 1.0f - progress;
-                float offsetY = progress * 15.0f; 
+                float offsetY = progress * 15.0f;
 
                 int baseColor = gainInfo.amount >= 0 ? 0x00FF00 : 0xFF0000;
                 int color = ((int) (alpha * 255) << 24) | baseColor;
-
                 String gainText = (gainInfo.amount >= 0 ? "+" : "") + gainInfo.amount;
+
                 int scoreTextWidth = mc.font.width(scoreText);
                 int textX = 10 + scoreTextWidth + 5;
                 int textY = (int) (yPosTopLeft - offsetY);
@@ -132,7 +245,7 @@ public class ClientHUDHandler {
         int paddingX = 10;
         int bottomPadding = 20;
         int spacingBetweenElements = 5;
-        
+
         int drawY = height - bottomPadding;
         int textHeight = mc.font.lineHeight;
         int barHeight = 8;
@@ -150,11 +263,17 @@ public class ClientHUDHandler {
         }
 
         ItemStack held = player.getMainHandItem();
-        if (held.isEmpty() || !WeaponFacade.isWeapon(held)) return;
-        
-        // Empêcher l'affichage du HUD de munitions ZombieRool pour les armes TacZ
-        if (WeaponFacade.isTaczWeapon(held)) return;
-        
+
+        if (held.isEmpty() || !WeaponFacade.isWeapon(held)) {
+            renderLethalGrenades(gui, mc, player, width, drawY, paddingX, textHeight);
+            return;
+        }
+
+        if (WeaponFacade.isTaczWeapon(held)) {
+            renderLethalGrenades(gui, mc, player, width, drawY, paddingX, textHeight);
+            return;
+        }
+
         boolean hasDurability = held.getItem() instanceof WeaponSystem.BaseGunItem gunD && gunD.hasDurability();
         boolean hasOverheat = held.getItem() instanceof WeaponSystem.BaseGunItem gunO && gunO.hasOverheat();
 
@@ -162,22 +281,22 @@ public class ClientHUDHandler {
             WeaponSystem.BaseGunItem gun = (WeaponSystem.BaseGunItem) held.getItem();
             int dur = gun.getDurability(held);
             int maxDur = gun.getMaxDurability(held);
-            
+
             int barY = drawY - barHeight;
             int textY = barY - textHeight - 2;
             int x = width - barWidth - paddingX;
-            
+
             float ratio = (float) dur / maxDur;
             int filledWidth = (int)(barWidth * ratio);
-            
+
             int borderColor = 0xFF555555;
             int fillColor = ratio > 0.6f ? 0xFF00FF00 : (ratio > 0.3f ? 0xFFFFFF00 : 0xFFFF0000);
-            
+
             gui.fill(x, barY, x + barWidth, barY + barHeight, borderColor);
             gui.fill(x, barY, x + filledWidth, barY + barHeight, fillColor);
-            
+
             String durTxt = Component.translatable("zombierool.hud.energy").getString();
-            if (durTxt.equals("zombierool.hud.energy")) durTxt = "Énergie";
+            if (durTxt.equals("zombierool.hud.energy")) durTxt = "Energy";
             String fullText = durTxt + ": " + dur + " / " + maxDur;
             int textWidthDisplay = mc.font.width(fullText);
             gui.drawString(mc.font, fullText, x + (barWidth / 2) - (textWidthDisplay / 2), textY, 0xFFFFFFFF, true);
@@ -189,26 +308,26 @@ public class ClientHUDHandler {
             WeaponSystem.BaseGunItem gun = (WeaponSystem.BaseGunItem) held.getItem();
             int heat = gun.getOverheat(held);
             int maxHeat = gun.getMaxOverheat();
-            
+
             int barY = drawY - barHeight;
             int textY = barY - textHeight - 2;
             int x = width - barWidth - paddingX;
-            
+
             float ratio = (float) heat / maxHeat;
             int filledWidth = (int)(barWidth * ratio);
-            
+
             int borderColor = 0xFF555555;
             int fillColor = ratio < 0.3f ? 0xFF00FF00 : (ratio < 0.6f ? 0xFFFFFF00 : 0xFFFF0000);
-            
+
             gui.fill(x, barY, x + barWidth, barY + barHeight, borderColor);
             gui.fill(x, barY, x + filledWidth, barY + barHeight, fillColor);
-            
+
             String heatTxt = Component.translatable("zombierool.hud.overheat").getString();
-            if (heatTxt.equals("zombierool.hud.overheat")) heatTxt = "Surchauffe";
+            if (heatTxt.equals("zombierool.hud.overheat")) heatTxt = "Overheat";
             String fullText = heatTxt + ": " + (int)(ratio * 100) + "%";
             int textWidthDisplay = mc.font.width(fullText);
             gui.drawString(mc.font, fullText, x + (barWidth / 2) - (textWidthDisplay / 2), textY, 0xFFFFFFFF, true);
-            
+
             drawY = textY - spacingBetweenElements;
         }
 
@@ -227,6 +346,7 @@ public class ClientHUDHandler {
             } else {
                 currentAmmoStr = String.valueOf(currentAmmo);
             }
+
             String maxAmmoStr = " / " + maxAmmo;
             String reserveAmmoText = isInfinite ? "∞" : String.valueOf(reserveAmmo);
 
@@ -235,8 +355,8 @@ public class ClientHUDHandler {
 
             int currentAmmoWidth = mc.font.width(currentAmmoStr);
             int maxAmmoWidth = mc.font.width(maxAmmoStr);
-
             int targetRightX = width - paddingX;
+
             int maxAmmoTextX = targetRightX - maxAmmoWidth;
             int currentAmmoTextX = maxAmmoTextX - currentAmmoWidth;
 
@@ -251,20 +371,43 @@ public class ClientHUDHandler {
             gui.pose().scale(scaleFactor, scaleFactor, scaleFactor);
             gui.drawString(mc.font, reserveAmmoText, reserveAmmoTextScaledX, reserveAmmoTextScaledY, 0xFFFFFF, false);
             gui.pose().popPose();
+
+            drawY = mainAmmoTextY - spacingBetweenElements;
         }
+
+        renderLethalGrenades(gui, mc, player, width, drawY, paddingX, textHeight);
+    }
+
+    private static void renderLethalGrenades(GuiGraphics gui, Minecraft mc, LocalPlayer player, int width, int drawY, int paddingX, int textHeight) {
+        player.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
+            int lethals = cap.getLethalCount();
+            String type = cap.getLethalType();
+            
+            if (lethals > 0 && type != null && !type.isEmpty()) {
+                net.minecraft.world.item.Item lethalItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(type));
+                if (lethalItem != null && lethalItem != net.minecraft.world.item.Items.AIR) {
+                    int grenadeX = width - paddingX - 90;
+                    int grenadeY = drawY - textHeight;
+                    
+                    gui.renderItem(new net.minecraft.world.item.ItemStack(lethalItem), grenadeX, grenadeY);
+                    gui.drawString(mc.font, "x" + lethals, grenadeX + 18, grenadeY + 8, 0xFFFFFF, false);
+                }
+            }
+        });
     }
 
     private static void renderWave(GuiGraphics gui, Minecraft mc, int width, int height) {
         long time = mc.level.getGameTime();
-        boolean english = Minecraft.getInstance().options.languageCode.startsWith("en");
-        String mancheText = english ? "ROUND" : "MANCHE";
+        String mancheText = Component.translatable("zombierool.hud.round").getString();
         int waveToDisplay = WaveManager.getCurrentWave();
         int color = 0xA80000;
 
         if (startGameAnimationStartTime != -1) {
             long timeElapsed = time - startGameAnimationStartTime;
+
             if (timeElapsed <= START_ANIM_TOTAL_DURATION_TICKS + 1) {
                 String waveChar = getWaveDisplayText(startGameAnimationWave);
+                
                 float scaledMancheWidth = mc.font.width(mancheText) * START_ANIM_TEXT_SCALE;
                 float scaledWaveCharWidth = mc.font.width(waveChar) * START_ANIM_TEXT_SCALE;
                 float scaledHeight = mc.font.lineHeight * START_ANIM_TEXT_SCALE;
@@ -278,6 +421,7 @@ public class ClientHUDHandler {
                 int redColor = 0xFFFF0000;
 
                 gui.pose().pushPose();
+                
                 if (timeElapsed < START_ANIM_FADE_DURATION_TICKS) {
                     float progress = (float) timeElapsed / START_ANIM_FADE_DURATION_TICKS;
                     int currentColor = interpolateColor(whiteColor, redColor, progress);
@@ -293,11 +437,12 @@ public class ClientHUDHandler {
                     gui.pose().scale(START_ANIM_TEXT_SCALE, START_ANIM_TEXT_SCALE, START_ANIM_TEXT_SCALE);
                     gui.drawString(mc.font, waveChar, 0, 0, currentColor, true);
                     gui.pose().popPose();
+
                 } else {
                     long translationTime = timeElapsed - START_ANIM_FADE_DURATION_TICKS;
                     float progress = Math.min(1.0f, (float) translationTime / START_ANIM_TRANSLATION_DURATION_TICKS);
                     
-                    float ease = progress * progress * (3 - 2 * progress); 
+                    float ease = progress * progress * (3 - 2 * progress);
                     
                     float startScale = START_ANIM_TEXT_SCALE;
                     float endScale = 1.5f;
@@ -305,7 +450,7 @@ public class ClientHUDHandler {
 
                     float currentX = centerMancheX + (10f - centerMancheX) * ease;
                     float currentY = centerMancheY + ((height - 40f) - centerMancheY) * ease;
-
+                    
                     int currentAnimColor = interpolateColor(redColor, 0xFFA80000, ease);
 
                     gui.pose().pushPose();
@@ -314,8 +459,9 @@ public class ClientHUDHandler {
                     gui.drawString(mc.font, mancheText + " " + waveChar, 0, 0, currentAnimColor, true);
                     gui.pose().popPose();
                 }
+
                 gui.pose().popPose();
-                return; 
+                return;
             } else {
                 startGameAnimationStartTime = -1;
             }
@@ -345,28 +491,57 @@ public class ClientHUDHandler {
         float scale = 1.5f;
         gui.pose().translate(10, height - 40, 0);
         gui.pose().scale(scale, scale, scale);
+        
         gui.drawString(mc.font, waveText + " " + numText, 0, 0, color, true);
         gui.pose().popPose();
     }
 
     private static void renderWallWeaponHint(GuiGraphics gui, Minecraft mc, LocalPlayer player, int width, int height) {
         if (player.isCreative()) return;
-        
+
         HitResult ray = mc.hitResult;
         if (!(ray instanceof BlockHitResult bhr)) return;
 
         BlockPos pos = bhr.getBlockPos();
         BlockState state = mc.level.getBlockState(pos);
-        var te = mc.level.getBlockEntity(pos);
+        Block block = state.getBlock();
+        BlockEntity te = mc.level.getBlockEntity(pos);
 
-        if (!(state.getBlock() instanceof BuyWallWeaponBlock) || !(te instanceof BuyWallWeaponBlockEntity be)) return;
+        if (block instanceof PackAPunchBlock) {
+            if (!(te instanceof PackAPunchBlockEntity be)) return;
+
+            double dx = Math.abs(player.getX() - (pos.getX() + 0.5));
+            double dz = Math.abs(player.getZ() - (pos.getZ() + 0.5));
+            if (dx > 1.5 || dz > 1.5) return;
+
+            boolean powered = state.getValue(PackAPunchBlock.POWERED);
+            boolean hasIngot = player.getInventory().items.stream().anyMatch(s -> s.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
+            int price = be.getPrice();
+            String actionKey = me.cryo.zombierool.init.KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
+            Component text;
+
+            if (!powered) {
+                text = Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED);
+            } else {
+                if (hasIngot) {
+                    text = Component.translatable("message.zombierool.packapunch.upgrade_ingot", actionKey);
+                } else {
+                    text = Component.translatable("message.zombierool.packapunch.upgrade", actionKey, price);
+                }
+            }
+
+            Font f = mc.font;
+            gui.drawString(f, text, (width - f.width(text)) / 2, height / 2 + 30, 0xFFFFFF);
+            return;
+        }
+
+        if (!(block instanceof BuyWallWeaponBlock) || !(te instanceof BuyWallWeaponBlockEntity be)) return;
 
         if (bhr.getDirection() != state.getValue(BuyWallWeaponBlock.FACING)) return;
 
         double dx = Math.abs(player.getX() - (pos.getX() + .5));
         double dy = Math.abs(player.getY() - (pos.getY() + .5));
         double dz = Math.abs(player.getZ() - (pos.getZ() + .5));
-
         if (dx > WALL_PURCHASE_MAX_DIST || dy > WALL_PURCHASE_MAX_DIST || dz > WALL_PURCHASE_MAX_DIST) return;
 
         int basePrice = be.getPrice();
@@ -382,42 +557,47 @@ public class ClientHUDHandler {
                 weaponOnWall = new ItemStack(item);
             }
         }
-        
+
         if (weaponOnWall.isEmpty()) return;
 
         boolean isTacz = WeaponFacade.isTaczWeapon(weaponOnWall);
         WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponOnWall);
-
-        if (!isTacz && def == null && !(weaponOnWall.getItem() instanceof IReloadable)) return;
+        boolean isReloadable = isTacz || def != null || weaponOnWall.getItem() instanceof IReloadable;
 
         boolean playerHasBaseItem = false;
         boolean playerHasUpgradedItem = false;
 
         String wId = WeaponFacade.getWeaponId(weaponOnWall);
 
-        for (ItemStack s : player.getInventory().items) {
-            if (isTacz && WeaponFacade.isTaczWeapon(s)) {
-                String wallId = weaponOnWall.getOrCreateTag().getString("GunId");
-                String invId = s.getOrCreateTag().getString("GunId");
-                if (wallId.equals(invId)) {
+        if (isReloadable) {
+            for (ItemStack s : player.getInventory().items) {
+                if (isTacz && WeaponFacade.isTaczWeapon(s)) {
+                    String wallId = weaponOnWall.getOrCreateTag().getString("GunId");
+                    String invId = s.getOrCreateTag().getString("GunId");
+                    if (wallId.equals(invId)) {
+                        if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
+                        else playerHasBaseItem = true;
+                    }
+                } else if (!isTacz && def != null && WeaponFacade.isWeapon(s)) {
+                    WeaponSystem.Definition d = WeaponFacade.getDefinition(s);
+                    if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
+                        if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
+                        else playerHasBaseItem = true;
+                    }
+                } else if (!isTacz && def == null && s.getItem() == weaponOnWall.getItem()) {
                     if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
                     else playerHasBaseItem = true;
                 }
-            } else if (!isTacz && def != null && WeaponFacade.isWeapon(s)) {
-                WeaponSystem.Definition d = WeaponFacade.getDefinition(s);
-                if (d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""))) {
-                    if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
-                    else playerHasBaseItem = true;
-                }
-            } else if (!isTacz && def == null && s.getItem() == weaponOnWall.getItem()) {
-                if (WeaponFacade.isPackAPunched(s)) playerHasUpgradedItem = true;
-                else playerHasBaseItem = true;
             }
         }
 
         String wpnName;
         if (def != null) {
-            wpnName = def.name;
+            if (def.name != null && (def.name.startsWith("weapon.") || def.name.startsWith("item.") || def.name.contains("zombierool."))) {
+                wpnName = Component.translatable(def.name).getString();
+            } else {
+                wpnName = def.name != null ? def.name : "Unknown Weapon";
+            }
         } else if (isTacz) {
             String gunId = weaponOnWall.getOrCreateTag().getString("GunId");
             if (!gunId.isEmpty()) {
@@ -435,23 +615,21 @@ public class ClientHUDHandler {
             wpnName = weaponOnWall.getHoverName().getString();
         }
 
+        String actionKey = me.cryo.zombierool.init.KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
         String msg;
-        boolean english = Minecraft.getInstance().options.languageCode.startsWith("en");
 
-        if (playerHasUpgradedItem) {
-            int rechargePrice = (basePrice / 2) + 5000;
-            msg = english ? 
-                "Press F to reload " + wpnName + " (PAP) for " + rechargePrice + " pts" :
-                "Appuyer sur F pour recharger " + wpnName + " (PAP) pour " + rechargePrice + " pts";
-        } else if (playerHasBaseItem) {
-            int rechargePrice = Math.max(1, basePrice / 2);
-            msg = english ?
-                "Press F to reload " + wpnName + " for " + rechargePrice + " pts" :
-                "Appuyer sur F pour recharger " + wpnName + " pour " + rechargePrice + " pts";
+        if (isReloadable) {
+            if (playerHasUpgradedItem) {
+                int rechargePrice = (basePrice / 2) + 5000;
+                msg = Component.translatable("zombierool.hud.buy_wall_weapon.reload_pap", actionKey, wpnName, rechargePrice).getString();
+            } else if (playerHasBaseItem) {
+                int rechargePrice = Math.max(1, basePrice / 2);
+                msg = Component.translatable("zombierool.hud.buy_wall_weapon.reload", actionKey, wpnName, rechargePrice).getString();
+            } else {
+                msg = Component.translatable("zombierool.hud.buy_wall_weapon.buy", actionKey, wpnName, basePrice).getString();
+            }
         } else {
-            msg = english ?
-                "Press F to purchase " + wpnName + " for " + basePrice + " pts" :
-                "Appuyer sur F pour acheter " + wpnName + " pour " + basePrice + " pts";
+            msg = Component.translatable("zombierool.hud.buy_wall_weapon.buy", actionKey, wpnName, basePrice).getString();
         }
 
         Font f = mc.font;

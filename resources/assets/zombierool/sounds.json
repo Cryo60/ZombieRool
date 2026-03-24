@@ -971,22 +971,6 @@
       }
     ]
   },
-  "pap_loop": {
-    "sounds": [
-      {
-        "name": "zombierool:pap_loop",
-        "stream": false
-      }
-    ]
-  },
-  "pap_ready": {
-    "sounds": [
-      {
-        "name": "zombierool:pap_ready",
-        "stream": false
-      }
-    ]
-  },
   "pap_up": {
     "sounds": [
       {
@@ -1603,22 +1587,6 @@
     "sounds": [
       {
         "name": "zombierool:rifle_dry",
-        "stream": false
-      }
-    ]
-  },
-  "troicinqsept_reloading": {
-    "sounds": [
-      {
-        "name": "zombierool:357_reloading",
-        "stream": false
-      }
-    ]
-  },
-  "troicinqsept_fire": {
-    "sounds": [
-      {
-        "name": "zombierool:357_fire",
         "stream": false
       }
     ]
@@ -2820,14 +2788,6 @@
       {
         "name": "zombierool:barret_fire",
         "stream": false
-      }
-    ]
-  },
-  "zombie_soundtrack_illusion": {
-    "sounds": [
-      {
-        "name": "zombierool:zbr_illusion",
-        "stream": true
       }
     ]
   },
@@ -4379,14 +4339,6 @@
       }
     ]
   },
-  "vandal_reload": {
-    "sounds": [
-      {
-        "name": "zombierool:vandal_reload",
-        "stream": false
-      }
-    ]
-  },
   "easter_egg_confirm": {
     "sounds": [
       {
@@ -4408,6 +4360,526 @@
       {
         "name": "zombierool:secret_song",
         "stream": true
+      }
+    ]
+  },
+  "zombie_soundtrack_damned": {
+    "sounds": [
+      {
+        "name": "zombierool:zombie_soundtrack_damned",
+        "stream": true
+      }
+    ]
+  },
+  "cabinet_open": {
+    "sounds": [
+      {
+        "name": "zombierool:cabinet_open",
+        "stream": false
+      }
+    ]
+  },
+  "slow_crawl": {
+    "sounds": [
+      {
+        "name": "zombierool:slow_crawl1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:slow_crawl2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:slow_crawl3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:slow_crawl4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:slow_crawl5",
+        "stream": false
+      }
+    ]
+  },
+  "crawl": {
+    "sounds": [
+      {
+        "name": "zombierool:crawl1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:crawl2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:crawl3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:crawl4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:crawl5",
+        "stream": false
+      }
+    ]
+  },
+  "bounce_earth": {
+    "sounds": [
+      {
+        "name": "zombierool:bounce_earth1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_earth2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_earth3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_earth4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_earth5",
+        "stream": false
+      }
+    ]
+  },
+  "bounce_metal": {
+    "sounds": [
+      {
+        "name": "zombierool:bounce_metal1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_metal2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_metal3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_metal4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_metal5",
+        "stream": false
+      }
+    ]
+  },
+  "bounce_wood": {
+    "sounds": [
+      {
+        "name": "zombierool:bounce_wood1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_wood2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_wood3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_wood4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_wood5",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bounce_wood6",
+        "stream": false
+      }
+    ]
+  },
+  "molotov_explode": {
+    "sounds": [
+      {
+        "name": "zombierool:molotov_explode",
+        "stream": false
+      }
+    ]
+  },
+  "molotov_light": {
+    "sounds": [
+      {
+        "name": "zombierool:molotov_light",
+        "stream": false
+      }
+    ]
+  },
+  "molotov_throw": {
+    "sounds": [
+      {
+        "name": "zombierool:molotov_throw",
+        "stream": false
+      }
+    ]
+  },
+  "grenade_pin": {
+    "sounds": [
+      {
+        "name": "zombierool:grenade_pin",
+        "stream": false
+      }
+    ]
+  },
+  "bounce_stone": {
+    "sounds": [
+      {
+        "name": "zombierool:grenade_bounce_stone01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:grenade_bounce_stone02",
+        "stream": false
+      },
+      {
+        "name": "zombierool:grenade_bounce_stone03",
+        "stream": false
+      },
+      {
+        "name": "zombierool:grenade_bounce_stone04",
+        "stream": false
+      },
+      {
+        "name": "zombierool:grenade_bounce_stone05",
+        "stream": false
+      }
+    ]
+  },
+  "zombie_elec": {
+    "sounds": [
+      {
+        "name": "zombierool:elec1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:elec2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:elec3",
+        "stream": false
+      },
+      {
+        "name": "zombierool:elec4",
+        "stream": false
+      },
+      {
+        "name": "zombierool:elec5",
+        "stream": false
+      },
+      {
+        "name": "zombierool:elec6",
+        "stream": false
+      }
+    ]
+  },
+  "breathabort": {
+    "sounds": [
+      {
+        "name": "zombierool:breathabort",
+        "stream": false
+      }
+    ]
+  },
+  "breathout": {
+    "sounds": [
+      {
+        "name": "zombierool:breathout_03",
+        "stream": false
+      },
+      {
+        "name": "zombierool:breathout_04",
+        "stream": false
+      }
+    ]
+  },
+  "breathin": {
+    "sounds": [
+      {
+        "name": "zombierool:breathin_01",
+        "stream": false
+      }
+    ]
+  },
+  "heartbeat": {
+    "sounds": [
+      {
+        "name": "zombierool:heartbeat_01",
+        "stream": false
+      }
+    ]
+  },
+  "zb_3_loop": {
+    "sounds": [
+      {
+        "name": "zombierool:3rd_person_loop",
+        "stream": false
+      }
+    ]
+  },
+  "zb_loop": {
+    "sounds": [
+      {
+        "name": "zombierool:zb_loop",
+        "stream": false
+      }
+    ]
+  },
+  "zb_start": {
+    "sounds": [
+      {
+        "name": "zombierool:zb_start",
+        "stream": false
+      }
+    ]
+  },
+  "zb_stop": {
+    "sounds": [
+      {
+        "name": "zombierool:zb_stop",
+        "stream": false
+      }
+    ]
+  },
+  "mus_raygun_stinger": {
+    "sounds": [
+      {
+        "name": "zombierool:mus_raygun_stinger",
+        "stream": true
+      }
+    ]
+  },
+  "revolver_reloading": {
+    "sounds": [
+      {
+        "name": "zombierool:357_reloading",
+        "stream": false
+      }
+    ]
+  },
+  "revolver_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:357_st_shot",
+        "stream": false
+      }
+    ]
+  },
+  "bowie_stab": {
+    "sounds": [
+      {
+        "name": "zombierool:bowie_stab1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_stab2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_stab3",
+        "stream": false
+      }
+    ]
+  },
+  "bowie_equip": {
+    "sounds": [
+      {
+        "name": "zombierool:bowie_start",
+        "stream": false
+      }
+    ]
+  },
+  "bowie_swing": {
+    "sounds": [
+      {
+        "name": "zombierool:bowie_swing1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_swing2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_swing3",
+        "stream": false
+      }
+    ]
+  },
+  "bounce_water": {
+    "sounds": [
+      {
+        "name": "zombierool:water_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:water_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:water_02",
+        "stream": false
+      },
+      {
+        "name": "zombierool:water_03",
+        "stream": false
+      }
+    ]
+  },
+  "explode": {
+    "sounds": [
+      {
+        "name": "zombierool:explode_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:explode_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:explode_02",
+        "stream": false
+      }
+    ]
+  },
+  "pap_deny": {
+    "sounds": [
+      {
+        "name": "zombierool:pap_deny",
+        "stream": false
+      }
+    ]
+  },
+  "pap_ready_loop": {
+    "sounds": [
+      {
+        "name": "zombierool:pap_ready_loop",
+        "stream": false
+      }
+    ]
+  },
+  "pap_loop": {
+    "sounds": [
+      {
+        "name": "zombierool:pap_loop",
+        "stream": false
+      }
+    ]
+  },
+  "pap_upgrade": {
+    "sounds": [
+      {
+        "name": "zombierool:pap_upgrade",
+        "stream": false
+      }
+    ]
+  },
+  "pap_ready": {
+    "sounds": [
+      {
+        "name": "zombierool:pap_ready",
+        "stream": false
+      }
+    ]
+  },
+  "m1carbine_reloading": {
+    "sounds": [
+      {
+        "name": "zombierool:m1_reloading",
+        "stream": false
+      }
+    ]
+  },
+  "olympia_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:olympia_shot1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:olympia_shot2",
+        "stream": false
+      }
+    ]
+  },
+  "svt40_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:svt40_st_act",
+        "stream": false
+      }
+    ]
+  },
+  "type100_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:type100_mn_act",
+        "stream": false
+      }
+    ]
+  },
+  "type100_reloading": {
+    "sounds": [
+      {
+        "name": "zombierool:type100_reloading",
+        "stream": false
+      }
+    ]
+  },
+  "hk21_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:shot_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:shot_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:shot_02",
+        "stream": false
+      },
+      {
+        "name": "zombierool:shot_04",
+        "stream": false
+      }
+    ]
+  },
+  "hk21_reloading": {
+    "sounds": [
+      {
+        "name": "zombierool:hk21_reloading",
+        "stream": false
+      }
+    ]
+  },
+  "vandal_reloading": {
+    "sounds": [
+      {
+        "name": "zombierool:vandal_reload",
+        "stream": false
+      }
+    ]
+  },
+  "m1carbine_fire": {
+    "sounds": [
+      {
+        "name": "zombierool:m1carbine_act_mn",
+        "stream": false
       }
     ]
   }

@@ -25,12 +25,12 @@ import net.minecraft.world.phys.AABB;
 import me.cryo.zombierool.init.ZombieroolModBlockEntities;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.block.system.MimicSystem;
+import me.cryo.zombierool.block.TraitorBlock;
 
 import javax.annotation.Nullable;
 import java.util.stream.IntStream;
 
 public class TraitorBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, MimicSystem.IMimicContainer {
-
     private BlockState mimicBlockState = null;
     private NonNullList<ItemStack> stacks = NonNullList.<ItemStack>withSize(9, ItemStack.EMPTY);
     private final LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.values());
@@ -41,14 +41,10 @@ public class TraitorBlockEntity extends RandomizableContainerBlockEntity impleme
 
     public static void tick(Level level, BlockPos pos, BlockState state, TraitorBlockEntity blockEntity) {
         if (!level.isClientSide) {
-            // Check for nearby zombies
             for (BlockPos nearby : BlockPos.betweenClosed(pos.offset(-1, -1, -1), pos.offset(1, 2, 1))) {
                 if (level.getBlockEntity(nearby) != null && !nearby.equals(pos)) continue; 
-                
                 if (!level.getEntitiesOfClass(ZombieEntity.class, new AABB(nearby)).isEmpty()) {
-                    // Play break sound and particles
                     level.levelEvent(2001, pos, Block.getId(state));
-                    // Replace Traitor Block with Path Block
                     level.setBlock(pos, ZombieroolModBlocks.PATH.get().defaultBlockState(), 3);
                     break;
                 }
@@ -64,6 +60,12 @@ public class TraitorBlockEntity extends RandomizableContainerBlockEntity impleme
     @Override
     public void setMimic(BlockState state) {
         this.mimicBlockState = state;
+        if (this.level != null && this.worldPosition != null) {
+            BlockState cur = this.level.getBlockState(this.worldPosition);
+            if (cur.hasProperty(TraitorBlock.HAS_MIMIC)) {
+                this.level.setBlock(this.worldPosition, cur.setValue(TraitorBlock.HAS_MIMIC, state != null), 3);
+            }
+        }
         setChanged();
     }
 

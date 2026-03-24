@@ -1,10 +1,10 @@
 {
   "id": "zombierool:superbow",
-  "name": "SUPERBOW",
+  "name": "weapon.zombierool.superbow",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.superbow.lore.0",
+    "weapon.zombierool.superbow.lore.1"
   ],
   "stats": {
     "damage": 12.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 18,
     "max_reserve": 180,
-    "reload_time": 45,
+    "reload_time": 12,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "Super Bow Inferno",
+    "name": "weapon.zombierool.superbow.pap",
     "damage_bonus": 16.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

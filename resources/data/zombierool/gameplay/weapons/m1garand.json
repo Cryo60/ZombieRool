@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m1garand",
-  "name": "M1GARAND",
+  "name": "weapon.zombierool.m1garand",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m1garand.lore.0",
+    "weapon.zombierool.m1garand.lore.1"
   ],
   "stats": {
     "damage": 6.8,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 64,
-    "reload_time": 60,
+    "reload_time": 41,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.7
   },
   "pack_a_punch": {
-    "name": "The Green Garand",
+    "name": "weapon.zombierool.m1garand.pap",
     "damage_bonus": 6.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,7 +94,7 @@
     "usa",
     "ww2",
     "tacz",
-	"tacz_ww"
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:m1g"

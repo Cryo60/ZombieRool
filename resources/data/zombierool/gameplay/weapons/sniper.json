@@ -1,10 +1,10 @@
 {
   "id": "zombierool:sniper",
-  "name": "SRS99-S5 AM",
+  "name": "weapon.zombierool.sniper",
   "type": "SNIPER",
   "lore": [
-    "Haute pénétration",
-    "Statistiques importées"
+    "weapon.zombierool.sniper.lore.0",
+    "weapon.zombierool.sniper.lore.1"
   ],
   "stats": {
     "damage": 20.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 48,
-    "reload_time": 60,
+    "reload_time": 70,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.05
   },
   "pack_a_punch": {
-    "name": "Nornfang",
+    "name": "weapon.zombierool.sniper.pap",
     "damage_bonus": 20.0,
     "clip_bonus": 4,
     "reserve_bonus": 32,
@@ -95,8 +95,8 @@
     "single_fire",
     "sniper",
     "unsc",
-	"tacz",
-	"tacz_halor6"
+    "tacz",
+    "tacz_halor6"
   ],
   "tacz": {
     "gun_id": "halor6:s7"

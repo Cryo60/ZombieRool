@@ -2,7 +2,7 @@ package me.cryo.zombierool.item;
 
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.BloodOverlayPacket;
+import me.cryo.zombierool.network.packet.S2CUpdateOverlayPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.network.PacketDistributor;
 
 public class BloodBrushItem extends Item {
-
     public BloodBrushItem() {
         super(new Item.Properties().stacksTo(1).rarity(Rarity.COMMON));
     }
@@ -30,26 +29,24 @@ public class BloodBrushItem extends Item {
 
         BlockPos pos = context.getClickedPos();
         Direction face = context.getClickedFace();
-        
+
         int textureIndex = level.random.nextInt(10) + 1;
-		int rotation = level.random.nextInt(4) * 90; // 0, 90, 180, ou 270
-        
-        
+        int rotation = level.random.nextInt(4) * 90; 
+
         level.playSound(null, pos, SoundEvents.SLIME_BLOCK_PLACE, 
             SoundSource.BLOCKS, 0.8f, 0.8f + level.random.nextFloat() * 0.4f);
-        
+
         String key = pos.getX() + "_" + pos.getY() + "_" + pos.getZ() + "_" + face.getName();
-        System.out.println("DEBUG BloodBrush: Création de l'overlay avec clé: " + key);
-        
-        // Sauvegarder dans WorldConfig
+        String texPath = "zombierool:textures/block/blood_" + textureIndex + ".png";
+
         if (level instanceof ServerLevel serverLevel) {
-		    WorldConfig config = WorldConfig.get(serverLevel);
-		    config.addBloodOverlay(key, textureIndex + ":" + rotation);
-		}
-        
-        BloodOverlayPacket packet = new BloodOverlayPacket(pos, face, textureIndex, rotation, true);
+            WorldConfig config = WorldConfig.get(serverLevel);
+            config.addMapOverlay(key, texPath + ";" + rotation);
+        }
+
+        S2CUpdateOverlayPacket packet = new S2CUpdateOverlayPacket(pos, face, texPath, rotation, true);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(pos)), packet);
-        
+
         return InteractionResult.SUCCESS;
     }
 }

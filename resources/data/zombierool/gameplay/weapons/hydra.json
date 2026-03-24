@@ -1,10 +1,10 @@
 {
   "id": "zombierool:hydra",
-  "name": "HYDRA",
+  "name": "weapon.zombierool.hydra",
   "type": "PROJECTILE",
   "lore": [
-    "Lance-roquettes de barrage",
-    "Tirs explosifs, rafale si amélioré"
+    "weapon.zombierool.hydra.lore.0",
+    "weapon.zombierool.hydra.lore.1"
   ],
   "stats": {
     "damage": 10.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 3,
     "max_reserve": 9,
-    "reload_time": 50,
+    "reload_time": 57,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 2.0
   },
   "pack_a_punch": {
-    "name": "Hydra Barrage",
+    "name": "weapon.zombierool.hydra.pap",
     "damage_bonus": 20.0,
     "clip_bonus": 3,
     "reserve_bonus": 12,

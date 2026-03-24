@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m40a3",
-  "name": "M40A3",
+  "name": "weapon.zombierool.m40a3",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m40a3.lore.0",
+    "weapon.zombierool.m40a3.lore.1"
   ],
   "stats": {
     "damage": 26.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 7,
     "max_reserve": 42,
-    "reload_time": 70,
+    "reload_time": 64,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.15
   },
   "pack_a_punch": {
-    "name": "The Silent Hunter",
+    "name": "weapon.zombierool.m40a3.pap",
     "damage_bonus": 25.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:usp45",
-  "name": "USP45",
+  "name": "weapon.zombierool.usp45",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.usp45.lore.0",
+    "weapon.zombierool.usp45.lore.1"
   ],
   "stats": {
     "damage": 5.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 12,
     "max_reserve": 72,
-    "reload_time": 25,
+    "reload_time": 36,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "The Shadow's Fist",
+    "name": "weapon.zombierool.usp45.pap",
     "damage_bonus": 5.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "light",
     "modern",
     "pistol",
-	"tacz",
-	"tacz_ronmc"
+    "tacz",
+    "tacz_ronmc"
   ],
   "tacz": {
     "gun_id": "ronmc:usp45"

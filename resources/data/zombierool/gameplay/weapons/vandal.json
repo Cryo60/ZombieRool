@@ -1,10 +1,10 @@
 {
   "id": "zombierool:vandal",
-  "name": "VANDAL",
+  "name": "weapon.zombierool.vandal",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.vandal.lore.0",
+    "weapon.zombierool.vandal.lore.1"
   ],
   "stats": {
     "damage": 17.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 25,
     "max_reserve": 300,
-    "reload_time": 40,
+    "reload_time": 56,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.1
   },
   "pack_a_punch": {
-    "name": "Elderflame",
+    "name": "weapon.zombierool.vandal.pap",
     "damage_bonus": 25.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "medium",
     "modern",
     "valorant",
-	"tacz",
-	"tacz_valorant"
+    "tacz",
+    "tacz_valorant"
   ],
   "tacz": {
     "gun_id": "valorant:vandal"

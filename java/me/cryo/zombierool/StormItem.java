@@ -1,22 +1,24 @@
 package me.cryo.zombierool.item;
 
-import me.cryo.zombierool.core.system.WeaponSystem;
-import me.cryo.zombierool.init.ZombieroolModMobEffects;
-import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.network.PacketDistributor;
+
+import me.cryo.zombierool.core.system.WeaponSystem;
+import me.cryo.zombierool.network.NetworkHandler;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
+import me.cryo.zombierool.network.S2CDisplayHitmarkerPacket;
+import me.cryo.zombierool.init.ZombieroolModMobEffects;
 
 import javax.annotation.Nullable;
 
@@ -56,11 +58,11 @@ public class StormItem extends WeaponSystem.BaseGunItem {
         
         int reduction = consecutive / 5; 
         int rate = Math.max(1, baseRate - reduction);
-        
-        if (player != null && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get())) {
+
+        if (player != null && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {
             rate = Math.max(1, (int)(rate * 0.75f));
         }
-        
+
         return rate;
     }
 
@@ -71,7 +73,7 @@ public class StormItem extends WeaponSystem.BaseGunItem {
         if (!level.isClientSide && entity instanceof Player player) {
             long now = level.getGameTime();
             long lastFire = getOrCreateTag(stack).getLong(TAG_LAST_FIRE);
-            
+
             if (now - lastFire > 10) {
                 getOrCreateTag(stack).putInt(TAG_CONSECUTIVE_SHOTS, 0); 
             }
@@ -119,11 +121,11 @@ public class StormItem extends WeaponSystem.BaseGunItem {
 
         boolean isPap = isPackAPunched(stack);
         float damage = getWeaponDamage(stack);
-        float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
+        float spread = getDynamicSpread(stack, player);
 
         Vec3 eyePos = player.getEyePosition(1.0f);
         Vec3 lookVec = player.getViewVector(1.0f);
-        
+
         double factor = 0.045;
         lookVec = lookVec.add(
             player.getRandom().nextGaussian() * factor * spread,
@@ -136,7 +138,7 @@ public class StormItem extends WeaponSystem.BaseGunItem {
         net.minecraft.world.phys.HitResult hit = level.clip(new net.minecraft.world.level.ClipContext(
             eyePos, endPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, player
         ));
-        
+
         Vec3 finalEndPos = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? endPos : hit.getLocation();
 
         AABB searchBox = new AABB(eyePos, finalEndPos).inflate(1.0);
@@ -173,13 +175,12 @@ public class StormItem extends WeaponSystem.BaseGunItem {
             
             closestTarget.getPersistentData().putBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG, true);
             if (hitHeadshot) closestTarget.getPersistentData().putBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG, true);
-
+            
             if (me.cryo.zombierool.core.manager.DamageManager.applyDamage(closestTarget, player.damageSources().playerAttack(player), finalDamage)) {
                 closestTarget.level().playSound(null, closestTarget.getX(), closestTarget.getY(), closestTarget.getZ(),
                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:impact_flesh")),
                     SoundSource.PLAYERS, 0.5f, 1.0f + (closestTarget.getRandom().nextFloat() * 0.2f));
-
-                me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new me.cryo.zombierool.network.DisplayHitmarkerPacket());
+                me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new S2CDisplayHitmarkerPacket());
             }
 
             if (isPap) {
@@ -188,7 +189,7 @@ public class StormItem extends WeaponSystem.BaseGunItem {
         }
 
         Vec3 visualStartPos = getVisualMuzzlePos(player);
-        WeaponVfxPacket packet = new WeaponVfxPacket("STORM", visualStartPos, finalEndPos, isPap, hitHeadshot);
+        S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("STORM", visualStartPos, finalEndPos, isPap, hitHeadshot);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(player.blockPosition())), packet);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), packet);
     }

@@ -15,21 +15,23 @@ import me.cryo.zombierool.potion.PerksEffectSpeedColaMobEffect;
 import me.cryo.zombierool.potion.PerksEffectRoyalBeerMobEffect;
 import me.cryo.zombierool.potion.PerksEffectQuickReviveMobEffect;
 import me.cryo.zombierool.potion.PerksEffectPHDFlopperMobEffect;
-import me.cryo.zombierool.potion.PerksEffectMastodonteMobEffect;
-import me.cryo.zombierool.potion.PerksEffectDoubleTapeMobEffect;
+import me.cryo.zombierool.potion.PerksEffectMuleKickMobEffect;
+import me.cryo.zombierool.potion.PerksEffectJuggernogMobEffect;
+import me.cryo.zombierool.potion.PerksEffectDoubleTapMobEffect;
 import me.cryo.zombierool.potion.PerksEffectCherryMobEffect;
 import me.cryo.zombierool.potion.PerksEffectBloodRageMobEffect;
 import me.cryo.zombierool.ZombieroolMod;
 
 public class ZombieroolModMobEffects {
 	public static final DeferredRegister<MobEffect> REGISTRY = DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, ZombieroolMod.MODID);
-	public static final RegistryObject<MobEffect> PERKS_EFFECT_MASTODONTE = REGISTRY.register("perks_effect_mastodonte", () -> new PerksEffectMastodonteMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_SPEED_COLA = REGISTRY.register("perks_effect_speed_cola", () -> new PerksEffectSpeedColaMobEffect());
-	public static final RegistryObject<MobEffect> PERKS_EFFECT_DOUBLE_TAPE = REGISTRY.register("perks_effect_double_tape", () -> new PerksEffectDoubleTapeMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_BLOOD_RAGE = REGISTRY.register("perks_effect_blood_rage", () -> new PerksEffectBloodRageMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_QUICK_REVIVE = REGISTRY.register("perks_effect_quick_revive", () -> new PerksEffectQuickReviveMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_PHD_FLOPPER = REGISTRY.register("perks_effect_phd_flopper", () -> new PerksEffectPHDFlopperMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_CHERRY = REGISTRY.register("perks_effect_cherry", () -> new PerksEffectCherryMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_ROYAL_BEER = REGISTRY.register("perks_effect_royal_beer", () -> new PerksEffectRoyalBeerMobEffect());
 	public static final RegistryObject<MobEffect> PERKS_EFFECT_VULTURE = REGISTRY.register("perks_effect_vulture", () -> new PerksEffectVultureMobEffect());
+	public static final RegistryObject<MobEffect> PERKS_EFFECT_DOUBLE_TAP = REGISTRY.register("perks_effect_double_tap", () -> new PerksEffectDoubleTapMobEffect());
+	public static final RegistryObject<MobEffect> PERKS_EFFECT_JUGGERNOG = REGISTRY.register("perks_effect_juggernog", () -> new PerksEffectJuggernogMobEffect());
+	public static final RegistryObject<MobEffect> PERKS_EFFECT_MULE_KICK = REGISTRY.register("perks_effect_mule_kick", () -> new PerksEffectMuleKickMobEffect());
 }

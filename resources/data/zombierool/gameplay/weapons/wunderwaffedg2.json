@@ -1,10 +1,10 @@
 {
   "id": "zombierool:wunderwaffedg2",
-  "name": "Wunderwaffe-DG2",
+  "name": "weapon.zombierool.wunderwaffedg2",
   "type": "WONDER",
   "lore": [
-    "Wonder Weapon",
-    "Chaine d'éclairs"
+    "weapon.zombierool.wunderwaffedg2.lore.0",
+    "weapon.zombierool.wunderwaffedg2.lore.1"
   ],
   "stats": {
     "damage": 90.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 3,
     "max_reserve": 9,
-    "reload_time": 70,
+    "reload_time": 110,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "Wunderwaffe DG-3 Jz",
+    "name": "weapon.zombierool.wunderwaffedg2.pap",
     "damage_bonus": 75.0,
     "clip_bonus": 3,
     "reserve_bonus": 18,

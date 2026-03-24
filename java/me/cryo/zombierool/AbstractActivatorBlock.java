@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import me.cryo.zombierool.MultiReceptorState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -13,8 +12,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.client.Minecraft;
-
+import net.minecraft.ChatFormatting;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,26 +22,20 @@ public abstract class AbstractActivatorBlock extends Block {
 
     public AbstractActivatorBlock(String channelName, String tooltipName) {
         super(BlockBehaviour.Properties.of()
-                .sound(SoundType.METAL)
-                .strength(-1, 3600000)
-                .noCollission()
-                .noOcclusion());
+            .sound(SoundType.METAL)
+            .strength(-1, 3600000)
+            .noCollission()
+            .noOcclusion());
         this.channelName = channelName;
         this.tooltipName = tooltipName;
-    }
-
-    private static boolean isEnglishClient() {
-        if (Minecraft.getInstance() == null) return false;
-        return Minecraft.getInstance().options.languageCode.startsWith("en");
     }
 
     @Override
     public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
         super.appendHoverText(itemstack, world, list, flag);
-        String name = isEnglishClient() ? tooltipName + " Activator" : "Activateur " + tooltipName;
-        list.add(Component.literal("§9" + name));
-        list.add(Component.literal(isEnglishClient() ? "§7When it receives a Redstone signal," : "§7Lorsqu'il reçoit un signal de Redstone,"));
-        list.add(Component.literal(isEnglishClient() ? "§7it sends a signal to all '" + tooltipName + " Receptors' on the map." : "§7il envoie un signal à tous les 'Récepteurs " + tooltipName + "' sur la carte."));
+        list.add(Component.translatable("block.zombierool.activator.generic.tooltip.1", tooltipName).withStyle(ChatFormatting.BLUE));
+        list.add(Component.translatable("block.zombierool.activator.generic.tooltip.2").withStyle(ChatFormatting.GRAY));
+        list.add(Component.translatable("block.zombierool.activator.generic.tooltip.3", tooltipName).withStyle(ChatFormatting.GRAY));
     }
 
     @Override

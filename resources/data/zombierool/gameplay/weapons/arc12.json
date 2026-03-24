@@ -1,10 +1,10 @@
 {
   "id": "zombierool:arc12",
-  "name": "ARC-12",
+  "name": "weapon.zombierool.arc12",
   "type": "SHOTGUN",
   "lore": [
-    "Fusil à pompe automatique",
-    "Chargeur tambour"
+    "weapon.zombierool.arc12.lore.0",
+    "weapon.zombierool.arc12.lore.1"
   ],
   "stats": {
     "damage": 6.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 12,
     "max_reserve": 96,
-    "reload_time": 40,
+    "reload_time": 83,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "Gut Ripper",
+    "name": "weapon.zombierool.arc12.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 10,
     "reserve_bonus": 80,

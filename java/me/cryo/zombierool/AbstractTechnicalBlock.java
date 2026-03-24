@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import me.cryo.zombierool.client.LinkRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -19,23 +18,16 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
 
 public abstract class AbstractTechnicalBlock extends Block {
-
     public AbstractTechnicalBlock(Properties properties) {
         super(properties);
     }
 
-    /**
-     * Détermine si le bloc doit être visuellement caché.
-     * Vrai si : On est en survie OU (On est en créatif ET la vue survie est activée).
-     */
     protected boolean shouldBeInvisible() {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             Player player = Minecraft.getInstance().player;
-            // Si le joueur existe et (n'est pas créatif OU a activé la vue survie)
             return player != null && (!player.isCreative() || LinkRenderer.isSurvivalViewEnabled);
         }
         return false;
@@ -58,10 +50,9 @@ public abstract class AbstractTechnicalBlock extends Block {
 
     @Override
     public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-        // Empêche le rendu des faces internes si deux blocs identiques sont côte à côte
         return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);
     }
-    
+
     @Override
     public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
         return 0;
@@ -72,8 +63,6 @@ public abstract class AbstractTechnicalBlock extends Block {
         return true;
     }
 
-    // Gestion par défaut des collisions pour les blocs techniques : 
-    // Pas de collision pour les joueurs en créatif
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         if (context instanceof EntityCollisionContext entityContext) {
@@ -84,22 +73,8 @@ public abstract class AbstractTechnicalBlock extends Block {
         return getTechnicalCollisionShape(state, world, pos, context);
     }
 
-    /**
-     * Méthode à surcharger pour définir la collision réelle du bloc (pour les mobs/joueurs survie).
-     * Par défaut : Bloc solide.
-     */
     protected VoxelShape getTechnicalCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return Shapes.block();
-    }
-
-    // Utilitaires de traduction pour les enfants
-    protected static boolean isEnglishClient() {
-        if (Minecraft.getInstance() == null) return false;
-        return Minecraft.getInstance().options.languageCode.startsWith("en");
-    }
-
-    protected static String getTranslatedMessage(String frenchMessage, String englishMessage) {
-        return isEnglishClient() ? englishMessage : frenchMessage;
     }
 
     @Override
@@ -108,6 +83,5 @@ public abstract class AbstractTechnicalBlock extends Block {
         addTechnicalTooltip(tooltip);
     }
 
-    // Méthode abstraite forçant les enfants à définir leur tooltip
     protected abstract void addTechnicalTooltip(List<Component> tooltip);
 }

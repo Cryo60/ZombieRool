@@ -5,17 +5,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import me.cryo.zombierool.api.*;
-import me.cryo.zombierool.init.ZombieroolModMobEffects;
-import me.cryo.zombierool.util.PlayerVoiceManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -23,29 +21,38 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
+import me.cryo.zombierool.api.ICustomWeapon;
+import me.cryo.zombierool.api.IHeadshotWeapon;
+import me.cryo.zombierool.api.IOverheatable;
+import me.cryo.zombierool.api.IPackAPunchable;
+import me.cryo.zombierool.api.IReloadable;
+import me.cryo.zombierool.init.ZombieroolModMobEffects;
+import me.cryo.zombierool.integration.TacZIntegration;
+import me.cryo.zombierool.util.PlayerVoiceManager;
+import net.minecraft.ChatFormatting;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
 public class WeaponSystem {
@@ -53,7 +60,7 @@ public class WeaponSystem {
     public static class Definition {
         public String id;
         public String name;
-        public String type; 
+        public String type;
         public boolean is_wonder_weapon = false;
         public List<String> lore = new ArrayList<>();
         public List<String> tags = new ArrayList<>();
@@ -67,9 +74,8 @@ public class WeaponSystem {
         public PackAPunch pap = new PackAPunch();
         public Headshot headshot = new Headshot();
         public Sounds sounds = new Sounds();
-        public Scoped scoped = new Scoped(); 
-        public Explosion explosion = null; 
-
+        public Scoped scoped = new Scoped();
+        public Explosion explosion = null;
         public Tacz tacz = null;
 
         public static class Stats {
@@ -79,33 +85,38 @@ public class WeaponSystem {
             public float mobility = 1.0f;
             public int penetration = 0;
             public int durability = 0;
-            public boolean damage_reduction_on_pierce = true; 
+            public boolean damage_reduction_on_pierce = true;
         }
+
         public static class Ammo {
             public int clip_size = 1;
             public int max_reserve = 10;
             public int reload_time = 40;
             public int ammo_per_shot = 1;
-            public String reload_type = "MAGAZINE"; 
+            public String reload_type = "MAGAZINE";
         }
+
         public static class Ballistics {
             public int count = 1;
             public float spread = 0.0f;
             public float velocity = 3.0f;
-            public String type = "BULLET"; 
-            public float explosion_radius = 0.0f; 
+            public String type = "BULLET";
+            public float explosion_radius = 0.0f;
             public boolean gravity = false;
-            public String trail_vfx = "NONE"; 
-            public String hitscan_vfx = "NONE"; 
+            public String trail_vfx = "NONE";
+            public String hitscan_vfx = "NONE";
         }
+
         public static class Burst {
             public int count = 1;
             public int delay = 0;
         }
+
         public static class Recoil {
             public float pitch = 0.0f;
             public float yaw = 0.0f;
         }
+
         public static class PackAPunch {
             public String name;
             public float damage_bonus = 0.0f;
@@ -116,21 +127,23 @@ public class WeaponSystem {
             public float recoil_mult = 0.5f;
             public int durability_bonus = 0;
             public float explosion_radius_bonus = 0.0f;
-            public int penetration_bonus = 0; 
-            public boolean incendiary = false; 
-            public int pellet_count_override = 0; 
-            public int burst_count_override = 0; 
-            public int burst_delay_override = 0; 
+            public int penetration_bonus = 0;
+            public boolean incendiary = false;
+            public int pellet_count_override = 0;
+            public int burst_count_override = 0;
+            public int burst_delay_override = 0;
             public float knockback_bonus = 0.0f;
             public float headshot_threshold = 0.85f;
             public int ricochet_count = 0;
         }
+
         public static class Headshot {
             public float base_bonus_damage = 0.0f;
             public float pap_bonus_damage = 0.0f;
             public boolean can_explode_head = true;
             public float head_explosion_chance = 0.3f;
         }
+
         public static class Sounds {
             public String fire;
             public String fire_pap;
@@ -141,12 +154,14 @@ public class WeaponSystem {
             public String equip;
             public String pump;
         }
+
         public static class Scoped {
             @SerializedName("boolean")
             public boolean isScoped = false;
             public String scope = "none";
             public String zoom = "1x";
         }
+
         public static class Explosion {
             public float radius = 2.0f;
             public float damage_multiplier = 1.0f;
@@ -154,9 +169,10 @@ public class WeaponSystem {
             public float self_damage_cap = 3.0f;
             public float knockback = 0.4f;
             public String vfx_type = "EXPLOSION";
-            public String sound = ""; 
-            public boolean pap_only = false; 
+            public String sound = "";
+            public boolean pap_only = false;
         }
+
         public static class Tacz {
             public String gun_id;
             public String pap_gun_id;
@@ -169,8 +185,8 @@ public class WeaponSystem {
             if (this.explosion == null && this.ballistics.explosion_radius > 0) {
                 this.explosion = new Explosion();
                 this.explosion.radius = this.ballistics.explosion_radius;
-                this.explosion.self_damage_cap = 5.0f; 
-                this.explosion.sound = "zombierool:explosion_old"; 
+                this.explosion.self_damage_cap = 5.0f;
+                this.explosion.sound = "zombierool:explosion_old";
             }
             if ("NONE".equals(this.ballistics.trail_vfx)) {
                 if (id != null && id.contains("raygun") && !id.contains("markii")) this.ballistics.trail_vfx = "RAYGUN";
@@ -192,25 +208,27 @@ public class WeaponSystem {
     public static class Loader {
         private static final Gson GSON = new GsonBuilder().setLenient().create();
         public static final Map<String, Definition> LOADED_DEFINITIONS = new HashMap<>();
+
         private static final String[] BUILTIN_WEAPONS = {
                 "357magnum", "acr", "ak47", "ak74u", "arc12", "arisaka", "aug", "bar",
                 "barret", "battlerifle", "beretta93r", "bizon", "browningm1911", "chinalake",
                 "covenantcarbine", "czscorpionevo3", "deagle", "dmr", "doublebarrel", "dragunov",
                 "energysword", "famas", "fg42", "fiveseven", "flamethrower", "fnfal",
-                "g36c", "galil", "gewehr43", "glock", "hydra", "intervention", "kar98k",
-                "l85a2", "m14", "m16a4", "m1911", "m1garand", "m40a3", "m7smg", "ma5d",
-                "magnum", "maschinenpistole28", "mauserc96", "mg42", "mosinnagant", "mp40",
-                "mp5", "mp7", "mpx", "needler", "oldcrossbow", "oldsword", "p90", "percepteur",
+                "g36c", "galil", "gewehr43", "glock", "haymaker", "hk21", "hkg3", "hydra",
+                "intervention", "kar98k", "l85a2", "lebel1886", "m14", "m16a4", "m1911",
+                "m1carbine", "m1garand", "m40a3", "m7smg", "ma5d", "magnum", "maschinenpistole28",
+                "mauserc96", "mg42", "model1887", "mosinnagant", "mp40", "mp5", "mp7", "mpx",
+                "needler", "oldcrossbow", "oldsword", "olympia", "p90", "peacekeeper", "percepteur",
                 "plasmapistol", "ppsh41", "r4c", "raygun", "raygunmarkii", "rpd", "rpg", "rpk",
                 "saw", "scarh", "shotgun", "sniper", "spas12", "springfield", "starr1858",
-                "stg44", "storm", "superbow", "tar21", "thompson", "thundergun", "trenchgun",
-                "ump45", "usp45", "uzi", "vandal", "vector", "whisper", "wunderwaffedg2"
+                "stg44", "storm", "superbow", "svt40", "tar21", "thompson", "thundergun", "trenchgun",
+                "type100", "ump45", "usp45", "uzi", "vandal", "vector", "whisper", "wunderwaffedg2"
         };
 
         public static BaseGunItem createWeapon(Definition def) {
             String type = def.type != null ? def.type.toUpperCase() : "RIFLE";
             String id = def.id != null ? def.id.replace("zombierool:", "").trim().toLowerCase() : "";
-            
+
             if ("energysword".equals(id)) {
                 return new me.cryo.zombierool.item.EnergySwordItem(def);
             } else if ("oldsword".equals(id)) {
@@ -252,7 +270,7 @@ public class WeaponSystem {
             } else if ("MELEE".equals(type)) {
                 return new WeaponImplementations.MeleeWeaponItem(def);
             } else if ("LAUNCHER".equals(type) || "PROJECTILE".equals(type) || "RAYGUN".equals(type)) {
-                return new WeaponImplementations.ProjectileGunItem(def); 
+                return new WeaponImplementations.ProjectileGunItem(def);
             } else if ("PISTOL".equals(type)) {
                 return new WeaponImplementations.PistolGunItem(def);
             }
@@ -267,8 +285,13 @@ public class WeaponSystem {
                     if (stream != null) {
                         try (InputStreamReader reader = new InputStreamReader(stream)) {
                             Definition def = GSON.fromJson(reader, Definition.class);
-                            def.resolveBackwardCompatibility();
-                            registerDefinition(def, weaponId);
+                            if (def != null) {
+                                if (def.id == null || def.id.trim().isEmpty()) {
+                                    def.id = "zombierool:" + weaponId;
+                                }
+                                def.resolveBackwardCompatibility();
+                                registerDefinition(def, weaponId);
+                            }
                         }
                     }
                 } catch (Exception ignored) {}
@@ -281,9 +304,17 @@ public class WeaponSystem {
                     for (File file : files) {
                         try (FileReader reader = new FileReader(file)) {
                             Definition def = GSON.fromJson(reader, Definition.class);
-                            def.resolveBackwardCompatibility();
-                            registerDefinition(def, file.getName().replace(".json", ""));
-                        } catch (Exception e) { e.printStackTrace(); }
+                            if (def != null) {
+                                String filenameId = file.getName().replace(".json", "");
+                                if (def.id == null || def.id.trim().isEmpty()) {
+                                    def.id = "zombierool:" + filenameId;
+                                }
+                                def.resolveBackwardCompatibility();
+                                registerDefinition(def, filenameId);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -291,8 +322,11 @@ public class WeaponSystem {
 
         private static void registerDefinition(Definition def, String filenameId) {
             if (def != null) {
-                String id = def.id != null ? def.id.replace("zombierool:", "").trim() : filenameId;
-                if (id != null && !id.isEmpty()) LOADED_DEFINITIONS.put(id, def);
+                if (def.id == null || def.id.trim().isEmpty()) {
+                    def.id = "zombierool:" + filenameId;
+                }
+                String id = def.id.replace("zombierool:", "").trim();
+                if (!id.isEmpty()) LOADED_DEFINITIONS.put(id, def);
             }
         }
     }
@@ -301,13 +335,13 @@ public class WeaponSystem {
         protected final Definition def;
 
         public static final String TAG_AMMO = "Ammo";
-        public static final String TAG_AMMO_LEFT = "AmmoLeft"; 
+        public static final String TAG_AMMO_LEFT = "AmmoLeft";
         public static final String TAG_RESERVE = "Reserve";
         public static final String TAG_RELOAD_TIMER = "ReloadTimer";
         public static final String TAG_IS_RELOADING = "IsReloading";
         public static final String TAG_PAP = "PackAPunch";
         public static final String TAG_LAST_FIRE = "LastFire";
-        public static final String TAG_LAST_FIRE_LEFT = "LastFireLeft"; 
+        public static final String TAG_LAST_FIRE_LEFT = "LastFireLeft";
         public static final String TAG_OVERHEAT = "Overheat";
         public static final String TAG_IS_OVERHEATED = "IsOverheated";
         public static final String TAG_DURABILITY = "Durability";
@@ -323,7 +357,12 @@ public class WeaponSystem {
             this.def = def;
         }
 
-        public Definition getDefinition() { return def; }
+        public Definition getDefinition() {
+            if (def == null || def.id == null) return def;
+            String cleanId = def.id.replace("zombierool:", "");
+            Definition loaded = Loader.LOADED_DEFINITIONS.get(cleanId);
+            return loaded != null ? loaded : def;
+        }
 
         protected CompoundTag getOrCreateTag(ItemStack s) {
             if (!s.hasTag()) s.setTag(new CompoundTag());
@@ -333,17 +372,35 @@ public class WeaponSystem {
         @Override
         public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
             Multimap<Attribute, AttributeModifier> map = super.getDefaultAttributeModifiers(slot);
-            if (slot == EquipmentSlot.MAINHAND && def.stats.mobility != 1.0f) {
+            if (slot == EquipmentSlot.MAINHAND && getDefinition().stats.mobility != 1.0f) {
                 ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
                 builder.putAll(map);
                 builder.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(
-                    MOBILITY_MODIFIER_UUID, 
-                    "Weapon mobility", 
-                    def.stats.mobility - 1.0f, 
-                    AttributeModifier.Operation.MULTIPLY_TOTAL));
+                        MOBILITY_MODIFIER_UUID,
+                        "Weapon mobility",
+                        getDefinition().stats.mobility - 1.0f,
+                        AttributeModifier.Operation.MULTIPLY_TOTAL));
                 return builder.build();
             }
             return map;
+        }
+
+        public float getDynamicSpread(ItemStack stack, Player player) {
+            Definition currentDef = getDefinition();
+            float baseSpread = isPackAPunched(stack) ? currentDef.ballistics.spread * currentDef.pap.spread_mult : currentDef.ballistics.spread;
+            if (player == null) return baseSpread;
+
+            float mult = 1.0f;
+            if (!player.onGround()) {
+                mult = 2.5f;
+            } else if (player.isSprinting()) {
+                mult = 2.0f;
+            } else if (player.getDeltaMovement().horizontalDistanceSqr() > 0.001) {
+                mult = 1.5f;
+            } else if (player.isCrouching()) {
+                mult = 0.5f;
+            }
+            return baseSpread * mult;
         }
 
         public boolean isAkimbo(ItemStack stack) {
@@ -351,9 +408,10 @@ public class WeaponSystem {
         }
 
         public int getFireRate(ItemStack stack, @Nullable Player player) {
-            int rate = def.stats.fire_rate;
-            if (player != null && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get())) {
-                rate = Math.max(1, (int)(rate * 0.75f)); 
+            Definition currentDef = getDefinition();
+            int rate = currentDef.stats.fire_rate;
+            if (player != null && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {
+                rate = Math.max(1, (int)(rate * 0.75f));
             }
             return rate;
         }
@@ -384,26 +442,26 @@ public class WeaponSystem {
 
         @Override public int getReserve(ItemStack s) { return getOrCreateTag(s).getInt(TAG_RESERVE); }
         @Override public void setReserve(ItemStack s, int r) { getOrCreateTag(s).putInt(TAG_RESERVE, r); }
-
         @Override public int getReloadTimer(ItemStack s) { return getOrCreateTag(s).getInt(TAG_RELOAD_TIMER); }
         @Override public void setReloadTimer(ItemStack s, int t) { getOrCreateTag(s).putInt(TAG_RELOAD_TIMER, t); }
 
-        @Override public int getMaxAmmo(ItemStack s) { return isPackAPunched(s) ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size; }
-        @Override public int getMaxReserve(ItemStack s) { return isPackAPunched(s) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve; }
-        @Override public boolean isInfinite(ItemStack s) { return def.ammo.max_reserve < 0; }
+        @Override public int getMaxAmmo(ItemStack s) { Definition currentDef = getDefinition(); return isPackAPunched(s) ? currentDef.ammo.clip_size + currentDef.pap.clip_bonus : currentDef.ammo.clip_size; }
+        @Override public int getMaxReserve(ItemStack s) { Definition currentDef = getDefinition(); return isPackAPunched(s) ? currentDef.ammo.max_reserve + currentDef.pap.reserve_bonus : currentDef.ammo.max_reserve; }
+        @Override public boolean isInfinite(ItemStack s) { return getDefinition().ammo.max_reserve < 0; }
 
-        public boolean hasDurability() { return def.stats.durability > 0; }
-        public int getMaxDurability(ItemStack stack) { return isPackAPunched(stack) ? def.stats.durability + def.pap.durability_bonus : def.stats.durability; }
+        public boolean hasDurability() { return getDefinition().stats.durability > 0; }
+        public int getMaxDurability(ItemStack stack) { Definition currentDef = getDefinition(); return isPackAPunched(stack) ? currentDef.stats.durability + currentDef.pap.durability_bonus : currentDef.stats.durability; }
         public int getDurability(ItemStack stack) { return getOrCreateTag(stack).getInt(TAG_DURABILITY); }
         public void setDurability(ItemStack stack, int durability) { getOrCreateTag(stack).putInt(TAG_DURABILITY, Mth.clamp(durability, 0, getMaxDurability(stack))); }
 
         @Override
         public void initializeIfNeeded(ItemStack stack) {
             CompoundTag tag = getOrCreateTag(stack);
+            Definition currentDef = getDefinition();
             if (!tag.contains(TAG_AMMO)) {
-                setAmmo(stack, def.ammo.clip_size);
-                setAmmoLeft(stack, def.ammo.clip_size);
-                setReserve(stack, def.ammo.max_reserve);
+                setAmmo(stack, currentDef.ammo.clip_size);
+                setAmmoLeft(stack, currentDef.ammo.clip_size);
+                setReserve(stack, currentDef.ammo.max_reserve);
                 if (hasOverheat()) setOverheat(stack, 0);
                 if (hasDurability()) setDurability(stack, getMaxDurability(stack));
             }
@@ -420,14 +478,14 @@ public class WeaponSystem {
 
         @Override public boolean isPackAPunched(ItemStack stack) { return getOrCreateTag(stack).getBoolean(TAG_PAP); }
         @Override public boolean isFoil(ItemStack stack) { return isPackAPunched(stack); }
-        @Override public float getHeadshotBaseDamage(ItemStack stack) { return def.headshot.base_bonus_damage; }
-        @Override public float getHeadshotPapBonusDamage(ItemStack stack) { return def.headshot.pap_bonus_damage; }
-        @Override public float getWeaponDamage(ItemStack stack) { return isPackAPunched(stack) ? def.stats.damage + def.pap.damage_bonus : def.stats.damage; }
+        @Override public float getHeadshotBaseDamage(ItemStack stack) { return getDefinition().headshot.base_bonus_damage; }
+        @Override public float getHeadshotPapBonusDamage(ItemStack stack) { return getDefinition().headshot.pap_bonus_damage; }
+        @Override public float getWeaponDamage(ItemStack stack) { Definition currentDef = getDefinition(); return isPackAPunched(stack) ? currentDef.stats.damage + currentDef.pap.damage_bonus : currentDef.stats.damage; }
 
         @Override public int getOverheat(ItemStack stack) { return getOrCreateTag(stack).getInt(TAG_OVERHEAT); }
-        @Override 
-        public void setOverheat(ItemStack stack, int overheat) { 
-            getOrCreateTag(stack).putInt(TAG_OVERHEAT, Mth.clamp(overheat, 0, getMaxOverheat())); 
+        @Override
+        public void setOverheat(ItemStack stack, int overheat) {
+            getOrCreateTag(stack).putInt(TAG_OVERHEAT, Mth.clamp(overheat, 0, getMaxOverheat()));
         }
         @Override public int getMaxOverheat() { return 100; }
         public boolean hasOverheat() { return false; }
@@ -439,7 +497,7 @@ public class WeaponSystem {
 
         @Override
         public boolean isBarVisible(ItemStack stack) {
-            return false; 
+            return false;
         }
 
         @Override
@@ -448,7 +506,7 @@ public class WeaponSystem {
                 if (isAkimbo(player.getItemInHand(hand))) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 }
-                if (this.def.scoped != null && this.def.scoped.isScoped) {
+                if (this.getDefinition().scoped != null && this.getDefinition().scoped.isScoped) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 } else {
                     return InteractionResultHolder.pass(player.getItemInHand(hand));
@@ -458,17 +516,18 @@ public class WeaponSystem {
         }
 
         public void tryShoot(ItemStack stack, Player player, float charge, boolean isLeft) {
+            Definition currentDef = getDefinition();
             long now = player.level().getGameTime();
             String timeTag = isLeft ? TAG_LAST_FIRE_LEFT : TAG_LAST_FIRE;
             long lastFire = getOrCreateTag(stack).getLong(timeTag);
 
             if (getOrCreateTag(stack).getBoolean(TAG_IS_RELOADING)) {
-                if ("SHELL".equalsIgnoreCase(def.ammo.reload_type)) {
+                if ("SHELL".equalsIgnoreCase(currentDef.ammo.reload_type)) {
                     getOrCreateTag(stack).putBoolean(TAG_IS_RELOADING, false);
                     setReloadTimer(stack, 0);
                     if (!isAkimbo(stack)) player.getCooldowns().removeCooldown(this);
                     if (player.level().isClientSide) {
-                        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientSoundStopper.stopReloadSounds(def));
+                        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientSoundStopper.stopReloadSounds(currentDef));
                     }
                 } else {
                     return;
@@ -480,9 +539,9 @@ public class WeaponSystem {
 
             if (now - lastFire < getFireRate(stack, player)) return;
 
-            int burstCount = def.burst.count;
-            if (isPackAPunched(stack) && def.pap.burst_count_override > 0) {
-                burstCount = def.pap.burst_count_override;
+            int burstCount = currentDef.burst.count;
+            if (isPackAPunched(stack) && currentDef.pap.burst_count_override > 0) {
+                burstCount = currentDef.pap.burst_count_override;
             }
 
             if (burstCount > 1) {
@@ -504,34 +563,36 @@ public class WeaponSystem {
         }
 
         protected boolean executeShot(ItemStack stack, Player player, float charge, boolean isLeft) {
+            Definition currentDef = getDefinition();
+            
             if (hasOverheat()) {
                 if (getOrCreateTag(stack).getBoolean(TAG_IS_OVERHEATED) || getOverheat(stack) >= getMaxOverheat()) {
-                    playSound(player.level(), player, def.sounds.dry);
+                    playSound(player.level(), player, currentDef.sounds.dry);
                     return false;
                 }
-            } 
+            }
             if (hasDurability() && getDurability(stack) <= 0) {
-                playSound(player.level(), player, def.sounds.dry);
+                playSound(player.level(), player, currentDef.sounds.dry);
                 return false;
-            } 
+            }
+
             if (!hasDurability() && !hasOverheat()) {
                 int currentAmmo = isLeft ? getAmmoLeft(stack) : getAmmo(stack);
                 if (currentAmmo <= 0) {
                     if (isInfinite(stack) || getReserve(stack) > 0) {
                         startReload(stack, player);
                     } else {
-                        playSound(player.level(), player, def.sounds.dry);
+                        playSound(player.level(), player, currentDef.sounds.dry);
                         PlayerVoiceManager.playEmptyClipSound(player, player.level());
                     }
                     return false;
                 }
             }
 
-            int multiplier = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get()) ? 2 : 1;
+            int multiplier = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get()) ? 2 : 1;
             for (int m = 0; m < multiplier; m++) {
                 performShooting(stack, player, charge, isLeft);
             }
-
             PlayerVoiceManager.onPlayerShoot(player);
 
             if (!player.isCreative()) {
@@ -541,36 +602,36 @@ public class WeaponSystem {
                     long lastFire = getOrCreateTag(stack).getLong(timeTag);
                     int heatAdd = getOverheatPerShot(stack);
                     if (now - lastFire > getFireRate(stack, player) * 2) {
-                        heatAdd *= 2; 
+                        heatAdd *= 2;
                     }
                     setOverheat(stack, Math.min(getMaxOverheat(), getOverheat(stack) + heatAdd));
                 }
+
                 if (hasDurability()) {
                     setDurability(stack, getDurability(stack) - getDurabilityDrainPerShot(stack));
                 }
+
                 if (!hasDurability() && !hasOverheat()) {
                     if (isLeft) {
-                        setAmmoLeft(stack, getAmmoLeft(stack) - def.ammo.ammo_per_shot);
+                        setAmmoLeft(stack, getAmmoLeft(stack) - currentDef.ammo.ammo_per_shot);
                     } else {
-                        setAmmo(stack, getAmmo(stack) - def.ammo.ammo_per_shot);
+                        setAmmo(stack, getAmmo(stack) - currentDef.ammo.ammo_per_shot);
                     }
-                    
                     int currentRight = getAmmo(stack);
                     int currentLeft = isAkimbo(stack) ? getAmmoLeft(stack) : 0;
-                    
                     if (currentRight <= 0 && (!isAkimbo(stack) || currentLeft <= 0)) {
                         if (isInfinite(stack) || getReserve(stack) > 0) {
                             startReload(stack, player);
-                            getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0); 
+                            getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
                         }
                     }
                 }
             }
 
-            String soundId = isPackAPunched(stack) ? def.sounds.fire_pap : def.sounds.fire;
+            String soundId = isPackAPunched(stack) ? currentDef.sounds.fire_pap : currentDef.sounds.fire;
             playSound(player.level(), player, soundId);
 
-            if (def.id != null && def.id.contains("raygunmarkii")) {
+            if (currentDef.id != null && currentDef.id.contains("raygunmarkii")) {
                 Vec3 look = player.getViewVector(1.0f);
                 double propStrength = isPackAPunched(stack) ? 0.3 : 0.15;
                 player.setDeltaMovement(player.getDeltaMovement().subtract(look.x * propStrength, look.y * propStrength, look.z * propStrength));
@@ -578,6 +639,7 @@ public class WeaponSystem {
             }
 
             getOrCreateTag(stack).putBoolean(TAG_PUMP_PLAYED, false);
+
             return true;
         }
 
@@ -607,21 +669,22 @@ public class WeaponSystem {
 
             getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
 
-            float baseTime = def.ammo.reload_time;
-            if (isPackAPunched(stack)) baseTime *= def.pap.reload_speed_mult;
+            Definition currentDef = getDefinition();
+            float baseTime = currentDef.ammo.reload_time;
+            if (isPackAPunched(stack)) baseTime *= currentDef.pap.reload_speed_mult;
             if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get())) baseTime *= 0.5f;
 
             int ticks = Math.max(1, (int) baseTime);
             setReloadTimer(stack, ticks);
             getOrCreateTag(stack).putBoolean(TAG_IS_RELOADING, true);
-            
+
             if (!isAkimbo(stack)) {
                 player.getCooldowns().addCooldown(this, ticks);
             }
 
             if (!player.level().isClientSide) {
-                if (!"SHELL".equalsIgnoreCase(def.ammo.reload_type)) {
-                    playSound(player.level(), player, def.sounds.reload);
+                if (!"SHELL".equalsIgnoreCase(currentDef.ammo.reload_type)) {
+                    playSound(player.level(), player, currentDef.sounds.reload);
                 }
                 triggerCherryEffect(player);
             }
@@ -646,6 +709,7 @@ public class WeaponSystem {
             if (!(entity instanceof Player player)) return;
             initializeIfNeeded(stack);
             CompoundTag tag = getOrCreateTag(stack);
+            Definition currentDef = getDefinition();
 
             if (hasOverheat()) {
                 int heat = getOverheat(stack);
@@ -676,7 +740,7 @@ public class WeaponSystem {
                     player.getCooldowns().removeCooldown(this);
                 }
                 if (level.isClientSide) {
-                    net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientSoundStopper.stopReloadSounds(def));
+                    net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientSoundStopper.stopReloadSounds(currentDef));
                 }
             }
 
@@ -694,9 +758,9 @@ public class WeaponSystem {
                             if (tag.getBoolean(TAG_IS_RELOADING)) {
                                 tag.putInt(TAG_BURST_SHOTS_LEFT, 0);
                             } else if (burstShots > 0) {
-                                int delay = def.burst.delay;
-                                if (isPackAPunched(stack) && def.pap.burst_count_override > 0) {
-                                    delay = def.pap.burst_delay_override;
+                                int delay = currentDef.burst.delay;
+                                if (isPackAPunched(stack) && currentDef.pap.burst_count_override > 0) {
+                                    delay = currentDef.pap.burst_delay_override;
                                 }
                                 tag.putInt(TAG_BURST_DELAY, Math.max(1, delay));
                             } else {
@@ -716,19 +780,18 @@ public class WeaponSystem {
                 }
             }
 
-            String pumpSound = def.sounds.pump;
+            String pumpSound = currentDef.sounds.pump;
             if (pumpSound != null && !pumpSound.isEmpty()) {
                 long lastFire = tag.getLong(TAG_LAST_FIRE);
                 long now = level.getGameTime();
                 boolean pumpPlayed = tag.getBoolean(TAG_PUMP_PLAYED);
-                
                 if (!isReloading && !pumpPlayed && now >= lastFire + (getFireRate(stack, player) / 2) && now < lastFire + getFireRate(stack, player)) {
                     if (!level.isClientSide) playSound(level, player, pumpSound);
                     tag.putBoolean(TAG_PUMP_PLAYED, true);
                 }
             }
 
-            if ("MAGAZINE".equalsIgnoreCase(def.ammo.reload_type)) {
+            if ("MAGAZINE".equalsIgnoreCase(currentDef.ammo.reload_type)) {
                 if (isReloading) {
                     int timer = getReloadTimer(stack);
                     if (timer > 0) {
@@ -742,7 +805,7 @@ public class WeaponSystem {
 
             boolean equippedPrev = tag.getBoolean(TAG_EQUIPPED_PREV);
             if (selected && !equippedPrev) {
-                if (def.sounds.equip != null) playSound(level, player, def.sounds.equip);
+                if (currentDef.sounds.equip != null) playSound(level, player, currentDef.sounds.equip);
                 tag.putBoolean(TAG_EQUIPPED_PREV, true);
             } else if (!selected) {
                 tag.putBoolean(TAG_EQUIPPED_PREV, false);
@@ -751,7 +814,6 @@ public class WeaponSystem {
 
         protected void finishReload(ItemStack stack, Player player) {
             if (player.level().isClientSide) return;
-            
             if (hasDurability()) {
                 setDurability(stack, getMaxDurability(stack));
                 return;
@@ -760,7 +822,7 @@ public class WeaponSystem {
             int max = getMaxAmmo(stack);
             int currentRight = getAmmo(stack);
             int currentLeft = isAkimbo(stack) ? getAmmoLeft(stack) : max;
-            
+
             int neededRight = max - currentRight;
             int neededLeft = max - currentLeft;
             int totalNeeded = neededRight + neededLeft;
@@ -771,35 +833,57 @@ public class WeaponSystem {
             } else {
                 int reserve = getReserve(stack);
                 int toLoad = player.isCreative() ? totalNeeded : Math.min(totalNeeded, reserve);
-                
+
                 int loadRight = Math.min(toLoad, neededRight);
                 int loadLeft = toLoad - loadRight;
-                
+
                 setAmmo(stack, currentRight + loadRight);
                 if (isAkimbo(stack)) setAmmoLeft(stack, currentLeft + loadLeft);
-                
+
                 if (!player.isCreative()) setReserve(stack, reserve - toLoad);
             }
         }
 
         @Override
         public Component getName(ItemStack stack) {
+            Definition currentDef = getDefinition();
             boolean upgraded = isPackAPunched(stack);
-            String baseName = upgraded && def.pap.name != null && !def.pap.name.isEmpty()
-                    ? "§d" + def.pap.name
-                    : "§f" + def.name;
-            return Component.literal(baseName);
+            String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
+            if (nameKey == null) nameKey = "Unknown Weapon";
+            
+            MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
+                    Component.translatable(nameKey) : Component.literal(nameKey);
+            
+            MutableComponent nameComponent = Component.empty().append(baseComp).withStyle(upgraded ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.WHITE);
+
+            if (hasOverheat()) {
+                int currentOverheat = getOverheat(stack);
+                if (getOrCreateTag(stack).getBoolean(TAG_IS_OVERHEATED)) {
+                    nameComponent.append(Component.literal(" ").append(Component.translatable("message.zombierool.weapon.overheated").withStyle(ChatFormatting.DARK_RED)));
+                } else if (currentOverheat > getMaxOverheat() * 0.75) {
+                    nameComponent.append(Component.literal(" ").append(Component.translatable("message.zombierool.weapon.heating").withStyle(ChatFormatting.YELLOW)));
+                }
+            }
+
+            return nameComponent;
         }
 
         @Override
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-            if (def.lore != null) {
-                for (String l : def.lore) {
-                    if (!l.contains("Statistiques import")) tooltip.add(Component.literal("§7" + l));
+            Definition currentDef = getDefinition();
+            if (currentDef.lore != null) {
+                for (String l : currentDef.lore) {
+                    if (l.startsWith("weapon.") || l.startsWith("item.") || l.contains("zombierool.")) {
+                        tooltip.add(Component.translatable(l).withStyle(ChatFormatting.GRAY));
+                    } else {
+                        tooltip.add(Component.literal(l).withStyle(ChatFormatting.GRAY));
+                    }
                 }
             }
-            if (def.tags != null && !def.tags.isEmpty()) {
-                tooltip.add(Component.literal("§8Tags: " + String.join(", ", def.tags)));
+            if (currentDef.tags != null && !currentDef.tags.isEmpty()) {
+                tooltip.add(Component.translatable("weapon.zombierool.tags")
+                        .append(": " + String.join(", ", currentDef.tags))
+                        .withStyle(ChatFormatting.DARK_GRAY));
             }
         }
     }

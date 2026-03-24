@@ -1,8 +1,21 @@
 {
   "variants": {
-    "facing=north": { "model": "zombierool:block/sandbags" },
-    "facing=east":  { "model": "zombierool:block/sandbags", "y": 90 },
-    "facing=south": { "model": "zombierool:block/sandbags", "y": 180 },
-    "facing=west":  { "model": "zombierool:block/sandbags", "y": 270 }
+    "shape=straight,facing=north": { "model": "zombierool:block/sandbags", "y": 90 },
+    "shape=straight,facing=east":  { "model": "zombierool:block/sandbags" },
+    "shape=straight,facing=south": { "model": "zombierool:block/sandbags", "y": 90 },
+    "shape=straight,facing=west":  { "model": "zombierool:block/sandbags" },
+    "shape=corner,facing=north": { "model": "zombierool:block/sandbag_corner", "y": 90 },
+    "shape=corner,facing=east":  { "model": "zombierool:block/sandbag_corner", "y": 180 },
+    "shape=corner,facing=south": { "model": "zombierool:block/sandbag_corner", "y": 270 },
+    "shape=corner,facing=west":  { "model": "zombierool:block/sandbag_corner" },
+    "shape=t,facing=north": { "model": "zombierool:block/sandbags_t" },
+	"shape=t,facing=east":  { "model": "zombierool:block/sandbags_t", "y": 90 },
+	"shape=t,facing=south": { "model": "zombierool:block/sandbags_t", "y": 180 },
+	"shape=t,facing=west":  { "model": "zombierool:block/sandbags_t", "y": 270 },
+	
+    "shape=cross,facing=north": { "model": "zombierool:block/sandbags_cross" },
+    "shape=cross,facing=east":  { "model": "zombierool:block/sandbags_cross" },
+    "shape=cross,facing=south": { "model": "zombierool:block/sandbags_cross" },
+    "shape=cross,facing=west":  { "model": "zombierool:block/sandbags_cross" }
   }
 }

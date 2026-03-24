@@ -1,10 +1,10 @@
 {
   "id": "zombierool:saw",
-  "name": "SAW",
+  "name": "weapon.zombierool.saw",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.saw.lore.0",
+    "weapon.zombierool.saw.lore.1"
   ],
   "stats": {
     "damage": 10.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 130,
     "max_reserve": 780,
-    "reload_time": 95,
+    "reload_time": 89,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.8
   },
   "pack_a_punch": {
-    "name": "Chainbreaker",
+    "name": "weapon.zombierool.saw.pap",
     "damage_bonus": 16.0,
     "clip_bonus": 780,
     "reserve_bonus": -780,

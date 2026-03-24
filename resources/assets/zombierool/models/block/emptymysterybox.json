@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/mystery_box_texture",
-    "particle": "zombierool:block/mystery_box_texture"
-  },
-  "render_type": "solid"
-}

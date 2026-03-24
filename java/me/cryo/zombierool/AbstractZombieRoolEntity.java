@@ -1,5 +1,4 @@
 package me.cryo.zombierool.entity;
-
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.bonuses.BonusManager;
@@ -15,6 +14,8 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.monster.Monster;
@@ -40,6 +41,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected Vec3 lastPos = Vec3.ZERO;
 
     private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Float> ZR_SCALE = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.FLOAT);
 
     public AbstractZombieRoolEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -47,7 +49,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         xpReward = 0;
         setNoAi(false);
         setPersistenceRequired();
-
         if (this.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
         }
@@ -57,6 +58,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(CUSTOM_SKIN, "");
+        this.entityData.define(ZR_SCALE, 1.0f);
     }
 
     public String getCustomSkin() {
@@ -67,16 +69,46 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         this.entityData.set(CUSTOM_SKIN, skinId);
     }
 
+    public float getScale() {
+        return this.entityData.get(ZR_SCALE);
+    }
+
+    public void setScale(float scale) {
+        this.entityData.set(ZR_SCALE, scale);
+        this.refreshDimensions();
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> pKey) {
+        if (ZR_SCALE.equals(pKey)) {
+            this.refreshDimensions();
+        }
+        super.onSyncedDataUpdated(pKey);
+    }
+
+    @Override
+    public EntityDimensions getDimensions(Pose pose) {
+        float scale = getScale();
+        if (scale != 1.0f) {
+            return super.getDimensions(pose).scale(scale);
+        }
+        return super.getDimensions(pose);
+    }
+
     @Override
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
         compound.putString("CustomSkin", getCustomSkin());
+        compound.putFloat("zr_scale", getScale());
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
         setCustomSkin(compound.getString("CustomSkin"));
+        if (compound.contains("zr_scale")) {
+            setScale(compound.getFloat("zr_scale"));
+        }
     }
 
     public void setHeadshotDeath(boolean value) {
@@ -103,6 +135,11 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public float getPickRadius() {
+        return 0.3F * getScale(); 
     }
 
     @Override
@@ -161,6 +198,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         super.handleEntityEvent(id);
         if (id == 99 && this.level().isClientSide) {
             this.setHeadshotDeath(true);
+            
             double x = this.getX(), y = this.getY() + this.getBbHeight() * 0.9, z = this.getZ();
             for (int i = 0; i < 30; i++) {
                 double dx = (this.random.nextDouble() - 0.5) * this.getBbWidth();
@@ -185,7 +223,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             Entity direct = cause.getDirectEntity();
             Entity src = cause.getEntity();
             Player player = null;
-            
+
             if (src instanceof Player p1) {
                 player = p1;
             } else if (direct instanceof Projectile proj && proj.getOwner() instanceof Player p2) {

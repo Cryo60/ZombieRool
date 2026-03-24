@@ -14,22 +14,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = GunData.class)
 public abstract class TacZShootIntervalMixin {
-    
+
     @Shadow(remap = false)
     public abstract Bolt getBolt();
-    
+
     @Inject(method = "getShootInterval", at = @At("RETURN"), cancellable = true, remap = false)
     private void zombierool_modifyShootInterval(LivingEntity shooter, FireMode fireMode, ItemStack gunStack, CallbackInfoReturnable<Long> cir) {
         long interval = cir.getReturnValue();
-        
+
         if (this.getBolt() == Bolt.MANUAL_ACTION) {
             interval = 0L; 
         }
-        
-        if (shooter != null && shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get())) {
+
+        if (shooter != null && shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {
             interval = (long) (interval * 0.67);
         }
-        
+
         cir.setReturnValue(interval);
     }
 }

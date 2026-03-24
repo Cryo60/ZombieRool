@@ -1,47 +1,60 @@
 package me.cryo.zombierool.entity;
 
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.network.PlayMessages;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.world.entity.MobType;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.ai.goal.BreakDoorGoal;
-import me.cryo.zombierool.init.ZombieroolModEntities;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.Pose;
-import net.minecraft.world.phys.Vec3;
+import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.core.particles.ParticleTypes;
+import java.util.Random;
+import java.util.UUID;
+
+import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.WaveManager;
+import me.cryo.zombierool.bonuses.BonusManager;
+import me.cryo.zombierool.core.manager.GoreManager;
+import me.cryo.zombierool.init.ZombieroolModEntities;
+import me.cryo.zombierool.init.ZombieroolModSounds;
+import me.cryo.zombierool.player.PlayerDownManager;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import me.cryo.zombierool.init.ZombieroolModSounds;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import java.util.Random;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobType;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.BreakDoorGoal;
+import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.PlayMessages;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.nbt.CompoundTag;
 
 public class ZombieEntity extends AbstractZombieRoolEntity {
-    public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
 
+    public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
     private int ambientSoundCooldown = 0;
     private double baseSpeed = 0.18;
     private static final Random STATIC_RANDOM = new Random();
-
     private int lightUpdateTimer = 0;
+
     private static final EntityDataAccessor<Boolean> IS_SUPER_SPRINTER = SynchedEntityData.defineId(ZombieEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> IS_FAST_CRAWLER = SynchedEntityData.defineId(ZombieEntity.class, EntityDataSerializers.BOOLEAN);
 
     private int behindYouSoundCooldown = 0;
     private static int globalBehindYouSoundCooldown = 0;
@@ -64,22 +77,78 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(IS_SUPER_SPRINTER, false);
+        this.entityData.define(IS_FAST_CRAWLER, false);
     }
 
     public boolean isSuperSprinter() {
         return this.entityData.get(IS_SUPER_SPRINTER);
     }
 
-    public boolean hasHalloweenLight() {
-        return this.getPersistentData().getBoolean("zombierool:halloween_light");
-    }
-
     public void setSuperSprinter(boolean value) {
         this.entityData.set(IS_SUPER_SPRINTER, value);
     }
 
+    public boolean isFastCrawler() {
+        return this.entityData.get(IS_FAST_CRAWLER);
+    }
+
+    public void setFastCrawler(boolean value) {
+        this.entityData.set(IS_FAST_CRAWLER, value);
+    }
+
+    public boolean hasHalloweenLight() {
+        return this.getPersistentData().getBoolean("zombierool:halloween_light");
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag compound) {
+        super.addAdditionalSaveData(compound);
+        compound.putBoolean("IsFastCrawler", this.isFastCrawler());
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag compound) {
+        super.readAdditionalSaveData(compound);
+        if (compound.contains("IsFastCrawler")) {
+            this.setFastCrawler(compound.getBoolean("IsFastCrawler"));
+        }
+    }
+
+    public boolean isCrawler() {
+        return GoreManager.hasLostLimb(this, GoreManager.Limb.LEFT_LEG) && GoreManager.hasLostLimb(this, GoreManager.Limb.RIGHT_LEG);
+    }
+
+    public void makeCrawler() {
+        if (isCrawler()) return;
+        GoreManager.triggerLegsExplosion(this);
+        
+        this.setHealth(Math.min(this.getHealth(), 5.0f));
+        this.setSuperSprinter(false);
+        
+        boolean isFast = this.random.nextFloat() < 0.35f;
+        this.setFastCrawler(isFast);
+        
+        if (this.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
+            this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(isFast ? 0.20 : 0.12);
+        }
+        
+        this.refreshDimensions();
+    }
+
+    @Override
+    public EntityDimensions getDimensions(Pose pose) {
+        float scale = getScale();
+        if (isCrawler()) {
+            return EntityDimensions.fixed(0.6f, 0.9f).scale(scale);
+        }
+        return super.getDimensions(pose).scale(scale);
+    }
+
     @Override
     protected float getStandingEyeHeight(Pose pose, EntityDimensions size) {
+        if (isCrawler()) {
+            return size.height * 0.7F;
+        }
         return size.height * 0.92F;
     }
 
@@ -89,15 +158,16 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     private void updateHalloweenLight() {
         if (!hasHalloweenLight()) return;
+
         if (this.level().isClientSide) return;
-        
+
         lightUpdateTimer++;
         if (lightUpdateTimer < 10) return;
         lightUpdateTimer = 0;
-        
+
         if (this.level() instanceof ServerLevel serverLevel) {
             serverLevel.sendParticles(
-                ParticleTypes.FLAME,
+                net.minecraft.core.particles.ParticleTypes.FLAME,
                 this.getX(),
                 this.getY() + this.getBbHeight() * 0.95,
                 this.getZ(),
@@ -105,9 +175,10 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 0.15, 0.1, 0.15,
                 0.001
             );
+            
             if (this.random.nextFloat() < 0.3f) {
                 serverLevel.sendParticles(
-                    ParticleTypes.LAVA,
+                    net.minecraft.core.particles.ParticleTypes.LAVA,
                     this.getX(),
                     this.getY() + this.getBbHeight() * 0.95,
                     this.getZ(),
@@ -157,10 +228,17 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         if (this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 32.0, false) == null) {
             return;
         }
+
         double currentSpeed = this.getAttribute(Attributes.MOVEMENT_SPEED).getValue();
         SoundEvent sound = null;
 
-        if (currentSpeed > 0.22) {
+        if (isCrawler()) {
+            if (this.isFastCrawler()) {
+                sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawl"));
+            } else {
+                sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "slow_crawl"));
+            }
+        } else if (currentSpeed > 0.22) {
             int idx = 1 + this.random.nextInt(9);
             sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "sprint" + idx));
         } else {
@@ -175,17 +253,22 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity entity) {
-        // Fix des dégâts : le Zombie inflige toujours 2.0 (1 coeur entier)
         float damage = this.isSuperSprinter() ? 4.0f : 2.0f;
         boolean flag = entity.hurt(this.damageSources().mobAttack(this), damage);
-
+        
         if (flag && !this.level().isClientSide) {
-            int idx = 1 + this.random.nextInt(16);
-            SoundEvent attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
+            SoundEvent attackSound;
+            if (isCrawler()) {
+                attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_attack"));
+            } else {
+                int idx = 1 + this.random.nextInt(16);
+                attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
+            }
+            
             if (attackSound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), attackSound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }
-
+            
             if (entity instanceof Player) {
                 if (STATIC_RANDOM.nextInt(20) == 0) {
                     SoundEvent punchSound = ZombieroolModSounds.PUNCH.get();
@@ -207,12 +290,14 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public SoundEvent getHurtSound(DamageSource source) {
+        if (isCrawler()) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_hurt"));
         int idx = 1 + this.random.nextInt(2);
         return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "hurt" + idx));
     }
 
     @Override
     public SoundEvent getDeathSound() {
+        if (isCrawler()) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_death"));
         int idx = 1 + this.random.nextInt(10);
         return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "death" + idx));
     }
@@ -247,7 +332,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
             if (this.behindYouSoundCooldown > 0) {
                 this.behindYouSoundCooldown--;
-            } else if (globalBehindYouSoundCooldown == 0) {
+            } else if (globalBehindYouSoundCooldown == 0 && !isCrawler()) {
                 List<Player> players = this.level().getEntitiesOfClass(
                     Player.class,
                     this.getBoundingBox().inflate(BEHIND_YOU_CHECK_RADIUS)
@@ -259,6 +344,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
                     Vec3 playerLook = player.getLookAngle().normalize();
                     Vec3 toZombie = this.position().subtract(player.position()).normalize();
+
                     double dot = playerLook.dot(toZombie);
                     double distSqr = this.distanceToSqr(player);
 
@@ -277,7 +363,6 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                         int cooldown = this.random.nextInt(
                             BEHIND_YOU_MAX_COOLDOWN_TICKS - BEHIND_YOU_MIN_COOLDOWN_TICKS
                         ) + BEHIND_YOU_MIN_COOLDOWN_TICKS;
-                        
                         this.behindYouSoundCooldown = cooldown;
                         globalBehindYouSoundCooldown = cooldown;
                         break;
@@ -292,12 +377,15 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
             for (ZombieEntity other : nearbyZombies) {
                 if (other == this) continue;
+
                 double distSqr = this.distanceToSqr(other);
                 if (distSqr < 0.25) {
                     Vec3 direction = this.position().subtract(other.position()).normalize();
+                    
                     float push = 0.025f;
                     other.push(direction.x * push, 0, direction.z * push);
                     this.push(-direction.x * push, 0, -direction.z * push);
+                    
                     if (Math.abs(direction.x) < 0.1) {
                         this.push((this.random.nextBoolean() ? 1 : -1) * 0.02, 0, 0);
                     }
@@ -306,7 +394,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                     }
                 }
             }
-            
+
             updateHalloweenLight();
         }
     }

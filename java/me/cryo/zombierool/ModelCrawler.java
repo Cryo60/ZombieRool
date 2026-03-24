@@ -6,14 +6,16 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.LivingEntity;
 
 public class ModelCrawler<T extends LivingEntity> extends SpiderModel<T> {
+
     public final ModelPart head;
-    // SpiderModel a des arrays pour les jambes (leg0 ... leg7)
-    // C'est un peu plus complexe à mapper LEFT_LEG/RIGHT_LEG à 8 pattes.
-    // On simplifie : pas de démembrement jambes pour l'instant, juste la tête.
+    public final ModelPart leftFrontLeg;
+    public final ModelPart rightFrontLeg;
 
     public ModelCrawler(ModelPart root) {
         super(root);
         this.head = root.getChild("head");
+        this.leftFrontLeg = root.getChild("left_front_leg");
+        this.rightFrontLeg = root.getChild("right_front_leg");
     }
 
     @Override
@@ -24,6 +26,18 @@ public class ModelCrawler<T extends LivingEntity> extends SpiderModel<T> {
             this.head.visible = false;
         } else {
             this.head.visible = true;
+        }
+
+        if (GoreManager.hasLostLimb(entity, GoreManager.Limb.LEFT_ARM)) {
+            this.leftFrontLeg.visible = false;
+        } else {
+            this.leftFrontLeg.visible = true;
+        }
+
+        if (GoreManager.hasLostLimb(entity, GoreManager.Limb.RIGHT_ARM)) {
+            this.rightFrontLeg.visible = false;
+        } else {
+            this.rightFrontLeg.visible = true;
         }
     }
 }

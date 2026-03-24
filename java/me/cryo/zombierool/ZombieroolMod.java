@@ -33,7 +33,6 @@ import me.cryo.zombierool.init.ZombieroolModTabs;
 import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
-import me.cryo.zombierool.init.ZombieroolModMenus;
 import me.cryo.zombierool.init.ZombieroolModItems;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
@@ -68,7 +67,6 @@ public class ZombieroolMod {
 
 		ZombieroolModParticleTypes.REGISTRY.register(bus);
 
-		ZombieroolModMenus.REGISTRY.register(bus);
 	}
 
 	private static final String PROTOCOL_VERSION = "1";

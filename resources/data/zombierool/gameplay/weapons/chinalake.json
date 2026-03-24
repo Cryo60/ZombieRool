@@ -1,10 +1,10 @@
 {
   "id": "zombierool:chinalake",
-  "name": "CHINALAKE",
+  "name": "weapon.zombierool.chinalake",
   "type": "PROJECTILE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.chinalake.lore.0",
+    "weapon.zombierool.chinalake.lore.1"
   ],
   "stats": {
     "damage": 15.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 2,
     "max_reserve": 12,
-    "reload_time": 60,
+    "reload_time": 32,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -27,7 +27,7 @@
     "spread": 0.7,
     "velocity": 1.2,
     "type": "ROCKET",
-    "gravity": false,
+    "gravity": true,
     "trail_vfx": "RPG",
     "hitscan_vfx": "NONE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.5
   },
   "pack_a_punch": {
-    "name": "Dragon's Talon",
+    "name": "weapon.zombierool.chinalake.pap",
     "damage_bonus": 25.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

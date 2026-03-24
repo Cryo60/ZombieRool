@@ -7,11 +7,16 @@ import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.File;
 import java.io.FileReader;
+import java.security.MessageDigest;
+import java.io.FileInputStream;
 
 public class ResourcePackWorldData {
+
     private static final Gson GSON = new Gson();
+
     private String resourcePackUrl;
     private String resourcePackName;
+    private String resourcePackHash = "";
     private boolean loaded = false;
 
     private ResourcePackWorldData() {}
@@ -36,11 +41,15 @@ public class ResourcePackWorldData {
                         JsonObject rp = json.getAsJsonObject("resource_pack");
                         if (rp.has("url")) this.resourcePackUrl = rp.get("url").getAsString();
                         if (rp.has("name")) this.resourcePackName = rp.get("name").getAsString();
+                        if (rp.has("hash")) this.resourcePackHash = rp.get("hash").getAsString();
                         this.loaded = true;
                     } else if (json.has("resource_pack_url")) {
                         this.resourcePackUrl = json.get("resource_pack_url").getAsString();
                         if (json.has("resource_pack_name")) {
                             this.resourcePackName = json.get("resource_pack_name").getAsString();
+                        }
+                        if (json.has("resource_pack_hash")) {
+                            this.resourcePackHash = json.get("resource_pack_hash").getAsString();
                         }
                         this.loaded = true;
                     }
@@ -48,12 +57,9 @@ public class ResourcePackWorldData {
             } else if (oldMetaFile.exists()) {
                 try (FileReader reader = new FileReader(oldMetaFile)) {
                     JsonObject json = GSON.fromJson(reader, JsonObject.class);
-                    if (json.has("url")) {
-                        this.resourcePackUrl = json.get("url").getAsString();
-                    }
-                    if (json.has("name")) {
-                        this.resourcePackName = json.get("name").getAsString();
-                    }
+                    if (json.has("url")) this.resourcePackUrl = json.get("url").getAsString();
+                    if (json.has("name")) this.resourcePackName = json.get("name").getAsString();
+                    if (json.has("hash")) this.resourcePackHash = json.get("hash").getAsString();
                     this.loaded = true;
                 }
             }
@@ -64,9 +70,9 @@ public class ResourcePackWorldData {
     }
 
     public boolean hasResourcePack() {
-        return loaded && 
-               resourcePackUrl != null && !resourcePackUrl.trim().isEmpty() && 
-               resourcePackName != null && !resourcePackName.trim().isEmpty();
+        return loaded
+            && resourcePackUrl != null && !resourcePackUrl.trim().isEmpty()
+            && resourcePackName != null && !resourcePackName.trim().isEmpty();
     }
 
     public String getResourcePackUrl() {
@@ -75,5 +81,13 @@ public class ResourcePackWorldData {
 
     public String getResourcePackName() {
         return resourcePackName;
+    }
+
+    /**
+     * Retourne le hash SHA-1 du pack de map custom.
+     * Peut être vide si le fichier zombierool_map.json ne le fournit pas.
+     */
+    public String getResourcePackHash() {
+        return resourcePackHash != null ? resourcePackHash : "";
     }
 }

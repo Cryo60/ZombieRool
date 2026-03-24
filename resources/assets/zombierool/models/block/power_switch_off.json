@@ -1,0 +1,232 @@
+{
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"textures": {
+		"particle": "block/tuff",
+		"metal": "block/tuff",
+		"dark_metal": "block/coal_block",
+		"contacts": "block/iron_block",
+		"handle": "block/red_concrete",
+		"dial": "block/daylight_detector_top",
+		"light": "block/redstone_lamp",
+		"wire": "block/redstone_block"
+	},
+	"elements": [
+		{
+			"name": "Panneau_Bas",
+			"from": [0, 0, 13],
+			"to": [16, 5, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [0, 11, 16, 16], "texture": "#metal"},
+				"east": {"uv": [0, 11, 3, 16], "texture": "#metal"},
+				"south": {"uv": [0, 11, 16, 16], "texture": "#metal"},
+				"west": {"uv": [13, 11, 16, 16], "texture": "#metal"},
+				"up": {"uv": [0, 13, 16, 16], "texture": "#metal"},
+				"down": {"uv": [0, 0, 16, 3], "texture": "#metal"}
+			}
+		},
+		{
+			"name": "Panneau_Haut",
+			"from": [0, 11, 13],
+			"to": [16, 16, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 5], "texture": "#metal"},
+				"east": {"uv": [0, 0, 3, 5], "texture": "#metal"},
+				"south": {"uv": [0, 0, 16, 5], "texture": "#metal"},
+				"west": {"uv": [13, 0, 16, 5], "texture": "#metal"},
+				"up": {"uv": [0, 13, 16, 16], "texture": "#metal"},
+				"down": {"uv": [0, 0, 16, 3], "texture": "#metal"}
+			}
+		},
+		{
+			"name": "Bord_Gauche",
+			"from": [0, 5, 13],
+			"to": [3, 11, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [13, 5, 16, 11], "texture": "#metal"},
+				"east": {"uv": [0, 5, 3, 11], "texture": "#metal"},
+				"south": {"uv": [0, 5, 3, 11], "texture": "#metal"},
+				"west": {"uv": [13, 5, 16, 11], "texture": "#metal"}
+			}
+		},
+		{
+			"name": "Bord_Droit",
+			"from": [13, 5, 13],
+			"to": [16, 11, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [0, 5, 3, 11], "texture": "#metal"},
+				"east": {"uv": [0, 5, 3, 11], "texture": "#metal"},
+				"south": {"uv": [13, 5, 16, 11], "texture": "#metal"},
+				"west": {"uv": [13, 5, 16, 11], "texture": "#metal"}
+			}
+		},
+		{
+			"name": "Fond_Renfoncement",
+			"from": [3, 5, 15],
+			"to": [13, 11, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [3, 5, 13, 11], "texture": "#dark_metal"},
+				"south": {"uv": [3, 5, 13, 11], "texture": "#dark_metal"}
+			}
+		},
+		{
+			"name": "Contact_Gauche",
+			"from": [4.5, 5, 14.5],
+			"to": [5.5, 10, 15],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [10.5, 6, 11.5, 11], "texture": "#contacts"},
+				"east": {"uv": [1, 6, 1.5, 11], "texture": "#contacts"},
+				"west": {"uv": [14.5, 6, 15, 11], "texture": "#contacts"},
+				"up": {"uv": [4.5, 14.5, 5.5, 15], "texture": "#contacts"}
+			}
+		},
+		{
+			"name": "Contact_Milieu",
+			"from": [7.5, 5, 14.5],
+			"to": [8.5, 10, 15],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [7.5, 6, 8.5, 11], "texture": "#contacts"},
+				"east": {"uv": [1, 6, 1.5, 11], "texture": "#contacts"},
+				"west": {"uv": [14.5, 6, 15, 11], "texture": "#contacts"},
+				"up": {"uv": [7.5, 14.5, 8.5, 15], "texture": "#contacts"}
+			}
+		},
+		{
+			"name": "Contact_Droit",
+			"from": [10.5, 5, 14.5],
+			"to": [11.5, 10, 15],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [4.5, 6, 5.5, 11], "texture": "#contacts"},
+				"east": {"uv": [1, 6, 1.5, 11], "texture": "#contacts"},
+				"west": {"uv": [14.5, 6, 15, 11], "texture": "#contacts"},
+				"up": {"uv": [10.5, 14.5, 11.5, 15], "texture": "#contacts"}
+			}
+		},
+		{
+			"name": "Cadran_1",
+			"from": [1.5, 11.5, 12],
+			"to": [4.5, 14.5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [11.5, 1.5, 14.5, 4.5], "texture": "#dial"},
+				"east": {"uv": [3, 1.5, 4, 4.5], "texture": "#dark_metal"},
+				"south": {"uv": [1.5, 1.5, 4.5, 4.5], "texture": "#dark_metal"},
+				"west": {"uv": [12, 1.5, 13, 4.5], "texture": "#dark_metal"},
+				"up": {"uv": [1.5, 12, 4.5, 13], "texture": "#dark_metal"},
+				"down": {"uv": [1.5, 3, 4.5, 4], "texture": "#dark_metal"}
+			}
+		},
+		{
+			"name": "Cadran_2",
+			"from": [6.5, 11.5, 12],
+			"to": [9.5, 14.5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [6.5, 1.5, 9.5, 4.5], "texture": "#dial"},
+				"east": {"uv": [3, 1.5, 4, 4.5], "texture": "#dark_metal"},
+				"south": {"uv": [6.5, 1.5, 9.5, 4.5], "texture": "#dark_metal"},
+				"west": {"uv": [12, 1.5, 13, 4.5], "texture": "#dark_metal"},
+				"up": {"uv": [6.5, 12, 9.5, 13], "texture": "#dark_metal"},
+				"down": {"uv": [6.5, 3, 9.5, 4], "texture": "#dark_metal"}
+			}
+		},
+		{
+			"name": "Cadran_3",
+			"from": [11.5, 11.5, 12],
+			"to": [14.5, 14.5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [1.5, 1.5, 4.5, 4.5], "texture": "#dial"},
+				"east": {"uv": [3, 1.5, 4, 4.5], "texture": "#dark_metal"},
+				"south": {"uv": [11.5, 1.5, 14.5, 4.5], "texture": "#dark_metal"},
+				"west": {"uv": [12, 1.5, 13, 4.5], "texture": "#dark_metal"},
+				"up": {"uv": [11.5, 12, 14.5, 13], "texture": "#dark_metal"},
+				"down": {"uv": [11.5, 3, 14.5, 4], "texture": "#dark_metal"}
+			}
+		},
+		{
+			"name": "Base_Levier",
+			"from": [6.5, 9, 12],
+			"to": [9.5, 11, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [6.5, 5, 9.5, 7], "texture": "#dark_metal"},
+				"east": {"uv": [3, 5, 4, 7], "texture": "#dark_metal"},
+				"west": {"uv": [12, 5, 13, 7], "texture": "#dark_metal"},
+				"up": {"uv": [6.5, 12, 9.5, 13], "texture": "#dark_metal"},
+				"down": {"uv": [6.5, 3, 9.5, 4], "texture": "#dark_metal"}
+			}
+		},
+		{
+			"name": "Tige_Levier_OFF",
+			"from": [7.5, 11, 12],
+			"to": [8.5, 14, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [7.5, 2, 8.5, 5], "texture": "#contacts"},
+				"east": {"uv": [3, 2, 4, 5], "texture": "#contacts"},
+				"west": {"uv": [12, 2, 13, 5], "texture": "#contacts"}
+			}
+		},
+		{
+			"name": "Poignee_Levier_OFF",
+			"from": [7, 13.5, 11.5],
+			"to": [9, 16.5, 13.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [7, 0, 9, 3], "texture": "#handle"},
+				"east": {"uv": [2.5, 0, 4.5, 3], "texture": "#handle"},
+				"south": {"uv": [7, 0, 9, 3], "texture": "#handle"},
+				"west": {"uv": [11.5, 0, 13.5, 3], "texture": "#handle"},
+				"up": {"uv": [7, 11.5, 9, 13.5], "texture": "#handle"},
+				"down": {"uv": [7, 2.5, 9, 4.5], "texture": "#handle"}
+			}
+		},
+		{
+			"name": "Lumiere_Gauche",
+			"from": [1.5, 8.5, 12.5],
+			"to": [2.5, 9.5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [13.5, 6.5, 14.5, 7.5], "texture": "#light"}
+			}
+		},
+		{
+			"name": "Lumiere_Droite",
+			"from": [13.5, 8.5, 12.5],
+			"to": [14.5, 9.5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [1.5, 6.5, 2.5, 7.5], "texture": "#light"}
+			}
+		},
+		{
+			"name": "Cable_Bas",
+			"from": [2, 1, 12.5],
+			"to": [3, 5, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 8.75, 14]},
+			"faces": {
+				"north": {"uv": [13, 11, 14, 15], "texture": "#wire"},
+				"east": {"uv": [3, 11, 3.5, 15], "texture": "#wire"},
+				"west": {"uv": [12.5, 11, 13, 15], "texture": "#wire"}
+			}
+		}
+	],
+	"groups": [
+		{
+			"name": "group",
+			"origin": [0, 0, 0],
+			"color": 0,
+			"children": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		}
+	]
+}

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:mosinnagant",
-  "name": "MOSINNAGANT",
+  "name": "weapon.zombierool.mosinnagant",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.mosinnagant.lore.0",
+    "weapon.zombierool.mosinnagant.lore.1"
   ],
   "stats": {
     "damage": 9.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 5,
     "max_reserve": 30,
-    "reload_time": 30,
+    "reload_time": 43,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.2
   },
   "pack_a_punch": {
-    "name": "The Old Reliable",
+    "name": "weapon.zombierool.mosinnagant.pap",
     "damage_bonus": 12.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -101,7 +101,7 @@
   "tacz": {
     "gun_id": "hamster:mosin9130",
     "ammo_id": "lesraisins:792x57",
-	"pap_attachments": {
+    "pap_attachments": {
       "scope": "tacz:scope_mk5hd"
     }
   }

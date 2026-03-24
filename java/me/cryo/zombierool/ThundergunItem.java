@@ -6,7 +6,7 @@ import me.cryo.zombierool.entity.DummyEntity;
 import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.entity.ZombieEntity;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.WeaponVfxPacket;
+import me.cryo.zombierool.network.packet.S2CWeaponVfxPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -33,7 +33,7 @@ public class ThundergunItem extends WeaponSystem.BaseGunItem {
         double range = def.stats.range > 0 ? def.stats.range : 15.0;
         
         Vec3 visualStart = getVisualMuzzlePos(player);
-        WeaponVfxPacket packet = new WeaponVfxPacket("THUNDERGUN", visualStart, eyePos.add(lookVec.scale(range)), isPap, false);
+        S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("THUNDERGUN", visualStart, eyePos.add(lookVec.scale(range)), isPap, false);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> player.level().getChunkAt(player.blockPosition())), packet);
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), packet);
 

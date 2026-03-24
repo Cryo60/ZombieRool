@@ -1,14 +1,14 @@
 {
   "id": "zombierool:raygun",
-  "name": "RAYGUN",
+  "name": "weapon.zombierool.raygun",
   "type": "PISTOL",
   "lore": [
-    "Wonder Weapon",
-    "Tir de plasma explosif",
-    "Attention: dégâts de zone au joueur"
+    "weapon.zombierool.raygun.lore.0",
+    "weapon.zombierool.raygun.lore.1",
+    "weapon.zombierool.raygun.lore.2"
   ],
   "stats": {
-    "damage": 10.0,
+    "damage": 40.0,
     "fire_rate": 5,
     "range": 100.0,
     "mobility": 1.0,
@@ -19,7 +19,7 @@
   "ammo": {
     "clip_size": 20,
     "max_reserve": 160,
-    "reload_time": 50,
+    "reload_time": 85,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -41,7 +41,7 @@
     "yaw": 0.1
   },
   "pack_a_punch": {
-    "name": "Laser Pistol-Z",
+    "name": "weapon.zombierool.raygun.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 20,
     "reserve_bonus": 80,
@@ -80,9 +80,9 @@
   },
   "explosion": {
     "radius": 2.5,
-    "damage_multiplier": 0.05,
+    "damage_multiplier": 1.0,
     "self_damage_multiplier": 0.1,
-    "self_damage_cap": 14.0,
+    "self_damage_cap": 2.0,
     "knockback": 0.0,
     "vfx_type": "RAYGUN_IMPACT",
     "sound": "",

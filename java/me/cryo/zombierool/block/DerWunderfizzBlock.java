@@ -1,10 +1,8 @@
 package me.cryo.zombierool.block;
-
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,72 +26,46 @@ import net.minecraft.world.Containers;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.util.StringRepresentable;
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
-
 import java.util.List;
 import java.util.Collections;
 
 public class DerWunderfizzBlock extends Block implements EntityBlock {
 	public static final BooleanProperty POWERED = BooleanProperty.create("powered");
 	public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
-	public static final EnumProperty<WunderfizzPerk> PERK_TYPE = EnumProperty.create("perk_type", WunderfizzPerk.class);
+    public static final EnumProperty<WunderfizzPerkType> PERK_TYPE = EnumProperty.create("perk_type", WunderfizzPerkType.class);
+
+    public enum WunderfizzPerkType implements StringRepresentable {
+        IDLE("idle"), JUGGERNOG("juggernog"), SPEED_COLA("speed_cola"),
+        DOUBLE_TAP("double_tap"), ROYAL_BEER("royal_beer"), BLOOD_RAGE("blood_rage"),
+        PHD_FLOPPER("phd_flopper"), CHERRY("cherry"), QUICK_REVIVE("quick_revive"),
+        VULTURE("vulture"), MULE_KICK("mule_kick");
+
+        private final String name;
+        WunderfizzPerkType(String name) { this.name = name; }
+        @Override public String getSerializedName() { return this.name; }
+
+        public static WunderfizzPerkType fromString(String name) {
+            for (WunderfizzPerkType type : values()) if (type.name.equals(name)) return type;
+            return IDLE;
+        }
+    }
 
 	private static final VoxelShape SHAPE = Shapes.or(
 		box(0, 0, 0, 16, 16, 16),  
 		box(0, 16, 0, 16, 32, 16)  
 	);
 
-	public enum WunderfizzPerk implements StringRepresentable {
-		IDLE("idle"),
-		MASTODONTE("mastodonte"),
-		SPEED_COLA("speed_cola"),
-		DOUBLE_TAPE("double_tape"),
-		ROYAL_BEER("royal_beer"),
-		BLOOD_RAGE("blood_rage"),
-		PHD_FLOPPER("phd_flopper"),
-		CHERRY("cherry"),
-		QUICK_REVIVE("quick_revive"),
-		VULTURE("vulture"),
-        CUSTOM("custom");
-
-		private final String name;
-
-		WunderfizzPerk(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public String getSerializedName() {
-			return this.name;
-		}
-
-		public static WunderfizzPerk fromString(String str) {
-			if (str == null || str.isEmpty()) return IDLE;
-			for (WunderfizzPerk type : values()) {
-				if (type.name.equals(str)) return type;
-			}
-			return CUSTOM;
-		}
-
-		public static WunderfizzPerk fromIndex(int index) {
-			if (index <= 0 || index >= values().length) return IDLE;
-			return values()[index];
-		}
-
-		public int toIndex() {
-			return this.ordinal();
-		}
-	}
-
 	public DerWunderfizzBlock() {
 	    super(BlockBehaviour.Properties.of().sound(SoundType.METAL).strength(-1, 3600000).noOcclusion().isRedstoneConductor((bs, br, bp) -> false));
 	    this.registerDefaultState(this.stateDefinition.any()
 	        .setValue(FACING, Direction.NORTH)
-	        .setValue(PERK_TYPE, WunderfizzPerk.IDLE)
-	        .setValue(POWERED, false)); 
+	        .setValue(POWERED, false)
+            .setValue(PERK_TYPE, WunderfizzPerkType.IDLE)); 
 	}
 
 	@Override
@@ -118,30 +90,13 @@ public class DerWunderfizzBlock extends Block implements EntityBlock {
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-	    builder.add(FACING, PERK_TYPE, POWERED); 
+	    builder.add(FACING, POWERED, PERK_TYPE); 
 	}
 
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
 		return this.defaultBlockState()
-			.setValue(FACING, context.getHorizontalDirection().getOpposite())
-			.setValue(PERK_TYPE, WunderfizzPerk.IDLE);
-	}
-
-	public static void updatePerkType(Level level, BlockPos pos, String perkId) {
-		BlockState state = level.getBlockState(pos);
-		if (state.getBlock() instanceof DerWunderfizzBlock) {
-			WunderfizzPerk newType = WunderfizzPerk.fromString(perkId);
-			level.setBlock(pos, state.setValue(PERK_TYPE, newType), 3);
-		}
-	}
-
-	public static void updatePerkTypeByIndex(Level level, BlockPos pos, int index) {
-		BlockState state = level.getBlockState(pos);
-		if (state.getBlock() instanceof DerWunderfizzBlock) {
-			WunderfizzPerk newType = WunderfizzPerk.fromIndex(index);
-			level.setBlock(pos, state.setValue(PERK_TYPE, newType), 3);
-		}
+			.setValue(FACING, context.getHorizontalDirection().getOpposite());
 	}
 
 	public BlockState rotate(BlockState state, Rotation rot) {
@@ -224,11 +179,19 @@ public class DerWunderfizzBlock extends Block implements EntityBlock {
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		return level.isClientSide ? null : (lvl, pos, st, blockEntity) -> {
-			if (blockEntity instanceof DerWunderfizzBlockEntity entity) {
-				DerWunderfizzBlockEntity.tick(lvl, pos, st, entity);
-			}
-		};
+        if (level.isClientSide) {
+            return (lvl, pos, st, blockEntity) -> {
+                if (blockEntity instanceof DerWunderfizzBlockEntity entity) {
+                    DerWunderfizzBlockEntity.clientTick(lvl, pos, st, entity);
+                }
+            };
+        } else {
+            return (lvl, pos, st, blockEntity) -> {
+                if (blockEntity instanceof DerWunderfizzBlockEntity entity) {
+                    DerWunderfizzBlockEntity.tick(lvl, pos, st, entity);
+                }
+            };
+        }
 	}
 
 	@Override

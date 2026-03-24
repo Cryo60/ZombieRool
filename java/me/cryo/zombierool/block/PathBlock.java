@@ -16,7 +16,6 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -34,11 +33,11 @@ public class PathBlock extends AbstractTechnicalBlock {
 
     @Override
     protected void addTechnicalTooltip(List<Component> list) {
-        list.add(Component.literal(getTranslatedMessage("§9Chemin des Zombies", "§9Zombie Path")));
-        list.add(Component.literal(getTranslatedMessage("§7Définit les zones où les zombies peuvent se déplacer.", "§7Defines areas where zombies can move.")));
-        list.add(Component.literal(getTranslatedMessage("§7Si un joueur peut atteindre un endroit, les zombies le peuvent aussi.", "§7If a player can reach a location, zombies can follow.")));
-        list.add(Component.literal(getTranslatedMessage("§7Agit comme une 'zone jouable' pour les entités hostiles.", "§7Acts as a 'playable zone' for hostile entities.")));
-        list.add(Component.literal(getTranslatedMessage("§7Invisible et non-collidable pour les joueurs en mode Survie.", "§7Invisible and non-collidable for players in Survival mode.")));
+        list.add(Component.translatable("block.zombierool.path.tooltip.1"));
+        list.add(Component.translatable("block.zombierool.path.tooltip.2"));
+        list.add(Component.translatable("block.zombierool.path.tooltip.3"));
+        list.add(Component.translatable("block.zombierool.path.tooltip.4"));
+        list.add(Component.translatable("block.zombierool.path.tooltip.5"));
     }
 
     @Override

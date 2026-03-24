@@ -1,11 +1,11 @@
 {
   "id": "zombierool:galil",
-  "name": "GALIL",
+  "name": "weapon.zombierool.galil",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Tire des fireballs si améliorée",
-    "Statistiques importées"
+    "weapon.zombierool.galil.lore.0",
+    "weapon.zombierool.galil.lore.1",
+    "weapon.zombierool.galil.lore.2"
   ],
   "stats": {
     "damage": 9.0,
@@ -41,7 +41,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "Lamentation",
+    "name": "weapon.zombierool.galil.pap",
     "damage_bonus": 14.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

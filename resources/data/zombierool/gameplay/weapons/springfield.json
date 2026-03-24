@@ -1,10 +1,10 @@
 {
   "id": "zombierool:springfield",
-  "name": "SPRINGFIELD",
+  "name": "weapon.zombierool.springfield",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.springfield.lore.0",
+    "weapon.zombierool.springfield.lore.1"
   ],
   "stats": {
     "damage": 6.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 5,
     "max_reserve": 40,
-    "reload_time": 48,
+    "reload_time": 30,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.9
   },
   "pack_a_punch": {
-    "name": "L'Esprit de '76",
+    "name": "weapon.zombierool.springfield.pap",
     "damage_bonus": 4.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -101,7 +101,7 @@
   "tacz": {
     "gun_id": "hamster:m1903",
     "ammo_id": "lesraisins:792x57",
-	"pap_attachments": {
+    "pap_attachments": {
       "scope": "tacz:scope_mk5hd"
     }
   }

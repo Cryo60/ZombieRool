@@ -8,12 +8,14 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 import me.cryo.zombierool.client.gui.SecretConsoleScreen;
-
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -66,13 +68,28 @@ public class SecretMapManager {
                     deleteDirectory(secretMap);
                     System.out.println("[ZombieRool] Deleted temporary secret map directory.");
                 }
+                File copyMap = new File(Minecraft.getInstance().gameDirectory, "saves/temp_zr_copy");
+                if (copyMap.exists()) {
+                    deleteDirectory(copyMap);
+                    System.out.println("[ZombieRool] Deleted temporary copied map directory.");
+                }
             }
         }
 
         @SubscribeEvent
         public static void onCharTyped(ScreenEvent.CharacterTyped.Pre event) {
-            if (Minecraft.getInstance().level == null) {
-                if (event.getCodePoint() == '²') {
+            if (event.getCodePoint() == '²') {
+                if (!(event.getScreen() instanceof SecretConsoleScreen)) {
+                    Minecraft.getInstance().setScreen(new SecretConsoleScreen(event.getScreen()));
+                }
+                event.setCanceled(true);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
+            if (event.getKeyCode() == GLFW.GLFW_KEY_GRAVE_ACCENT || event.getKeyCode() == 161 || event.getKeyCode() == GLFW.GLFW_KEY_BACKSLASH) {
+                if (!(event.getScreen() instanceof SecretConsoleScreen)) {
                     Minecraft.getInstance().setScreen(new SecretConsoleScreen(event.getScreen()));
                     event.setCanceled(true);
                 }
@@ -80,13 +97,11 @@ public class SecretMapManager {
         }
 
         @SubscribeEvent
-        public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
-            if (Minecraft.getInstance().level == null) {
-                if (event.getKeyCode() == GLFW.GLFW_KEY_GRAVE_ACCENT || event.getKeyCode() == 161 || event.getKeyCode() == GLFW.GLFW_KEY_BACKSLASH) {
-                    if (!(event.getScreen() instanceof SecretConsoleScreen)) {
-                        Minecraft.getInstance().setScreen(new SecretConsoleScreen(event.getScreen()));
-                        event.setCanceled(true);
-                    }
+        public static void onKeyInput(InputEvent.Key event) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen == null && event.getAction() == GLFW.GLFW_PRESS) {
+                if (event.getKey() == GLFW.GLFW_KEY_GRAVE_ACCENT || event.getKey() == 161 || event.getKey() == GLFW.GLFW_KEY_BACKSLASH) {
+                    mc.setScreen(new SecretConsoleScreen(null));
                 }
             }
         }
@@ -95,21 +110,19 @@ public class SecretMapManager {
     @OnlyIn(Dist.CLIENT)
     public static void loadSecretMap(String mapId, boolean isSurvival, SecretConsoleScreen console) {
         String rawInput = mapId.trim();
-
         if (!rawInput.toLowerCase(Locale.ROOT).startsWith("zr_")) {
-            console.addLog("§cError: The map name MUST start with 'zr_' (e.g., 'map zr_prototype').");
+            console.addLog(Component.translatable("gui.zombierool.console.err_prefix").withStyle(ChatFormatting.RED));
             return;
         }
 
         Minecraft mc = Minecraft.getInstance();
         File savesDir = new File(mc.gameDirectory, "saves");
-        
         String folderName = isSurvival ? "temp_zr_secret" : rawInput;
         File targetDir = new File(savesDir, folderName);
 
         if (!isSurvival && targetDir.exists() && new File(targetDir, "level.dat").exists()) {
-            console.addLog("§eDevmap: Folder '" + folderName + "' already exists.");
-            console.addLog("§eLoading directly to preserve your modifications...");
+            console.addLog(Component.translatable("gui.zombierool.console.devmap_exists", folderName).withStyle(ChatFormatting.YELLOW));
+            console.addLog(Component.translatable("gui.zombierool.console.devmap_load").withStyle(ChatFormatting.YELLOW));
             launchMap(mc, console, folderName, false);
             return;
         }
@@ -134,14 +147,14 @@ public class SecretMapManager {
         }
 
         if (foundStream == null) {
-            console.addLog("§cError: Map file for '" + rawInput + "' not found in assets.");
+            console.addLog(Component.translatable("gui.zombierool.console.err_notfound", rawInput).withStyle(ChatFormatting.RED));
             return;
         }
 
         final InputStream is = foundStream;
         final String finalMatchedName = matchedName;
 
-        console.addLog("§eExtracting map data from " + finalMatchedName + " (Please wait)...");
+        console.addLog(Component.translatable("gui.zombierool.console.extracting", finalMatchedName).withStyle(ChatFormatting.YELLOW));
 
         new Thread(() -> {
             try {
@@ -154,6 +167,13 @@ public class SecretMapManager {
                     ZipEntry entry;
                     while ((entry = zis.getNextEntry()) != null) {
                         File file = new File(targetDir, entry.getName());
+                        String canonicalDestPath = targetDir.getCanonicalPath();
+                        String canonicalFilePath = file.getCanonicalPath();
+
+                        if (!canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
+                            throw new Exception("Zip Slip detected: " + entry.getName());
+                        }
+
                         if (entry.isDirectory()) {
                             file.mkdirs();
                         } else {
@@ -178,13 +198,12 @@ public class SecretMapManager {
                 }
 
                 mc.execute(() -> {
-                    console.addLog("§aExtraction complete. Launching map...");
+                    console.addLog(Component.translatable("gui.zombierool.console.extracted").withStyle(ChatFormatting.GREEN));
                     launchMap(mc, console, folderName, isSurvival);
                 });
-
             } catch (Exception e) {
                 mc.execute(() -> {
-                    console.addLog("§cException: " + e.getMessage());
+                    console.addLog(Component.literal("§cException: " + e.getMessage()));
                     e.printStackTrace();
                 });
             }

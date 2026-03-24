@@ -1,10 +1,10 @@
 {
   "id": "zombierool:kar98k",
-  "name": "KAR98K",
+  "name": "weapon.zombierool.kar98k",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.kar98k.lore.0",
+    "weapon.zombierool.kar98k.lore.1"
   ],
   "stats": {
     "damage": 4.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 5,
     "max_reserve": 50,
-    "reload_time": 40,
+    "reload_time": 28,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 1.0
   },
   "pack_a_punch": {
-    "name": "The German Precision",
+    "name": "weapon.zombierool.kar98k.pap",
     "damage_bonus": 5.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -100,7 +100,7 @@
   ],
   "tacz": {
     "gun_id": "ww:kar98k",
-	"pap_attachments": {
+    "pap_attachments": {
       "scope": "tacz:scope_mk5hd"
     }
   }

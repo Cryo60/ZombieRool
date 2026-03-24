@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/corenexus",
-    "particle": "zombierool:block/corenexus"
-  },
-  "render_type": "solid"
-}

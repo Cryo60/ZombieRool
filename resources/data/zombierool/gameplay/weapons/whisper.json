@@ -1,11 +1,11 @@
 {
   "id": "zombierool:whisper",
-  "name": "Whisper",
+  "name": "weapon.zombierool.whisper",
   "type": "PISTOL",
   "lore": [
-    "Dégâts immenses sur la dernière balle",
-    "Munitions infinies",
-    "La perfection n'a besoin que de 4 actes."
+    "weapon.zombierool.whisper.lore.0",
+    "weapon.zombierool.whisper.lore.1",
+    "weapon.zombierool.whisper.lore.2"
   ],
   "stats": {
     "damage": 18.0,
@@ -19,7 +19,7 @@
   "ammo": {
     "clip_size": 4,
     "max_reserve": 0,
-    "reload_time": 40,
+    "reload_time": 19,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -41,7 +41,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "SILENT DEATH",
+    "name": "weapon.zombierool.whisper.pap",
     "damage_bonus": 18.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

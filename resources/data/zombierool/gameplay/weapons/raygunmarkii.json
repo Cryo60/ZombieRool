@@ -1,11 +1,11 @@
 {
   "id": "zombierool:raygunmarkii",
-  "name": "Raygun-MK2",
+  "name": "weapon.zombierool.raygunmarkii",
   "type": "PISTOL",
   "lore": [
-    "Wonder Weapon",
-    "Faisceau laser perçant",
-    "Tir en rafale de 3"
+    "weapon.zombierool.raygunmarkii.lore.0",
+    "weapon.zombierool.raygunmarkii.lore.1",
+    "weapon.zombierool.raygunmarkii.lore.2"
   ],
   "stats": {
     "damage": 15.0,
@@ -19,7 +19,7 @@
   "ammo": {
     "clip_size": 21,
     "max_reserve": 162,
-    "reload_time": 70,
+    "reload_time": 68,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -41,7 +41,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "Raygun Mark II (Diodes of Death)",
+    "name": "weapon.zombierool.raygunmarkii.pap",
     "damage_bonus": 25.0,
     "clip_bonus": 21,
     "reserve_bonus": 81,

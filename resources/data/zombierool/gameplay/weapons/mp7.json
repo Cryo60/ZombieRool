@@ -1,10 +1,10 @@
 {
   "id": "zombierool:mp7",
-  "name": "MP7",
+  "name": "weapon.zombierool.mp7",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.mp7.lore.0",
+    "weapon.zombierool.mp7.lore.1"
   ],
   "stats": {
     "damage": 8.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 50,
     "max_reserve": 500,
-    "reload_time": 45,
+    "reload_time": 48,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.1
   },
   "pack_a_punch": {
-    "name": "The Iron Curtain",
+    "name": "weapon.zombierool.mp7.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -93,8 +93,8 @@
     "germany",
     "light",
     "smg",
-	"tacz",
-	"tacz_ronmc"
+    "tacz",
+    "tacz_ronmc"
   ],
   "tacz": {
     "gun_id": "ronmc:mp7",

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:ppsh41",
-  "name": "PPSH41",
+  "name": "weapon.zombierool.ppsh41",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.ppsh41.lore.0",
+    "weapon.zombierool.ppsh41.lore.1"
   ],
   "stats": {
     "damage": 7.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 50,
     "max_reserve": 284,
-    "reload_time": 70,
+    "reload_time": 44,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.25
   },
   "pack_a_punch": {
-    "name": "Drum Demon",
+    "name": "weapon.zombierool.ppsh41.pap",
     "damage_bonus": 13.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

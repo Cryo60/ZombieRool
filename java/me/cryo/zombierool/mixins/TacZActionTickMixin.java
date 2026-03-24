@@ -14,23 +14,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LivingEntityBolt.class)
 public abstract class TacZActionTickMixin {
-    
+
     @Shadow(remap = false)
     protected LivingEntity shooter;
-    
+
     @Shadow(remap = false)
     protected ShooterDataHolder data;
-    
+
     @Inject(method = "tickBolt", at = @At("HEAD"), remap = false)
     private void zombierool_accelerateBoltPumpAction(CallbackInfo ci) {
         if (this.shooter == null || this.data == null || !this.data.isBolting) return;
+
         if (this.data.currentGunItem == null) return;
-        
         ItemStack gunItem = this.data.currentGunItem.get();
         if (gunItem == null || gunItem.isEmpty()) return;
+
         if (!WeaponFacade.isTaczWeapon(gunItem)) return;
-        
-        boolean hasDoubleTap = this.shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAPE.get());
+
+        boolean hasDoubleTap = this.shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get());
         if (hasDoubleTap) {
             this.data.boltTimestamp -= 25;
         }

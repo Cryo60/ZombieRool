@@ -1,10 +1,10 @@
 {
   "id": "zombierool:uzi",
-  "name": "UZI",
+  "name": "weapon.zombierool.uzi",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.uzi.lore.0",
+    "weapon.zombierool.uzi.lore.1"
   ],
   "stats": {
     "damage": 3.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 32,
     "max_reserve": 160,
-    "reload_time": 45,
+    "reload_time": 63,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "Mini Chopper",
+    "name": "weapon.zombierool.uzi.pap",
     "damage_bonus": 6.5,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,12 +94,12 @@
     "light",
     "modern",
     "smg",
-	"tacz",
-	"tacz_tacz"
+    "tacz",
+    "tacz_tacz"
   ],
   "tacz": {
     "gun_id": "tacz:uzi",
-	"pap_attachments": {
+    "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }

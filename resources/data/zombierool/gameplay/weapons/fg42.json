@@ -1,10 +1,10 @@
 {
   "id": "zombierool:fg42",
-  "name": "FG42",
+  "name": "weapon.zombierool.fg42",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.fg42.lore.0",
+    "weapon.zombierool.fg42.lore.1"
   ],
   "stats": {
     "damage": 14.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 20,
     "max_reserve": 160,
-    "reload_time": 65,
+    "reload_time": 48,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.4
   },
   "pack_a_punch": {
-    "name": "Elite Killer",
+    "name": "weapon.zombierool.fg42.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

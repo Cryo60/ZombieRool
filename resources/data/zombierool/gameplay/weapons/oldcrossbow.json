@@ -1,10 +1,10 @@
 {
   "id": "zombierool:oldcrossbow",
-  "name": "OLDCROSSBOW",
+  "name": "weapon.zombierool.oldcrossbow",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.oldcrossbow.lore.0",
+    "weapon.zombierool.oldcrossbow.lore.1"
   ],
   "stats": {
     "damage": 12.0,
@@ -40,7 +40,7 @@
     "yaw": 0.0
   },
   "pack_a_punch": {
-    "name": "The Thunderclap",
+    "name": "weapon.zombierool.oldcrossbow.pap",
     "damage_bonus": 20.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

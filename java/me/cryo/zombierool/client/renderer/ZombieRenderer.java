@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.vertex.PoseStack;
 import me.cryo.zombierool.entity.ZombieEntity;
@@ -15,6 +14,7 @@ import me.cryo.zombierool.client.model.ModelZombieArmsFront;
 import me.cryo.zombierool.core.manager.DynamicResourceManager;
 
 public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
+
     private static final ResourceLocation[] ZOMBIE_SKINS = {
         new ResourceLocation("zombierool", "textures/entities/zombie_32_0.png"),
         new ResourceLocation("zombierool", "textures/entities/zombie_32_1.png"),
@@ -22,24 +22,44 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
         new ResourceLocation("zombierool", "textures/entities/zombie_32_3.png"),
         new ResourceLocation("zombierool", "textures/entities/zombie_32_4.png")
     };
+
     private static final ResourceLocation EYE_TEXTURE_DEFAULT = new ResourceLocation("zombierool", "textures/entities/zombie_e_32.png");
     private static ResourceLocation currentEyeTexture = EYE_TEXTURE_DEFAULT; 
 
     public ZombieRenderer(EntityRendererProvider.Context context) {
         super(context, new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5f);
+        
         this.addLayer(new HumanoidArmorLayer<>(
             this,
             new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE_INNER_ARMOR)),
             new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE_OUTER_ARMOR)),
             context.getModelManager()
         ));
+
         this.addLayer(new EyesLayer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>>(this) {
             @Override
             public RenderType renderType() {
                 return RenderType.eyes(currentEyeTexture);
             }
+            
+            @Override
+            public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, ZombieEntity pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
+                ResourceLocation customEye = DynamicResourceManager.getClientSkin("zombie_eyes", pLivingEntity.getCustomSkin());
+                RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(currentEyeTexture);
+                com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);
+                this.getParentModel().renderToBuffer(pMatrixStack, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            }
         });
+        
         this.addLayer(new EmissivePumpkinHeadLayer<>(this));
+    }
+
+    @Override
+    protected void scale(ZombieEntity entity, PoseStack poseStack, float partialTickTime) {
+        float s = entity.getScale();
+        if (s != 1.0f) {
+            poseStack.scale(s, s, s);
+        }
     }
 
     @Override
@@ -49,6 +69,7 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             ResourceLocation dyn = DynamicResourceManager.getClientSkin("zombie", customSkin);
             if (dyn != null) return dyn;
         }
+
         int skinIndex = Math.abs(entity.getId() % ZOMBIE_SKINS.length);
         return ZOMBIE_SKINS[skinIndex];
     }
@@ -56,12 +77,15 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     @Override
     public void render(ZombieEntity entity, float yaw, float partialTicks, PoseStack matrixStack,
                        MultiBufferSource buffer, int packedLight) {
+                       
        if (entity.isDeadOrDying() && entity.isHeadshotDeath()) {
             boolean headVisible = this.model.head.visible;
             boolean hatVisible = this.model.hat.visible;
             this.model.head.visible = false;
             this.model.hat.visible = false;
+            
             super.render(entity, yaw, partialTicks, matrixStack, buffer, packedLight);
+            
             this.model.head.visible = headVisible;
             this.model.hat.visible = hatVisible;
         } else {

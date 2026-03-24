@@ -1,10 +1,10 @@
 {
   "id": "zombierool:needler",
-  "name": "NEEDLER",
+  "name": "weapon.zombierool.needler",
   "type": "RIFLE",
   "lore": [
-    "Arme à guidage",
-    "Statistiques importées"
+    "weapon.zombierool.needler.lore.0",
+    "weapon.zombierool.needler.lore.1"
   ],
   "stats": {
     "damage": 2.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 26,
     "max_reserve": 182,
-    "reload_time": 35,
+    "reload_time": 33,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.05
   },
   "pack_a_punch": {
-    "name": "Pink Mist Maker",
+    "name": "weapon.zombierool.needler.pap",
     "damage_bonus": 2.0,
     "clip_bonus": 10,
     "reserve_bonus": 100,

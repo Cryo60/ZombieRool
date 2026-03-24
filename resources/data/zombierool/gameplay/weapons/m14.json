@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m14",
-  "name": "M14",
+  "name": "weapon.zombierool.m14",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m14.lore.0",
+    "weapon.zombierool.m14.lore.1"
   ],
   "stats": {
     "damage": 6.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 64,
-    "reload_time": 40,
+    "reload_time": 65,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Enhanced Marksman",
+    "name": "weapon.zombierool.m14.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

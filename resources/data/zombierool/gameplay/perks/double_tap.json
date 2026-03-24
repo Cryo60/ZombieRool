@@ -1,0 +1,11 @@
+{
+  "id": "double_tap",
+  "name": "perk.zombierool.double_tap.name",
+  "texture_path": "zombierool:textures/block/perks/perks_double_tap.png",
+  "skin_texture": "zombierool:double_tap_skin",
+  "sign_texture": "zombierool:double_tap_sign",
+  "effect_id": "zombierool:perks_effect_double_tap",
+  "duration": 2147483647,
+  "amplifier": 0,
+  "description": "perk.zombierool.double_tap.desc"
+}

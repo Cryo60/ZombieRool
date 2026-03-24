@@ -1,10 +1,10 @@
 {
   "id": "zombierool:covenantcarbine",
-  "name": "COVENANTCARBINE",
+  "name": "weapon.zombierool.covenantcarbine",
   "type": "HITSCAN",
   "lore": [
-    "Arme Covenant",
-    "Tirs lasers précis"
+    "weapon.zombierool.covenantcarbine.lore.0",
+    "weapon.zombierool.covenantcarbine.lore.1"
   ],
   "stats": {
     "damage": 9.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 18,
     "max_reserve": 108,
-    "reload_time": 40,
+    "reload_time": 57,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "Refuter",
+    "name": "weapon.zombierool.covenantcarbine.pap",
     "damage_bonus": 3.5,
     "clip_bonus": 18,
     "reserve_bonus": 108,
@@ -93,8 +93,8 @@
     "halo",
     "medium",
     "sci_fi",
-	"tacz",
-	"tacz_halor6"
+    "tacz",
+    "tacz_halor6"
   ],
   "tacz": {
     "gun_id": "halor6:type-57b_carbine"

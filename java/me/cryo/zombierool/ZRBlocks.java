@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import me.cryo.zombierool.core.block.ZRSandbagBlock;
+
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ZRBlocks {
 	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, ZombieroolMod.MODID);
@@ -26,9 +28,10 @@ public class ZRBlocks {
 	public static final List<ResourceLocation> ITEM_IDS = new ArrayList<>();
 	public static final List<RegistryObject<Block>> CUTOUT_BLOCKS = new ArrayList<>();
 
-	public static final RegistryObject<Block> DEFENSE_DOOR = registerBlock("defense_door", DefenseDoorSystem.DefenseDoorBlock::new);
+	public static final RegistryObject<Block> DEFENSE_DOOR = registerTallBlock("defense_door", DefenseDoorSystem.DefenseDoorBlock::new);
 	public static final RegistryObject<Block> STORAGE_BOX = registerBlock("storage_box", () -> new ZRDecorativeBlock(SoundType.WOOD, ZRDecorativeBlock.ShapeType.FULL, true));
 	public static final RegistryObject<Block> DEFENSE_DOOR_OPENED = registerBlockNoItem("defense_door_opened", DefenseDoorSystem.DefenseDoorOpenedBlock::new);
+	public static final RegistryObject<Block> SANDBAGS = registerBlock("sandbags", () -> new ZRSandbagBlock(SoundType.GRAVEL));
 	
     // AJOUT DU BLOC METEORITE ICI
     public static final RegistryObject<Block> METEORITE = registerBlock("meteorite", MeteoriteEasterEgg.MeteoriteBlock::new);
@@ -93,6 +96,13 @@ public class ZRBlocks {
 
 	private static void registerDirectional(String name, SoundType sound) {
 	    registerBlock(name, () -> new ZRDirectionalBlock(sound));
+	}
+
+	private static <T extends Block> RegistryObject<T> registerTallBlock(String name, Supplier<T> blockFactory) {
+	    RegistryObject<T> block = BLOCKS.register(name, blockFactory);
+	    ITEMS.register(name, () -> new net.minecraft.world.item.DoubleHighBlockItem(block.get(), new Item.Properties()));
+	    ITEM_IDS.add(new ResourceLocation(ZombieroolMod.MODID, name));
+	    return block;
 	}
 
 	private static void registerAllContent() {
@@ -167,7 +177,6 @@ public class ZRBlocks {
 	    registerCarpet("soul_lichen", SoundType.VINE);
 	    registerDirectional("machine_block", SoundType.METAL);
 	    registerDirectional("modern_furnace", SoundType.METAL);
-	    registerDirectional("sandbags", SoundType.GRAVEL);
 	    registerSimple("darkbrickvariation", SoundType.STONE, false);
 	    registerSimple("opaque_leaves", SoundType.GRASS, false);
 	    registerSimple("eye_oak", SoundType.WOOD, false);

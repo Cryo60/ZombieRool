@@ -1,10 +1,10 @@
 {
   "id": "zombierool:ump45",
-  "name": "UMP45",
+  "name": "weapon.zombierool.ump45",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.ump45.lore.0",
+    "weapon.zombierool.ump45.lore.1"
   ],
   "stats": {
     "damage": 6.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 32,
     "max_reserve": 192,
-    "reload_time": 55,
+    "reload_time": 64,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Ripper",
+    "name": "weapon.zombierool.ump45.pap",
     "damage_bonus": 9.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -100,7 +100,7 @@
   "tacz": {
     "gun_id": "tacz:ump45",
     "ammo_id": "tacz:9mm",
-	"pap_attachments": {
+    "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
     }
   }

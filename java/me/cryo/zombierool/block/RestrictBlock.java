@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
@@ -24,47 +23,32 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.network.chat.Component; 
 import net.minecraft.world.item.TooltipFlag; 
-import net.minecraft.client.Minecraft; 
-
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.client.LinkRenderer;
 
 public class RestrictBlock extends Block {
-
     public RestrictBlock() {
         super(BlockBehaviour.Properties.of()
-            .sound(SoundType.EMPTY)
-            .strength(-1, 3600000)
-            .noOcclusion() 
-            .isSuffocating((state, world, pos) -> false)
-            .isViewBlocking((state, world, pos) -> false)
-            .lightLevel(state -> 0)
-            .noLootTable()
+                .sound(SoundType.EMPTY)
+                .strength(-1, 3600000)
+                .noOcclusion() 
+                .isSuffocating((state, world, pos) -> false)
+                .isViewBlocking((state, world, pos) -> false)
+                .lightLevel(state -> 0)
+                .noLootTable()
         );
-    }
-
-    private static boolean isEnglishClient() {
-        if (Minecraft.getInstance() == null) {
-            return false;
-        }
-        return Minecraft.getInstance().options.languageCode.startsWith("en");
-    }
-
-    private static String getTranslatedMessage(String frenchMessage, String englishMessage) {
-        return isEnglishClient() ? englishMessage : frenchMessage;
     }
 
     @Override
     public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
         super.appendHoverText(itemstack, world, list, flag);
-        list.add(Component.literal(getTranslatedMessage("§9Bloc de Restriction", "§9Restriction Block")));
-        list.add(Component.literal(getTranslatedMessage("§7Empêche toutes les entités de passer à travers.", "§7Prevents all entities from passing through.")));
-        list.add(Component.literal(getTranslatedMessage("§7Invisible et non-collidable pour les joueurs en mode Survie (sauf projectiles).", "§7Invisible and non-collidable for players in Survival mode (except projectiles).")));
+        list.add(Component.translatable("block.zombierool.restrict.tooltip.1"));
+        list.add(Component.translatable("block.zombierool.restrict.tooltip.2"));
+        list.add(Component.translatable("block.zombierool.restrict.tooltip.3"));
     }
 
     @Override

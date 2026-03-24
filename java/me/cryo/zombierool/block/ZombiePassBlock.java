@@ -1,5 +1,4 @@
 package me.cryo.zombierool.block;
-
 import me.cryo.zombierool.WorldConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -18,28 +17,27 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-
 import java.util.Collections;
 import java.util.List;
 
 public class ZombiePassBlock extends AbstractTechnicalBlock {
     public ZombiePassBlock() {
         super(BlockBehaviour.Properties.of()
-            .instrument(NoteBlockInstrument.BASEDRUM)
-            .sound(SoundType.EMPTY)
-            .strength(-1, 3600000)
-            .noOcclusion()
-            .isSuffocating((state, world, pos) -> false)
-            .isViewBlocking((state, world, pos) -> false)
+                .instrument(NoteBlockInstrument.BASEDRUM)
+                .sound(SoundType.EMPTY)
+                .strength(-1, 3600000)
+                .noOcclusion()
+                .isSuffocating((state, world, pos) -> false)
+                .isViewBlocking((state, world, pos) -> false)
         );
     }
 
     @Override
     protected void addTechnicalTooltip(List<Component> list) {
-        list.add(Component.literal(getTranslatedMessage("§9Bloc de Passage Zombie", "§9Zombie Pass Block")));
-        list.add(Component.literal(getTranslatedMessage("§7Bloque les joueurs en mode Survie.", "§7Blocks players in Survival mode.")));
-        list.add(Component.literal(getTranslatedMessage("§7Laisse passer les entités hostiles (zombies, etc.).", "§7Allows hostile entities (zombies, etc.) to pass through.")));
-        list.add(Component.literal(getTranslatedMessage("§7Invisible en mode Survie.", "§7Invisible in Survival mode.")));
+        list.add(Component.translatable("block.zombierool.zombie_pass.tooltip.1"));
+        list.add(Component.translatable("block.zombierool.zombie_pass.tooltip.2"));
+        list.add(Component.translatable("block.zombierool.zombie_pass.tooltip.3"));
+        list.add(Component.translatable("block.zombierool.zombie_pass.tooltip.4"));
     }
 
     @Override

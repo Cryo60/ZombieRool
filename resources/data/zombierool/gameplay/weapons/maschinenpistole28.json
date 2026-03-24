@@ -1,10 +1,10 @@
 {
   "id": "zombierool:maschinenpistole28",
-  "name": "MP28",
+  "name": "weapon.zombierool.maschinenpistole28",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.maschinenpistole28.lore.0",
+    "weapon.zombierool.maschinenpistole28.lore.1"
   ],
   "stats": {
     "damage": 8.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 24,
     "max_reserve": 144,
-    "reload_time": 70,
+    "reload_time": 21,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.6
   },
   "pack_a_punch": {
-    "name": "The Rustic Machine Gun",
+    "name": "weapon.zombierool.maschinenpistole28.pap",
     "damage_bonus": 9.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -93,8 +93,8 @@
     "light",
     "pistol",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:mp28"

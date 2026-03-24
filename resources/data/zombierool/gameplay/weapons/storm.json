@@ -1,10 +1,10 @@
 {
   "id": "zombierool:storm",
-  "name": "Storm",
+  "name": "weapon.zombierool.storm",
   "type": "STORM",
   "lore": [
-    "Arme à accélération",
-    "Surchauffe possible"
+    "weapon.zombierool.storm.lore.0",
+    "weapon.zombierool.storm.lore.1"
   ],
   "stats": {
     "damage": 5.0,
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "Rainmaker",
+    "name": "weapon.zombierool.storm.pap",
     "damage_bonus": 8.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

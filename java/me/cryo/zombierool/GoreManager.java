@@ -1,7 +1,7 @@
 package me.cryo.zombierool.core.manager;
 
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.SyncGorePacket;
+import me.cryo.zombierool.network.S2CSyncGorePacket;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -51,6 +51,7 @@ public class GoreManager {
             serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.defaultBlockState()),
                     entity.getX(), entity.getEyeY(), entity.getZ(),
                     60, 0.25, 0.25, 0.25, 0.15);
+
             serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.BONE_BLOCK.defaultBlockState()),
                     entity.getX(), entity.getEyeY(), entity.getZ(),
                     5, 0.1, 0.1, 0.1, 0.05);
@@ -58,10 +59,66 @@ public class GoreManager {
 
         syncGoreToClient(entity);
     }
+    
+    public static void triggerArmExplosion(LivingEntity entity, Limb arm) {
+        if (entity.level().isClientSide || hasLostLimb(entity, arm)) return;
+
+        setLimbLost(entity, arm, true);
+
+        entity.level().playSound(null, entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
+                SoundEvents.SLIME_BLOCK_BREAK, SoundSource.HOSTILE, 1.0f, 0.8f);
+
+        if (ForgeRegistries.SOUND_EVENTS.containsKey(new ResourceLocation("zombierool", "death_beurk1"))) {
+            entity.level().playSound(null, entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
+                    ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "death_beurk1")),
+                    SoundSource.HOSTILE, 0.8f, 1.0f);
+        }
+
+        if (entity.level() instanceof ServerLevel serverLevel) {
+            double xOffset = arm == Limb.LEFT_ARM ? -0.3 : 0.3;
+            net.minecraft.world.phys.Vec3 forward = net.minecraft.world.phys.Vec3.directionFromRotation(0, entity.getYRot()).normalize();
+            net.minecraft.world.phys.Vec3 right = forward.cross(new net.minecraft.world.phys.Vec3(0, 1, 0)).normalize();
+            
+            serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.defaultBlockState()),
+                    entity.getX() + right.x * xOffset, 
+                    entity.getY() + entity.getBbHeight() * 0.6, 
+                    entity.getZ() + right.z * xOffset,
+                    35, 0.2, 0.2, 0.2, 0.1);
+        }
+
+        syncGoreToClient(entity);
+    }
+
+    public static void triggerLegsExplosion(LivingEntity entity) {
+        if (entity.level().isClientSide || (hasLostLimb(entity, Limb.LEFT_LEG) && hasLostLimb(entity, Limb.RIGHT_LEG))) return;
+
+        setLimbLost(entity, Limb.LEFT_LEG, true);
+        setLimbLost(entity, Limb.RIGHT_LEG, true);
+
+        entity.level().playSound(null, entity.getX(), entity.getY() + 0.2, entity.getZ(),
+                SoundEvents.SLIME_BLOCK_BREAK, SoundSource.HOSTILE, 1.5f, 0.8f);
+
+        if (ForgeRegistries.SOUND_EVENTS.containsKey(new ResourceLocation("zombierool", "death_beurk1"))) {
+            entity.level().playSound(null, entity.getX(), entity.getY() + 0.2, entity.getZ(),
+                    ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "death_beurk1")),
+                    SoundSource.HOSTILE, 1.0f, 1.0f);
+        }
+
+        if (entity.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.defaultBlockState()),
+                    entity.getX(), entity.getY() + 0.2, entity.getZ(),
+                    60, 0.3, 0.2, 0.3, 0.15);
+
+            serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.BONE_BLOCK.defaultBlockState()),
+                    entity.getX(), entity.getY() + 0.2, entity.getZ(),
+                    10, 0.2, 0.1, 0.2, 0.05);
+        }
+
+        syncGoreToClient(entity);
+    }
 
     public static void tryDismemberLimb(LivingEntity entity, float damageAmount) {
         if (entity.level().isClientSide) return;
-
         if (damageAmount < MIN_DAMAGE_FOR_DISMEMBERMENT) return;
 
         if (RANDOM.nextFloat() < CHANCE_TO_DISMEMBER) {
@@ -109,13 +166,14 @@ public class GoreManager {
 
     private static void syncGoreToClient(LivingEntity entity) {
         if (entity.level().isClientSide) return;
-
         CompoundTag goreData = new CompoundTag();
         goreData.putBoolean("h", hasLostLimb(entity, Limb.HEAD));
         goreData.putBoolean("la", hasLostLimb(entity, Limb.LEFT_ARM));
         goreData.putBoolean("ra", hasLostLimb(entity, Limb.RIGHT_ARM));
+        goreData.putBoolean("ll", hasLostLimb(entity, Limb.LEFT_LEG));
+        goreData.putBoolean("rl", hasLostLimb(entity, Limb.RIGHT_LEG));
 
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity),
-                new SyncGorePacket(entity.getId(), goreData));
+                new S2CSyncGorePacket(entity.getId(), goreData));
     }
 }

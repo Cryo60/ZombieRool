@@ -1,10 +1,10 @@
 {
   "id": "zombierool:ak74u",
-  "name": "AK74U",
+  "name": "weapon.zombierool.ak74u",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.ak74u.lore.0",
+    "weapon.zombierool.ak74u.lore.1"
   ],
   "stats": {
     "damage": 7.5,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 30,
     "max_reserve": 270,
-    "reload_time": 50,
+    "reload_time": 63,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Compact Devourer",
+    "name": "weapon.zombierool.ak74u.pap",
     "damage_bonus": 9.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

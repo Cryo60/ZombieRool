@@ -1,10 +1,10 @@
 {
   "id": "zombierool:beretta93r",
-  "name": "BERETTA93R",
+  "name": "weapon.zombierool.beretta93r",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.beretta93r.lore.0",
+    "weapon.zombierool.beretta93r.lore.1"
   ],
   "stats": {
     "damage": 4.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 21,
     "max_reserve": 105,
-    "reload_time": 35,
+    "reload_time": 53,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.6
   },
   "pack_a_punch": {
-    "name": "The Deadly Triple",
+    "name": "weapon.zombierool.beretta93r.pap",
     "damage_bonus": 5.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

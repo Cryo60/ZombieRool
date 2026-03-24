@@ -1,0 +1,110 @@
+{
+	"parent": "block/block",
+	"textures": {
+		"glass": "minecraft:block/glass",
+		"cork": "minecraft:block/stripped_spruce_log",
+		"liquid": "minecraft:block/red_stained_glass",
+		"label": "minecraft:block/white_wool"
+	},
+	"elements": [
+		{
+			"name": "Bottle_Base",
+			"from": [6.22, 0, 6.72],
+			"to": [8.848, 3.504, 9.348],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"north": {"uv": [5, 8, 11, 16], "texture": "#glass"},
+				"east": {"uv": [5, 8, 11, 16], "texture": "#glass"},
+				"south": {"uv": [5, 8, 11, 16], "texture": "#glass"},
+				"west": {"uv": [5, 8, 11, 16], "texture": "#glass"},
+				"up": {"uv": [5, 5, 11, 11], "texture": "#glass"},
+				"down": {"uv": [5, 5, 11, 11], "texture": "#glass", "cullface": "down"}
+			}
+		},
+		{
+			"name": "Bottle_Liquid",
+			"from": [6.22, 0.219, 6.72],
+			"to": [8.41, 3.285, 8.91],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"north": {"uv": [5.5, 8.5, 10.5, 15.5], "texture": "#liquid"},
+				"east": {"uv": [5.5, 8.5, 10.5, 15.5], "texture": "#liquid"},
+				"south": {"uv": [5.5, 8.5, 10.5, 15.5], "texture": "#liquid"},
+				"west": {"uv": [5.5, 8.5, 10.5, 15.5], "texture": "#liquid"},
+				"up": {"uv": [5.5, 5.5, 10.5, 10.5], "texture": "#liquid"},
+				"down": {"uv": [5.5, 5.5, 10.5, 10.5], "texture": "#liquid"}
+			}
+		},
+		{
+			"name": "Bottle_Neck",
+			"from": [6.804, 3.504, 7.45],
+			"to": [8.118, 5.256, 8.764],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"north": {"uv": [6.5, 4, 9.5, 8], "texture": "#glass"},
+				"east": {"uv": [6.5, 4, 9.5, 8], "texture": "#glass"},
+				"south": {"uv": [6.5, 4, 9.5, 8], "texture": "#glass"},
+				"west": {"uv": [6.5, 4, 9.5, 8], "texture": "#glass"}
+			}
+		},
+		{
+			"name": "Bottle_Rim",
+			"from": [6.658, 5.256, 7.304],
+			"to": [8.41, 5.694, 9.056],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"north": {"uv": [6, 3, 10, 4], "texture": "#glass"},
+				"east": {"uv": [6, 3, 10, 4], "texture": "#glass"},
+				"south": {"uv": [6, 3, 10, 4], "texture": "#glass"},
+				"west": {"uv": [6, 3, 10, 4], "texture": "#glass"},
+				"up": {"uv": [6, 6, 10, 10], "texture": "#glass"},
+				"down": {"uv": [6, 6, 10, 10], "texture": "#glass"}
+			}
+		},
+		{
+			"name": "Bottle_Cork",
+			"from": [6.804, 5.694, 7.45],
+			"to": [8.118, 6.57, 8.764],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"north": {"uv": [6.5, 1, 9.5, 3], "texture": "#cork"},
+				"east": {"uv": [6.5, 1, 9.5, 3], "texture": "#cork"},
+				"south": {"uv": [6.5, 1, 9.5, 3], "texture": "#cork"},
+				"west": {"uv": [6.5, 1, 9.5, 3], "texture": "#cork"},
+				"up": {"uv": [6.5, 6.5, 9.5, 9.5], "texture": "#cork"}
+			}
+		},
+		{
+			"name": "Bottle_Label",
+			"from": [6.22, 0.876, 6.72],
+			"to": [6.3076, 2.628, 8.472],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6.8989, 3.942, 7.888]},
+			"faces": {
+				"west": {"uv": [6, 10, 10, 14], "texture": "#label"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"translation": [0, 9, 0],
+			"scale": [1.99, 1.99, 1.99]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [0, -90, 0],
+			"translation": [0, 2, 0],
+			"scale": [0.8, 0.8, 0.8]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, 90, 0],
+			"translation": [0, 4, 0]
+		}
+	},
+	"groups": [
+		{
+			"name": "Objet",
+			"origin": [0, 0, 0],
+			"color": 0,
+			"children": [0, 1, 2, 3, 4, 5]
+		}
+	]
+}

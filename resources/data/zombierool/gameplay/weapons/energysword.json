@@ -1,10 +1,10 @@
 {
   "id": "zombierool:energysword",
-  "name": "Energy Sword",
+  "name": "weapon.zombierool.energysword",
   "type": "MELEE",
   "lore": [
-    "Arme de corps à corps",
-    "Lame énergétique"
+    "weapon.zombierool.energysword.lore.0",
+    "weapon.zombierool.energysword.lore.1"
   ],
   "stats": {
     "damage": 10.0,
@@ -40,7 +40,7 @@
     "yaw": 0.0
   },
   "pack_a_punch": {
-    "name": "The Plasma Reaper",
+    "name": "weapon.zombierool.energysword.pap",
     "damage_bonus": 15.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

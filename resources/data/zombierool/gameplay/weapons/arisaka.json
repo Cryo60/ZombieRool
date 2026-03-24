@@ -1,10 +1,10 @@
 {
   "id": "zombierool:arisaka",
-  "name": "ARISAKA",
+  "name": "weapon.zombierool.arisaka",
   "type": "SNIPER",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.arisaka.lore.0",
+    "weapon.zombierool.arisaka.lore.1"
   ],
   "stats": {
     "damage": 5.5,
@@ -40,7 +40,7 @@
     "yaw": 1.1
   },
   "pack_a_punch": {
-    "name": "The Dragon's Breath",
+    "name": "weapon.zombierool.arisaka.pap",
     "damage_bonus": 3.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,

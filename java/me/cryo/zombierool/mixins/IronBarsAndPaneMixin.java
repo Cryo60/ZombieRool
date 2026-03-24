@@ -1,14 +1,12 @@
 package me.cryo.zombierool.mixins;
-
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
-import me.cryo.zombierool.block.ObstacleDoorBlock;
+import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 @Mixin(IronBarsBlock.class)
 public class IronBarsAndPaneMixin {
 @Inject(method = "attachsTo", at = @At("HEAD"), cancellable = true)

@@ -1,10 +1,10 @@
 {
   "id": "zombierool:thompson",
-  "name": "THOMPSON",
+  "name": "weapon.zombierool.thompson",
   "type": "RIFLE",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.thompson.lore.0",
+    "weapon.zombierool.thompson.lore.1"
   ],
   "stats": {
     "damage": 8.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 50,
     "max_reserve": 200,
-    "reload_time": 45,
+    "reload_time": 33,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "Pistolet-Tombe",
+    "name": "weapon.zombierool.thompson.pap",
     "damage_bonus": 12.0,
     "clip_bonus": 0,
     "reserve_bonus": 0,
@@ -94,8 +94,8 @@
     "smg",
     "usa",
     "ww2",
-	"tacz",
-	"tacz_ww"
+    "tacz",
+    "tacz_ww"
   ],
   "tacz": {
     "gun_id": "ww:m1921"

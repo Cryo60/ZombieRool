@@ -1,10 +1,10 @@
 {
   "id": "zombierool:m1911",
-  "name": "M1911",
+  "name": "weapon.zombierool.m1911",
   "type": "PISTOL",
   "lore": [
-    "Arme standard",
-    "Statistiques importées"
+    "weapon.zombierool.m1911.lore.0",
+    "weapon.zombierool.m1911.lore.1"
   ],
   "stats": {
     "damage": 0.4,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 64,
-    "reload_time": 30,
+    "reload_time": 24,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.5
   },
   "pack_a_punch": {
-    "name": "The Mustang & Sally",
+    "name": "weapon.zombierool.m1911.pap",
     "damage_bonus": 3.0,
     "clip_bonus": -2,
     "reserve_bonus": 36,

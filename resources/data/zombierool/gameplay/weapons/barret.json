@@ -1,10 +1,10 @@
 {
   "id": "zombierool:barret",
-  "name": "Barret .50cal",
+  "name": "weapon.zombierool.barret",
   "type": "SNIPER",
   "lore": [
-    "Pénétration moyenne",
-    "Statistiques importées"
+    "weapon.zombierool.barret.lore.0",
+    "weapon.zombierool.barret.lore.1"
   ],
   "stats": {
     "damage": 35.0,
@@ -18,7 +18,7 @@
   "ammo": {
     "clip_size": 8,
     "max_reserve": 48,
-    "reload_time": 90,
+    "reload_time": 100,
     "ammo_per_shot": 1,
     "reload_type": "MAGAZINE"
   },
@@ -40,7 +40,7 @@
     "yaw": 0.2
   },
   "pack_a_punch": {
-    "name": "The Brutal Force",
+    "name": "weapon.zombierool.barret.pap",
     "damage_bonus": 45.0,
     "clip_bonus": 5,
     "reserve_bonus": 30,
@@ -95,11 +95,11 @@
     "single_fire",
     "sniper",
     "usa",
-	"tacz",
-	"tacz_mw19"
+    "tacz",
+    "tacz_mw19"
   ],
-  "tacz" : {
-	"gun_id": "mw19:amr",
+  "tacz": {
+    "gun_id": "mw19:amr",
     "attachments": {
       "scope": "tacz:scope_mk5hd"
     }

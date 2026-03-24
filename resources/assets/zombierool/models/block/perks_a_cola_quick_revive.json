@@ -1,0 +1,7 @@
+{
+  "parent": "zombierool:block/perks_a_cola",
+  "textures": {
+    "12": "zombierool:block/perks/perks_quick_revive",
+    "particle": "zombierool:block/perks/perks_quick_revive"
+  }
+}

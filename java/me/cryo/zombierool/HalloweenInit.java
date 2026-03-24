@@ -1,17 +1,11 @@
 package me.cryo.zombierool;
 
 import net.minecraftforge.fml.common.Mod;
-import me.cryo.zombierool.configuration.HalloweenConfig;
+import me.cryo.zombierool.configuration.ZRClientConfig;
 
-/**
- * Classe d'initialisation pour les fonctionnalités Halloween
- * Cette classe s'exécute automatiquement au démarrage du mod
- */
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.MOD)
 public class HalloweenInit {
-    
     static {
-        // Enregistrement automatique de la configuration Halloween
-        HalloweenConfig.register();
+        ZRClientConfig.register();
     }
 }
