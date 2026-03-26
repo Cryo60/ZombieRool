@@ -11,6 +11,8 @@ import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem;
 import me.cryo.zombierool.item.throwable.Grenade;
 import me.cryo.zombierool.item.throwable.Molotov;
+import me.cryo.zombierool.item.throwable.Stielhandgranate;
+import me.cryo.zombierool.item.throwable.MonkeyBomb;
 import me.cryo.zombierool.ExplosionControl;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CSyncThirdPersonAnimPacket;
@@ -26,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class LethalWeaponManager {
-
     private static final Map<UUID, Integer> cookingTimers = new ConcurrentHashMap<>();
     private static final Map<UUID, String> pickedUpLethals = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> throwCooldowns = new ConcurrentHashMap<>();
@@ -36,7 +37,6 @@ public class LethalWeaponManager {
         return cookingTimers.containsKey(playerId);
     }
 
-    // Nettoyage de la mémoire quand le joueur quitte le monde ou le serveur
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID pid = event.getEntity().getUUID();
@@ -49,37 +49,50 @@ public class LethalWeaponManager {
         cookingTimers.put(player.getUUID(), cookedTicks);
         pickedUpLethals.put(player.getUUID(), type);
 
-        String animName = type.contains("molotov") ? "molotov_light" : "grenade_cook";
+        String animName = getAnimNameForCook(type);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), animName, 100));
 
-        SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "grenade_pin"));
+        SoundEvent sound = getPinSoundForType(type);
         if (sound != null) {
             player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1f, 1f);
         }
     }
 
+    private static String getAnimNameForCook(String type) {
+        if (type.contains("molotov")) return "molotov_light";
+        if (type.contains("stielhandgranate")) return "stielhandgranate_cook";
+        if (type.contains("monkey_bomb")) return "monkey_bomb_cook";
+        return "grenade_cook";
+    }
+
+    private static String getAnimNameForThrow(String type) {
+        if (type.contains("molotov")) return "molotov_throw";
+        if (type.contains("stielhandgranate")) return "stielhandgranate_throw";
+        if (type.contains("monkey_bomb")) return "monkey_bomb_throw";
+        return "grenade_throw";
+    }
+
+    private static SoundEvent getPinSoundForType(String type) {
+        if (type.contains("molotov")) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "molotov_light"));
+        if (type.contains("monkey_bomb")) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "monkey_ratchet"));
+        return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "grenade_pin"));
+    }
+
     public static void handleStateChange(ServerPlayer player, int state) {
         long now = player.level().getGameTime();
-
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
             if (state == 1) { 
                 long cd = throwCooldowns.getOrDefault(player.getUUID(), 0L);
-                // Sécurité anti-desync : on ignore le cooldown s'il vient d'une ancienne map (différence absurde)
                 if (cd > now && (cd - now) < 100) return;
 
                 if (cap.getLethalCount() > 0 && !cookingTimers.containsKey(player.getUUID())) {
                     cookingTimers.put(player.getUUID(), 0);
                     String type = cap.getLethalType();
-                    
-                    String animName = type.contains("molotov") ? "molotov_light" : "grenade_cook";
+
+                    String animName = getAnimNameForCook(type);
                     NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), animName, 100));
-                    
-                    SoundEvent sound;
-                    if (type.contains("molotov")) {
-                        sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "molotov_light"));
-                    } else {
-                        sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "grenade_pin"));
-                    }
+
+                    SoundEvent sound = getPinSoundForType(type);
                     if (sound != null) {
                         player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1f, 1f);
                     }
@@ -89,8 +102,8 @@ public class LethalWeaponManager {
                     int cookedTicks = cookingTimers.remove(player.getUUID());
                     String pickedUpType = pickedUpLethals.remove(player.getUUID());
                     String type = pickedUpType != null ? pickedUpType : cap.getLethalType();
-                    
-                    String animName = type.contains("molotov") ? "molotov_throw" : "grenade_throw";
+
+                    String animName = getAnimNameForThrow(type);
                     NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), animName, 15));
 
                     if (pickedUpType != null) {
@@ -121,7 +134,7 @@ public class LethalWeaponManager {
             if (ticks >= MAX_COOK_TICKS) {
                 cookingTimers.remove(playerId);
                 String pickedUpType = pickedUpLethals.remove(playerId);
-                
+
                 ServerPlayer player = event.getServer().getPlayerList().getPlayer(playerId);
                 if (player != null && player.isAlive() && !player.isSpectator()) {
                     player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
@@ -131,7 +144,7 @@ public class LethalWeaponManager {
                             cap.setLethalCount(cap.getLethalCount() - 1);
                             cap.sync(player);
                         }
-                        
+
                         if (type.contains("molotov")) {
                             player.setSecondsOnFire(10);
                             player.hurt(player.damageSources().onFire(), 1000.0f);
@@ -148,14 +161,19 @@ public class LethalWeaponManager {
 
     private static void throwLethal(ServerPlayer player, String type, int cookedTicks) {
         ThrowableItemProjectile projectile;
+
         if (type.contains("molotov")) {
             projectile = new Molotov.MolotovEntity(player.level(), player);
             SoundEvent throwSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "molotov_throw"));
             if (throwSound != null) player.level().playSound(null, player.blockPosition(), throwSound, SoundSource.PLAYERS, 1f, 1f);
+        } else if (type.contains("stielhandgranate")) {
+            projectile = new Stielhandgranate.StielhandgranateEntity(player.level(), player, cookedTicks);
+        } else if (type.contains("monkey_bomb")) {
+            projectile = new MonkeyBomb.MonkeyBombEntity(player.level(), player, cookedTicks);
         } else {
             projectile = new Grenade.GrenadeEntity(player.level(), player, cookedTicks);
         }
-        
+
         Vec3 start = player.getEyePosition(1f);
         projectile.setPos(start.x, start.y - 0.1, start.z);
         projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.2f, 1.0f);

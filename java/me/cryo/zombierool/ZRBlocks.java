@@ -1,9 +1,11 @@
 package me.cryo.zombierool.core.registry;
+
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
 import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
 import me.cryo.zombierool.core.block.ZRDecorativeBlock;
 import me.cryo.zombierool.core.block.ZRDirectionalBlock;
+import me.cryo.zombierool.core.block.BarbedWireBlock;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -18,7 +20,6 @@ import net.minecraftforge.registries.RegistryObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
 import me.cryo.zombierool.core.block.ZRSandbagBlock;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -32,8 +33,6 @@ public class ZRBlocks {
 	public static final RegistryObject<Block> STORAGE_BOX = registerBlock("storage_box", () -> new ZRDecorativeBlock(SoundType.WOOD, ZRDecorativeBlock.ShapeType.FULL, true));
 	public static final RegistryObject<Block> DEFENSE_DOOR_OPENED = registerBlockNoItem("defense_door_opened", DefenseDoorSystem.DefenseDoorOpenedBlock::new);
 	public static final RegistryObject<Block> SANDBAGS = registerBlock("sandbags", () -> new ZRSandbagBlock(SoundType.GRAVEL));
-	
-    // AJOUT DU BLOC METEORITE ICI
     public static final RegistryObject<Block> METEORITE = registerBlock("meteorite", MeteoriteEasterEgg.MeteoriteBlock::new);
 
 	static {
@@ -61,7 +60,7 @@ public class ZRBlocks {
 	    if (transparent) CUTOUT_BLOCKS.add(stairs);
 	    RegistryObject<Block> slab = registerBlock(name + "_slab", () -> new SlabBlock(BlockBehaviour.Properties.copy(baseBlock.get())));
 	    if (transparent) CUTOUT_BLOCKS.add(slab);
-	    if (sound == SoundType.WOOD || sound == SoundType.BAMBOO_WOOD) {
+	    if (sound == SoundType.WOOD || sound == SoundType.BAMBOO_WOOD || sound == SoundType.WOOL) {
 	        RegistryObject<Block> fence = registerBlock(name + "_fence", () -> new FenceBlock(BlockBehaviour.Properties.copy(baseBlock.get())));
 	        if (transparent) CUTOUT_BLOCKS.add(fence);
 	    } else {
@@ -191,5 +190,32 @@ public class ZRBlocks {
 	    registerCross("tiny_candles", SoundType.GRAVEL, true, 12);
 	    registerCross("tiny_flame", SoundType.GRAVEL, true, 15);
 	    registerCross("tiny_skull", SoundType.GRAVEL, true, 0);
+
+        registerSimple("zr_sand", SoundType.SAND, false);
+        registerSimple("beach_sand", SoundType.SAND, false);
+        registerFamily("hazard_stripes", SoundType.METAL, false);
+        registerFamily("rubble", SoundType.STONE, false);
+        registerFamily("rubble_scattered", SoundType.STONE, false);
+        registerFamily("ceiling_tiles", SoundType.STONE, false);
+        registerFamily("exposed_rebar_concrete", SoundType.STONE, false);
+        registerSimple("brain", SoundType.SLIME_BLOCK, false);
+        registerSimple("wood_crate", SoundType.WOOD, false);
+        registerFamily("iron_plating", SoundType.METAL, false);
+        registerSimple("corrupted_flesh", SoundType.HONEY_BLOCK, false);
+        registerSimple("vile_flesh", SoundType.HONEY_BLOCK, false);
+        registerCarpet("scattered_documents", SoundType.WOOD);
+        
+        RegistryObject<Block> barbedWire = registerBlock("barbed_wire", () -> new BarbedWireBlock(BlockBehaviour.Properties.of().sound(SoundType.METAL).strength(2.0f, 3600000.0f).noOcclusion()));
+        CUTOUT_BLOCKS.add(barbedWire);
+
+        registerFamily("fabric", SoundType.WOOL, false);
+        registerFamily("asphalt", SoundType.STONE, false);
+        registerFamily("asphalt2", SoundType.STONE, false);
+        registerFamily("dungeon_stone", SoundType.STONE, false);
+        registerFamily("dungeon_stone2", SoundType.STONE, false);
+        registerFamily("arctic_ice", SoundType.GLASS, true); // Apparence verre, mais solid collision, pas de glissement
+        registerFamily("hard_ice", SoundType.GLASS, true);
+        registerFamily("crackeled_dirt", SoundType.GRAVEL, false);
+        registerBlock("zr_lava", () -> new ZRDecorativeBlock(SoundType.STONE, ZRDecorativeBlock.ShapeType.FULL, false, false, 15));
 	}
 }

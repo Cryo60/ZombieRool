@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/dungeon_stone2_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/dungeon_stone2_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/dungeon_stone2"
+    }
+  }
+}

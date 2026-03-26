@@ -3,6 +3,8 @@ package me.cryo.zombierool.core.registry;
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.item.throwable.Grenade;
 import me.cryo.zombierool.item.throwable.Molotov;
+import me.cryo.zombierool.item.throwable.Stielhandgranate;
+import me.cryo.zombierool.item.throwable.MonkeyBomb;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -22,6 +24,8 @@ public class ZRThrowableRegistry {
 
     public static final RegistryObject<Item> GRENADE_ITEM = ITEMS.register("grenade", Grenade.GrenadeItem::new);
     public static final RegistryObject<Item> MOLOTOV_ITEM = ITEMS.register("molotov", Molotov.MolotovItem::new);
+    public static final RegistryObject<Item> STIELHANDGRANATE_ITEM = ITEMS.register("stielhandgranate", Stielhandgranate.StielhandgranateItem::new);
+    public static final RegistryObject<Item> MONKEY_BOMB_ITEM = ITEMS.register("monkey_bomb", MonkeyBomb.MonkeyBombItem::new);
 
     public static final RegistryObject<EntityType<Grenade.GrenadeEntity>> GRENADE_ENTITY = ENTITIES.register("grenade",
             () -> EntityType.Builder.<Grenade.GrenadeEntity>of(Grenade.GrenadeEntity::new, MobCategory.MISC)
@@ -37,6 +41,20 @@ public class ZRThrowableRegistry {
                     .updateInterval(10)
                     .build("molotov"));
 
+    public static final RegistryObject<EntityType<Stielhandgranate.StielhandgranateEntity>> STIELHANDGRANATE_ENTITY = ENTITIES.register("stielhandgranate",
+            () -> EntityType.Builder.<Stielhandgranate.StielhandgranateEntity>of(Stielhandgranate.StielhandgranateEntity::new, MobCategory.MISC)
+                    .sized(0.25f, 0.25f)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build("stielhandgranate"));
+
+    public static final RegistryObject<EntityType<MonkeyBomb.MonkeyBombEntity>> MONKEY_BOMB_ENTITY = ENTITIES.register("monkey_bomb",
+            () -> EntityType.Builder.<MonkeyBomb.MonkeyBombEntity>of(MonkeyBomb.MonkeyBombEntity::new, MobCategory.MISC)
+                    .sized(0.35f, 0.35f)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build("monkey_bomb"));
+
     static {
         var bus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus();
         ITEMS.register(bus);
@@ -49,6 +67,8 @@ public class ZRThrowableRegistry {
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(GRENADE_ENTITY.get(), ThrownItemRenderer::new);
             event.registerEntityRenderer(MOLOTOV_ENTITY.get(), ThrownItemRenderer::new);
+            event.registerEntityRenderer(STIELHANDGRANATE_ENTITY.get(), ThrownItemRenderer::new);
+            event.registerEntityRenderer(MONKEY_BOMB_ENTITY.get(), ThrownItemRenderer::new);
         }
     }
 }

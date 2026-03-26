@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/exposed_rebar_concrete_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/exposed_rebar_concrete_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/exposed_rebar_concrete"
+    }
+  }
+}

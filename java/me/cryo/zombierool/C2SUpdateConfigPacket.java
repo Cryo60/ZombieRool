@@ -1,4 +1,5 @@
 package me.cryo.zombierool.network.packet;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
@@ -12,6 +13,7 @@ import net.minecraft.ChatFormatting;
 import java.util.function.Supplier;
 
 public class C2SUpdateConfigPacket {
+
     public final CompoundTag data;
 
     public C2SUpdateConfigPacket(CompoundTag data) {
@@ -33,13 +35,14 @@ public class C2SUpdateConfigPacket {
 
             ServerLevel level = player.serverLevel();
             WorldConfig config = WorldConfig.get(level);
-
             String action = msg.data.getString("action");
 
             if (action.equals("save_all")) {
+                config.setDataVersion(1); // Set to 1 so the legacy map warning disappears
                 config.loadEditable(msg.data);
                 
                 java.io.File worldDir = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
+                
                 String mapId = config.getMapId();
                 if (mapId == null || mapId.trim().isEmpty() || mapId.equals("zr_")) {
                     String folderName = worldDir.getName();
@@ -50,7 +53,7 @@ public class C2SUpdateConfigPacket {
                     mapId = "zr_" + mapId;
                     config.setMapId(mapId);
                 }
-                
+
                 config.setDirty();
 
                 try {
@@ -71,12 +74,12 @@ public class C2SUpdateConfigPacket {
                     rpJson.addProperty("url", config.getResourcePackUrl() != null ? config.getResourcePackUrl() : "");
                     rpJson.addProperty("name", config.getResourcePackName() != null ? config.getResourcePackName() : "");
                     json.add("resource_pack", rpJson);
-                    
+
                     com.google.gson.JsonObject overridesJson = new com.google.gson.JsonObject();
                     overridesJson.addProperty("spooky_ambience", config.isSpookyAmbience());
                     overridesJson.addProperty("force_halloween", config.isForceHalloween());
                     json.add("overrides", overridesJson);
-                    
+
                     json.remove("resource_pack_url");
                     json.remove("resource_pack_name");
                     json.remove("spooky_ambience");
@@ -104,6 +107,7 @@ public class C2SUpdateConfigPacket {
                 }
 
                 player.sendSystemMessage(Component.translatable("message.zombierool.config.saved").withStyle(ChatFormatting.GREEN));
+
             } else if (action.equals("reset_general")) {
                 config.resetGeneral();
                 NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetEyeColorPacket(config.getEyeColorPreset()));

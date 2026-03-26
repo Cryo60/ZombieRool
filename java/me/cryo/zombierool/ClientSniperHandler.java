@@ -2,6 +2,7 @@ package me.cryo.zombierool.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.cryo.zombierool.core.system.WeaponSystem;
+import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.init.KeyBindings;
 import me.cryo.zombierool.network.NetworkHandler;
@@ -31,19 +32,23 @@ public class ClientSniperHandler {
 
     private static final ResourceLocation SNIPER_SCOPE = new ResourceLocation("zombierool", "textures/misc/sniper_scope_overlay.png");
     private static final ResourceLocation SCREAMER_TEX = new ResourceLocation("zombierool", "textures/misc/screamer.png");
-    private static final int TEX_WIDTH = 64;
-    private static final int TEX_HEIGHT = 64;
+    
+    private static final int TEX_WIDTH = 128;
+    private static final int TEX_HEIGHT = 128;
+    
     private static final int SCREAMER_TEX_SIZE = 512;
 
     private static double currentZoomFov = 15.0;
+
     private static boolean isScoping = false;
     private static boolean lastScopingState = false; 
+    private static boolean isTaczScope = false;
 
     private static BreathState breathState = BreathState.IDLE;
     private static int breathTimer = 0;
     private static final int MAX_HOLD_DURATION = 100;
     private static final int HEARTBEAT_INTERVAL = 24;
-    
+
     private static final int RECOVERY_COOLDOWN = 60;
     private static int recoveryTimer = 0;
     private static int shakyTimer = 0;
@@ -54,7 +59,7 @@ public class ClientSniperHandler {
 
     private static int lastSlot = -1;
     private static boolean requireNewClick = false;
-
+    
     public static int screamerTimer = 0;
 
     private enum BreathState {
@@ -89,10 +94,11 @@ public class ClientSniperHandler {
 
         ItemStack stack = player.getMainHandItem();
         boolean holdingSniper = false;
-
-        if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
-            WeaponSystem.Definition def = gun.getDefinition();
-            if (def.scoped != null && def.scoped.isScoped) {
+        
+        boolean isTacz = WeaponFacade.isTaczWeapon(stack);
+        if (isTacz || stack.getItem() instanceof WeaponSystem.BaseGunItem) {
+            WeaponSystem.Definition def = WeaponFacade.getDefinition(stack);
+            if (def != null && def.scoped != null && def.scoped.isScoped) {
                 holdingSniper = true;
                 String zoomStr = def.scoped.zoom;
                 if ("8x".equalsIgnoreCase(zoomStr)) currentZoomFov = 5.0;
@@ -103,7 +109,6 @@ public class ClientSniperHandler {
         }
 
         boolean rightClickHeld = mc.options.keyUse.isDown();
-
         if (!rightClickHeld) {
             requireNewClick = false;
         }
@@ -111,6 +116,7 @@ public class ClientSniperHandler {
         if (holdingSniper && rightClickHeld && !requireNewClick) {
             if (!isScoping) {
                 isScoping = true;
+                isTaczScope = isTacz;
                 enterBreathState(BreathState.IDLE, player);
                 currentSwayScale = 0.3f;
             }
@@ -133,6 +139,7 @@ public class ClientSniperHandler {
             case EXHALED_SHAKY: targetScale = 1.2f; break;
             case IDLE: targetScale = (recoveryTimer > 0) ? 0.8f : 0.3f; break;
         }
+
         currentSwayScale = Mth.lerp(0.1f, currentSwayScale, targetScale);
     }
 
@@ -184,9 +191,8 @@ public class ClientSniperHandler {
 
     private static void enterBreathState(BreathState newState, LocalPlayer player) {
         BreathState oldState = breathState;
-        
+
         boolean shouldExhale = (oldState == BreathState.STABILIZED && (newState == BreathState.IDLE || newState == BreathState.EXHALED_SHAKY));
-        
         if (shouldExhale) {
             net.minecraft.sounds.SoundEvent sound = (newState == BreathState.EXHALED_SHAKY) ? ZombieroolModSounds.BREATHOUT.get() : ZombieroolModSounds.BREATHABORT.get();
             player.level().playSound(player, player.blockPosition(), sound, SoundSource.PLAYERS, 1.0f, 1.0f);
@@ -241,6 +247,7 @@ public class ClientSniperHandler {
         if (isScoping) {
             String id = event.getOverlay().id().toString();
             if (id.contains("elder_guardian")) return;
+
             if (id.contains("crosshair") || id.contains("hotbar") || 
                 id.contains("experience_bar") || id.contains("jump_bar") || 
                 id.contains("chat_panel") || id.contains("player_health") || 
@@ -255,47 +262,50 @@ public class ClientSniperHandler {
     public static void onRenderGameOverlayPost(RenderGuiEvent.Post event) {
         if (isScoping) {
             Minecraft mc = Minecraft.getInstance();
-            
             if (!mc.options.getCameraType().isFirstPerson()) {
                 return;
             }
 
             int screenWidth = mc.getWindow().getGuiScaledWidth();
             int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-            int scopeSize = (int) (screenHeight * 0.8f);
-            int scopeX = (screenWidth - scopeSize) / 2;
-            int scopeY = (screenHeight - scopeSize) / 2;
-
+            
             RenderSystem.disableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-
             GuiGraphics graphics = event.getGuiGraphics();
-
+            
             if (screamerTimer > 0) {
                 RenderSystem.setShaderTexture(0, SCREAMER_TEX);
                 float alpha = screamerTimer > 10 ? 1.0f : (screamerTimer / 10.0f);
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                int drawSize = (int) (scopeSize * 2.5f);
+                int drawSize = (int) (screenHeight * 0.8f * 2.5f);
                 int drawX = (screenWidth - drawSize) / 2;
                 int drawY = (screenHeight - drawSize) / 2;
                 graphics.blit(SCREAMER_TEX, drawX, drawY, drawSize, drawSize, 0, 0, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE);
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
-
-            int blackColor = 0xFF000000;
-            graphics.fill(0, 0, scopeX, screenHeight, blackColor); 
-            graphics.fill(scopeX + scopeSize, 0, screenWidth, screenHeight, blackColor); 
-            graphics.fill(scopeX, 0, scopeX + scopeSize, scopeY, blackColor); 
-            graphics.fill(scopeX, scopeY + scopeSize, scopeX + scopeSize, screenHeight, blackColor); 
-
-            RenderSystem.setShaderTexture(0, SNIPER_SCOPE);
-            graphics.blit(SNIPER_SCOPE, scopeX, scopeY, scopeSize, scopeSize, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-
+            
+            if (isTaczScope) {
+                RenderSystem.setShaderTexture(0, SNIPER_SCOPE);
+                graphics.blit(SNIPER_SCOPE, 0, 0, screenWidth, screenHeight, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
+            } else {
+                int scopeSize = (int) (screenHeight * 0.8f);
+                int scopeX = (screenWidth - scopeSize) / 2;
+                int scopeY = (screenHeight - scopeSize) / 2;
+                int blackColor = 0xFF000000;
+                
+                graphics.fill(0, 0, scopeX, screenHeight, blackColor); 
+                graphics.fill(scopeX + scopeSize, 0, screenWidth, screenHeight, blackColor); 
+                graphics.fill(scopeX, 0, scopeX + scopeSize, scopeY, blackColor); 
+                graphics.fill(scopeX, scopeY + scopeSize, scopeX + scopeSize, screenHeight, blackColor); 
+                
+                RenderSystem.setShaderTexture(0, SNIPER_SCOPE);
+                graphics.blit(SNIPER_SCOPE, scopeX, scopeY, scopeSize, scopeSize, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
+            }
+            
             int centerX = screenWidth / 2;
             int centerY = screenHeight / 2;
             int dotSize = 1;
@@ -308,7 +318,8 @@ public class ClientSniperHandler {
                 if (tip.getString().equals("zombierool.hud.sniper.stabilize")) {
                     tip = Component.literal("Hold [" + keyName + "] to stabilize");
                 }
-                graphics.drawCenteredString(mc.font, tip, centerX, centerY + scopeSize / 2 + 20, 0xFFFFFFFF);
+                int scopeSizeForTip = (int) (screenHeight * 0.8f);
+                graphics.drawCenteredString(mc.font, tip, centerX, centerY + scopeSizeForTip / 2 + 20, 0xFFFFFFFF);
             }
 
             RenderSystem.depthMask(true);
@@ -318,7 +329,7 @@ public class ClientSniperHandler {
 
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
-        if (isScoping) {
+        if (isScoping && !isTaczScope) {
             event.setCanceled(true);
         }
     }

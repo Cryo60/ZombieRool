@@ -4,24 +4,23 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import javax.annotation.Nullable;
 import java.util.List;
 
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.entity.WhiteKnightEntity;
 import me.cryo.zombierool.player.PlayerDownManager;
+import me.cryo.zombierool.item.throwable.MonkeyBomb;
 
 @Mixin(Mob.class)
 public abstract class CustomMobMixin {
-
-    private static final double SCAN_RADIUS = 1024.0; 
+    private static final double MONKEY_SCAN_RADIUS_SQR = 32.0 * 32.0;
+    private static final double KNIGHT_SCAN_RADIUS = 32.0;
 
     @Shadow
     @Nullable
@@ -40,29 +39,68 @@ public abstract class CustomMobMixin {
 
         Level world = mob.level();
         if (!world.isClientSide()) {
-            LivingEntity chosenTarget = null;
-            double chosenTargetDistanceSqr = Double.MAX_VALUE;
+            
+            // 1. PRIORITÉ ABSOLUE : BOMBE SINGE (Via liste statique ultra-rapide)
+            MonkeyBomb.MonkeyBombEntity closestMonkey = null;
+            double closestMonkeyDistSqr = MONKEY_SCAN_RADIUS_SQR;
 
-            Player nearestPlayer = getNearestPlayerIgnoringZombieBloodAndDown(world, mob, SCAN_RADIUS);
-            if (nearestPlayer != null) {
-                chosenTarget = nearestPlayer;
-                chosenTargetDistanceSqr = mob.distanceToSqr(nearestPlayer);
+            for (MonkeyBomb.MonkeyBombEntity mb : MonkeyBomb.MonkeyBombEntity.ACTIVE_MONKEYS) {
+                if (mb.level() == world && mb.isLanded()) {
+                    double distSqr = mob.distanceToSqr(mb);
+                    if (distSqr < closestMonkeyDistSqr) {
+                        closestMonkeyDistSqr = distSqr;
+                        closestMonkey = mb;
+                    }
+                }
             }
 
-            WhiteKnightEntity nearestKnight = getNearestWhiteKnight(world, mob, SCAN_RADIUS);
-            if (nearestKnight != null) {
-                double knightDistanceSqr = mob.distanceToSqr(nearestKnight);
-                if (chosenTarget != null) {
-                    if (knightDistanceSqr < chosenTargetDistanceSqr) {
-                        chosenTarget = nearestKnight;
-                    }
-                } else {
-                    chosenTarget = nearestKnight;
+            if (closestMonkey != null) {
+                this.setTarget(null); // On efface la cible joueur
+                // On met à jour le pathfinding seulement 2 fois par seconde pour éviter le lag massif
+                if (mob.tickCount % 10 == 0) {
+                    mob.getNavigation().moveTo(closestMonkey.getX(), closestMonkey.getY(), closestMonkey.getZ(), 1.25);
                 }
+                return; // On coupe l'IA ici, le zombie est hypnotisé par le singe
+            }
+
+            // 2. COMPORTEMENT STANDARD (Joueurs / Chevaliers)
+            
+            // Optimisation : au lieu de scanner le monde entier (lag), on itère juste sur les joueurs connectés
+            Player nearestPlayer = null;
+            double closestPlayerDistSqr = Double.MAX_VALUE;
+
+            for (Player p : world.players()) {
+                if (p.isSpectator() || BonusManager.isZombieBloodActive(p) || PlayerDownManager.isPlayerDown(p.getUUID())) {
+                    continue;
+                }
+                double distSqr = mob.distanceToSqr(p);
+                if (distSqr < closestPlayerDistSqr) {
+                    closestPlayerDistSqr = distSqr;
+                    nearestPlayer = p;
+                }
+            }
+
+            // Recherche des chevaliers dans un petit rayon (32 blocs max)
+            WhiteKnightEntity nearestKnight = null;
+            double closestKnightDistSqr = KNIGHT_SCAN_RADIUS * KNIGHT_SCAN_RADIUS;
+            List<WhiteKnightEntity> knights = world.getEntitiesOfClass(WhiteKnightEntity.class, mob.getBoundingBox().inflate(KNIGHT_SCAN_RADIUS));
+            
+            for (WhiteKnightEntity wk : knights) {
+                double distSqr = mob.distanceToSqr(wk);
+                if (distSqr < closestKnightDistSqr) {
+                    closestKnightDistSqr = distSqr;
+                    nearestKnight = wk;
+                }
+            }
+
+            LivingEntity chosenTarget = nearestPlayer;
+            if (nearestKnight != null && closestKnightDistSqr < closestPlayerDistSqr) {
+                chosenTarget = nearestKnight;
             }
 
             mob.setTarget(chosenTarget);
 
+            // Sécurité additionnelle
             if (this.getTarget() instanceof Player currentTargetPlayer) {
                 if (BonusManager.isZombieBloodActive(currentTargetPlayer) || PlayerDownManager.isPlayerDown(currentTargetPlayer.getUUID())) {
                     this.setTarget(null);
@@ -71,66 +109,10 @@ public abstract class CustomMobMixin {
         }
     }
 
-    private Player getNearestPlayerIgnoringZombieBloodAndDown(Level world, Mob mob, double scanRadius) {
-        AABB scanArea = new AABB(mob.getX() - scanRadius, mob.getY() - scanRadius, mob.getZ() - scanRadius,
-            mob.getX() + scanRadius, mob.getY() + scanRadius, mob.getZ() + scanRadius);
-
-        List<Player> players = world.getEntitiesOfClass(
-            Player.class,
-            scanArea,
-            player -> !player.isSpectator() && 
-                    mob.distanceToSqr(player) <= scanRadius * scanRadius && 
-                    !BonusManager.isZombieBloodActive(player) && 
-                    !PlayerDownManager.isPlayerDown(player.getUUID()) 
-        );
-
-        Player nearest = null;
-        double closestDistance = Double.MAX_VALUE;
-
-        for (Player player : players) {
-            double distance = mob.distanceToSqr(player);
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                nearest = player;
-            }
-        }
-        return nearest;
-    }
-
-    private WhiteKnightEntity getNearestWhiteKnight(Level world, Mob mob, double scanRadius) {
-        AABB scanArea = new AABB(mob.getX() - scanRadius, mob.getY() - scanRadius, mob.getZ() - scanRadius,
-            mob.getX() + scanRadius, mob.getY() + scanRadius, mob.getZ() + scanRadius);
-
-        List<WhiteKnightEntity> whiteKnights = world.getEntitiesOfClass(
-            WhiteKnightEntity.class,
-            scanArea,
-            whiteKnight -> mob.distanceToSqr(whiteKnight) <= scanRadius * scanRadius
-        );
-
-        WhiteKnightEntity nearest = null;
-        double closestDistance = Double.MAX_VALUE;
-
-        for (WhiteKnightEntity wk : whiteKnights) {
-            double distance = mob.distanceToSqr(wk);
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                nearest = wk;
-            }
-        }
-        return nearest;
-    }
-
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void onSetTarget(LivingEntity target, CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
-
-        if (mob instanceof WhiteKnightEntity) {
-            return;
-        }
-
-        if (target instanceof WhiteKnightEntity) {
-            return;
-        }
+        if (mob instanceof WhiteKnightEntity || target instanceof WhiteKnightEntity) return;
 
         if (target instanceof Player player && (BonusManager.isZombieBloodActive(player) || PlayerDownManager.isPlayerDown(player.getUUID()))) { 
             ci.cancel();

@@ -13,6 +13,7 @@ import me.cryo.zombierool.entity.ZombieEntity;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 import me.cryo.zombierool.util.PlayerVoiceManager;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -24,12 +25,15 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 import me.cryo.zombierool.api.IHeadshotWeapon;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public class DamageManager {
+
     public static final String HEADSHOT_TAG = "zombierool:is_headshot_damage";
     public static final String GUN_DAMAGE_TAG = "zombierool:damage_by_gun";
     public static final String HIT_ZONE_TAG = "zombierool:hit_zone";
@@ -46,11 +50,29 @@ public class DamageManager {
         }
     }
 
+    // NOUVEAU: Bloque completement les attaques entre joueurs pour eviter le red flash
+    @SubscribeEvent
+    public static void onLivingAttack(LivingAttackEvent event) {
+        if (event.getEntity() instanceof Player targetPlayer) {
+            Entity attacker = event.getSource().getEntity();
+            if (attacker instanceof Player && attacker != targetPlayer) {
+                event.setCanceled(true);
+                return;
+            }
+            if (event.getSource().getDirectEntity() instanceof net.minecraft.world.entity.projectile.Projectile proj) {
+                if (proj.getOwner() instanceof Player && proj.getOwner() != targetPlayer) {
+                    event.setCanceled(true);
+                    return;
+                }
+            }
+        }
+    }
+
     public static String computeHitZone(LivingEntity entity, Vec3 hitPos) {
         boolean isCrawler = entity instanceof CrawlerEntity || entity instanceof CrawlerCorpse;
         Vec3 entityCenter = entity.position().add(0, entity.getBbHeight() / 2.0, 0);
         Vec3 toHit = hitPos.subtract(entityCenter);
-        
+
         Vec3 forward = Vec3.directionFromRotation(0, entity.getYRot()).normalize();
         Vec3 up;
         double lengthReference;
@@ -74,13 +96,13 @@ public class DamageManager {
 
         Vec3 right = isCrawler ? forward.cross(new Vec3(0, 1, 0)).normalize() : forward.cross(up).normalize();
         double lateral = toHit.dot(right);
-
         double armThreshold = entity.getBbWidth() * 0.22;
 
         if (ratio > 0.78) return "head";
         if (ratio > 0.35 && Math.abs(lateral) > armThreshold)
             return lateral > 0 ? "right_arm" : "left_arm";
         if (ratio > 0.35) return "torso";
+        
         return "legs";
     }
 
@@ -96,7 +118,7 @@ public class DamageManager {
                 if (def != null && "SNIPER".equalsIgnoreCase(def.type)) {
                     globalMultiplier = 3.0f;
                 }
-                
+
                 if (weapon.getItem() instanceof IHeadshotWeapon headshotWeapon) {
                     flatBonus += headshotWeapon.getHeadshotBaseDamage(weapon); 
                     if (WeaponFacade.isPackAPunched(weapon)) {
@@ -115,7 +137,6 @@ public class DamageManager {
         if (BonusManager.isInstaKillActive(attacker)) {
             damage = 100000f;
         }
-        
         return damage;
     }
 
@@ -170,21 +191,19 @@ public class DamageManager {
         if (target.getHealth() - event.getAmount() <= 0) {
             return;
         }
-        
+
         PointManager.modifyScore(player, 10);
     }
 
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide) return;
-
-        LivingEntity target = event.getEntity();
         
+        LivingEntity target = event.getEntity();
         if (target.getPersistentData().getBoolean("zr_death_processed")) return;
         target.getPersistentData().putBoolean("zr_death_processed", true);
 
         DamageSource source = event.getSource();
-
         if (!isValidTarget(target)) return;
 
         Entity attackerEntity = source.getEntity();
@@ -216,6 +235,7 @@ public class DamageManager {
                 PlayerStatsManager.recordHeadshot(player);
                 PlayerVoiceManager.playKillHeadshot(player, player.level());
             }
+
             if (target instanceof HellhoundEntity) {
                 PlayerVoiceManager.playKillHellhound(player, player.level());
             } else if (target instanceof CrawlerEntity || (target instanceof ZombieEntity z && z.isCrawler())) {
@@ -230,12 +250,13 @@ public class DamageManager {
             } else if (source.getDirectEntity() instanceof Player) {
                 points = 130;
             }
+
             PointManager.modifyScore(player, points);
-            
+
         } else {
             PlayerStatsManager.cleanupEntity(target.getId());
         }
-        
+
         target.getPersistentData().remove(HEADSHOT_TAG);
         target.getPersistentData().remove(GUN_DAMAGE_TAG);
         target.getPersistentData().remove(HIT_ZONE_TAG);

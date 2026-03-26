@@ -4882,5 +4882,37 @@
         "stream": false
       }
     ]
+  },
+  "monk_cymb": {
+    "sounds": [
+      {
+        "name": "zombierool:monk_cymb_st",
+        "stream": false
+      }
+    ]
+  },
+  "monkey_ratchet": {
+    "sounds": [
+      {
+        "name": "zombierool:monkey_ratchet",
+        "stream": false
+      }
+    ]
+  },
+  "monkey_song": {
+    "sounds": [
+      {
+        "name": "zombierool:monkey_song_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:monkey_song_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:monkey_song_02",
+        "stream": false
+      }
+    ]
   }
 }

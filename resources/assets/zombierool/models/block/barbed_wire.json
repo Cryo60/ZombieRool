@@ -1,0 +1,159 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "wire": "zombierool:block/deco/barbed_wire",
+    "particle": "zombierool:block/deco/barbed_wire"
+  },
+  "elements": [
+    {
+      "name": "Vertical_Plane",
+      "from": [
+        8,
+        0,
+        0
+      ],
+      "to": [
+        8,
+        16,
+        16
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        }
+      }
+    },
+    {
+      "name": "Horizontal_Plane",
+      "from": [
+        0,
+        8,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        }
+      }
+    },
+    {
+      "name": "Diagonal_Plane_1",
+      "from": [
+        8,
+        -3.31,
+        0
+      ],
+      "to": [
+        8,
+        19.31,
+        16
+      ],
+      "rotation": {
+        "angle": 45,
+        "axis": "z",
+        "origin": [
+          8,
+          8,
+          8
+        ]
+      },
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        }
+      }
+    },
+    {
+      "name": "Diagonal_Plane_2",
+      "from": [
+        8,
+        -3.31,
+        0
+      ],
+      "to": [
+        8,
+        19.31,
+        16
+      ],
+      "rotation": {
+        "angle": -45,
+        "axis": "z",
+        "origin": [
+          8,
+          8,
+          8
+        ]
+      },
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#wire"
+        }
+      }
+    }
+  ]
+}

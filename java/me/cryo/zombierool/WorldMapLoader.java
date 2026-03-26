@@ -6,12 +6,14 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.loading.FMLPaths;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -35,6 +37,47 @@ public class WorldMapLoader {
         return Files.exists(savesPath) && Files.isDirectory(savesPath);
     }
 
+    private static HttpURLConnection openConnectionWithRedirects(String urlString) throws Exception {
+        urlString = urlString.replace(" ", "%20");
+        URL url = new URL(urlString);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(30000);
+        conn.setReadTimeout(30000);
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+        conn.setInstanceFollowRedirects(false);
+
+        int status = conn.getResponseCode();
+        int redirects = 0;
+        
+        while (status == HttpURLConnection.HTTP_MOVED_TEMP || 
+               status == HttpURLConnection.HTTP_MOVED_PERM || 
+               status == HttpURLConnection.HTTP_SEE_OTHER ||
+               status == 307 || status == 308) {
+            
+            if (redirects > 10) throw new IOException("Too many redirects");
+            String newUrl = conn.getHeaderField("Location");
+            conn.disconnect();
+            
+            url = new URL(url, newUrl);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setInstanceFollowRedirects(false);
+            status = conn.getResponseCode();
+            redirects++;
+        }
+        
+        if (status >= 400) {
+            if (status == 404 && urlString.endsWith(".json")) {
+                throw new FileNotFoundException("JSON File not found");
+            }
+            throw new IOException("HTTP Error " + status + " on " + url.getFile());
+        }
+        
+        return conn;
+    }
+
     private static void downloadAndInstallNacht() {
         new Thread(() -> {
             try {
@@ -44,12 +87,7 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Nacht der Untoten not found, downloading from GitHub...");
-
-                URL jsonUrl = new URL(MAPS_JSON_URL);
-                HttpURLConnection jsonConn = (HttpURLConnection) jsonUrl.openConnection();
-                jsonConn.setRequestMethod("GET");
-                jsonConn.setConnectTimeout(10000);
-                jsonConn.setReadTimeout(10000);
+                HttpURLConnection jsonConn = openConnectionWithRedirects(MAPS_JSON_URL);
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(jsonConn.getInputStream()));
                 StringBuilder response = new StringBuilder();
@@ -58,52 +96,29 @@ public class WorldMapLoader {
                     response.append(line);
                 }
                 reader.close();
+                jsonConn.disconnect();
 
-                Gson gson = new Gson();
-                JsonObject json = gson.fromJson(response.toString(), JsonObject.class);
+                JsonObject json = new Gson().fromJson(response.toString(), JsonObject.class);
                 JsonArray mapsArray = json.getAsJsonArray("maps");
 
                 String downloadUrl = null;
+                JsonObject targetMapObj = null;
                 for (int i = 0; i < mapsArray.size(); i++) {
                     JsonObject mapObj = mapsArray.get(i).getAsJsonObject();
                     if (TARGET_MAP_ID.equals(mapObj.get("id").getAsString())) {
                         downloadUrl = mapObj.get("download_url").getAsString();
+                        targetMapObj = mapObj;
                         break;
                     }
                 }
 
-                if (downloadUrl == null) {
+                if (downloadUrl == null || targetMapObj == null) {
                     System.err.println("[ZombieRool] Nacht der Untoten not found in maps.json");
                     return;
                 }
 
                 System.out.println("[ZombieRool] Downloading from: " + downloadUrl);
-
-                URL mapUrl = new URL(downloadUrl);
-                HttpURLConnection mapConn = (HttpURLConnection) mapUrl.openConnection();
-                mapConn.setRequestMethod("GET");
-                mapConn.setInstanceFollowRedirects(true);
-                mapConn.setConnectTimeout(30000);
-                mapConn.setReadTimeout(30000);
-                mapConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                mapConn.setRequestProperty("Accept", "*/*");
-                mapConn.connect();
-
-                int responseCode = mapConn.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
-                    responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                    responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                    String newUrl = mapConn.getHeaderField("Location");
-                    mapConn = (HttpURLConnection) new URL(newUrl).openConnection();
-                    mapConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                    mapConn.connect();
-                    responseCode = mapConn.getResponseCode();
-                }
-
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    System.err.println("[ZombieRool] Download failed: HTTP " + responseCode);
-                    return;
-                }
+                HttpURLConnection mapConn = openConnectionWithRedirects(downloadUrl);
 
                 File tempDir = new File(FMLPaths.GAMEDIR.get().toFile(), "temp_downloads");
                 tempDir.mkdirs();
@@ -119,11 +134,12 @@ public class WorldMapLoader {
                     while ((bytesRead = in.read(buffer)) != -1) {
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
-                        if (totalRead % 500000 == 0) {
+                        if (totalRead % 1000000 == 0) {
                             System.out.println("[ZombieRool] Downloaded: " + (totalRead / 1024) + " KB");
                         }
                     }
                 }
+                mapConn.disconnect();
 
                 System.out.println("[ZombieRool] Download complete, extracting...");
 
@@ -134,19 +150,27 @@ public class WorldMapLoader {
 
                 File targetDir = new File(savesPath.toFile(), TARGET_MAP_NAME);
                 extractZip(zipFile, targetDir);
+                
+                File metaFile = new File(targetDir, "zombierool_map.json");
+                JsonObject metaJson = new JsonObject();
+                metaJson.addProperty("id", targetMapObj.get("id").getAsString());
+                if (targetMapObj.has("version")) metaJson.addProperty("version", targetMapObj.get("version").getAsString());
+                if (targetMapObj.has("sha256")) metaJson.addProperty("sha256", targetMapObj.get("sha256").getAsString());
+                if (targetMapObj.has("resource_pack")) {
+                    JsonObject rp = targetMapObj.getAsJsonObject("resource_pack");
+                    if (rp.has("url")) metaJson.addProperty("resource_pack_url", rp.get("url").getAsString());
+                    if (rp.has("name")) metaJson.addProperty("resource_pack_name", rp.get("name").getAsString());
+                }
+                try (FileWriter writer = new FileWriter(metaFile)) {
+                    new GsonBuilder().setPrettyPrinting().create().toJson(metaJson, writer);
+                }
 
                 zipFile.delete();
                 tempDir.delete();
-
                 System.out.println("[ZombieRool] Nacht der Untoten installed successfully!");
 
-            } catch (java.net.SocketTimeoutException e) {
-                System.err.println("[ZombieRool] Connection timeout - Nacht der Untoten download failed");
-                System.err.println("[ZombieRool] You can download it manually from the Official Maps menu");
             } catch (Exception e) {
                 System.err.println("[ZombieRool] Error downloading Nacht der Untoten: " + e.getMessage());
-                System.err.println("[ZombieRool] You can download it manually from the Official Maps menu");
-                e.printStackTrace();
             }
         }).start();
     }
@@ -159,10 +183,9 @@ public class WorldMapLoader {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 File file = new File(destDir, entry.getName());
-                
-                // PROTECTION ANTI ZIP SLIP
                 String canonicalDestPath = destDir.getCanonicalPath();
                 String canonicalFilePath = file.getCanonicalPath();
+
                 if (!canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
                     throw new IOException("Zip Slip detected: " + entry.getName());
                 }

@@ -246,10 +246,14 @@ public class PowerSwitchBlock extends Block {
                     LuaScriptManager.callEvent("OnPowerActivated"); 
                 }
                 for (BlockPos activatorPos : GlobalSwitchState.getActivatorPositions(world)) {
-                    if (world.hasChunkAt(activatorPos)) {
-                        world.updateNeighborsAt(activatorPos, this);
-                    }
-                }
+				    if (world.hasChunkAt(activatorPos)) {
+				        world.updateNeighborsAt(activatorPos, this);
+				        for (Direction dir : Direction.values()) {
+				            BlockPos neighbor = activatorPos.relative(dir);
+				            world.updateNeighborsAt(neighbor, world.getBlockState(activatorPos).getBlock());
+				        }
+				    }
+				}
                 return InteractionResult.CONSUME;
             }
             return InteractionResult.FAIL;

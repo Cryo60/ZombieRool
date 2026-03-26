@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class TacZPackDownloaderScreen extends Screen {
-    private static final String DEPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/Zombierool/refs/heads/master/dependencies.json";
+    private static final String DEPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/refs/heads/main/dependencies.json";
     private static final long MAX_FILE_SIZE = 1000L * 1024L * 1024L; 
     private static final int CONNECT_TIMEOUT = 15000;
     private static final int READ_TIMEOUT = 60000;

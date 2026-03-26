@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/hazard_stripes_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/hazard_stripes_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/hazard_stripes"
+    }
+  }
+}

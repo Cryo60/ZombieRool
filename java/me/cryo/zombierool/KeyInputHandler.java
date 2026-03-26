@@ -36,7 +36,6 @@ import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.C2SUpdateLethalStatePacket;
 import me.cryo.zombierool.network.packet.C2SThrowBackGrenadePacket;
 import me.cryo.zombierool.init.KeyBindings;
-
 import me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlock;
 import me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlockEntity;
 import me.cryo.zombierool.block.system.PerksSystem.PerksAColaDummyBlock;
@@ -52,7 +51,6 @@ import me.cryo.zombierool.block.AmmoCrateBlock;
 import me.cryo.zombierool.block.system.PackAPunchSystem.PackAPunchBlock;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
 import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
-
 import me.cryo.zombierool.PerksManager;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.client.ClientPlayerDownSoundManager;
@@ -77,13 +75,12 @@ public class KeyInputHandler {
     private static boolean keyWasDown = false;
     private static boolean wasLethalDown = false;
     public static int clientGrenadeCookTimer = 0;
-
+    
     private static int updateTick = 0;
     private static final int UPDATE_INTERVAL = 5;
-
     private static final List<Component> activeHUDMessages = new ArrayList<>();
+    
     public static BlockPos clientActiveWunderfizzPosition = null;
-
     private static long clientReviveDuration = 120; 
 
     public static void updateAmmoCrateInfo(int price, boolean canPurchase, String hudMessage) {
@@ -177,9 +174,9 @@ public class KeyInputHandler {
         }
 
         boolean isFKeyDown = KeyBindings.REPAIR_AND_PURCHASE_KEY.isDown();
+        
         Player detectedReviveTarget = null;
         double minDistSq = 2.25;
-
         for (Player p : mc.level.players()) {
             if (p.getUUID().equals(player.getUUID())) continue;
             if (downPlayers.contains(p.getUUID()) && p.distanceToSqr(player) < minDistSq) {
@@ -200,10 +197,12 @@ public class KeyInputHandler {
 
         if (isFKeyDown && !keyWasDown) {
             NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(playerPos, InteractionType.ACTION_KEY));
+            
             if (revivingTargetUUID == null && detectedReviveTarget == null) {
                 handleSinglePressActions(player, playerPos, mc, true);
             }
         }
+
         keyWasDown = isFKeyDown;
 
         updateTick++;
@@ -220,7 +219,6 @@ public class KeyInputHandler {
     private static void scanForInteractions(LocalPlayer player, BlockPos playerPos, Minecraft mc) {
         activeHUDMessages.clear();
         if (player.isCreative()) return;
-
         String actionKey = KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
 
         for (me.cryo.zombierool.core.manager.InteractableManager.Interactable inter : ClientInteractableManager.getInteractables().values()) {
@@ -237,8 +235,8 @@ public class KeyInputHandler {
 
             BlockState state = mc.level.getBlockState(pos);
             Block block = state.getBlock();
-            BlockPos mainPerkPos = pos;
 
+            BlockPos mainPerkPos = pos;
             if (block instanceof PerksAColaDummyBlock) {
                 mainPerkPos = state.getValue(PerksAColaDummyBlock.PART) == DummyPart.LOWER ? pos.above() : pos.below();
                 state = mc.level.getBlockState(mainPerkPos);
@@ -251,9 +249,9 @@ public class KeyInputHandler {
                     boolean powered = perksBE.isPowered();
                     String perkId = perksBE.getSavedPerkId();
                     PerksManager.Perk perk = PerksManager.ALL_PERKS.get(perkId);
+                    
                     if (perk != null) {
                         net.minecraft.world.effect.MobEffect effect = perk.getAssociatedEffect();
-
                         if (!powered) {
                             activeHUDMessages.add(Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED));
                         } else if (PerksManager.getPerkCount(player) >= PerksManager.MAX_PERKS_LIMIT && (effect == null || !player.hasEffect(effect))) {
@@ -291,13 +289,13 @@ public class KeyInputHandler {
                 }
                 return;
             }
-
+            
             if (block instanceof DerWunderfizzBlock && distanceSq <= 2.25) {
                 BlockEntity be = mc.level.getBlockEntity(pos);
                 if (be instanceof DerWunderfizzBlockEntity wunderfizz) {
                     DerWunderfizzBlockEntity.WunderfizzState stateEnum = wunderfizz.getState();
                     boolean isActivePosition = clientActiveWunderfizzPosition != null && clientActiveWunderfizzPosition.equals(pos);
-
+                    
                     if (stateEnum == DerWunderfizzBlockEntity.WunderfizzState.IDLE) {
                         if (!isActivePosition) {
                             activeHUDMessages.add(Component.translatable("message.zombierool.wunderfizz.not_here").withStyle(ChatFormatting.RED));
@@ -343,19 +341,16 @@ public class KeyInputHandler {
                 if (be instanceof BlindBuyCabinetBlockEntity cabinet) {
                     boolean isOpen = state.getValue(BlindBuyCabinetBlock.OPEN);
                     int price = cabinet.getPrice();
-
                     if (!isOpen) {
                         activeHUDMessages.add(Component.translatable("message.zombierool.blind_buy.buy", actionKey, price));
                     } else {
                         net.minecraft.world.item.ItemStack weapon = cabinet.getWeapon();
                         String wpnName = weapon.getHoverName().getString();
-
                         boolean isTacz = WeaponFacade.isTaczWeapon(weapon);
                         me.cryo.zombierool.core.system.WeaponSystem.Definition def = WeaponFacade.getDefinition(weapon);
+                        
                         net.minecraft.world.item.ItemStack existing = net.minecraft.world.item.ItemStack.EMPTY;
-
                         String wId = WeaponFacade.getWeaponId(weapon);
-
                         for (net.minecraft.world.item.ItemStack s : player.getInventory().items) {
                             if (isTacz && WeaponFacade.isTaczWeapon(s)) {
                                 if (wId.equals(s.getOrCreateTag().getString("GunId"))) { existing = s; break; }
@@ -416,6 +411,7 @@ public class KeyInputHandler {
 
         for (BlockPos pos : BlockPos.betweenClosed(playerPos.offset(-2, -1, -2), playerPos.offset(2, 2, 2))) {
             BlockState state = mc.level.getBlockState(pos);
+            
             if (state.getBlock() instanceof MysteryBoxBlock) {
                 if (!state.getValue(MysteryBoxBlock.PART) && state.getValue(MysteryBoxBlock.ACTIVE)) {
                     double distanceSq = player.position().distanceToSqr(pos.getCenter());
@@ -425,7 +421,6 @@ public class KeyInputHandler {
                     }
                 }
             }
-
             if (state.getBlock() instanceof BlindBuyCabinetBlock) {
                 double distanceSq = player.position().distanceToSqr(pos.getCenter());
                 if (distanceSq <= 4.0) {
@@ -458,8 +453,8 @@ public class KeyInputHandler {
         for (BlockPos pos : BlockPos.betweenClosed(playerPos.offset(-2, -1, -2), playerPos.offset(2, 2, 2))) {
             BlockState state = mc.level.getBlockState(pos);
             Block block = state.getBlock();
-            BlockPos mainPerkPos = pos;
 
+            BlockPos mainPerkPos = pos;
             if (block instanceof PerksAColaDummyBlock) {
                 mainPerkPos = state.getValue(PerksAColaDummyBlock.PART) == DummyPart.LOWER ? pos.above() : pos.below();
                 state = mc.level.getBlockState(mainPerkPos);
@@ -469,6 +464,7 @@ public class KeyInputHandler {
             if (block instanceof PerksAColaBlock) {
                 double distanceSq = player.position().distanceToSqr(pos.getCenter());
                 if (distanceSq > 4.0) continue;
+
                 NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(mainPerkPos, InteractionType.PERK));
                 return;
             }
@@ -484,7 +480,6 @@ public class KeyInputHandler {
             BlockEntity be = mc.level.getBlockEntity(pos);
             if (be instanceof DerWunderfizzBlockEntity wunderfizz) {
                 DerWunderfizzBlockEntity.WunderfizzState stateEnum = wunderfizz.getState();
-
                 if (stateEnum == DerWunderfizzBlockEntity.WunderfizzState.IDLE) {
                     NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(pos, InteractionType.WUNDERFIZZ_BUY));
                     return;
@@ -505,56 +500,23 @@ public class KeyInputHandler {
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null || player.isCreative()) return;
 
-        renderPackAPunchHint(event, mc, player);
-
+        // Note: The redundant call to renderPackAPunchHint was removed because 
+        // ClientHUDHandler.renderWallWeaponHint already renders it, 
+        // avoiding rendering the text twice on screen.
+        
         if (!activeHUDMessages.isEmpty()) {
             Font font = mc.font;
             int width = mc.getWindow().getGuiScaledWidth();
             int height = mc.getWindow().getGuiScaledHeight();
+            
             int startY = (height / 2) + 15;
-
+            
             for (Component msg : activeHUDMessages) {
                 int x = (width - font.width(msg)) / 2;
                 event.getGuiGraphics().drawString(font, msg, x, startY, 0xFFFFFF);
                 startY += font.lineHeight + 2;
             }
         }
-    }
-
-    private static void renderPackAPunchHint(RenderGuiOverlayEvent.Post event, Minecraft mc, LocalPlayer player) {
-        HitResult hit = mc.hitResult;
-        if (!(hit instanceof BlockHitResult bhr)) return;
-        BlockPos pos = bhr.getBlockPos();
-        Block block = mc.level.getBlockState(pos).getBlock();
-
-        if (!(block instanceof PackAPunchBlock)) return;
-
-        double dx = Math.abs(player.getX() - (pos.getX() + 0.5));
-        double dz = Math.abs(player.getZ() - (pos.getZ() + 0.5));
-        if (dx > 1.5 || dz > 1.5) return;
-
-        boolean powered = mc.level.getBlockState(pos).getValue(PackAPunchBlock.POWERED);
-        boolean hasIngot = hasIngot(player);
-        String actionKey = KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
-        Component text;
-
-        if (!powered) {
-            text = Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED);
-        } else {
-            if (hasIngot) {
-                text = Component.translatable("message.zombierool.packapunch.upgrade_ingot", actionKey);
-            } else {
-                text = Component.translatable("message.zombierool.packapunch.upgrade", actionKey, 5000);
-            }
-        }
-
-        Font font = mc.font;
-        int width = mc.getWindow().getGuiScaledWidth();
-        int height = mc.getWindow().getGuiScaledHeight();
-
-        int y = (height / 2) + 30;
-        int x = (width - font.width(text)) / 2;
-        event.getGuiGraphics().drawString(font, text, x, y, 0xFFFFFF);
     }
 
     @SubscribeEvent
@@ -603,9 +565,11 @@ public class KeyInputHandler {
             }
 
             Component text = Component.translatable("gui.zombierool.overlay.reviving_progress", targetName, (int)(progress * 100));
+
             Font font = mc.font;
             int width = mc.getWindow().getGuiScaledWidth();
             int height = mc.getWindow().getGuiScaledHeight();
+            
             int barWidth = 150;
             int barHeight = 10;
             int barX = (width - barWidth) / 2;

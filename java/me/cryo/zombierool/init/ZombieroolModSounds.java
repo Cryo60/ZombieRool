@@ -429,4 +429,7 @@ public class ZombieroolModSounds {
 	public static final RegistryObject<SoundEvent> HK21_RELOADING = REGISTRY.register("hk21_reloading", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "hk21_reloading")));
 	public static final RegistryObject<SoundEvent> VANDAL_RELOADING = REGISTRY.register("vandal_reloading", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "vandal_reloading")));
 	public static final RegistryObject<SoundEvent> M1CARBINE_FIRE = REGISTRY.register("m1carbine_fire", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "m1carbine_fire")));
+	public static final RegistryObject<SoundEvent> MONK_CYMB = REGISTRY.register("monk_cymb", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "monk_cymb")));
+	public static final RegistryObject<SoundEvent> MONKEY_RATCHET = REGISTRY.register("monkey_ratchet", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "monkey_ratchet")));
+	public static final RegistryObject<SoundEvent> MONKEY_SONG = REGISTRY.register("monkey_song", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "monkey_song")));
 }

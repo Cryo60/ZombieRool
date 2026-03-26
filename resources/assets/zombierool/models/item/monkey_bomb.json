@@ -1,0 +1,226 @@
+{
+	"credit": "Refait pour ressembler à la vraie Bombe Singe",
+	"texture_size": [16, 16],
+	"textures": {
+		"fur": "minecraft:block/brown_terracotta",
+		"skin": "minecraft:block/white_terracotta",
+		"clothes": "minecraft:block/blue_terracotta",
+		"pants": "minecraft:block/sandstone",
+		"tnt_red": "minecraft:block/red_concrete",
+		"gold": "minecraft:block/gold_block",
+		"strap": "minecraft:block/gray_concrete",
+		"metal": "minecraft:block/iron_block",
+		"hat": "minecraft:block/red_wool",
+		"particle": "minecraft:block/brown_terracotta"
+	},
+	"elements": [
+		{
+			"name": "Pelvis_Pants",
+			"from": [5, 0, 5],
+			"to": [11, 3, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#pants"}
+			}
+		},
+		{
+			"name": "Torso_Shirt",
+			"from": [5.5, 3, 5.5],
+			"to": [10.5, 9, 8.5],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#clothes"}
+			}
+		},
+		{
+			"name": "Head",
+			"from": [5, 9, 4],
+			"to": [11, 15, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#skin"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#fur"}
+			}
+		},
+		{
+			"name": "Fez_Hat",
+			"from": [6.5, 15, 5],
+			"to": [9.5, 17.5, 8],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#hat"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#hat"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#hat"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#hat"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#hat"}
+			}
+		},
+		{
+			"name": "Leg_Right",
+			"from": [5, 0, 1],
+			"to": [7.5, 2, 5],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#pants"}
+			}
+		},
+		{
+			"name": "Leg_Left",
+			"from": [8.5, 0, 1],
+			"to": [11, 2, 5],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#pants"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#pants"}
+			}
+		},
+		{
+			"name": "Arm_Right",
+			"from": [3.5, 4, 3],
+			"to": [5.5, 8, 7],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#clothes"}
+			}
+		},
+		{
+			"name": "Arm_Left",
+			"from": [10.5, 4, 3],
+			"to": [12.5, 8, 7],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#fur"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#clothes"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#clothes"}
+			}
+		},
+		{
+			"name": "Cymbal_Right",
+			"from": [5.5, 2.5, -0.5],
+			"to": [6.5, 10.5, 7.5],
+			"rotation": {"angle": 22.5, "axis": "y", "origin": [6, 6.5, 3.5]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#gold"}
+			}
+		},
+		{
+			"name": "Cymbal_Left",
+			"from": [9.5, 2.5, -0.5],
+			"to": [10.5, 10.5, 7.5],
+			"rotation": {"angle": -22.5, "axis": "y", "origin": [10, 6.5, 3.5]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#gold"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#gold"}
+			}
+		},
+		{
+			"name": "Dynamite_Left",
+			"from": [8, 1, 9],
+			"to": [11, 12, 12],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"}
+			}
+		},
+		{
+			"name": "Dynamite_Right",
+			"from": [5, 1, 9],
+			"to": [8, 12, 12],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"}
+			}
+		},
+		{
+			"name": "Dynamite_Top",
+			"from": [6.5, 2, 11],
+			"to": [9.5, 13, 14],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#tnt_red"}
+			}
+		},
+		{
+			"name": "Straps",
+			"from": [4.5, 4, 6],
+			"to": [11.5, 6, 13],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#strap"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#strap"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#strap"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#strap"}
+			}
+		},
+		{
+			"name": "Mechanism",
+			"from": [6, 7, 12.5],
+			"to": [10, 11, 14.5],
+			"faces": {
+				"east": {"uv": [0, 0, 16, 16], "texture": "#metal"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#metal"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#metal"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#metal"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [0, 0, 0],
+			"translation": [0, 3, 1],
+			"scale": [0.65, 0.65, 0.65]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, -90, 0],
+			"translation": [1.13, 3.2, 1.13],
+			"scale": [0.68, 0.68, 0.68]
+		},
+		"ground": {
+			"translation": [0, 4, 0],
+			"scale": [0.5, 0.5, 0.5]
+		},
+		"gui": {
+			"rotation": [30, 225, 0],
+			"translation": [0, -3, 0],
+			"scale": [0.7, 0.7, 0.7]
+		}
+	}
+}

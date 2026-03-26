@@ -1,13 +1,13 @@
 {
   "parent": "block/cube",
   "textures": {
-    "down": "zombierool:block/limitblockpart1",
-    "up": "zombierool:block/limitblockpart1",
-    "north": "zombierool:block/limitblockpart2",
-    "east": "zombierool:block/limitblockpart2",
-    "south": "zombierool:block/limitblockpart2",
-    "west": "zombierool:block/limitblockpart2",
-    "particle": "zombierool:block/limitblockpart1"
+    "down": "zombierool:block/limit_block",
+    "up": "zombierool:block/limit_block",
+    "north": "zombierool:block/limit_block_face",
+    "east": "zombierool:block/limit_block_face",
+    "south": "zombierool:block/limit_block_face",
+    "west": "zombierool:block/limit_block_face",
+    "particle": "zombierool:block/limit_block"
   },
   "render_type": "translucent"
 }

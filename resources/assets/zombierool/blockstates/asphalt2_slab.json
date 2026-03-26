@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/asphalt2_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/asphalt2_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/asphalt2"
+    }
+  }
+}

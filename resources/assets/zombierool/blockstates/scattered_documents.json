@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "zombierool:block/scattered_documents_1"
+      },
+      {
+        "model": "zombierool:block/scattered_documents_2"
+      },
+      {
+        "model": "zombierool:block/scattered_documents_3"
+      },
+      {
+        "model": "zombierool:block/scattered_documents_4"
+      },
+      {
+        "model": "zombierool:block/scattered_documents_5"
+      }
+    ]
+  }
+}

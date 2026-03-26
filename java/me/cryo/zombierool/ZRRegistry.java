@@ -30,6 +30,9 @@ public class ZRRegistry {
     public static Item BOWIE_KNIFE;
     public static Item ANIM_GRENADE;
     public static Item ANIM_MOLOTOV;
+    public static Item ANIM_STIELHANDGRANATE;
+    public static Item ANIM_MONKEY_BOMB;
+    public static Item ANIM_LIGHTER;
 
     @SubscribeEvent
     public static void onRegister(RegisterEvent event) {
@@ -49,18 +52,23 @@ public class ZRRegistry {
                 BOWIE_KNIFE = new BowieKnifeItem(new Item.Properties());
                 ANIM_GRENADE = new Item(new Item.Properties());
                 ANIM_MOLOTOV = new Item(new Item.Properties());
+                ANIM_STIELHANDGRANATE = new Item(new Item.Properties());
+                ANIM_MONKEY_BOMB = new Item(new Item.Properties());
+                ANIM_LIGHTER = new Item(new Item.Properties());
 
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_bottle"), ANIM_BOTTLE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_knife"), ANIM_KNIFE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "bowie_knife"), BOWIE_KNIFE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_grenade"), ANIM_GRENADE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_molotov"), ANIM_MOLOTOV);
+                helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_stielhandgranate"), ANIM_STIELHANDGRANATE);
+                helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_monkey_bomb"), ANIM_MONKEY_BOMB);
+                helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_lighter"), ANIM_LIGHTER);
             });
         }
 
         if (event.getRegistryKey().equals(Registries.CREATIVE_MODE_TAB)) {
             TAB_KEY = ResourceKey.create(Registries.CREATIVE_MODE_TAB, new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"));
-
             event.register(Registries.CREATIVE_MODE_TAB, helper -> {
                 CreativeModeTab tab = CreativeModeTab.builder()
                         .title(Component.translatable("itemGroup.zombierool.zombie_arsenal"))
@@ -78,7 +86,6 @@ public class ZRRegistry {
             for (Item item : GUN_ITEMS) {
                 event.accept(item);
             }
-            
             for (Item item : GUN_ITEMS) {
                 if (item instanceof me.cryo.zombierool.api.IPackAPunchable papItem) {
                     ItemStack papStack = new ItemStack(item);
@@ -89,10 +96,12 @@ public class ZRRegistry {
                     event.accept(papStack);
                 }
             }
-            
+
             event.accept(BOWIE_KNIFE);
             event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.GRENADE_ITEM.get());
             event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.MOLOTOV_ITEM.get());
+            event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.STIELHANDGRANATE_ITEM.get());
+            event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.MONKEY_BOMB_ITEM.get());
         }
     }
 }

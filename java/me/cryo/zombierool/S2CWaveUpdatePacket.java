@@ -4,7 +4,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraft.client.Minecraft; 
 import java.util.function.Supplier;
-
 import me.cryo.zombierool.WaveManager; 
 
 public class S2CWaveUpdatePacket {
@@ -27,6 +26,7 @@ public class S2CWaveUpdatePacket {
         context.enqueueWork(() -> {
             if (Minecraft.getInstance().level != null) {
                 WaveManager.setClientWave(msg.wave); 
+                WaveManager.setClientGameRunning(msg.wave > 0); 
                 if (msg.wave == 0) {
                     me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponRenderer.clearAllPurchases();
                     me.cryo.zombierool.client.DrinkPerkAnimationHandler.reset();

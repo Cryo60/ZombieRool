@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "zombierool:block/barbed_wire"
+    },
+    "axis=z": {
+      "model": "zombierool:block/barbed_wire",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "zombierool:block/barbed_wire",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

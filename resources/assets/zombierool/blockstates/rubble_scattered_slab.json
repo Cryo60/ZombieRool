@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "zombierool:block/rubble_scattered_slab"
+    },
+    "type=top": {
+      "model": "zombierool:block/rubble_scattered_slab_top"
+    },
+    "type=double": {
+      "model": "zombierool:block/rubble_scattered"
+    }
+  }
+}

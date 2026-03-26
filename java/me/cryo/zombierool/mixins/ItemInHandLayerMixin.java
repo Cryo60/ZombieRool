@@ -23,23 +23,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemInHandLayer.class)
 public class ItemInHandLayerMixin {
+
     @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFFFFF)V", at = @At("HEAD"), cancellable = true)
     public void onRender(PoseStack poseStack, MultiBufferSource buffer, int packedLight, LivingEntity entity, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
         if (!(entity instanceof Player player)) return;
-        
+
         ZRAnimationState state = ThirdPersonAnimHandler.getAnim(player.getUUID());
         if (state == null || !state.isPlaying()) return;
-        
+
         ci.cancel();
 
         ItemStack itemToRender = player.getMainHandItem();
         String animName = state.getAnimation().name;
-        
+
         if (animName.equals("knife_sweep")) {
             boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             itemToRender = new ItemStack(hasBowie ? ZRRegistry.BOWIE_KNIFE : ZRRegistry.ANIM_KNIFE);
         } else if (animName.equals("drink") || animName.equals("drink_perk")) {
             itemToRender = new ItemStack(ZRRegistry.ANIM_BOTTLE);
+        } else if (animName.startsWith("stielhandgranate")) {
+            itemToRender = new ItemStack(ZRRegistry.ANIM_STIELHANDGRANATE);
+        } else if (animName.startsWith("monkey_bomb")) {
+            itemToRender = new ItemStack(ZRRegistry.ANIM_MONKEY_BOMB);
         } else if (animName.startsWith("grenade")) {
             itemToRender = new ItemStack(ZRRegistry.ANIM_GRENADE);
         } else if (animName.startsWith("molotov")) {
@@ -48,11 +53,11 @@ public class ItemInHandLayerMixin {
 
         if (itemToRender.isEmpty()) return;
 
-        poseStack.pushPose();
-
         PlayerModel<?> model = (PlayerModel<?>) ((ItemInHandLayer<?, ?>) (Object) this).getParentModel();
+        
+        // --- Main Hand Rendering ---
+        poseStack.pushPose();
         model.translateToHand(HumanoidArm.RIGHT, poseStack);
-
         poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
         poseStack.translate(1.0F / 16.0F, 0.125F, -0.625F);
@@ -78,7 +83,29 @@ public class ItemInHandLayerMixin {
                 OverlayTexture.NO_OVERLAY,
                 player.getId()
         );
-
         poseStack.popPose();
+
+        // --- Left Hand (Lighter for Molotov) ---
+        if (animName.equals("molotov_light") && state.hasBone("left_arm")) {
+            poseStack.pushPose();
+            model.translateToHand(HumanoidArm.LEFT, poseStack);
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+            poseStack.translate(-0.0625F, 0.125F, -0.625F); 
+            
+            Minecraft.getInstance().getItemRenderer().renderStatic(
+                player, 
+                new ItemStack(ZRRegistry.ANIM_LIGHTER), 
+                ItemDisplayContext.THIRD_PERSON_LEFT_HAND,
+                false, 
+                poseStack, 
+                buffer, 
+                player.level(), 
+                packedLight, 
+                OverlayTexture.NO_OVERLAY, 
+                player.getId()
+            );
+            poseStack.popPose();
+        }
     }
 }

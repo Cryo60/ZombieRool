@@ -1,3 +1,4 @@
+// [main\java\me\cryo\zombierool\MapEventManager.java]
 package me.cryo.zombierool;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -26,38 +27,43 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 
 public class MapEventManager {
+
     private static final int INTERVAL_SPOOKY = 60; 
     private static final int INTERVAL_SPOOKY_2D = 240; 
-
     private static final float CHANCE_SPOOKY = 0.4F; 
     private static final float CHANCE_SPOOKY_2D = 0.55F; 
 
     private static boolean serverSpookyActive = false;
     private static boolean serverHalloweenForced = false;
     private static int serverTickCounter = 0;
+    
     private static String lastCheckedWorld = "";
 
     public static class S2CMapConfigPacket {
         private final boolean spookyActive;
         private final boolean halloweenForced;
         private final boolean allowDownMovement;
-
-        public S2CMapConfigPacket(boolean spooky, boolean halloween, boolean allowDownMovement) {
+        private final boolean gameRunning;
+        
+        public S2CMapConfigPacket(boolean spooky, boolean halloween, boolean allowDownMovement, boolean gameRunning) {
             this.spookyActive = spooky;
             this.halloweenForced = halloween;
             this.allowDownMovement = allowDownMovement;
+            this.gameRunning = gameRunning;
         }
 
         public S2CMapConfigPacket(FriendlyByteBuf buf) {
             this.spookyActive = buf.readBoolean();
             this.halloweenForced = buf.readBoolean();
             this.allowDownMovement = buf.readBoolean();
+            this.gameRunning = buf.readBoolean();
         }
 
         public static void encode(S2CMapConfigPacket msg, FriendlyByteBuf buf) {
             buf.writeBoolean(msg.spookyActive);
             buf.writeBoolean(msg.halloweenForced);
             buf.writeBoolean(msg.allowDownMovement);
+            buf.writeBoolean(msg.gameRunning);
         }
 
         public static S2CMapConfigPacket decode(FriendlyByteBuf buf) {
@@ -66,7 +72,7 @@ public class MapEventManager {
 
         public static void handle(S2CMapConfigPacket msg, Supplier<NetworkEvent.Context> ctx) {
             ctx.get().enqueueWork(() -> {
-                ClientHandler.handleMapConfig(msg.spookyActive, msg.halloweenForced, msg.allowDownMovement);
+                ClientHandler.handleMapConfig(msg.spookyActive, msg.halloweenForced, msg.allowDownMovement, msg.gameRunning);
             });
             ctx.get().setPacketHandled(true);
         }
@@ -101,6 +107,7 @@ public class MapEventManager {
 
     @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ServerEvents {
+
         @SubscribeEvent
         public static void onServerTick(TickEvent.ServerTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
@@ -118,16 +125,19 @@ public class MapEventManager {
 
             if (serverSpookyActive) {
                 serverTickCounter++;
+                
                 if (serverTickCounter % INTERVAL_SPOOKY == 0) {
                     if (Math.random() < CHANCE_SPOOKY) {
                         broadcastSound("amb_spooky", event.getServer());
                     }
                 }
+                
                 if (serverTickCounter % INTERVAL_SPOOKY_2D == 0) {
                     if (Math.random() < CHANCE_SPOOKY_2D) {
                         broadcastSound("amb_spooky_2d", event.getServer());
                     }
                 }
+
                 if (serverTickCounter >= INTERVAL_SPOOKY_2D) {
                     serverTickCounter = 0;
                 }
@@ -142,7 +152,7 @@ public class MapEventManager {
                     allowDownMovement = WorldConfig.get(player.serverLevel()).isAllowDownMovement();
                 }
                 me.cryo.zombierool.network.NetworkHandler.INSTANCE.sendTo(
-                    new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement),
+                    new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning()),
                     player.connection.connection,
                     NetworkDirection.PLAY_TO_CLIENT
                 );
@@ -208,13 +218,13 @@ public class MapEventManager {
                 );
             }
         }
-
+        
         private static void broadcastConfigToAllPlayers(net.minecraft.server.MinecraftServer server) {
             boolean allowDownMovement = false;
             if (server.overworld() != null) {
                 allowDownMovement = WorldConfig.get(server.overworld()).isAllowDownMovement();
             }
-            S2CMapConfigPacket packet = new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement);
+            S2CMapConfigPacket packet = new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning());
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 me.cryo.zombierool.network.NetworkHandler.INSTANCE.sendTo(
                     packet, 
@@ -231,20 +241,19 @@ public class MapEventManager {
         private static boolean clientHalloweenForced = false;
         public static boolean allowDownMovement = false;
 
-        public static void handleMapConfig(boolean spooky, boolean halloween, boolean allowDownMvmt) {
+        public static void handleMapConfig(boolean spooky, boolean halloween, boolean allowDownMvmt, boolean gameRunning) {
             clientSpookyActive = spooky;
             clientHalloweenForced = halloween;
             allowDownMovement = allowDownMvmt;
+            me.cryo.zombierool.WaveManager.setClientGameRunning(gameRunning);
         }
 
         public static void playSound(String soundName) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null) return;
-
             try {
                 ResourceLocation soundLocation = new ResourceLocation("zombierool", soundName);
                 SoundEvent soundEvent = ForgeRegistries.SOUND_EVENTS.getValue(soundLocation);
-
                 if (soundEvent != null) {
                     SimpleSoundInstance soundInstance = new SimpleSoundInstance(
                         soundEvent,

@@ -1,0 +1,7 @@
+{
+  "parent": "block/carpet",
+  "textures": {
+    "particle": "zombierool:block/deco/scattered_documents_1",
+    "wool": "zombierool:block/deco/scattered_documents_1"
+  }
+}

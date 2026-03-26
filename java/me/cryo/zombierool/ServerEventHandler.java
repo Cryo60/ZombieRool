@@ -41,28 +41,23 @@ import net.minecraft.ChatFormatting;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.world.entity.AreaEffectCloud;
-
 @Mod.EventBusSubscriber(modid = me.cryo.zombierool.ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ServerEventHandler {
     public static final String OBJECTIVE_ID = "zr_score";
     private static final Queue<ServerPlayer> playersToUpdateFog = new ConcurrentLinkedQueue<>();
-
     @SubscribeEvent
     public static void onWorldLoad(LevelEvent.Load event) {
         if (!event.getLevel().isClientSide() && event.getLevel() instanceof ServerLevel serverLevel) {
             MinecraftServer server = serverLevel.getServer();
             if (server == null) return;
-            
             if (serverLevel.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
                 DynamicResourceManager.loadWorldResources(serverLevel);
                 LuaScriptManager.loadScripts(serverLevel);
             }
-            
             GameRules gameRules = serverLevel.getGameRules();
             if (gameRules.getBoolean(GameRules.RULE_DOMOBSPAWNING)) {
                 gameRules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
             }
-
             WorldConfig config = WorldConfig.get(serverLevel);
             config.refreshAllChunkTickets(serverLevel);
             try {
@@ -95,12 +90,19 @@ public class ServerEventHandler {
             }
         }
     }
-
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ServerLevel level = player.serverLevel();
-
+        WorldConfig worldConfig = WorldConfig.get(level);
+        if (worldConfig.getDataVersion() < 1) {
+            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.1").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.2").withStyle(ChatFormatting.YELLOW));
+            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.3").withStyle(ChatFormatting.GOLD));
+        } else {
+            player.sendSystemMessage(Component.translatable("message.zombierool.welcome.1").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.translatable("message.zombierool.welcome.2").withStyle(ChatFormatting.AQUA));
+        }
         Scoreboard scoreboard = level.getScoreboard();
         var objective = scoreboard.getObjective(OBJECTIVE_ID);
         if (objective == null) {
@@ -112,15 +114,12 @@ public class ServerEventHandler {
             );
         }
         scoreboard.setDisplayObjective(1, objective);
-
         player.getPersistentData().remove("zr_has_bowie_knife");
-
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
             cap.resetStats();
             cap.resetPerkPurchases();
-            cap.setLethalType("zombierool:grenade");
+            cap.setLethalType(worldConfig.getStartingLethal());
             cap.setLethalCount(5);
-
             if (WaveManager.isGameRunning()) {
                 cap.setPoints(0);
                 player.setGameMode(GameType.SPECTATOR);
@@ -129,25 +128,18 @@ public class ServerEventHandler {
             } else {
                 cap.setPoints(500);
             }
-            
             var safeObjective = scoreboard.getObjective(OBJECTIVE_ID);
             if (safeObjective != null) {
                 var score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), safeObjective);
                 score.setScore(cap.getPoints());
             }
-
             cap.sync(player);
         });
-
         PlayerStatsManager.syncAll(level);
-
-        WorldConfig worldConfig = WorldConfig.get(level);
         playersToUpdateFog.add(player);
-
         String musicPreset = worldConfig.getMusicPreset();
         if (musicPreset == null || musicPreset.isEmpty()) musicPreset = "default";
         player.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:" + musicPreset));
-
         boolean particlesEnabled = worldConfig.areParticlesEnabled();
         ResourceLocation particleTypeId = worldConfig.getParticleTypeId();
         String particleDensity = worldConfig.getParticleDensity();
@@ -159,7 +151,6 @@ public class ServerEventHandler {
             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player),
                     new S2CSyncWeatherPacket(false, "", "", ""));
         }
-
         for (Map.Entry<String, Map<String, byte[]>> entry : DynamicResourceManager.getAllServerSkins().entrySet()) {
             String mobType = entry.getKey();
             for (Map.Entry<String, byte[]> skinEntry : entry.getValue().entrySet()) {
@@ -169,28 +160,24 @@ public class ServerEventHandler {
                     new S2CSyncDynamicSkinPacket(mobType, skinId, data));
             }
         }
-
         DynamicResourceManager.sendAudioToPlayer(player);
     }
-
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             player.getPersistentData().remove("zr_has_bowie_knife");
             player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
-                cap.setLethalType("zombierool:grenade");
+                cap.setLethalType(WorldConfig.get((ServerLevel) player.level()).getStartingLethal());
                 cap.setLethalCount(5);
             });
         }
     }
-
     @SubscribeEvent
     public static void onPlayerChangeGameMode(PlayerEvent.PlayerChangeGameModeEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             playersToUpdateFog.add(player);
         }
     }
-
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
@@ -198,7 +185,6 @@ public class ServerEventHandler {
             LuaScriptManager.callEvent("OnBlockInteract", player.getUUID().toString(), pos.getX(), pos.getY(), pos.getZ());
         }
     }
-
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
@@ -207,32 +193,26 @@ public class ServerEventHandler {
             LuaScriptManager.callEvent("OnItemUsed", player.getUUID().toString(), itemId);
         }
     }
-
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-
         while (!playersToUpdateFog.isEmpty()) {
             ServerPlayer player = playersToUpdateFog.poll();
             if (player != null && player.isAlive()) {
                 updateFogForPlayer(player);
             }
         }
-
         for (ServerLevel level : event.getServer().getAllLevels()) {
             WorldConfig worldConfig = WorldConfig.get(level);
-            
             String dayNightMode = worldConfig.getDayNightMode();
             switch (dayNightMode) {
                 case "day" -> level.setDayTime(6000);
                 case "night" -> level.setDayTime(18000);
                 case "cycle" -> {}
             }
-
             if (level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
                 me.cryo.zombierool.core.manager.LookTriggerManager.tick(level);
             }
-
             if (level.getGameTime() % 40 == 0) {
                 List<Entity> entities = new ArrayList<>();
                 level.getAllEntities().forEach(entities::add);
@@ -244,14 +224,12 @@ public class ServerEventHandler {
             }
         }
     }
-
     @SubscribeEvent
     public static void onItemPickup(EntityItemPickupEvent event) {
         Player player = event.getEntity();
         if (WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
             ItemStack stack = event.getItem().getItem();
             int limit = me.cryo.zombierool.core.system.WeaponFacade.getWeaponLimit(player);
-
             if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(stack)) {
                 boolean hasSpace = false;
                 for (int i = 1; i <= limit; i++) {
@@ -277,13 +255,11 @@ public class ServerEventHandler {
             }
         }
     }
-
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide) {
             ServerPlayer player = (ServerPlayer) event.player;
             ServerLevel level = (ServerLevel) player.level();
-
             boolean currentBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             boolean lastBowie = player.getPersistentData().getBoolean("zr_last_synced_bowie");
             if (currentBowie != lastBowie) {
@@ -293,15 +269,12 @@ public class ServerEventHandler {
                     new S2CSyncBowieKnifePacket(player.getId(), currentBowie)
                 );
             }
-
             if (WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
                 int limit = me.cryo.zombierool.core.system.WeaponFacade.getWeaponLimit(player);
-
                 ItemStack slot0 = player.getInventory().getItem(0);
                 if (!slot0.isEmpty()) {
                     player.getInventory().setItem(0, ItemStack.EMPTY);
                     boolean added = false;
-                    
                     if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(slot0)) {
                         for (int w = 1; w <= limit; w++) {
                             if (!me.cryo.zombierool.core.system.WeaponFacade.isWeapon(player.getInventory().getItem(w))) {
@@ -324,12 +297,10 @@ public class ServerEventHandler {
                         player.drop(slot0, false);
                     }
                 }
-
                 ItemStack offhand = player.getInventory().getItem(40);
                 if (!offhand.isEmpty()) {
                     player.getInventory().setItem(40, ItemStack.EMPTY);
                     boolean added = false;
-                    
                     if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(offhand)) {
                         for (int w = 1; w <= limit; w++) {
                             if (!me.cryo.zombierool.core.system.WeaponFacade.isWeapon(player.getInventory().getItem(w))) {
@@ -352,14 +323,11 @@ public class ServerEventHandler {
                         player.drop(offhand, false);
                     }
                 }
-
                 for (int i = 1; i < 36; i++) {
                     ItemStack stack = player.getInventory().getItem(i);
                     if (stack.isEmpty()) continue;
-
                     boolean isWeapon = me.cryo.zombierool.core.system.WeaponFacade.isWeapon(stack);
                     boolean isWeaponSlot = (i >= 1 && i <= limit);
-
                     if (isWeapon && !isWeaponSlot) {
                         boolean moved = false;
                         for (int w = 1; w <= limit; w++) {
@@ -392,17 +360,14 @@ public class ServerEventHandler {
                         }
                     }
                 }
-
                 int sel = player.getInventory().selected;
                 if (sel > limit && player.getInventory().getItem(sel).isEmpty()) {
                     player.getInventory().selected = 1;
                     player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(1));
                 }
             }
-
             WorldConfig worldConfig = WorldConfig.get(level);
             long now = level.getGameTime();
-
             if (now % 10 == 0) {
                 net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(15.0);
                 boolean seesZombie = level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, box, e ->
@@ -415,20 +380,16 @@ public class ServerEventHandler {
                     me.cryo.zombierool.util.PlayerVoiceManager.onPlayerSeeZombie(player);
                 }
             }
-
             long lastShot = me.cryo.zombierool.util.PlayerVoiceManager.getLastShotTime(player);
             long lastSeen = me.cryo.zombierool.util.PlayerVoiceManager.getLastZombieSeenTime(player);
-
             if (now - lastShot > 600 && now - lastSeen > 600) {
                 me.cryo.zombierool.util.PlayerVoiceManager.playRandomChatter(player, level);
                 me.cryo.zombierool.util.PlayerVoiceManager.onPlayerShoot(player);
                 me.cryo.zombierool.util.PlayerVoiceManager.onPlayerSeeZombie(player);
             }
-
             if (worldConfig.isColdWaterEffectEnabled()) {
                 boolean inWater = player.isUnderWater() || player.isInWater();
                 me.cryo.zombierool.ColdWaterEffectManager.updateIntensity(level, player, inWater);
-
                 final float SLOWNESS_THRESHOLD = 0.20f;
                 if (me.cryo.zombierool.ColdWaterEffectManager.getIntensity(player) >= SLOWNESS_THRESHOLD) {
                     if (!player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN)
@@ -448,7 +409,6 @@ public class ServerEventHandler {
             }
         }
     }
-
     @SubscribeEvent
     public static void onEntityJoinLevel(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide() && shouldDespawn(event.getEntity())) {
@@ -456,7 +416,6 @@ public class ServerEventHandler {
             event.setCanceled(true);
         }
     }
-
     @SubscribeEvent
     public static void onFinalizeSpawn(net.minecraftforge.event.entity.living.MobSpawnEvent.FinalizeSpawn event) {
         if (!event.getLevel().isClientSide() && shouldDespawn(event.getEntity())) {
@@ -464,30 +423,25 @@ public class ServerEventHandler {
             event.getEntity().remove(Entity.RemovalReason.DISCARDED);
         }
     }
-
     private static void updateFogForPlayer(ServerPlayer player) {
         WorldConfig worldConfig = WorldConfig.get(player.serverLevel());
         String clientFogPreset;
-
         if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE
                 || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
             clientFogPreset = "none";
         } else {
             clientFogPreset = worldConfig.getFogPreset();
         }
-
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new me.cryo.zombierool.network.packet.S2CSetFogPresetPacket(
                 clientFogPreset,
                 worldConfig.getCustomFogR(), worldConfig.getCustomFogG(), worldConfig.getCustomFogB(),
                 worldConfig.getCustomFogNear(), worldConfig.getCustomFogFar()
         ));
     }
-
     private static boolean shouldDespawn(Entity entity) {
         if (entity == null || !entity.isAlive() || entity.isRemoved()) {
             return false;
         }
-
         if (entity instanceof Player
                 || entity instanceof net.minecraft.world.entity.decoration.ArmorStand
                 || entity instanceof net.minecraft.world.entity.vehicle.AbstractMinecart
@@ -500,10 +454,8 @@ public class ServerEventHandler {
                 || entity instanceof AreaEffectCloud) {
             return false;
         }
-
         if (entity.level() instanceof ServerLevel level) {
             WorldConfig config = WorldConfig.get(level);
-
             if (entity instanceof ItemEntity itemEntity) {
                 ResourceLocation rl = ForgeRegistries.ITEMS.getKey(itemEntity.getItem().getItem());
                 if (rl != null && config.getAllowedItems().contains(rl.toString())) {
@@ -511,7 +463,6 @@ public class ServerEventHandler {
                 }
                 return true;
             }
-
             ResourceLocation rl = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
             if (rl != null && config.getAllowedMobs().contains(rl.toString())) {
                 return false;
@@ -520,7 +471,6 @@ public class ServerEventHandler {
         }
         return false;
     }
-
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getTarget() instanceof ServerPlayer targetPlayer && event.getEntity() instanceof ServerPlayer tracker) {

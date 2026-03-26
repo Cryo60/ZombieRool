@@ -1,0 +1,8 @@
+{
+  "parent": "block/inner_stairs",
+  "textures": {
+    "bottom": "zombierool:block/deco/hazard_stripes",
+    "top": "zombierool:block/deco/hazard_stripes",
+    "side": "zombierool:block/deco/hazard_stripes"
+  }
+}

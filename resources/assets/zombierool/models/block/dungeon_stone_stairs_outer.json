@@ -1,0 +1,8 @@
+{
+  "parent": "block/outer_stairs",
+  "textures": {
+    "bottom": "zombierool:block/deco/dungeon_stone",
+    "top": "zombierool:block/deco/dungeon_stone",
+    "side": "zombierool:block/deco/dungeon_stone"
+  }
+}
