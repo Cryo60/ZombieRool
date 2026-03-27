@@ -302,7 +302,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     public static AttributeSupplier.Builder createAttributes() {
         AttributeSupplier.Builder builder = Mob.createMobAttributes();
-        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.23);
+        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.19);
         builder = builder.add(Attributes.MAX_HEALTH, 4);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 2);
