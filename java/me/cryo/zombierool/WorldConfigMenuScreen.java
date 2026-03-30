@@ -1,3 +1,4 @@
+// [main\java\me\cryo\zombierool\client\gui\WorldConfigMenuScreen.java]
 package me.cryo.zombierool.client.gui;
 
 import com.google.gson.Gson;
@@ -41,11 +42,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WorldConfigMenuScreen extends Screen {
+
     private final S2COpenConfigMenuPacket initData;
     private final CompoundTag workingData;
-    private Tab currentTab = Tab.GENERAL;
 
+    private Tab currentTab = Tab.GENERAL;
     private ConfigListWidget listWidget;
+
     private EditBox waveBox;
 
     private FogPresetList fogList;
@@ -53,14 +56,11 @@ public class WorldConfigMenuScreen extends Screen {
     private String localFogPreset;
     private EditBox customFogNameBox;
 
-    private ParticlePresetList particleList;
-    private String localParticlePreset;
-
     private boolean saved = false;
 
     private final List<String> BUILT_IN_FOGS = Arrays.asList("normal", "dense", "clear", "dark", "blood", "nightmare", "green_acid", "none", "sunrise", "sunset", "underwater", "swamp", "volcanic", "mystic", "toxic", "dreamy", "winter", "haunted", "arctic", "prehistoric", "radioactive", "desert", "ashstorm", "eldritch", "space", "corrupted", "celestial", "storm", "abyssal", "netherburn", "elderswamp", "nebula", "wasteland", "void", "festival", "temple", "stormy_night", "obsidian");
 
-    private enum Tab { GENERAL, MOBS, WAVES, WEAPONS, EXTRAS, FOG, WEATHER, WHITELIST, SYSTEM }
+    private enum Tab { GENERAL, MOBS, WAVES, WEAPONS, EXTRAS, FOG, WHITELIST, SYSTEM }
     enum ItemState { ENABLED, MANUALLY_DISABLED, TAG_DISABLED }
 
     private final Set<String> expandedCategories = new HashSet<>(Arrays.asList("TacZ", "Normal", "Wonder"));
@@ -69,20 +69,18 @@ public class WorldConfigMenuScreen extends Screen {
         super(Component.translatable("gui.zombierool.config.title"));
         this.initData = data;
         this.workingData = data.configData.copy();
-        
+
         this.localFogPreset = workingData.getString("fogPreset");
         if (this.localFogPreset.isEmpty()) this.localFogPreset = "normal";
 
-        this.localParticlePreset = workingData.getString("particleTypeId");
-        if (this.localParticlePreset.isEmpty()) this.localParticlePreset = "none";
-        
         CustomFogManager.load();
     }
 
     @Override
     protected void init() {
         this.clearWidgets();
-        int tabsPerRow = (this.width > 600) ? 9 : 5;
+        
+        int tabsPerRow = (this.width > 600) ? 8 : 4;
         int btnWidth = Math.min(65, (this.width - 20) / tabsPerRow);
         int startX = (this.width - (btnWidth * tabsPerRow)) / 2;
         int startY = 5;
@@ -109,8 +107,6 @@ public class WorldConfigMenuScreen extends Screen {
             initGameControl(listTopMargin);
         } else if (currentTab == Tab.FOG) {
             initFog(listTopMargin);
-        } else if (currentTab == Tab.WEATHER) {
-            initWeather(listTopMargin);
         } else {
             this.listWidget = new ConfigListWidget(this.minecraft, this.width, this.height, listTopMargin, this.height - 35, 25);
             this.addWidget(this.listWidget);
@@ -130,6 +126,7 @@ public class WorldConfigMenuScreen extends Screen {
             if (currentTab == Tab.WEAPONS || currentTab == Tab.EXTRAS) resetTarget = "LOOT";
             final String finalResetTarget = resetTarget;
             String resetLabel = Component.translatable("gui.zombierool.config.reset", finalResetTarget).getString();
+            
             this.addRenderableWidget(Button.builder(Component.literal(resetLabel), btn -> {
                 CompoundTag toSend = new CompoundTag();
                 toSend.putString("action", "reset_" + finalResetTarget.toLowerCase(Locale.ROOT));
@@ -164,22 +161,16 @@ public class WorldConfigMenuScreen extends Screen {
 
                 addStringRow("resourcePackUrl", "config.zombierool.resourcePackUrl", "config.zombierool.resourcePackUrl.tooltip");
                 addStringRow("resourcePackName", "config.zombierool.resourcePackName", "config.zombierool.resourcePackName.tooltip");
-                
                 addBoolRow("spookyAmbience", "config.zombierool.spookyAmbience", "config.zombierool.spookyAmbience.tooltip");
                 addBoolRow("forceHalloween", "config.zombierool.forceHalloween", "config.zombierool.forceHalloween.tooltip");
-
                 addCycleRow("dayNightMode", "config.zombierool.dayNightMode", Arrays.asList("day", "night", "cycle"), "config.zombierool.dayNightMode.tooltip");
                 addCycleRow("musicPreset", "config.zombierool.musicPreset", Arrays.asList("default", "damned", "none"), "config.zombierool.musicPreset.tooltip");
                 addCycleRow("eyeColorPreset", "config.zombierool.eyeColorPreset", Arrays.asList("red", "blue", "green", "default"), "config.zombierool.eyeColorPreset.tooltip");
                 addCycleRow("voicePreset", "config.zombierool.voicePreset", Arrays.asList("uk", "us", "ru", "fr", "ger", "none"), "config.zombierool.voicePreset.tooltip");
                 addCycleRow("deathPenalty", "config.zombierool.deathPenalty", Arrays.asList("respawn", "spectator", "kick"), "config.zombierool.deathPenalty.tooltip");
-                
                 addBoolRow("coldWaterEffectEnabled", "config.zombierool.coldWaterEffectEnabled", "config.zombierool.coldWaterEffectEnabled.tooltip");
                 addBoolRow("sprintBgSounds", "config.zombierool.sprintBgSounds", "config.zombierool.sprintBgSounds.tooltip");
-                
                 addStringRow("starterItem", "config.zombierool.starterItem", "config.zombierool.starterItem.tooltip");
-                
-                // CORRECTION : Uniquement grenade et stielhandgranate ! On ne choisit pas la monkey bomb en arme de départ.
                 addCycleRow("startingLethal", "config.zombierool.startingLethal", Arrays.asList("zombierool:grenade", "zombierool:stielhandgranate"), "config.zombierool.startingLethal.tooltip");
             }
             case MOBS -> {
@@ -189,31 +180,25 @@ public class WorldConfigMenuScreen extends Screen {
                 addFloatRow("crawlerMaxHealth", "config.zombierool.crawlerMaxHealth", 100f, 5000f, "config.zombierool.crawlerMaxHealth.tooltip");
                 addFloatRow("hellhoundBaseHealth", "config.zombierool.hellhoundBaseHealth", 1f, 100f, "config.zombierool.hellhoundBaseHealth.tooltip");
                 addFloatRow("hellhoundMaxHealth", "config.zombierool.hellhoundMaxHealth", 100f, 5000f, "config.zombierool.hellhoundMaxHealth.tooltip");
-
                 addBoolRow("zombiesCanSprint", "config.zombierool.zombiesCanSprint", "config.zombierool.zombiesCanSprint.tooltip");
                 addIntRow("zombieSprintWave", "config.zombierool.zombieSprintWave", 1, 100, "config.zombierool.zombieSprintWave.tooltip");
                 addFloatRow("zombieSprintChance", "config.zombierool.zombieSprintChance", 0.0f, 1.0f, "config.zombierool.zombieSprintChance.tooltip");
                 addFloatRow("zombieSprintSpeed", "config.zombierool.zombieSprintSpeed", 0.1f, 1.0f, "config.zombierool.zombieSprintSpeed.tooltip");
-
                 addBoolRow("superSprintersEnabled", "config.zombierool.superSprintersEnabled", "config.zombierool.superSprintersEnabled.tooltip");
                 addIntRow("superSprinterActivationWave", "config.zombierool.superSprinterActivationWave", 1, 100, "config.zombierool.superSprinterActivationWave.tooltip");
                 addFloatRow("superSprinterChance", "config.zombierool.superSprinterChance", 0f, 1f, "config.zombierool.superSprinterChance.tooltip");
                 addFloatRow("superSprinterSpeed", "config.zombierool.superSprinterSpeed", 0.1f, 1.5f, "config.zombierool.superSprinterSpeed.tooltip");
-
                 addBoolRow("hellhoundFireVariant", "config.zombierool.hellhoundFireVariant", "config.zombierool.hellhoundFireVariant.tooltip");
                 addBoolRow("crawlerGasExplosion", "config.zombierool.crawlerGasExplosion", "config.zombierool.crawlerGasExplosion.tooltip");
             }
             case WAVES -> {
                 addIntRow("baseZombies", "config.zombierool.baseZombies", 1, 100, "config.zombierool.baseZombies.tooltip");
                 addIntRow("maxActiveMobsPerPlayer", "config.zombierool.maxActiveMobsPerPlayer", 1, 100, "config.zombierool.maxActiveMobsPerPlayer.tooltip");
-                
                 addBoolRow("specialWavesEnabled", "config.zombierool.specialWavesEnabled", "config.zombierool.specialWavesEnabled.tooltip");
                 addIntRow("specialWaveStart", "config.zombierool.specialWaveStart", 1, 100, "config.zombierool.specialWaveStart.tooltip");
                 addIntRow("specialWaveInterval", "config.zombierool.specialWaveInterval", 1, 100, "config.zombierool.specialWaveInterval.tooltip");
-                
                 addBoolRow("hellhoundsInNormalWaves", "config.zombierool.hellhoundsInNormalWaves", "config.zombierool.hellhoundsInNormalWaves.tooltip");
                 addIntRow("hellhoundsInNormalWavesStart", "config.zombierool.hellhoundsInNormalWavesStart", 1, 100, "config.zombierool.hellhoundsInNormalWavesStart.tooltip");
-                
                 addCycleRow("spawnIntensity", "config.zombierool.spawnIntensity", Arrays.asList("normal", "flood", "chaos"), "config.zombierool.spawnIntensity.tooltip");
             }
             case WEAPONS -> {
@@ -226,7 +211,6 @@ public class WorldConfigMenuScreen extends Screen {
                     for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
                         if (def.tags != null) allTags.addAll(def.tags);
                     }
-
                     List<TagItem> currentTagRow = new ArrayList<>();
                     for (String tag : allTags) {
                         currentTagRow.add(new TagItem(tag, activeTags.contains(tag), () -> {
@@ -245,13 +229,13 @@ public class WorldConfigMenuScreen extends Screen {
 
                 boolean customExpanded = expandedCategories.contains("Custom");
                 listWidget.addEntry(new CategoryHeaderEntry(Component.translatable("gui.zombierool.config.custom_weapons").getString(), customExpanded, () -> toggleCategory("Custom")));
-
+                
                 if (customExpanded) {
                     listWidget.addEntry(new CustomItemAddEntry());
+
                     List<GridItem> customIcons = new ArrayList<>();
                     Set<String> customWpns = getSet("customBoxWeapons");
                     Set<String> customWonder = getSet("customWonderWeapons");
-
                     for (String idStr : customWpns) {
                         Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(idStr));
                         if (item != null && item != net.minecraft.world.item.Items.AIR) {
@@ -259,18 +243,16 @@ public class WorldConfigMenuScreen extends Screen {
                             tp.add(Component.translatable("gui.zombierool.config.remove_custom"));
                             tp.add(item.getDescription());
                             if (customWonder.contains(idStr)) tp.add(Component.translatable("gui.zombierool.config.wonder_weapon").withStyle(ChatFormatting.LIGHT_PURPLE));
-
                             customIcons.add(new GridItem(
                                 new ItemStack(item), null, ItemState.ENABLED, 
                                 () -> {
                                     Set<String> s = getSet("customBoxWeapons");
                                     s.remove(idStr);
                                     saveSet("customBoxWeapons", s);
-                                    
+
                                     Set<String> w = getSet("customWonderWeapons");
                                     w.remove(idStr);
                                     saveSet("customWonderWeapons", w);
-                                    
                                     refreshList(); 
                                 },
                                 null, tp
@@ -281,12 +263,11 @@ public class WorldConfigMenuScreen extends Screen {
                 }
 
                 Set<String> disWpns = getSet("disabledBoxWeapons");
-
                 List<GridItem> normalIcons = new ArrayList<>();
                 List<GridItem> wonderIcons = new ArrayList<>();
 
                 for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
-                    ItemStack displayStack = WeaponFacade.createWeaponStack(def.id, false, this.minecraft.player);
+                    ItemStack displayStack = WeaponFacade.createWeaponStack(def.id, false, null);
                     if (displayStack.isEmpty()) continue;
 
                     boolean isWonder = def.is_wonder_weapon || "WONDER".equalsIgnoreCase(def.type);
@@ -320,24 +301,24 @@ public class WorldConfigMenuScreen extends Screen {
                         },
                         null, tp
                     );
+
                     if (isWonder) wonderIcons.add(gItem);
                     else normalIcons.add(gItem);
                 }
 
-                // Ajout manuel des explosifs au pool d'armes normales pour la box (y compris les nouveaux)
                 List<Item> throwables = Arrays.asList(
                     me.cryo.zombierool.core.registry.ZRThrowableRegistry.GRENADE_ITEM.get(), 
                     me.cryo.zombierool.core.registry.ZRThrowableRegistry.MOLOTOV_ITEM.get(),
                     me.cryo.zombierool.core.registry.ZRThrowableRegistry.STIELHANDGRANATE_ITEM.get(),
                     me.cryo.zombierool.core.registry.ZRThrowableRegistry.MONKEY_BOMB_ITEM.get()
                 );
-
+                
                 for (Item throwable : throwables) {
                     ResourceLocation reg = ForgeRegistries.ITEMS.getKey(throwable);
                     String identifier = reg.toString();
                     boolean manuallyDisabled = disWpns.contains(identifier);
                     ItemState state = manuallyDisabled ? ItemState.MANUALLY_DISABLED : ItemState.ENABLED;
-
+                    
                     List<Component> tp = new ArrayList<>();
                     tp.add(Component.literal((state == ItemState.ENABLED ? Component.translatable("gui.zombierool.config.disable").getString() : Component.translatable("gui.zombierool.config.enable").getString()) + new ItemStack(throwable).getHoverName().getString()));
                     if (state == ItemState.ENABLED) tp.add(Component.translatable("gui.zombierool.config.status.enabled").withStyle(ChatFormatting.GREEN));
@@ -367,6 +348,7 @@ public class WorldConfigMenuScreen extends Screen {
                     if (taczExpanded) {
                         List<GridItem> taczIcons = new ArrayList<>();
                         Set<String> enabledUnmapped = getSet("enabledUnmappedWeapons");
+                        
                         for (ResourceLocation taczId : unmappedGuns) {
                             ItemStack displayStack = WeaponFacade.createUnmappedTaczWeaponStack(taczId, false);
                             boolean isEnabled = enabledUnmapped.contains(taczId.toString());
@@ -409,7 +391,7 @@ public class WorldConfigMenuScreen extends Screen {
                     PerksManager.Perk p = PerksManager.ALL_PERKS.get(perkId);
                     ResourceLocation tex = new ResourceLocation(p.getIconPath());
                     ItemState state = !disPerks.contains(perkId) ? ItemState.ENABLED : ItemState.MANUALLY_DISABLED;
-
+                    
                     List<Component> tp = new ArrayList<>();
                     tp.add(Component.literal("Toggle Perk: " + p.getName()));
                     if (state == ItemState.ENABLED) tp.add(Component.translatable("gui.zombierool.config.status.enabled").withStyle(ChatFormatting.GREEN));
@@ -506,7 +488,7 @@ public class WorldConfigMenuScreen extends Screen {
 
         List<String> fogs = new ArrayList<>(BUILT_IN_FOGS);
         fogs.addAll(CustomFogManager.getCustomPresets().keySet());
-        
+
         fogList = new FogPresetList(this.minecraft, btnWidth, this.height, startY, this.height - 35, 20, leftX, fogs);
         this.addWidget(fogList);
 
@@ -527,13 +509,14 @@ public class WorldConfigMenuScreen extends Screen {
         this.addRenderableWidget(sliderFar);
 
         startY += yOffset + 10;
+
         customFogNameBox = new EditBox(this.font, rightX, startY, btnWidth, 20, Component.literal("Preset Name"));
         if (!BUILT_IN_FOGS.contains(localFogPreset)) {
             customFogNameBox.setValue(localFogPreset);
         }
         this.addRenderableWidget(customFogNameBox);
-
         startY += yOffset;
+
         this.addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.config.save_preset"), btn -> {
             String name = customFogNameBox.getValue().trim();
             if (!name.isEmpty() && !BUILT_IN_FOGS.contains(name)) {
@@ -557,56 +540,10 @@ public class WorldConfigMenuScreen extends Screen {
         }).bounds(rightX + btnWidth / 2 + 2, startY, btnWidth / 2 - 2, 20).build());
     }
 
-    private void initWeather(int startY) {
-        int btnWidth = 150;
-        int leftX = (this.width / 2) - btnWidth - 10;
-        int rightX = (this.width / 2) + 10;
-        int yOffset = 24;
-
-        List<String> allParticles = ForgeRegistries.PARTICLE_TYPES.getKeys().stream()
-                .map(ResourceLocation::toString).sorted().collect(Collectors.toList());
-        if (allParticles.isEmpty()) allParticles.add("none");
-
-        particleList = new ParticlePresetList(this.minecraft, btnWidth, this.height, startY, this.height - 35, 20, leftX, allParticles);
-        this.addWidget(particleList);
-
-        this.addRenderableWidget(CycleButton.onOffBuilder(workingData.getBoolean("particlesEnabled"))
-            .create(rightX, startY, btnWidth, 20, Component.translatable("gui.zombierool.config.enable_particles"), (b, val) -> {
-                workingData.putBoolean("particlesEnabled", val);
-                applyWeatherLive();
-            }));
-
-        startY += yOffset;
-        this.addRenderableWidget(CycleButton.builder((String s) -> Component.literal(s))
-            .withValues(Arrays.asList("sparse", "normal", "dense", "very_dense"))
-            .withInitialValue(workingData.getString("particleDensity"))
-            .create(rightX, startY, btnWidth, 20, Component.translatable("gui.zombierool.config.density"), (b, val) -> {
-                workingData.putString("particleDensity", val);
-                applyWeatherLive();
-            }));
-
-        startY += yOffset;
-        this.addRenderableWidget(CycleButton.builder((String s) -> Component.literal(s))
-            .withValues(Arrays.asList("global", "atmospheric"))
-            .withInitialValue(workingData.getString("particleMode"))
-            .create(rightX, startY, btnWidth, 20, Component.translatable("gui.zombierool.config.mode"), (b, val) -> {
-                workingData.putString("particleMode", val);
-                applyWeatherLive();
-            }));
-    }
-
     private void applyFogLive() {
         ClientEnvironmentEffects.setFogPreset(localFogPreset, 
             workingData.getFloat("customFogR"), workingData.getFloat("customFogG"), workingData.getFloat("customFogB"),
             workingData.getFloat("customFogNear"), workingData.getFloat("customFogFar"));
-    }
-
-    private void applyWeatherLive() {
-        boolean enabled = workingData.getBoolean("particlesEnabled");
-        String pType = workingData.getString("particleTypeId");
-        String pDens = workingData.getString("particleDensity");
-        String pMode = workingData.getString("particleMode");
-        ClientEnvironmentEffects.handleWeatherSync(enabled, pType, pDens, pMode);
     }
 
     @Override
@@ -615,7 +552,6 @@ public class WorldConfigMenuScreen extends Screen {
             ClientEnvironmentEffects.setFogPreset(initData.configData.getString("fogPreset"),
                 initData.configData.getFloat("customFogR"), initData.configData.getFloat("customFogG"), initData.configData.getFloat("customFogB"),
                 initData.configData.getFloat("customFogNear"), initData.configData.getFloat("customFogFar"));
-
             ClientEnvironmentEffects.handleWeatherSync(
                 initData.configData.getBoolean("particlesEnabled"),
                 initData.configData.getString("particleTypeId"),
@@ -637,23 +573,22 @@ public class WorldConfigMenuScreen extends Screen {
 
     private void initGameControl(int startY) {
         int startX = this.width / 2 - 100;
-        
         Button startBtn = Button.builder(Component.translatable("gui.zombierool.config.start_game"), btn -> {
             sendWaveCmd("start");
             this.onClose();
         }).bounds(startX, startY, 200, 20).build();
         startBtn.active = !initData.isGameRunning;
         this.addRenderableWidget(startBtn);
-
         startY += 30;
+
         Button endBtn = Button.builder(Component.translatable("gui.zombierool.config.end_game"), btn -> {
             sendWaveCmd("end");
             this.onClose();
         }).bounds(startX, startY, 200, 20).build();
         endBtn.active = initData.isGameRunning;
         this.addRenderableWidget(endBtn);
-
         startY += 50;
+
         waveBox = new EditBox(this.font, startX, startY, 100, 20, Component.empty());
         waveBox.setValue(String.valueOf(initData.currentWave));
         this.addRenderableWidget(waveBox);
@@ -673,7 +608,7 @@ public class WorldConfigMenuScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        if (currentTab == Tab.FOG || currentTab == Tab.WEATHER) {
+        if (currentTab == Tab.FOG) {
             graphics.fillGradient(0, 0, this.width, this.height, 0x33000000, 0x55000000);
         } else {
             graphics.fillGradient(0, 0, this.width, this.height, 0x99000000, 0xBB000000);
@@ -681,17 +616,14 @@ public class WorldConfigMenuScreen extends Screen {
 
         if (currentTab == Tab.SYSTEM) {
             Component statusText = initData.isGameRunning ? Component.translatable("gui.zombierool.config.status.running").withStyle(ChatFormatting.GREEN) : Component.translatable("gui.zombierool.config.status.stopped").withStyle(ChatFormatting.RED);
-            int tabsPerRow = (this.width > 600) ? 9 : 5;
+            int tabsPerRow = (this.width > 600) ? 8 : 4;
             int titleY = 5 + ((Tab.values().length / tabsPerRow) + 1) * 22 + 5;
             graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.config.game_status").append(" ").append(statusText), this.width / 2, titleY - 20, 0xFFFFFF);
         } else if (currentTab == Tab.FOG) {
             if (fogList != null) fogList.render(graphics, mouseX, mouseY, partialTick);
-        } else if (currentTab == Tab.WEATHER) {
-            if (particleList != null) particleList.render(graphics, mouseX, mouseY, partialTick);
         } else if (listWidget != null) {
             listWidget.render(graphics, mouseX, mouseY, partialTick);
         }
-        
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -815,6 +747,7 @@ public class WorldConfigMenuScreen extends Screen {
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
             int currentLeft = left + (width - 250) / 2; 
             if (currentLeft < left) currentLeft = left;
+
             box.setX(currentLeft + 5); box.setY(top + 2); box.render(g, mouseX, mouseY, pt);
             btn.setX(currentLeft + 210); btn.setY(top + 2); btn.render(g, mouseX, mouseY, pt);
         }
@@ -847,6 +780,7 @@ public class WorldConfigMenuScreen extends Screen {
     class TagGridRowEntry extends ConfigEntry {
         List<TagItem> tags;
         int lastTop = -1; int lastLeft = -1; int lastWidth = -1;
+        
         public TagGridRowEntry(List<TagItem> tags) { this.tags = tags; }
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
@@ -854,8 +788,8 @@ public class WorldConfigMenuScreen extends Screen {
             int spacing = 4;
             int totalSpacing = spacing * (tags.size() - 1);
             int tagWidth = (width - 20 - totalSpacing) / Math.max(1, tags.size());
-            
             int x = left + 10;
+            
             for (int i = 0; i < tags.size(); i++) {
                 TagItem tag = tags.get(i);
                 int bx = x + i * (tagWidth + spacing);
@@ -865,6 +799,7 @@ public class WorldConfigMenuScreen extends Screen {
                 }
                 g.fill(bx, top, bx + tagWidth, top + 20, bgColor);
                 g.renderOutline(bx, top, tagWidth, 20, 0xFFFFFFFF);
+                
                 String display = tag.label;
                 if (minecraft.font.width(display) > tagWidth - 4) {
                     while (display.length() > 0 && minecraft.font.width(display + "...") > tagWidth - 4) {
@@ -898,6 +833,7 @@ public class WorldConfigMenuScreen extends Screen {
     class CustomItemAddEntry extends ConfigEntry {
         EditBox box; CycleButton<Boolean> wonderBtn; Button btn;
         boolean isWonder = false; List<String> itemRegistryCache; String currentSuggestion = "";
+        
         public CustomItemAddEntry() {
             itemRegistryCache = ForgeRegistries.ITEMS.getKeys().stream().map(ResourceLocation::toString).collect(Collectors.toList());
             box = new EditBox(minecraft.font, 0, 0, 145, 20, Component.empty()) {
@@ -938,6 +874,7 @@ public class WorldConfigMenuScreen extends Screen {
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float pt) {
             int currentLeft = left + (width - 300) / 2; 
             if (currentLeft < left) currentLeft = left;
+
             g.drawString(minecraft.font, Component.translatable("gui.zombierool.config.add_item"), currentLeft + 5, top + 6, 0xFFFFFF);
             box.setX(currentLeft + 55); box.setY(top + 2); box.render(g, mouseX, mouseY, pt);
             wonderBtn.setX(currentLeft + 205); wonderBtn.setY(top + 2); wonderBtn.render(g, mouseX, mouseY, pt);
@@ -1026,7 +963,7 @@ public class WorldConfigMenuScreen extends Screen {
         List<GridItem> allItems;
         int itemSize = 18; int spacing = 4;
         private int lastTop = -1; private int lastLeft = -1; private int lastWidth = -1; private int columns = 12;
-        
+
         public GridColumnControlsEntry(List<GridItem> allItems) {
             this.allItems = allItems;
         }
@@ -1039,10 +976,12 @@ public class WorldConfigMenuScreen extends Screen {
             this.columns = Math.min(12, width / (itemSize + spacing));
 
             int startX = left + (width - (columns * (itemSize + spacing))) / 2;
+
             for (int i = 0; i < columns; i++) {
                 int ix = startX + i * (itemSize + spacing);
                 boolean hover = mouseX >= ix && mouseX < ix + itemSize && mouseY >= top && mouseY < top + 10;
                 int color = hover ? 0xFFFFFF00 : 0xFFAAAAAA;
+                
                 g.fill(ix, top, ix + itemSize, top + 10, 0xFF333333);
                 g.drawCenteredString(minecraft.font, "C", ix + itemSize / 2, top + 1, color);
             }
@@ -1052,6 +991,7 @@ public class WorldConfigMenuScreen extends Screen {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (lastTop == -1) return false;
             int startX = lastLeft + (lastWidth - (columns * (itemSize + spacing))) / 2;
+
             for (int i = 0; i < columns; i++) {
                 int ix = startX + i * (itemSize + spacing);
                 if (mouseX >= ix && mouseX < ix + itemSize && mouseY >= lastTop && mouseY < lastTop + 10) {
@@ -1067,6 +1007,7 @@ public class WorldConfigMenuScreen extends Screen {
             }
             return false;
         }
+
         @Override public List<? extends GuiEventListener> children() { return Collections.emptyList(); }
         @Override public List<? extends NarratableEntry> narratables() { return Collections.emptyList(); }
     }
@@ -1086,6 +1027,7 @@ public class WorldConfigMenuScreen extends Screen {
             this.columns = Math.min(12, width / (itemSize + spacing));
 
             int startX = left + (width - (columns * (itemSize + spacing))) / 2; 
+
             int rowBtnX = startX - 16;
             boolean rowHover = mouseX >= rowBtnX && mouseX < rowBtnX + 12 && mouseY >= top + 3 && mouseY < top + 15;
             g.fill(rowBtnX, top + 3, rowBtnX + 12, top + 15, rowHover ? 0xFFFFFF00 : 0xFFAAAAAA);
@@ -1123,6 +1065,7 @@ public class WorldConfigMenuScreen extends Screen {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (lastTop == -1) return false;
             int startX = lastLeft + (lastWidth - (columns * (itemSize + spacing))) / 2;
+
             int rowBtnX = startX - 16;
             if (mouseX >= rowBtnX && mouseX < rowBtnX + 12 && mouseY >= lastTop + 3 && mouseY < lastTop + 15) {
                 if (button == 0) {
@@ -1132,6 +1075,7 @@ public class WorldConfigMenuScreen extends Screen {
                     return true;
                 }
             }
+
             for (int i = 0; i < items.size(); i++) {
                 int ix = startX + i * (itemSize + spacing);
                 if (mouseX >= ix && mouseX < ix + itemSize && mouseY >= lastTop && mouseY < lastTop + itemSize) {
@@ -1195,35 +1139,6 @@ public class WorldConfigMenuScreen extends Screen {
                 if (customFogNameBox != null) customFogNameBox.setValue(presetName);
             }
             updateWorkingDataFog(); applyFogLive(); return true;
-        }
-        @Override public List<? extends GuiEventListener> children() { return Collections.emptyList(); }
-        @Override public List<? extends NarratableEntry> narratables() { return Collections.emptyList(); }
-    }
-
-    class ParticlePresetList extends ContainerObjectSelectionList<ParticleEntry> {
-        private final int internalLeftX;
-        public ParticlePresetList(net.minecraft.client.Minecraft mc, int width, int height, int top, int bottom, int itemHeight, int leftX, List<String> particles) {
-            super(mc, width, height, top, bottom, itemHeight);
-            this.internalLeftX = leftX; this.setLeftPos(leftX); this.setRenderBackground(false); this.setRenderTopAndBottom(false);
-            for (String p : particles) this.addEntry(new ParticleEntry(p));
-        }
-        @Override protected void renderBackground(GuiGraphics graphics) { graphics.fill(this.internalLeftX, this.y0, this.internalLeftX + this.width, this.y1, 0x44000000); }
-        @Override public int getRowWidth() { return this.width - 20; }
-        @Override protected int getScrollbarPosition() { return this.internalLeftX + this.width - 6; }
-    }
-
-    class ParticleEntry extends ContainerObjectSelectionList.Entry<ParticleEntry> {
-        private final String particleName;
-        public ParticleEntry(String particleName) { this.particleName = particleName; }
-        @Override
-        public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            int color = particleName.equals(localParticlePreset) ? 0x00FF00 : 0xFFFFFF;
-            String display = particleName.contains(":") ? particleName.substring(particleName.indexOf(":") + 1) : particleName;
-            graphics.drawString(minecraft.font, display, left + 5, top + 5, color);
-        }
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            particleList.setSelected(this); localParticlePreset = particleName; workingData.putString("particleTypeId", particleName); applyWeatherLive(); return true;
         }
         @Override public List<? extends GuiEventListener> children() { return Collections.emptyList(); }
         @Override public List<? extends NarratableEntry> narratables() { return Collections.emptyList(); }

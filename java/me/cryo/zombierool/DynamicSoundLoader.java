@@ -25,15 +25,21 @@ public class DynamicSoundLoader {
     private static final String CACHE_DIR_NAME = "zombierool_sounds_cache";
     private static final Map<String, File> loadedSounds = new ConcurrentHashMap<>();
     private static final Map<String, TransferState> pendingTransfers = new ConcurrentHashMap<>();
+    
+    private static boolean isSyncing = false;
 
     @SubscribeEvent
     public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
         clearLoadedSounds();
+        isSyncing = false;
     }
 
-    @SubscribeEvent
-    public static void onClientConnect(ClientPlayerNetworkEvent.LoggingIn event) {
-        clearLoadedSounds();
+    public static void setSyncing(boolean state) {
+        isSyncing = state;
+    }
+
+    public static boolean isSyncing() {
+        return isSyncing;
     }
 
     public static void beginTransfer(String soundEventName, String category, int totalSize) {
@@ -90,12 +96,14 @@ public class DynamicSoundLoader {
                 choices.add(entry.getValue());
             }
         }
+
         if (!choices.isEmpty()) {
             File cacheFile = choices.get(new java.util.Random().nextInt(choices.size()));
             if (cacheFile.exists()) {
                 return new FileSoundInstance(cacheFile, source, volume, pitch, looping, x, y, z, null);
             }
         }
+
         return null;
     }
 
@@ -110,15 +118,14 @@ public class DynamicSoundLoader {
     public static void clearLoadedSounds() {
         loadedSounds.clear();
         pendingTransfers.clear();
-
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) return;
-
+        
         Runnable clearTask = () -> {
             File cacheDir = new File(mc.gameDirectory, CACHE_DIR_NAME);
             deleteDirectory(cacheDir);
         };
-
+        
         if (mc.isSameThread()) mc.execute(clearTask);
         else mc.execute(clearTask);
     }
@@ -149,6 +156,7 @@ public class DynamicSoundLoader {
                     source,
                     RandomSource.create()
             );
+
             this.volume    = volume;
             this.pitch     = pitch;
             this.looping   = looping;
@@ -156,9 +164,11 @@ public class DynamicSoundLoader {
             this.y         = entity != null ? entity.getY() : y;
             this.z         = entity != null ? entity.getZ() : z;
             this.entity    = entity;
+            
             this.attenuation = (this.x == 0 && this.y == 0 && this.z == 0 && entity == null)
                     ? SoundInstance.Attenuation.NONE
                     : SoundInstance.Attenuation.LINEAR;
+            
             this.relative  = (this.x == 0 && this.y == 0 && this.z == 0 && entity == null);
         }
 

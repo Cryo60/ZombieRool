@@ -12,5 +12,6 @@ public enum InteractionType {
     REPAIR_BARRICADE,
     METEORITE,
     BLIND_BUY_CABINET,
-    ACTION_KEY
+    ACTION_KEY,
+    POWER_SWITCH
 }

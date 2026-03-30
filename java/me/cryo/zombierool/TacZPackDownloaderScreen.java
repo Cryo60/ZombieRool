@@ -1,3 +1,4 @@
+// [main\java\me\cryo\zombierool\TacZPackDownloaderScreen.java]
 package me.cryo.zombierool.client.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -26,20 +27,20 @@ public class TacZPackDownloaderScreen extends Screen {
     private static final long MAX_FILE_SIZE = 1000L * 1024L * 1024L; 
     private static final int CONNECT_TIMEOUT = 15000;
     private static final int READ_TIMEOUT = 60000;
-
+    
     private final Screen lastScreen;
     private DependencyList depList;
     private Button directDownloadButton;
     private Button manualDownloadButton;
     private Button downloadAllButton;
     private Button backButton;
-
+    
     private List<DependencyEntry> dependencies = new ArrayList<>();
     private boolean loading = true;
     private String errorMessage = null;
+    
     private boolean isDownloading = false;
     private boolean requiresRestart = false;
-
     private int currentDownloadIndex = 0;
     private int totalDownloads = 0;
     private String currentDownloadName = "";
@@ -54,7 +55,7 @@ public class TacZPackDownloaderScreen extends Screen {
     @Override
     protected void init() {
         loadDependencies();
-
+        
         int listTop = 45;
         int buttonsPerRow = (this.width > 450) ? 4 : 2;
         int spacing = 5;
@@ -62,9 +63,8 @@ public class TacZPackDownloaderScreen extends Screen {
         int buttonHeight = 20;
         int rows = (int) Math.ceil(4.0 / buttonsPerRow);
         int totalButtonAreaHeight = rows * (buttonHeight + spacing);
-
+        
         int listHeight = this.height - listTop - totalButtonAreaHeight - 30;
-
         this.depList = new DependencyList(this.minecraft, this.width, listHeight, listTop, listTop + listHeight, 20);
         this.addWidget(this.depList);
 
@@ -75,7 +75,7 @@ public class TacZPackDownloaderScreen extends Screen {
             playSound();
             downloadSelectedDirect();
         }).bounds(startX, startY, buttonWidth, buttonHeight).build();
-
+        
         this.manualDownloadButton = Button.builder(Component.translatable("gui.zombierool.tacz.manual"), btn -> {
             playSound();
             openSelectedManualLink();
@@ -83,12 +83,12 @@ public class TacZPackDownloaderScreen extends Screen {
 
         int row2Y = (buttonsPerRow == 2) ? startY + buttonHeight + spacing : startY;
         int row2X = (buttonsPerRow == 2) ? startX : startX + (buttonWidth + spacing) * 2;
-
+        
         this.downloadAllButton = Button.builder(Component.translatable("gui.zombierool.tacz.dl_all"), btn -> {
             playSound();
             downloadAllDirect();
         }).bounds(row2X, row2Y, buttonWidth, buttonHeight).build();
-
+        
         this.backButton = Button.builder(Component.translatable("gui.zombierool.downloader.back"), btn -> {
             playSound();
             this.minecraft.setScreen(lastScreen);
@@ -98,7 +98,7 @@ public class TacZPackDownloaderScreen extends Screen {
         this.addRenderableWidget(manualDownloadButton);
         this.addRenderableWidget(downloadAllButton);
         this.addRenderableWidget(backButton);
-
+        
         updateButtonStates();
     }
 
@@ -140,7 +140,7 @@ public class TacZPackDownloaderScreen extends Screen {
 
                 JsonArray array = JsonParser.parseString(response.toString()).getAsJsonArray();
                 dependencies.clear();
-
+                
                 for (JsonElement elem : array) {
                     JsonObject obj = elem.getAsJsonObject();
                     String id = obj.get("id").getAsString();
@@ -149,12 +149,12 @@ public class TacZPackDownloaderScreen extends Screen {
                     String downloadUrl = obj.get("downloadUrl").getAsString();
                     String filename = obj.get("filename").getAsString();
                     String type = obj.get("type").getAsString();
-
+                    
                     DependencyEntry entry = new DependencyEntry(id, name, pageUrl, downloadUrl, filename, type);
                     
                     boolean installed = false;
                     File gameDir = Minecraft.getInstance().gameDirectory;
-
+                    
                     if (entry.type.equalsIgnoreCase("mod") && entry.id.equalsIgnoreCase("tacz")) {
                         installed = ModList.get().isLoaded("tacz");
                     } else if (entry.type.equalsIgnoreCase("mod")) {
@@ -174,7 +174,6 @@ public class TacZPackDownloaderScreen extends Screen {
                             new File(gameDir, "tacz/custom"),
                             new File(gameDir, "config/tacz/custom")
                         };
-                        
                         for (File d : dirsToCheck) {
                             if (installed) break;
                             File[] files = d.listFiles();
@@ -238,12 +237,12 @@ public class TacZPackDownloaderScreen extends Screen {
     private void downloadSelectedDirect() {
         DependencyEntry selected = depList.getSelected();
         if (selected == null || isDownloading || selected.isInstalled) return;
-
+        
         totalDownloads = 1;
         currentDownloadIndex = 1;
         isDownloading = true;
         updateButtonStates();
-
+        
         new Thread(() -> {
             boolean success = downloadDependency(selected);
             this.minecraft.execute(() -> {
@@ -259,21 +258,19 @@ public class TacZPackDownloaderScreen extends Screen {
 
     private void downloadAllDirect() {
         if (isDownloading) return;
-
         List<DependencyEntry> toDownload = new ArrayList<>();
         for (DependencyEntry entry : dependencies) {
             if (!entry.isInstalled && entry.downloadUrl != null && !entry.downloadUrl.isEmpty()) {
                 toDownload.add(entry);
             }
         }
-
         if (toDownload.isEmpty()) return;
-
+        
         totalDownloads = toDownload.size();
         currentDownloadIndex = 1;
         isDownloading = true;
         updateButtonStates();
-
+        
         CompletableFuture.runAsync(() -> {
             for (DependencyEntry entry : toDownload) {
                 boolean success = downloadDependency(entry);
@@ -330,9 +327,8 @@ public class TacZPackDownloaderScreen extends Screen {
             File gameDir = Minecraft.getInstance().gameDirectory;
             File targetDir = entry.type.equalsIgnoreCase("mod") ? new File(gameDir, "mods") : new File(gameDir, "config/tacz/custom");
             targetDir.mkdirs();
-
+            
             File targetFile = new File(targetDir, entry.filename);
-
             long contentLength = conn.getContentLengthLong();
             if (contentLength > MAX_FILE_SIZE) return false;
 
@@ -347,7 +343,7 @@ public class TacZPackDownloaderScreen extends Screen {
                 while ((bytesRead = in.read(buffer)) != -1) {
                     out.write(buffer, 0, bytesRead);
                     totalRead += bytesRead;
-
+                    
                     long now = System.currentTimeMillis();
                     if (contentLength > 0 && now - lastUpdate > 100) {
                         currentFileProgress = (float) totalRead / contentLength;
@@ -355,10 +351,8 @@ public class TacZPackDownloaderScreen extends Screen {
                     }
                 }
             }
-
             conn.disconnect();
             return true;
-
         } catch (Exception e) {
             this.minecraft.execute(() -> statusMessage = "Download Error: " + e.getClass().getSimpleName());
             e.printStackTrace();
@@ -400,10 +394,10 @@ public class TacZPackDownloaderScreen extends Screen {
             int barHeight = 10;
             int barX = (this.width - barWidth) / 2;
             int barY = this.height - 60;
-
+            
             String status = String.format("Downloading (%d/%d) : %s", currentDownloadIndex, totalDownloads, currentDownloadName);
             graphics.drawCenteredString(this.font, status, this.width / 2, barY - 12, 0xFFFFFF);
-
+            
             graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
             graphics.fill(barX, barY, barX + (int)(barWidth * currentFileProgress), barY + barHeight, 0xFF00AA00);
             graphics.renderOutline(barX, barY, barWidth, barHeight, 0xFFFFFFFF);
@@ -418,7 +412,7 @@ public class TacZPackDownloaderScreen extends Screen {
         public DependencyList(Minecraft mc, int width, int height, int top, int bottom, int itemHeight) {
             super(mc, width, height, top, bottom, itemHeight);
         }
-
+        
         public void refreshList() {
             this.clearEntries();
             for (DependencyEntry entry : dependencies) {

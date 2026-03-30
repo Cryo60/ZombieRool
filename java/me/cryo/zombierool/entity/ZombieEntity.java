@@ -4,15 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.manager.GoreManager;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModSounds;
-import me.cryo.zombierool.player.PlayerDownManager;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -50,10 +47,8 @@ import org.joml.Vector3f;
 
 public class ZombieEntity extends AbstractZombieRoolEntity {
     public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
-    
     private int ambientSoundCooldown = 0;
     private double baseSpeed = 0.23;
-    
     private static final Random STATIC_RANDOM = new Random();
     private int lightUpdateTimer = 0;
 
@@ -124,16 +119,18 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     public void makeCrawler() {
         if (isCrawler()) return;
-        
+
         GoreManager.triggerLegsExplosion(this);
         this.setHealth(Math.min(this.getHealth(), 5.0f));
         this.setSuperSprinter(false);
-        
+
         boolean isFast = this.random.nextFloat() < 0.35f;
         this.setFastCrawler(isFast);
+
         if (this.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
             this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(isFast ? 0.20 : 0.12);
         }
+
         this.refreshDimensions();
     }
 
@@ -141,9 +138,9 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     public EntityDimensions getDimensions(Pose pose) {
         float scale = getScale();
         if (isCrawler()) {
-            return EntityDimensions.fixed(0.6f, 0.9f).scale(scale);
+            return EntityDimensions.fixed(0.6f, 0.8f).scale(scale); 
         }
-        return super.getDimensions(pose).scale(scale);
+        return EntityDimensions.fixed(0.6f, 1.95f).scale(scale); 
     }
 
     @Override
@@ -161,6 +158,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     private void updateHalloweenLight() {
         if (!hasHalloweenLight()) return;
         if (this.level().isClientSide) return;
+
         lightUpdateTimer++;
         if (lightUpdateTimer < 10) return;
         lightUpdateTimer = 0;
@@ -175,6 +173,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 0.15, 0.1, 0.15,
                 0.001
             );
+            
             if (this.random.nextFloat() < 0.3f) {
                 serverLevel.sendParticles(
                     net.minecraft.core.particles.ParticleTypes.LAVA,
@@ -227,6 +226,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         if (this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 32.0, false) == null) {
             return;
         }
+
         double currentSpeed = this.getAttribute(Attributes.MOVEMENT_SPEED).getValue();
         SoundEvent sound = null;
 
@@ -253,18 +253,21 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     public boolean doHurtTarget(Entity entity) {
         float damage = this.isSuperSprinter() ? 4.0f : 2.0f;
         boolean flag = entity.hurt(this.damageSources().mobAttack(this), damage);
+        
         if (flag && !this.level().isClientSide) {
             SoundEvent attackSound;
+            
             if (isCrawler()) {
                 attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_attack"));
             } else {
                 int idx = 1 + this.random.nextInt(16);
                 attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
             }
+
             if (attackSound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), attackSound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }
-            
+
             if (entity instanceof Player) {
                 if (STATIC_RANDOM.nextInt(20) == 0) {
                     SoundEvent punchSound = ZombieroolModSounds.PUNCH.get();
@@ -314,6 +317,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+
         if (!this.level().isClientSide) {
             if (ambientSoundCooldown > 0) {
                 ambientSoundCooldown--;
@@ -323,7 +327,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
             }
 
             if (globalBehindYouSoundCooldown > 0) globalBehindYouSoundCooldown--;
-            
+
             if (this.behindYouSoundCooldown > 0) {
                 this.behindYouSoundCooldown--;
             } else if (globalBehindYouSoundCooldown == 0 && !isCrawler()) {
@@ -331,15 +335,16 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                     Player.class,
                     this.getBoundingBox().inflate(BEHIND_YOU_CHECK_RADIUS)
                 );
+
                 for (Player player : players) {
                     if (!player.isAlive() || player.isSpectator()) continue;
                     if (player.hasEffect(MobEffects.BLINDNESS)) continue;
-                    
+
                     Vec3 playerLook = player.getLookAngle().normalize();
                     Vec3 toZombie = this.position().subtract(player.position()).normalize();
                     double dot = playerLook.dot(toZombie);
                     double distSqr = this.distanceToSqr(player);
-                    
+
                     boolean isBehind = dot <= INSTANT_BEHIND_YOU_DOT_PRODUCT_THRESHOLD
                         || (distSqr <= INSTANT_BEHIND_YOU_DISTANCE * INSTANT_BEHIND_YOU_DISTANCE && dot <= INSTANT_BEHIND_YOU_DOT_PRODUCT_THRESHOLD);
 
@@ -351,6 +356,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                             SoundSource.HOSTILE,
                             1.0F, 1.0F
                         );
+
                         int cooldown = this.random.nextInt(
                             BEHIND_YOU_MAX_COOLDOWN_TICKS - BEHIND_YOU_MIN_COOLDOWN_TICKS
                         ) + BEHIND_YOU_MIN_COOLDOWN_TICKS;
@@ -360,6 +366,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                     }
                 }
             }
+
             updateHalloweenLight();
         }
     }

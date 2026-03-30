@@ -15,7 +15,6 @@ import net.minecraftforge.registries.RegistryObject;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.nbt.CompoundTag;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -36,6 +35,7 @@ public class ZRClientSetup {
 	                }
 	                return 0.0F;
 	            });
+
 	            ItemProperties.register(item, new ResourceLocation("zombierool:is_pap"), (stack, level, entity, seed) -> {
 	                if (stack.getItem() instanceof me.cryo.zombierool.api.IPackAPunchable pap) {
 	                    return pap.isPackAPunched(stack) ? 1.0F : 0.0F;
@@ -43,19 +43,7 @@ public class ZRClientSetup {
 	                return 0.0F;
 	            });
 
-	            ResourceLocation regName = ForgeRegistries.ITEMS.getKey(item);
-	            if (regName != null && regName.getPath().equals("needler")) {
-	                ItemProperties.register(item, new ResourceLocation("zombierool:ammo_stage"), (stack, level, entity, seed) -> {
-	                    if (stack.getItem() instanceof me.cryo.zombierool.api.IReloadable r) {
-	                        float ratio = (float)r.getAmmo(stack) / r.getMaxAmmo(stack);
-	                        if (ratio <= 0) return 4.0F;
-	                        if (ratio <= 0.25) return 3.0F;
-	                        if (ratio <= 0.5) return 2.0F;
-	                        if (ratio <= 0.75) return 1.0F;
-	                    }
-	                    return 0.0F;
-	                });
-	            }
+	            // Suppression de la boucle pour zr_skin_* car le modèle personnalisé gère la texture désormais.
 	        }
 
             ItemProperties.register(UniversalSpawnerSystem.UNIVERSAL_SPAWNER_ITEM.get(), new ResourceLocation("zombierool:spawner_type"), (stack, level, entity, seed) -> {

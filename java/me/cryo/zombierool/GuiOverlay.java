@@ -1,77 +1,54 @@
 package me.cryo.zombierool.client.gui;
-import me.cryo.zombierool.block.system.DefenseDoorSystem; 
-import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock;
-import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntity;
-import me.cryo.zombierool.init.KeyBindings;
+
+import me.cryo.zombierool.client.career.LocalCareerManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent; 
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Font;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraft.core.Direction;
-import net.minecraft.ChatFormatting;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import java.util.List;
 
-@Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class GuiOverlay {
-    private static final Minecraft mc = Minecraft.getInstance();
 
     @SubscribeEvent
     public static void onRenderOverlay(RenderGuiOverlayEvent.Post event) {
-        if (mc.player == null || mc.level == null) return;
-        BlockPos repairPos = DefenseDoorSystem.DefenseDoorBlock.getDoorInRepairZone(mc.level, mc.player.blockPosition()); 
-        if (repairPos != null) {
-            handleRepairMessage(event, repairPos);
-            return;
-        }
-        BlockPos purchasePos = findNearbyObstacleDoor(mc.level, mc.player.blockPosition());
-        if (purchasePos != null) {
-            handlePurchaseMessage(event, purchasePos);
-        }
     }
 
-    private static void handleRepairMessage(RenderGuiOverlayEvent.Post event, BlockPos pos) {
-        BlockState state = mc.level.getBlockState(pos);
-        if (state.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) { 
-            int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
-            if (stage < 5) {
-                String actionKey = KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
-                Component text = Component.translatable("gui.zombierool.overlay.repair", actionKey, (5 - stage)).withStyle(ChatFormatting.YELLOW);
-                drawCenteredText(event, text);
+    public static void renderNotifications(GuiGraphics graphics, int screenWidth, int screenHeight, Font font) {
+        List<LocalCareerManager.Notification> notifs = LocalCareerManager.activeNotifications;
+        if (notifs.isEmpty()) return;
+
+        long now = System.currentTimeMillis();
+        int yOffset = screenHeight / 2 - 50; 
+
+        for (int i = 0; i < notifs.size(); i++) {
+            LocalCareerManager.Notification notif = notifs.get(i);
+            long age = now - notif.spawnTime;
+            
+            if (age > 4000) {
+                notifs.remove(i);
+                i--;
+                continue;
             }
-        }
-    }
 
-    private static void handlePurchaseMessage(RenderGuiOverlayEvent.Post event, BlockPos pos) {
-        if (mc.level.getBlockEntity(pos) instanceof ObstacleDoorBlockEntity be) {
-            int prix = be.getPrix();
-            String canal = be.getCanal();
-            if (prix > 0) { 
-                String actionKey = KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
-                MutableComponent text = Component.translatable("gui.zombierool.overlay.purchase", actionKey, prix).withStyle(ChatFormatting.WHITE);
-                int x = (event.getWindow().getGuiScaledWidth() - mc.font.width(text)) / 2;
-                int y = event.getWindow().getGuiScaledHeight() / 2;
-                event.getGuiGraphics().drawString(mc.font, text, x, y, 0xFFFFFF, true);
+            float alpha = 1.0f;
+            if (age > 3000) {
+                alpha = 1.0f - ((age - 3000) / 1000.0f);
             }
-        }
-    }
+            
+            int alphaInt = (int) (alpha * 255);
+            int color = (alphaInt << 24) | (notif.color & 0xFFFFFF);
+            
+            int textWidth = font.width(notif.text);
+            int xOffset = screenWidth - textWidth - 10; 
+            
+            graphics.fill(xOffset - 4, yOffset - 2, xOffset + textWidth + 4, yOffset + font.lineHeight + 2, (alphaInt / 2) << 24);
+            graphics.drawString(font, notif.text, xOffset, yOffset, color, true);
 
-    public static BlockPos findNearbyObstacleDoor(Level level, BlockPos playerPos) {
-        for (Direction dir : Direction.values()) {
-            BlockPos checkPos = playerPos.relative(dir);
-            if (level.getBlockState(checkPos).getBlock() instanceof ObstacleDoorBlock) {
-                return checkPos;
-            }
+            yOffset += 16;
         }
-        return null;
-    }
-
-    private static void drawCenteredText(RenderGuiOverlayEvent.Post event, Component text) {
-        int x = (event.getWindow().getGuiScaledWidth() - mc.font.width(text)) / 2;
-        int y = event.getWindow().getGuiScaledHeight() - 60;
-        event.getGuiGraphics().drawString(mc.font, text, x, y, 0xFFFFFF, true);
     }
 }

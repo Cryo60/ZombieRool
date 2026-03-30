@@ -1,5 +1,6 @@
 package me.cryo.zombierool.client;
 
+import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.client.render.ZombieMoonRenderer;
@@ -22,36 +23,28 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientEnvironmentEffects {
-
     public static String currentFogPreset = "normal";
     public static boolean enableFog = true;
     public static boolean enableMoonRenderer = true;
-
     public static float fogNearPlane = 0.5F;
     public static float fogFarPlane = 18.0F;
-
     public static float fogColorRed = 0f;
     public static float fogColorGreen = 0f;
     public static float fogColorBlue = 0f;
     public static float fogColorAlpha = 0.9f;
-
     public static boolean enableFogPulse = true;
-
     public static float customFogR = 0f, customFogG = 0f, customFogB = 0f;
     public static float customFogNear = 0.5f, customFogFar = 18.0f;
-
     public static boolean clientParticlesEnabled = false;
     public static ResourceLocation clientParticleTypeId = null;
     public static ParticleOptions activeParticleType = null;
     public static String clientParticleDensity = "normal";
     public static String clientParticleMode = "global";
-
     private static float fogPulseValue = 0;
     private static boolean fogPulseDirection = true;
 
     @SubscribeEvent
     public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
-        // RESET HARD LORS DU RETOUR AU MENU PRINCIPAL
         setFogPreset("none", 0,0,0,0.5f,512.0f);
         handleWeatherSync(false, "", "", "");
     }
@@ -61,7 +54,6 @@ public class ClientEnvironmentEffects {
         enableFog = true;
         enableMoonRenderer = true;
         enableFogPulse = false;
-
         customFogR = r; customFogG = g; customFogB = b;
         customFogNear = near; customFogFar = far;
 
@@ -148,25 +140,23 @@ public class ClientEnvironmentEffects {
         }
 
         if (!enableFog) {
-            event.setCanceled(false);
             return;
         }
 
+        event.setFogShape(FogShape.CYLINDER);
+
         if (WaveManager.isClientSpecialWave()) {
-            RenderSystem.setShaderFogColor(0.6f, 0.6f, 0.6f, 1f);
             event.setNearPlaneDistance(1.0F);
             event.setFarPlaneDistance(12.0F);
-            event.setCanceled(true);
+            event.setCanceled(true); 
         } else {
             float currentFarPlane = fogFarPlane;
-
             if (enableFogPulse) {
                 currentFarPlane = fogFarPlane + (fogPulseValue * (fogFarPlane * 0.25F));
             }
-
             event.setNearPlaneDistance(fogNearPlane);
             event.setFarPlaneDistance(currentFarPlane);
-            event.setCanceled(true);
+            event.setCanceled(true); 
         }
     }
 
@@ -190,7 +180,6 @@ public class ClientEnvironmentEffects {
             Minecraft mc = Minecraft.getInstance();
             ClientLevel level = mc.level;
             Player player = mc.player;
-
             if (level == null || player == null || mc.isPaused()) return;
 
             int particlesToSpawn = switch (clientParticleDensity) {
@@ -202,15 +191,12 @@ public class ClientEnvironmentEffects {
             };
 
             RandomSource random = level.random;
-
             for (int i = 0; i < particlesToSpawn; ++i) {
                 double angle = random.nextDouble() * Math.PI * 2.0;
                 double radius = Math.sqrt(random.nextDouble()) * 32.0;
-
                 double px = player.getX() + Math.cos(angle) * radius;
                 double pz = player.getZ() + Math.sin(angle) * radius;
                 double py;
-
                 BlockPos pos = BlockPos.containing(px, player.getY(), pz);
 
                 if (clientParticleMode.equals("atmospheric")) {
@@ -227,11 +213,9 @@ public class ClientEnvironmentEffects {
                         continue;
                     }
                 }
-
                 double vx = (random.nextDouble() - 0.5) * 0.1;
                 double vy = -0.05 - random.nextDouble() * 0.1; 
                 double vz = (random.nextDouble() - 0.5) * 0.1;
-
                 level.addParticle(activeParticleType, px, py, pz, vx, vy, vz);
             }
         }
@@ -239,11 +223,9 @@ public class ClientEnvironmentEffects {
 
     public static void handleWeatherSync(boolean enabled, String particleId, String density, String mode) {
         clientParticlesEnabled = enabled;
-
         if (enabled && particleId != null && !particleId.isEmpty() && !particleId.equals("none")) {
             ResourceLocation loc = new ResourceLocation(particleId);
             clientParticleTypeId = loc;
-
             net.minecraft.core.particles.ParticleType<?> type = ForgeRegistries.PARTICLE_TYPES.getValue(loc);
             if (type instanceof SimpleParticleType simple) {
                 activeParticleType = simple;
@@ -252,7 +234,6 @@ public class ClientEnvironmentEffects {
             } else {
                 activeParticleType = null;
             }
-
             clientParticleDensity = density;
             clientParticleMode = mode;
         } else {

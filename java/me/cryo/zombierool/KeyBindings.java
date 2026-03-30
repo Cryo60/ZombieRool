@@ -28,28 +28,28 @@ public class KeyBindings {
         
         RELOAD_KEY = new KeyMapping("key.zombierool.reload", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "category.zombierool.keys");
         event.register(RELOAD_KEY);
-        
+
         MELEE_ATTACK_KEY = new KeyMapping("key.zombierool.melee_attack", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, "category.zombierool.keys");
         event.register(MELEE_ATTACK_KEY);
-        
+
         STABILIZE_KEY = new KeyMapping("key.zombierool.stabilize", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_SHIFT, "category.zombierool.keys");
         event.register(STABILIZE_KEY);
-        
+
         CYCLE_CHANNEL_KEY = new KeyMapping("key.zombierool.cycle_channel", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_KP_ADD, "category.zombierool.keys");
         event.register(CYCLE_CHANNEL_KEY);
-        
+
         TOGGLE_SURVIVAL_VIEW_KEY = new KeyMapping("key.zombierool.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_I, "category.zombierool.keys");
         event.register(TOGGLE_SURVIVAL_VIEW_KEY);
-        
+
         CONFIG_MENU_KEY = new KeyMapping("key.zombierool.config_menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_P, "category.zombierool.keys");
         event.register(CONFIG_MENU_KEY);
-        
+
         CRAWL_KEY = new KeyMapping("key.zombierool.crawl", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, "category.zombierool.keys");
         event.register(CRAWL_KEY);
-        
+
         LETHAL_GRENADE_KEY = new KeyMapping("key.zombierool.lethal_grenade", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.zombierool.keys");
         event.register(LETHAL_GRENADE_KEY);
-        
+
         TACTICAL_GRENADE_KEY = new KeyMapping("key.zombierool.tactical_grenade", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_APOSTROPHE, "category.zombierool.keys");
         event.register(TACTICAL_GRENADE_KEY);
     }

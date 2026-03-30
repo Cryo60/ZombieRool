@@ -1,4 +1,5 @@
 package me.cryo.zombierool.client.gui;
+
 import me.cryo.zombierool.CopyNotificationScreen;
 import me.cryo.zombierool.MapDownloaderScreen;
 import me.cryo.zombierool.init.ZombieroolModSounds;
@@ -23,15 +24,12 @@ public class MainMenuExtensions {
         if (!(event.getScreen() instanceof TitleScreen screen)) {
             return;
         }
-
         int buttonHeight = 20;
         int spacing = 4;
         int lowestMainMenuButtonY = screen.height / 4 + 48 + (24 * 5) + 16;
         int availableHeight = screen.height - lowestMainMenuButtonY - 10;
-        
-        boolean useGrid = availableHeight < ((buttonHeight + spacing) * 4);
+        boolean useGrid = availableHeight < ((buttonHeight + spacing) * 5);
         int buttonWidth = useGrid ? 145 : 200;
-
         int startX = screen.width / 2 - (buttonWidth / 2);
         int startY = lowestMainMenuButtonY;
 
@@ -47,7 +45,6 @@ public class MainMenuExtensions {
                 playSound();
                 Minecraft.getInstance().setScreen(new TacZPackDownloaderScreen(screen));
             }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
-            
             if (useGrid) {
                 col++;
             } else {
@@ -59,7 +56,7 @@ public class MainMenuExtensions {
             playSound();
             Minecraft.getInstance().setScreen(new MapDownloaderScreen(screen));
         }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
-
+        
         if (useGrid) {
             col = 0;
             currentY += buttonHeight + spacing;
@@ -70,6 +67,17 @@ public class MainMenuExtensions {
         event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.play_copy"), btn -> {
             playSound();
             Minecraft.getInstance().setScreen(new CopyWorldSelectionScreen(screen));
+        }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
+
+        if (useGrid) {
+            col++;
+        } else {
+            currentY += buttonHeight + spacing;
+        }
+
+        event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.career"), btn -> {
+            playSound();
+            Minecraft.getInstance().setScreen(new CareerScreen(screen));
         }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
     }
 

@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
 import javax.annotation.Nullable;
 
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -50,15 +50,16 @@ import net.minecraftforge.network.PlayMessages;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class CrawlerEntity extends AbstractZombieRoolEntity {
+
     private int ambientSoundCooldown = 0;
     private static final int CRAWLER_AMBIENT_COOLDOWN_TICKS = 20 * 5;
 
     private static final EntityDataAccessor<Boolean> HALLOWEEN_SKIN = 
         SynchedEntityData.defineId(CrawlerEntity.class, EntityDataSerializers.BOOLEAN);
-        
+
     public static final EntityDataAccessor<Boolean> WILL_EXPLODE = 
         SynchedEntityData.defineId(CrawlerEntity.class, EntityDataSerializers.BOOLEAN);
-        
+
     public boolean willExplodeClient = false;
 
     public CrawlerEntity(PlayMessages.SpawnEntity packet, Level world) {
@@ -79,7 +80,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return EntityDimensions.fixed(0.55f, 0.55f);
+        return EntityDimensions.fixed(0.6f, 0.6f); 
     }
 
     @Override
@@ -115,7 +116,6 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
         this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, false) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
-                // Hitbox d'attaque légèrement élargie
                 return (this.mob.getBbWidth() * 2.5F * this.mob.getBbWidth() * 2.5F + entity.getBbWidth());
             }
         });
@@ -149,7 +149,6 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             if (sound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), sound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }
-            
             if (entity instanceof Player p && p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                 return flag;
             }
@@ -165,9 +164,9 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
         if (source.getDirectEntity() instanceof ThrownPotion || source.is(DamageTypes.FALL)) {
             return false;
         }
-        
+
         boolean result = super.hurt(source, amount);
-        
+
         if (this.headshotDeath) {
             boolean actualHeadshot = this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
             if (!actualHeadshot) {
@@ -176,12 +175,14 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                 this.headshotDeathTicks = 0;
             }
         }
+
         return result;
     }
 
     @Override
     public void tick() {
         super.tick();
+
         if (!this.level().isClientSide) {
             if (ambientSoundCooldown > 0) {
                 ambientSoundCooldown--;
@@ -204,8 +205,9 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             boolean isExplosive = this.getPersistentData().getBoolean("zombierool:explosive_damage") || cause.is(DamageTypes.EXPLOSION);
             boolean isMelee = cause.getDirectEntity() instanceof Player && !isGun && !isExplosive;
             boolean actualHeadshot = this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
-            
+
             boolean shouldExplode = false;
+
             if (isMelee) {
                 shouldExplode = false; 
             } else if (isExplosive) {
@@ -222,6 +224,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                 this.headshotDeath = false; 
             }
         }
+
         super.die(cause); 
     }
 
@@ -246,19 +249,18 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             if (this.level().isClientSide && this.deathTime % 3 == 0) {
                 this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getRandomX(0.5), this.getY() + 0.2, this.getRandomZ(0.5), 0, 0.05, 0);
             }
-            
+
             if (this.deathTime >= 45) {
                 if (!this.level().isClientSide) {
                     ServerLevel serverLevel = (ServerLevel) this.level();
-                    CrawlerGasManager.addGasCloud(serverLevel, this.position(), 240);
                     
-                    // Ajout d'un dégât AOE mineur à la mort du crawler si explosion
+                    CrawlerGasManager.addGasCloud(serverLevel, this.position(), 240);
+
                     AABB aoeBox = this.getBoundingBox().inflate(1.5);
                     List<LivingEntity> hitEntities = serverLevel.getEntitiesOfClass(LivingEntity.class, aoeBox);
                     for (LivingEntity le : hitEntities) {
                         if (le instanceof Player p && p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) continue;
                         if (le.isAlive() && !(le instanceof AbstractZombieRoolEntity)) {
-                            // 4 dégâts = 2 cœurs
                             le.hurt(serverLevel.damageSources().mobAttack(this), 4.0f);
                         }
                     }
@@ -267,11 +269,13 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                     serverLevel.sendParticles(ParticleTypes.SQUID_INK, this.getX(), this.getY() + 0.5, this.getZ(), 20, 0.5, 0.5, 0.5, 0.05);
                     serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 1.0f, 1.5f);
                     serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.HOSTILE, 2.0f, 0.5f);
+
                     this.remove(Entity.RemovalReason.KILLED);
                 }
             }
             return; 
         }
+
         super.tickDeath();
     }
 
@@ -279,7 +283,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
 
     public static AttributeSupplier.Builder createAttributes() {
         AttributeSupplier.Builder builder = Mob.createMobAttributes();
-        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.26); // Vitesse rehaussée
+        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.26); 
         builder = builder.add(Attributes.MAX_HEALTH, 5);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 1);
@@ -291,7 +295,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class CrawlerGasManager {
         private static final Random STATIC_RANDOM = new Random();
-        
+
         private static class GasCloud {
             ServerLevel level;
             Vec3 pos;
@@ -334,7 +338,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                         double dx = (STATIC_RANDOM.nextGaussian() * cloud.radius) * 0.5;
                         double dy = STATIC_RANDOM.nextDouble() * 1.5;
                         double dz = (STATIC_RANDOM.nextGaussian() * cloud.radius) * 0.5;
-                        
+
                         if (dx * dx + dz * dz <= cloud.radius * cloud.radius) {
                             cloud.level.sendParticles(ZombieroolModParticleTypes.TOXIC_SMOKE.get(), cloud.pos.x + dx, cloud.pos.y + dy, cloud.pos.z + dz, 1, 0.1, 0.5, 0.1, 0.01);
                         }
@@ -346,7 +350,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                         cloud.pos.x - cloud.radius, cloud.pos.y - 0.5, cloud.pos.z - cloud.radius,
                         cloud.pos.x + cloud.radius, cloud.pos.y + 2.0, cloud.pos.z + cloud.radius
                     );
-                    
+
                     List<LivingEntity> entities = cloud.level.getEntitiesOfClass(LivingEntity.class, box);
                     for (LivingEntity target : entities) {
                         if (!target.isAlive() || target.isSpectator()) continue;

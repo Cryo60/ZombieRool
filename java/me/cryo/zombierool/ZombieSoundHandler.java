@@ -27,7 +27,6 @@ public class ZombieSoundHandler {
     private static final SoundEvent GAME_MUSIC_DEFAULT = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_soundtrack"));
     private static final SoundEvent GAME_MUSIC_DAMNED = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_soundtrack_damned"));
     private static final SoundEvent MENU_MUSIC = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_music"));
-    
     private static final SoundEvent AMBIENT_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ambient_loop"));
 
     private static final int CHECK_DELAY_TICKS = 100;
@@ -35,11 +34,13 @@ public class ZombieSoundHandler {
 
     private static SoundInstance currentMusic;
     private static boolean musicPlaying = false;
+
     public static String currentClientMusicPreset = "default";
     public static String previousClientMusicPreset = "default";
 
     private static float targetMusicVolume = 0.05f;
     private static float currentMusicVolume = 0.05f;
+
     private static boolean fadingOut = false;
     private static boolean fadingIn = false;
     private static int fadeTickCount = 0;
@@ -50,7 +51,6 @@ public class ZombieSoundHandler {
     private static SoundInstance currentAmbientSound;
     private static boolean ambientSoundPlaying = false;
     private static int ambientRetryCooldown = 0;
-
     public static int tickCounter = 0;
 
     private static final java.util.Set<String> OVERRIDE_SOUND_WEAPONS = java.util.Set.of(
@@ -75,6 +75,7 @@ public class ZombieSoundHandler {
         fadeTickCount = 0;
         forceRestartDelay = -1;
         currentMusicVolume = 0.05f;
+
         tickCounter = CHECK_DELAY_TICKS;
     }
 
@@ -117,16 +118,13 @@ public class ZombieSoundHandler {
     @OnlyIn(Dist.CLIENT)
     public static void onPlaySound(PlaySoundEvent event) {
         if (event.getSound() == null) return;
-
         SoundSource source = event.getSound().getSource();
         ResourceLocation soundLoc = event.getSound().getLocation();
-
         String path = soundLoc.getPath().toLowerCase();
         String namespace = soundLoc.getNamespace().toLowerCase();
 
         if ((namespace.equals("tacz") || namespace.equals("ww") || namespace.equals("elitex") || namespace.equals("hamster") || namespace.equals("ronmc") || namespace.equals("mw_guns") || namespace.equals("rainforest") || namespace.equals("halor6") || namespace.equals("valorant"))
                 && (path.contains("fire") || path.contains("shoot"))) {
-
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) {
                 Player closest = mc.level.getNearestPlayer(event.getSound().getX(), event.getSound().getY(), event.getSound().getZ(), 2.0, false);
@@ -151,6 +149,7 @@ public class ZombieSoundHandler {
                 musicPlaying = true;
             }
         }
+
         if (source == SoundSource.AMBIENT && soundLoc.equals(AMBIENT_SOUND.getLocation())) {
             ambientSoundPlaying = true;
         }
@@ -158,7 +157,7 @@ public class ZombieSoundHandler {
 
     private static SoundEvent determineTargetMusic(Minecraft mc, SoundManager manager) {
         String targetMusicPreset;
-        
+
         if (mc.level == null) {
             targetMusicPreset = "menu";
         } else if (isGamePausedClient) {
@@ -217,6 +216,11 @@ public class ZombieSoundHandler {
     @OnlyIn(Dist.CLIENT)
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        
+        // Bloquer la lecture et les timers si le jeu est en train de télécharger des sons !
+        if (DynamicSoundLoader.isSyncing()) {
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         SoundManager manager = mc.getSoundManager();
@@ -258,6 +262,7 @@ public class ZombieSoundHandler {
             if (Math.abs(currentMusicVolume - newCalculatedVolume) > 0.001f
                     || (fadingOut && newCalculatedVolume == 0.0f)
                     || (fadingIn && newCalculatedVolume == targetMusicVolume)) {
+
                 currentMusicVolume = newCalculatedVolume;
                 musicStateChangedByFade = true;
             }

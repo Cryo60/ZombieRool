@@ -1,15 +1,17 @@
-// [main\java\me\cryo\zombierool\block\system\PackAPunchSystem.java]
 package me.cryo.zombierool.block.system;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.ZombieroolMod;
+import me.cryo.zombierool.career.CareerManager;
 import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.util.PlayerVoiceManager;
+import me.cryo.zombierool.network.NetworkHandler;
+import me.cryo.zombierool.network.packet.S2CProgressWeaponStatPacket;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -29,6 +31,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -71,9 +74,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.ChatFormatting;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +127,7 @@ public class PackAPunchSystem {
                     player.displayClientMessage(Component.translatable("message.zombierool.packapunch.hold_weapon").withStyle(ChatFormatting.RED), true);
                     return;
                 }
-                
+
                 if (!WeaponFacade.canBePackAPunched(held)) {
                     player.displayClientMessage(Component.translatable("message.zombierool.packapunch.invalid_weapon").withStyle(ChatFormatting.RED), true);
                     return;
@@ -134,7 +135,7 @@ public class PackAPunchSystem {
 
                 boolean hasIngot = player.getInventory().items.stream().anyMatch(s -> s.getItem() instanceof IngotSaleItem);
                 int price = be.getPrice();
-                
+
                 if (!hasIngot && PointManager.getScore(player) < price) {
                     player.displayClientMessage(Component.translatable("message.zombierool.packapunch.no_points", price).withStyle(ChatFormatting.RED), true);
                     PlayerVoiceManager.playNoMoneySound(player, level);
@@ -172,12 +173,19 @@ public class PackAPunchSystem {
                 if (!added) {
                     player.drop(upgraded, false);
                 }
-
                 player.inventoryMenu.broadcastChanges();
                 player.displayClientMessage(Component.translatable("message.zombierool.packapunch.success").withStyle(ChatFormatting.GREEN), true);
+
+                if (player instanceof ServerPlayer sp) {
+                    CareerManager.progressChallenge(sp, CareerManager.ChallengeType.PAP_USED, 1);
+                    String wId = WeaponFacade.getWeaponId(upgraded).replace("zombierool:", "");
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sp), new S2CProgressWeaponStatPacket(wId, 0, 0, 1));
+                }
+
                 PlayerVoiceManager.playWeaponUpgraded(player, level);
                 level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1f, 1f);
                 be.reset();
+
             } else {
                 player.displayClientMessage(Component.translatable("message.zombierool.packapunch.in_use").withStyle(ChatFormatting.RED), true);
             }
@@ -238,11 +246,12 @@ public class PackAPunchSystem {
 		    boolean powered = level.hasNeighborSignal(pos) 
 		                   || level.hasNeighborSignal(pos.above()) 
 		                   || level.hasNeighborSignal(pos.below());
+		    
 		    return this.defaultBlockState()
 		        .setValue(FACING, context.getHorizontalDirection().getOpposite())
 		        .setValue(POWERED, powered);
 		}
-		
+
 		@Override
 		public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
 		    if (!world.isClientSide) {
@@ -334,7 +343,6 @@ public class PackAPunchSystem {
         public UUID getOwner() { return owner; }
         public int getState() { return state; }
         public int getTimer() { return timer; }
-        
         public int getPrice() { return price; }
         public void setPrice(int price) {
             this.price = price;
@@ -351,16 +359,13 @@ public class PackAPunchSystem {
                     WeaponFacade.applyPackAPunch(be.currentWeapon);
                     WeaponFacade.setAmmo(be.currentWeapon, WeaponFacade.getMaxAmmo(be.currentWeapon));
                     WeaponFacade.setReserve(be.currentWeapon, WeaponFacade.getMaxReserve(be.currentWeapon));
-                    
                     if (be.currentWeapon.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
                         gun.setDurability(be.currentWeapon, gun.getMaxDurability(be.currentWeapon));
                     }
-                    
                     be.state = 2;
                     be.timer = 0;
                     be.setChanged();
                     level.sendBlockUpdated(pos, blockState, blockState, 3);
-                    
                     level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "pap_ready")), SoundSource.BLOCKS, 1f, 1f);
                 }
             } else if (be.state == 2) {
@@ -441,14 +446,12 @@ public class PackAPunchSystem {
 
     @OnlyIn(Dist.CLIENT)
     public static class PackAPunchRenderer implements BlockEntityRenderer<PackAPunchBlockEntity> {
-
         public PackAPunchRenderer(BlockEntityRendererProvider.Context context) {}
 
         @Override
         public void render(PackAPunchBlockEntity be, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
             BlockState stateBlock = be.getBlockState();
             
-            // RENDERING THE MACHINE BLOCK (Untouched)
             poseStack.pushPose();
             poseStack.translate(0.0, 1.0, 0.0);
             BakedModel bakedModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(stateBlock);
@@ -472,19 +475,17 @@ public class PackAPunchSystem {
             float time = be.getTimer() + partialTicks;
             Direction facing = stateBlock.getValue(PackAPunchBlock.FACING);
 
-            // RENDERING THE WEAPON (Lowered by 1 block so it fits inside the mechanism)
             poseStack.pushPose();
-            
             poseStack.translate(0.5, 0.9, 0.5);
 
             float stepX = facing.getStepX();
             float stepZ = facing.getStepZ();
-            
             float gunRotY = -facing.toYRot() + 90f; 
 
             if (state == 1) { 
                 float progress = Math.min(1.0f, time / 100.0f);
                 float inOut;
+                
                 if (progress < 0.2f) {
                     inOut = 1.0f - (progress / 0.2f);
                 } 
@@ -496,19 +497,21 @@ public class PackAPunchSystem {
                 }
 
                 poseStack.translate(stepX * inOut * 0.8, 0, stepZ * inOut * 0.8);
-
+                
                 if (inOut == 0.0f) {
                     poseStack.mulPose(Axis.YP.rotationDegrees(time * 25f));
                     poseStack.mulPose(Axis.XP.rotationDegrees(time * 5f));
                 } else {
                     poseStack.mulPose(Axis.YP.rotationDegrees(gunRotY));
                 }
+
             } else if (state == 2) { 
                 poseStack.translate(stepX * 1.2, Math.sin(time * 0.1) * 0.05, stepZ * 1.2);
                 poseStack.mulPose(Axis.YP.rotationDegrees(gunRotY));
             }
 
             poseStack.scale(0.6f, 0.6f, 0.6f);
+            
             Minecraft.getInstance().getItemRenderer().renderStatic(
                 weapon, ItemDisplayContext.GROUND, combinedLight, combinedOverlay, poseStack, buffer, be.getLevel(), 0
             );
@@ -524,7 +527,7 @@ public class PackAPunchSystem {
         public static void handleSounds(PackAPunchBlockEntity be) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level == null) return;
-            
+
             BlockPos pos = be.getBlockPos();
             int state = be.getState();
             String desiredSound = state == 1 ? "pap_loop" : (state == 2 ? "pap_ready_loop" : null);
@@ -535,7 +538,6 @@ public class PackAPunchSystem {
                 
                 if (current == null || !current.getLocation().equals(desiredLoc) || !mc.getSoundManager().isActive(current)) {
                     stopSounds(pos);
-                    
                     SimpleSoundInstance newSound = new SimpleSoundInstance(
                         desiredLoc, 
                         SoundSource.BLOCKS, 1.0f, 1.0f,

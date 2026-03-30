@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SecretConsoleScreen extends Screen {
+
     private final Screen parent;
     private EditBox commandBox;
     private static final List<Component> logs = new ArrayList<>();
@@ -23,6 +24,7 @@ public class SecretConsoleScreen extends Screen {
     public SecretConsoleScreen(Screen parent) {
         super(Component.translatable("gui.zombierool.console.title"));
         this.parent = parent;
+
         if (logs.isEmpty()) {
             logs.add(Component.translatable("gui.zombierool.console.welcome1"));
             logs.add(Component.translatable("gui.zombierool.console.welcome2"));
@@ -34,6 +36,7 @@ public class SecretConsoleScreen extends Screen {
     @Override
     protected void init() {
         int boxWidth = this.width - 20;
+
         this.commandBox = new EditBox(this.font, 10, this.height - 25, boxWidth, 20, Component.empty()) {
             @Override
             public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
@@ -94,8 +97,6 @@ public class SecretConsoleScreen extends Screen {
                 return;
             }
             addLog(Component.literal("§eStarting packaging for map folder: " + mapName + "..."));
-            
-            // Exécuter dans un nouveau thread pour ne pas bloquer le menu
             new Thread(() -> {
                 boolean success = MapPackagerUtil.zipMapClientSide(mapName);
                 this.minecraft.execute(() -> {
@@ -106,7 +107,8 @@ public class SecretConsoleScreen extends Screen {
                     }
                 });
             }).start();
-        } else {
+        } 
+        else {
             if (this.minecraft.level != null) {
                 NetworkHandler.INSTANCE.sendToServer(new C2SSecretConsoleCommandPacket(cmd));
             } else {

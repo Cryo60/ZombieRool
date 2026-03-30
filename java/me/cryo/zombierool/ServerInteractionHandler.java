@@ -29,6 +29,8 @@ import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 import me.cryo.zombierool.util.PlayerVoiceManager;
+import me.cryo.zombierool.career.CareerManager;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -42,6 +44,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.ChatFormatting;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -51,8 +54,8 @@ public class ServerInteractionHandler {
 
     private static final long REPAIR_COOLDOWN = 1250;
     private static final double SPEED_COLA_REPAIR_MULTIPLIER = 0.5; 
-
     private static final Map<UUID, Long> lastRepairTimes = new HashMap<>();
+
     private static final Map<UUID, Long> activeDrinkAnimations = new HashMap<>();
 
     public static void resetAll() {
@@ -64,8 +67,23 @@ public class ServerInteractionHandler {
         if (player == null || player.level().isClientSide) return;
         ServerLevel level = (ServerLevel) player.level();
 
-        if (type != InteractionType.ACTION_KEY && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 25.0) {
-            return; 
+        if (type != InteractionType.ACTION_KEY) {
+            if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 16.0) {
+                return; 
+            }
+            
+            Vec3 eyePos = player.getEyePosition();
+            Vec3 targetCenter = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            net.minecraft.world.level.ClipContext ctx = new net.minecraft.world.level.ClipContext(
+                eyePos, targetCenter, 
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, 
+                net.minecraft.world.level.ClipContext.Fluid.NONE, 
+                player
+            );
+            net.minecraft.world.phys.BlockHitResult hit = level.clip(ctx);
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && !hit.getBlockPos().equals(pos)) {
+                return; 
+            }
         }
 
         switch (type) {
@@ -80,8 +98,10 @@ public class ServerInteractionHandler {
             case REPAIR_BARRICADE -> handleRepairBarricade(player, level, pos);
             case METEORITE -> handleMeteorite(player, level, pos);
             case BLIND_BUY_CABINET -> handleBlindBuy(player, level, pos);
+            case POWER_SWITCH -> handlePowerSwitch(player, level, pos);
             case ACTION_KEY -> {
                 LuaScriptManager.callEvent("OnActionKeyPressed", player.getUUID().toString());
+                
                 for (me.cryo.zombierool.core.manager.InteractableManager.Interactable inter : me.cryo.zombierool.core.manager.InteractableManager.getInteractables().values()) {
                     if (player.distanceToSqr(inter.pos) <= inter.radius * inter.radius) {
                         LuaScriptManager.callEvent("OnCustomInteract", player.getUUID().toString(), inter.id);
@@ -89,6 +109,10 @@ public class ServerInteractionHandler {
                 }
             }
         }
+    }
+
+    private static void handlePowerSwitch(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        me.cryo.zombierool.block.PowerSwitchBlock.togglePower(level, pos, player);
     }
 
     private static void handleBlindBuy(ServerPlayer player, ServerLevel level, BlockPos pos) {
@@ -113,10 +137,9 @@ public class ServerInteractionHandler {
                 PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             }
-
             if (hasIngot) consumeIngot(player);
             else PointManager.modifyScore(player, -price);
-
+            
             be.triggerPurchase();
             level.setBlock(pos, state.setValue(BlindBuyCabinetBlock.OPEN, true), 3);
             level.playSound(null, pos, ZombieroolModSounds.CABINET_OPEN.get(), SoundSource.BLOCKS, 1f, 1f);
@@ -127,7 +150,6 @@ public class ServerInteractionHandler {
             boolean isTacz = WeaponFacade.isTaczWeapon(weaponToSell);
             WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponToSell);
             ItemStack existing = ItemStack.EMPTY;
-
             String wId = WeaponFacade.getWeaponId(weaponToSell);
 
             for (ItemStack s : player.getInventory().items) {
@@ -150,15 +172,15 @@ public class ServerInteractionHandler {
                     PlayerVoiceManager.playNoMoneySound(player, level);
                     return;
                 }
-
+                
                 if (hasIngot) consumeIngot(player);
                 else PointManager.modifyScore(player, -halfPrice);
-
+                
                 be.triggerPurchase();
                 WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
                 WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
                 if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
-
+                
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
                 player.inventoryMenu.broadcastChanges();
             } else {
@@ -167,10 +189,9 @@ public class ServerInteractionHandler {
                     PlayerVoiceManager.playNoMoneySound(player, level);
                     return;
                 }
-
                 if (hasIngot) consumeIngot(player);
                 else PointManager.modifyScore(player, -price);
-
+                
                 be.triggerPurchase();
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
                 WeaponFacade.grantWeaponToPlayer(player, weaponToSell);
@@ -206,6 +227,7 @@ public class ServerInteractionHandler {
 
         boolean isTacz = WeaponFacade.isTaczWeapon(weaponToSell);
         WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponToSell);
+
         int balance = PointManager.getScore(player);
         boolean hasIngot = hasIngot(player);
 
@@ -219,21 +241,18 @@ public class ServerInteractionHandler {
                 player.sendSystemMessage(Component.translatable("message.zombierool.wall_weapon.already_have_vest").withStyle(ChatFormatting.RED));
                 return;
             }
-
             if (hasIngot) consumeIngot(player);
             else if (balance < basePrice) {
                 player.sendSystemMessage(Component.translatable("message.zombierool.wall_weapon.cannot_afford", balance, basePrice).withStyle(ChatFormatting.RED));
                 PlayerVoiceManager.playNoMoneySound(player, level);
                 return;
             } else PointManager.modifyScore(player, -basePrice);
-
+            
             be.triggerPurchase();
-
             ItemStack newVest = weaponToSell.copy();
             newVest.getOrCreateTag().putInt("BulletVestArmorPoints", 4);
             newVest.getOrCreateTag().putBoolean("BulletVestInitialized", true);
             player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, newVest);
-
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             player.sendSystemMessage(Component.translatable("message.zombierool.wall_weapon.vest_bought").withStyle(ChatFormatting.GREEN));
             return;
@@ -279,13 +298,11 @@ public class ServerInteractionHandler {
             be.triggerPurchase();
             WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
             WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
-            
             if (existing.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
                 gun.setDurability(existing, gun.getMaxDurability(existing));
             }
-
             if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
-
+            
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             
             if (hasIngot) {
@@ -319,7 +336,7 @@ public class ServerInteractionHandler {
                     player.drop(copy, false);
                 }
             }
-
+            
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "weapon")), SoundSource.PLAYERS, 1f, 1f);
             
@@ -342,7 +359,7 @@ public class ServerInteractionHandler {
         if (!(state.getBlock() instanceof MysteryBoxBlock)) {
             return;
         }
-        
+
         if (state.getValue(MysteryBoxBlock.PART)) {
             pos = MysteryBoxManager.getOppositeOtherPartPos(pos, state.getValue(MysteryBoxBlock.FACING));
             state = level.getBlockState(pos);
@@ -399,6 +416,8 @@ public class ServerInteractionHandler {
                 manager.currentActiveMysteryBoxPair.usesSinceLastMove++;
                 manager.setDirty();
             }
+            
+            CareerManager.progressChallenge(player, CareerManager.ChallengeType.MYSTERY_BOX_USED, 1);
 
         } else if (mysteryBox.getBoxState() == 2 && !mysteryBox.isTeddy()) { 
             mysteryBox.collectWeapon(player);
@@ -414,8 +433,8 @@ public class ServerInteractionHandler {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof PerksAColaBlockEntity perksBE)) return;
-        BlockState state = level.getBlockState(pos);
 
+        BlockState state = level.getBlockState(pos);
         if (!perksBE.isPowered()) {
             player.displayClientMessage(Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED), true);
             return;
@@ -472,7 +491,6 @@ public class ServerInteractionHandler {
         activeDrinkAnimations.put(player.getUUID(), now + 70);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), "drink_perk", 70));
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CStartWunderfizzDrinkAnimationPacket(perkId));
-        
         level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:buy")), SoundSource.BLOCKS, 1f, 1f);
 
         level.getServer().execute(() -> {
@@ -482,12 +500,11 @@ public class ServerInteractionHandler {
                     if (player.isAlive()) {
                         perkToPurchase.applyEffect(player);
                         PerksManager.incrementPerkPurchases(perkId, player);
-                        
                         MutableComponent finalMessage = Component.translatable("message.zombierool.perk_activated", perkToPurchase.getNameComponent()).withStyle(ChatFormatting.GREEN).append(paymentMessage);
                         player.displayClientMessage(finalMessage, true);
-                        
                         PlayerVoiceManager.playTookPerk(player, level);
                         LuaScriptManager.callEvent("OnPerkBought", player.getUUID().toString(), perkToPurchase.getId());
+                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
                     }
                 }
             ));
@@ -525,7 +542,7 @@ public class ServerInteractionHandler {
                 return effect != null && !player.hasEffect(effect) && !config.isRandomPerkDisabled(perkId);
             })
             .count();
-
+            
         if (availablePerksCount == 0) {
             player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.all_perks_owned").withStyle(ChatFormatting.RED), true);
             return;
@@ -595,7 +612,7 @@ public class ServerInteractionHandler {
         activeDrinkAnimations.put(player.getUUID(), now + 50);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), "drink_perk", 50));
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CStartWunderfizzDrinkAnimationPacket(perkId));
-
+        
         final String finalPerkId = perkId;
         level.getServer().execute(() -> {
             level.getServer().tell(new net.minecraft.server.TickTask(
@@ -607,6 +624,7 @@ public class ServerInteractionHandler {
                         player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.obtained", perk.getNameComponent()).withStyle(ChatFormatting.GREEN), true);
                         PlayerVoiceManager.playTookPerk(player, level);
                         LuaScriptManager.callEvent("OnPerkBought", player.getUUID().toString(), perkId);
+                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
                     }
                 }
             ));
@@ -622,9 +640,7 @@ public class ServerInteractionHandler {
     private static void handleAmmoCrate(ServerPlayer player, ServerLevel level, BlockPos pos) {
         AmmoCrateManager manager = AmmoCrateManager.get(level);
         int currentWave = WaveManager.getCurrentWave();
-
         boolean purchaseSuccessful = manager.tryPurchaseAmmo(player, level, currentWave);
-
         if (purchaseSuccessful) {
             manager.sendPriceInfoToClient(player, currentWave);
         }
@@ -639,7 +655,6 @@ public class ServerInteractionHandler {
 
         long lastTime = lastRepairTimes.getOrDefault(playerId, 0L);
         if (now - lastTime < effectiveCooldown) return;
-
         lastRepairTimes.put(playerId, now);
 
         BlockState state = level.getBlockState(pos);
@@ -647,7 +662,6 @@ public class ServerInteractionHandler {
             int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
             if (stage < 5) {
                 door.updateStage(level, pos, stage + 1);
-
                 Random rand = new Random();
                 int soundIndex = rand.nextInt(3); 
                 String soundFile = "board_slam_0" + soundIndex;

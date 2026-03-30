@@ -1,5 +1,4 @@
 package me.cryo.zombierool.procedures;
-
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.manager.DamageManager;
@@ -11,7 +10,6 @@ import me.cryo.zombierool.client.ScreenShakeHandler;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.scripting.LuaScriptManager;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -38,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3f;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +47,7 @@ public class MeleeAttackHandler {
 	private static final ResourceLocation KNIFE_HIT_MISC_MATERIAL_SOUND = new ResourceLocation("zombierool", "knife_hit_misc_material");
 
 	private static final ConcurrentHashMap<java.util.UUID, Long> COOLDOWN_MAP = new ConcurrentHashMap<>();
-	private static final int COOLDOWN_TICKS = 15;
+	private static final int COOLDOWN_TICKS = 20;
 	private static final double ATTACK_RANGE = 3.0; 
 
 	@SubscribeEvent
@@ -87,8 +84,8 @@ public class MeleeAttackHandler {
 	    if (COOLDOWN_MAP.containsKey(player.getUUID()) && currentTime - COOLDOWN_MAP.get(player.getUUID()) < COOLDOWN_TICKS) {
 	        return;
 	    }
-
 	    ServerLevel level = (ServerLevel) player.level();
+        
         player.swing(InteractionHand.MAIN_HAND, true);
         NetworkHandler.INSTANCE.send(
             PacketDistributor.TRACKING_ENTITY.with(() -> player),
@@ -124,26 +121,25 @@ public class MeleeAttackHandler {
 
 	    if (targetEntity != null) {
             strikePos = targetEntity.position().add(0, targetEntity.getBbHeight() / 2, 0);
-	        int currentWave = Math.max(1, WaveManager.getCurrentWave());
+
             targetEntity.getPersistentData().remove(DamageManager.GUN_DAMAGE_TAG);
             targetEntity.getPersistentData().remove(DamageManager.HEADSHOT_TAG);
             targetEntity.getPersistentData().remove("zombierool:explosive_damage");
-            
+
             boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             float multiplier = hasBowie ? 3.0f : 1.0f;
-	        
-	        float finalDamage = ((targetEntity.getMaxHealth() / currentWave) + 0.01f) * multiplier;
+	        float finalDamage = 6.0f * multiplier;
 
             if (BonusManager.isInstaKillActive(player)) {
                 finalDamage = 100000f;
             }
 
 	        DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage);
-	        
+
 	        ResourceLocation slashSound = hasBowie ? new ResourceLocation("zombierool", "bowie_stab") : KNIFE_SLASH_BODY_SOUND;
 	        playLocalSound(player, slashSound, 1.0f, 1.0f);
+
 	        spawnAttackParticles(level, strikePos, lookVec);
-	        
 	        if (player instanceof ServerPlayer serverPlayer) {
 	            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CScreenShakePacket(10, 0.3f, ScreenShakeHandler.ShakeType.MELEE));
 	        }
@@ -153,10 +149,12 @@ public class MeleeAttackHandler {
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
 	    } else {
             BlockHitResult blockHit = level.clip(new ClipContext(startVec, endVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+            
             if (blockHit.getType() == HitResult.Type.BLOCK) {
                 BlockState state = level.getBlockState(blockHit.getBlockPos());
                 BlockPos bPos = blockHit.getBlockPos();
                 strikePos = new Vec3(bPos.getX(), bPos.getY(), bPos.getZ());
+                
                 if (!(state.getBlock() instanceof DefenseDoorSystem.BaseDefenseDoor) && !(state.getBlock() instanceof me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock)) {
                     boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
                     ResourceLocation missSound = hasBowie ? new ResourceLocation("zombierool", "bowie_stab") : KNIFE_HIT_MISC_MATERIAL_SOUND;
@@ -164,10 +162,11 @@ public class MeleeAttackHandler {
                     spawnBlockHitParticles(level, blockHit.getLocation());
                 }
             }
+
 	        PlayerVoiceManager.playMeleeAttackSound(player, level);
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
 	    }
-
+        
         LuaScriptManager.callEvent("OnMeleeStrike", player.getUUID().toString(), strikePos.x, strikePos.y, strikePos.z);
 	}
 

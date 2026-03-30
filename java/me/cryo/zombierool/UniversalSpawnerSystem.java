@@ -1,3 +1,4 @@
+// [main\java\me\cryo\zombierool\block\system\UniversalSpawnerSystem.java]
 package me.cryo.zombierool.block.system;
 
 import io.netty.buffer.Unpooled;
@@ -10,7 +11,6 @@ import me.cryo.zombierool.client.gui.UnifiedConfigScreen;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.C2SSetUniversalSpawnerConfigPacket;
 import me.cryo.zombierool.spawner.SpawnerRegistry;
-
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -71,9 +71,10 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.ChatFormatting;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -96,7 +97,7 @@ public class UniversalSpawnerSystem {
     public static final RegistryObject<Block> LEGACY_CRAWLER_BLOCK = BLOCKS.register("spawner_crawler", () -> new LegacySpawnerBlock(SpawnerMobType.CRAWLER));
     public static final RegistryObject<Block> LEGACY_DOG_BLOCK = BLOCKS.register("spawner_dog", () -> new LegacySpawnerBlock(SpawnerMobType.HELLHOUND));
     public static final RegistryObject<Block> LEGACY_PLAYER_BLOCK = BLOCKS.register("player_spawner", () -> new LegacySpawnerBlock(SpawnerMobType.PLAYER));
-    
+
     public static final RegistryObject<BlockEntityType<LegacySpawnerBE>> LEGACY_ZOMBIE_BE = BLOCK_ENTITIES.register("spawner_zombie", () -> BlockEntityType.Builder.of(LegacySpawnerBE::new, LEGACY_ZOMBIE_BLOCK.get()).build(null));
     public static final RegistryObject<BlockEntityType<LegacySpawnerBE>> LEGACY_CRAWLER_BE = BLOCK_ENTITIES.register("spawner_crawler", () -> BlockEntityType.Builder.of(LegacySpawnerBE::new, LEGACY_CRAWLER_BLOCK.get()).build(null));
     public static final RegistryObject<BlockEntityType<LegacySpawnerBE>> LEGACY_DOG_BE = BLOCK_ENTITIES.register("spawner_dog", () -> BlockEntityType.Builder.of(LegacySpawnerBE::new, LEGACY_DOG_BLOCK.get()).build(null));
@@ -118,7 +119,8 @@ public class UniversalSpawnerSystem {
                 CompoundTag beTag = new CompoundTag();
                 beTag.putString("MobType", type.getSerializedName());
                 BlockItem.setBlockEntityData(stack, UNIVERSAL_SPAWNER_BE.get(), beTag);
-                stack.setHoverName(Component.literal("§9Universal Spawner (" + type.getSerializedName().toUpperCase() + ")"));
+                Component typeName = Component.translatable("mob.zombierool." + type.getSerializedName());
+                stack.setHoverName(Component.translatable("block.zombierool.universal_spawner.type", typeName).withStyle(ChatFormatting.BLUE));
                 event.accept(stack);
             }
         }
@@ -126,11 +128,9 @@ public class UniversalSpawnerSystem {
 
     public enum SpawnerMobType implements StringRepresentable {
         ZOMBIE("zombie"), CRAWLER("crawler"), HELLHOUND("hellhound"), PLAYER("player");
-
         private final String name;
         SpawnerMobType(String name) { this.name = name; }
         @Override public String getSerializedName() { return this.name; }
-
         public static SpawnerMobType fromString(String name) {
             for (SpawnerMobType type : values()) if (type.name.equals(name)) return type;
             return ZOMBIE;
@@ -150,9 +150,10 @@ public class UniversalSpawnerSystem {
         @Override public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, PathComputationType type) { return type == PathComputationType.LAND; }
         @Override public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) { return true; }
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(MOB_TYPE, ACTIVE); }
+
         @Override protected void addTechnicalTooltip(List<Component> tooltip) {
-            tooltip.add(Component.literal("§9Universal Spawner"));
-            tooltip.add(Component.literal("§7Channels and Zones configurable."));
+            tooltip.add(Component.translatable("block.zombierool.universal_spawner.tooltip.1").withStyle(ChatFormatting.BLUE));
+            tooltip.add(Component.translatable("block.zombierool.universal_spawner.tooltip.2").withStyle(ChatFormatting.GRAY));
         }
 
         @Override
@@ -220,35 +221,69 @@ public class UniversalSpawnerSystem {
                 currentState = currentState.setValue(UniversalSpawnerBlock.ACTIVE, currentlyActive);
                 stateChanged = true;
             }
-
             if (currentState.getValue(UniversalSpawnerBlock.MOB_TYPE) != mobType) {
                 currentState = currentState.setValue(UniversalSpawnerBlock.MOB_TYPE, mobType);
                 stateChanged = true;
             }
-
             if (stateChanged) level.setBlock(worldPosition, currentState, 3);
         }
 
         public List<Integer> getParsedChannels(String channelsStr) {
-            if (channelsStr == null || channelsStr.isBlank()) return Collections.emptyList();
-            return Arrays.stream(channelsStr.split(",")).map(String::trim).filter(s -> !s.isEmpty()).map(s -> {
-                try { return Integer.parseInt(s); } catch (Exception e) { return -1; }
-            }).filter(i -> i >= 0).collect(Collectors.toList());
+            if (channelsStr == null || channelsStr.isBlank()) {
+                return new ArrayList<>(Arrays.asList(0));
+            }
+            List<Integer> list = Arrays.stream(channelsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> {
+                    try { return Integer.parseInt(s); } catch (Exception e) { return -1; }
+                })
+                .filter(i -> i >= 0)
+                .collect(Collectors.toList());
+            if (list.isEmpty()) {
+                list.add(0);
+            }
+            return list;
         }
 
         public boolean isActive(Level level) {
             boolean hasPower = !requirePower || GlobalSwitchState.isActivated(level);
+            if (!hasPower) return false;
+
             List<Integer> starts = getParsedChannels(startChannels);
-            
             boolean isLocked = starts.stream().anyMatch(WaveManager.LOCKED_CHANNELS::contains);
-            boolean channelOk = !isLocked && (starts.isEmpty() || starts.contains(0) || starts.stream().anyMatch(WaveManager.UNLOCKED_CHANNELS::contains));
-            boolean zoneOk = !zone.isEmpty() && WaveManager.UNLOCKED_ZONES.contains(zone);
-            boolean isStarted = channelOk || zoneOk;
+            if (isLocked) return false;
+
+            boolean isStarted = false;
             
+            if (this.mobType == SpawnerMobType.PLAYER) {
+                isStarted = starts.contains(0) || starts.stream().anyMatch(c -> c > 0 && WaveManager.UNLOCKED_CHANNELS.contains(c));
+            } else {
+                boolean isInitialSpawn = false;
+                if (starts.contains(0)) {
+                    if (zone == null || zone.trim().isEmpty()) {
+                        isInitialSpawn = true; 
+                    } else {
+                        String[] myZones = zone.split(",");
+                        for (String z : myZones) {
+                            if (WaveManager.UNLOCKED_ZONES.contains(z.trim().toUpperCase(java.util.Locale.ROOT))) {
+                                isInitialSpawn = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                boolean isUnlockedViaDoor = starts.stream().anyMatch(c -> c > 0 && WaveManager.UNLOCKED_CHANNELS.contains(c));
+
+                isStarted = isInitialSpawn || isUnlockedViaDoor;
+            }
+
+            if (!isStarted) return false;
+
             List<Integer> stops = getParsedChannels(stopChannels);
-            boolean isStopped = !stops.isEmpty() && (!stops.contains(0) && stops.stream().anyMatch(WaveManager.UNLOCKED_CHANNELS::contains));
-            
-            return hasPower && isStarted && !isStopped;
+            boolean isStopped = !stops.isEmpty() && !stops.contains(0) && stops.stream().anyMatch(WaveManager.UNLOCKED_CHANNELS::contains);
+            return !isStopped;
         }
 
         public SpawnerMobType getMobType() { return mobType; }
@@ -293,7 +328,6 @@ public class UniversalSpawnerSystem {
 
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
         @Override public CompoundTag getUpdateTag() { return this.saveWithoutMetadata(); }
-
         @Override public Component getDisplayName() { return Component.literal("Universal Spawner"); }
         @Nullable @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) { return new UniversalSpawnerManagerMenu(id, inv, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(this.worldPosition)); }
     }
@@ -362,7 +396,7 @@ public class UniversalSpawnerSystem {
             String initialZone = "", initialStart = "0", initialStop = "0";
             int initialWeight = 1;
             boolean initialPower = false;
-            
+
             if (be instanceof UniversalSpawnerBlockEntity ube) {
                 initialType = ube.getMobType(); initialZone = ube.getZone(); initialStart = ube.getStartChannels();
                 initialStop = ube.getStopChannels(); initialPower = ube.doesRequirePower(); initialWeight = ube.getSpawnWeight();

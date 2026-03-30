@@ -7,7 +7,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
-
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.core.system.WeaponSystem;
@@ -63,6 +62,8 @@ public class C2SSecretConsoleCommandPacket {
                     PointManager.modifyScore(player, amount);
                     sendLog(player, "§aPoints updated by " + amount);
                 } 
+                // LA COMMANDE ZRF EST MAINTENANT PUREMENT CLIENT DANS SecretConsoleScreen.java,
+                // plus besoin de l'intercepter ici !
                 else if (cmd.startsWith("wave ")) {
                     int wave = Integer.parseInt(cmd.substring(5).trim());
                     WaveManager.forceSetWave(level, wave);
@@ -107,7 +108,7 @@ public class C2SSecretConsoleCommandPacket {
                 else if (cmd.equals("reload weapons")) {
                     WeaponSystem.Loader.loadWeapons();
                     TacZIntegration.syncTaczGunData();
-                    NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CReloadWeaponsPacket());
+                    NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new me.cryo.zombierool.network.packet.S2CReloadWeaponsPacket());
                     sendLog(player, "§aWeapon definitions reloaded and synced.");
                 } 
                 else if (cmd.equals("zombies")) {
@@ -140,6 +141,7 @@ public class C2SSecretConsoleCommandPacket {
                 else {
                     sendLog(player, "§cUnknown command. Available: lua, points, wave, killall, weapon, god, noclip, reload scripts, reload weapons, zombies, tp_last");
                 }
+
             } catch (Exception e) {
                 sendLog(player, "§cCommand error: " + e.getMessage());
             }

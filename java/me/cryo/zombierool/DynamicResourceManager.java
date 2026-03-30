@@ -1,4 +1,5 @@
 package me.cryo.zombierool.core.manager;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -17,12 +18,14 @@ import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CSyncDynamicSoundPacket;
 import me.cryo.zombierool.network.packet.S2CSyncDynamicChalkPacket;
 import net.minecraftforge.network.PacketDistributor;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DynamicResourceManager {
+
     private static final Map<String, Map<String, byte[]>> SERVER_SKIN_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, byte[]> SERVER_CHALK_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, AudioEntry> SERVER_AUDIO_CACHE = new ConcurrentHashMap<>();
@@ -31,6 +34,7 @@ public class DynamicResourceManager {
 
     private static final Map<String, Map<String, ResourceLocation>> CLIENT_SKIN_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, ResourceLocation> CLIENT_CHALK_CACHE = new ConcurrentHashMap<>();
+    
     public static final Map<String, List<String>> CUSTOM_VOICE_MAP = new ConcurrentHashMap<>();
 
     public static boolean overrideSfx = false;
@@ -68,7 +72,7 @@ public class DynamicResourceManager {
         zrDir.mkdirs();
 
         createDefaultFilesIfMissing(zrDir);
-        loadConfiguration(zrDir);
+        loadConfiguration(zrDir); 
 
         File skinsDir = new File(zrDir, "skins");
         loadSkins(skinsDir);
@@ -78,6 +82,93 @@ public class DynamicResourceManager {
 
         File audioDir = new File(zrDir, "audio");
         loadAudioFiles(audioDir); 
+    }
+
+    private static int countFiles(File dir, String extension) {
+        if (!dir.exists() || !dir.isDirectory()) return 0;
+        int count = 0;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    count += countFiles(f, extension);
+                } else if (f.getName().toLowerCase(Locale.ROOT).endsWith(extension)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static void loadConfiguration(File zrDir) {
+        File configJson = new File(zrDir, "config.json");
+        JsonObject cfg = new JsonObject();
+        boolean changed = false;
+
+        int currentSfxCount = countFiles(new File(zrDir, "audio/sfx"), ".ogg");
+        int currentMusicCount = countFiles(new File(zrDir, "audio/music"), ".ogg");
+        int currentVoicesCount = countFiles(new File(zrDir, "audio/voices"), ".ogg");
+        int currentSkinsCount = countFiles(new File(zrDir, "skins"), ".png");
+
+        if (configJson.exists()) {
+            try (FileReader fr = new FileReader(configJson)) {
+                JsonObject loadedCfg = GSON.fromJson(fr, JsonObject.class);
+                if (loadedCfg != null) {
+                    cfg = loadedCfg;
+                    if (cfg.has("override_sfx")) overrideSfx = cfg.get("override_sfx").getAsBoolean();
+                    if (cfg.has("override_music")) overrideMusic = cfg.get("override_music").getAsBoolean();
+                    if (cfg.has("override_voices")) overrideVoices = cfg.get("override_voices").getAsBoolean();
+                    if (cfg.has("override_skins")) overrideSkins = cfg.get("override_skins").getAsBoolean();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            changed = true;
+            cfg.addProperty("override_sfx", false);
+            cfg.addProperty("override_music", false);
+            cfg.addProperty("override_voices", false);
+            cfg.addProperty("override_skins", false);
+        }
+
+        int lastSfxCount = cfg.has("last_sfx_count") ? cfg.get("last_sfx_count").getAsInt() : -1;
+        int lastMusicCount = cfg.has("last_music_count") ? cfg.get("last_music_count").getAsInt() : -1;
+        int lastVoicesCount = cfg.has("last_voices_count") ? cfg.get("last_voices_count").getAsInt() : -1;
+        int lastSkinsCount = cfg.has("last_skins_count") ? cfg.get("last_skins_count").getAsInt() : -1;
+
+        if (currentSfxCount != lastSfxCount) { 
+            if (currentSfxCount > 0) overrideSfx = true; 
+            changed = true; 
+        }
+        if (currentMusicCount != lastMusicCount) { 
+            if (currentMusicCount > 0) overrideMusic = true; 
+            changed = true; 
+        }
+        if (currentVoicesCount != lastVoicesCount) { 
+            if (currentVoicesCount > 0) overrideVoices = true; 
+            changed = true; 
+        }
+        if (currentSkinsCount != lastSkinsCount) { 
+            if (currentSkinsCount > 0) overrideSkins = true; 
+            changed = true; 
+        }
+
+        if (changed) {
+            cfg.addProperty("override_sfx", overrideSfx);
+            cfg.addProperty("override_music", overrideMusic);
+            cfg.addProperty("override_voices", overrideVoices);
+            cfg.addProperty("override_skins", overrideSkins);
+            cfg.addProperty("last_sfx_count", currentSfxCount);
+            cfg.addProperty("last_music_count", currentMusicCount);
+            cfg.addProperty("last_voices_count", currentVoicesCount);
+            cfg.addProperty("last_skins_count", currentSkinsCount);
+            
+            try (FileWriter fw = new FileWriter(configJson)) {
+                GSON.toJson(cfg, fw);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void loadAudioFiles(File audioDir) {
@@ -97,7 +188,6 @@ public class DynamicResourceManager {
         System.out.println("[ZombieRool] Chargement des fichiers audio en mémoire...");
 
         if (hasMusic && overrideMusic) loadMusicFiles(musicDir);
-        
         CUSTOM_VOICE_MAP.clear();
         if (hasVoices && overrideVoices) loadVoiceFiles(voicesDir);
         if (hasSfx && overrideSfx) loadSfxFiles(sfxDir);
@@ -143,8 +233,8 @@ public class DynamicResourceManager {
                 String safeName = getSafeName(f.getName()).replace(".ogg", "");
                 String baseEvent = extractBaseVoiceEvent(safeName);
                 String eventName = baseEvent != null ? "player_" + baseEvent : safeName;
-                String soundKey = "zombierool:voices/" + safeName;
 
+                String soundKey = "zombierool:voices/" + safeName;
                 CUSTOM_VOICE_MAP.computeIfAbsent(eventName, k -> new ArrayList<>()).add(soundKey);
                 storeAudioFile(f, soundKey, "voice");
             }
@@ -160,7 +250,7 @@ public class DynamicResourceManager {
                     for (File f : subFiles) {
                         String safeName = getSafeName(f.getName()).replace(".ogg", "");
                         String baseEvent = extractBaseVoiceEvent(safeName);
-                        
+
                         String eventName;
                         if (baseEvent != null) {
                             eventName = presetName.startsWith("player_")
@@ -199,6 +289,7 @@ public class DynamicResourceManager {
             if (files == null) continue;
 
             String category = "ambient".equals(entry.getKey()) ? "ambient" : "sfx";
+
             for (File f : files) {
                 String safeName = getSafeName(f.getName()).replace(".ogg", "");
                 storeAudioFile(f, "zombierool:sfx/" + entry.getKey() + "/" + safeName, category);
@@ -224,11 +315,16 @@ public class DynamicResourceManager {
 
         System.out.println("[ZombieRool] Envoi des ressources dynamiques au joueur " + player.getGameProfile().getName());
 
+        NetworkHandler.INSTANCE.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            S2CSyncDynamicSoundPacket.startAll()
+        );
+
         for (Map.Entry<String, AudioEntry> entry : SERVER_AUDIO_CACHE.entrySet()) {
             String soundEventName = entry.getKey();
             AudioEntry audio = entry.getValue();
             byte[] data = audio.data;
-
+            
             int totalSize = data.length;
             int chunkSize = S2CSyncDynamicSoundPacket.CHUNK_SIZE;
 
@@ -242,12 +338,12 @@ public class DynamicResourceManager {
             while (offset < totalSize) {
                 int length = Math.min(chunkSize, totalSize - offset);
                 byte[] chunk = Arrays.copyOfRange(data, offset, offset + length);
-
+                
                 NetworkHandler.INSTANCE.send(
                     PacketDistributor.PLAYER.with(() -> player),
                     S2CSyncDynamicSoundPacket.data(soundEventName, chunkIndex, chunk)
                 );
-
+                
                 offset += length;
                 chunkIndex++;
             }
@@ -257,6 +353,11 @@ public class DynamicResourceManager {
                 S2CSyncDynamicSoundPacket.end(soundEventName)
             );
         }
+
+        NetworkHandler.INSTANCE.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            S2CSyncDynamicSoundPacket.finishAll()
+        );
 
         for (Map.Entry<String, byte[]> entry : SERVER_CHALK_CACHE.entrySet()) {
             NetworkHandler.INSTANCE.send(
@@ -295,7 +396,7 @@ public class DynamicResourceManager {
 
         Map<String, byte[]> mobSkins = new HashMap<>();
         File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".png"));
-
+        
         if (files != null) {
             for (File file : files) {
                 try {
@@ -314,7 +415,7 @@ public class DynamicResourceManager {
                 }
             }
         }
-
+        
         if (!mobSkins.isEmpty()) {
             SERVER_SKIN_CACHE.put(mobType, mobSkins);
         }
@@ -325,7 +426,6 @@ public class DynamicResourceManager {
             dir.mkdirs();
             return;
         }
-
         File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".png"));
         if (files != null) {
             for (File file : files) {
@@ -349,7 +449,9 @@ public class DynamicResourceManager {
     public static String getRandomSkin(String mobType) {
         Map<String, byte[]> mobSkins = SERVER_SKIN_CACHE.get(mobType);
         if (mobSkins == null || mobSkins.isEmpty()) return "";
+
         if (!overrideSkins && RANDOM.nextBoolean()) return "";
+
         List<String> keys = new ArrayList<>(mobSkins.keySet());
         return keys.get(RANDOM.nextInt(keys.size()));
     }
@@ -373,9 +475,10 @@ public class DynamicResourceManager {
         try {
             NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(data));
             DynamicTexture texture = new DynamicTexture(image);
+            
             ResourceLocation location = new ResourceLocation("zombierool",
                 "dynamic_skin_" + mobType + "_" + skinId);
-
+            
             Minecraft.getInstance().execute(() -> {
                 Minecraft.getInstance().getTextureManager().register(location, texture);
                 CLIENT_SKIN_CACHE.computeIfAbsent(mobType, k -> new HashMap<>())
@@ -419,42 +522,14 @@ public class DynamicResourceManager {
         CLIENT_CHALK_CACHE.clear();
     }
 
-    private static void loadConfiguration(File zrDir) {
-        File configJson = new File(zrDir, "config.json");
-        if (configJson.exists()) {
-            try (FileReader fr = new FileReader(configJson)) {
-                JsonObject cfg = GSON.fromJson(fr, JsonObject.class);
-                if (cfg != null) {
-                    if (cfg.has("override_sfx")) overrideSfx = cfg.get("override_sfx").getAsBoolean();
-                    if (cfg.has("override_music")) overrideMusic = cfg.get("override_music").getAsBoolean();
-                    if (cfg.has("override_voices")) overrideVoices = cfg.get("override_voices").getAsBoolean();
-                    if (cfg.has("override_skins")) overrideSkins = cfg.get("override_skins").getAsBoolean();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     private static void createDefaultFilesIfMissing(File zrDir) {
-        File config = new File(zrDir, "config.json");
-        if (!config.exists()) {
-            try (FileWriter fw = new FileWriter(config)) {
-                JsonObject json = new JsonObject();
-                json.addProperty("override_sfx", false);
-                json.addProperty("override_music", false);
-                json.addProperty("override_voices", false);
-                json.addProperty("override_skins", false);
-                GSON.toJson(json, fw);
-            } catch (Exception e) {}
-        }
-
         File readme = new File(zrDir, "README.md");
         if (!readme.exists()) {
             try (FileWriter fw = new FileWriter(readme)) {
                 String readmeContent = """
                         # ZombieRool Customization
                         This folder allows you to override or add custom assets to your ZombieRool map without needing a traditional resource pack. These assets are sent to the client automatically when they join the world.
+                        
                         ## 1. Audio (`audio/`)
                         - `music/`: Custom background music (`default`, `damned`, `secret`, `menu`).
                         - `sfx/`: Custom sound effects for game events (`start`, `round_change`, etc.).
@@ -465,15 +540,15 @@ public class DynamicResourceManager {
                         - Add custom `.png` textures for mobs (`zombie/`, `hellhound/`, `crawler/`).
                         - Add custom `.png` textures for emissive eyes (`zombie_eyes/`, etc.).
                         All skin files MUST be in `.png` format and smaller than 2MB.
-
+                        
                         ## 3. Chalks / Overlays (`assets/chalks/`)
                         - Place your custom `.png` chalk textures here.
                         - These textures will be automatically loaded and available in-game using the **Chalk** item (Craie).
                         - You can use the Chalk item to select, rotate, and place these textures as overlays on blocks (great for writing "HELP", drawing arrows, or map secrets).
                         - **Recommended Size:** `128x128` pixels to match the vanilla ZombieRool style.
                         All chalk files MUST be in `.png` format and smaller than 2MB.
-
-                        *Note: Remember to enable the overrides in `config.json` for audio and skins! Chalks are loaded automatically.*
+                        
+                        *Note: Overrides in config.json will automatically switch to true if you add files.*
                         """;
                 fw.write(readmeContent);
             } catch (Exception e) {}
@@ -537,6 +612,7 @@ public class DynamicResourceManager {
     private static class AudioEntry {
         final String category;
         final byte[] data;
+
         AudioEntry(String category, byte[] data) {
             this.category = category;
             this.data = data;

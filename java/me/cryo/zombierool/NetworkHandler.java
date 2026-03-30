@@ -16,7 +16,6 @@ import java.util.Optional;
 public class NetworkHandler {
     private static boolean alreadyRegistered = false;
     private static final String PROTOCOL_VERSION = "1";
-
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation("zombierool", "main"),
             () -> PROTOCOL_VERSION,
@@ -31,6 +30,7 @@ public class NetworkHandler {
 
         event.enqueueWork(() -> {
             int id = 0;
+
             INSTANCE.registerMessage(id++, C2SUnifiedInteractPacket.class, C2SUnifiedInteractPacket::encode, C2SUnifiedInteractPacket::decode, C2SUnifiedInteractPacket::handle);
             INSTANCE.registerMessage(id++, C2SObstacleDoorGUIPacket.class, C2SObstacleDoorGUIPacket::encode, C2SObstacleDoorGUIPacket::decode, C2SObstacleDoorGUIPacket::handle);
             INSTANCE.registerMessage(id++, C2SSetUniversalSpawnerConfigPacket.class, C2SSetUniversalSpawnerConfigPacket::encode, C2SSetUniversalSpawnerConfigPacket::decode, C2SSetUniversalSpawnerConfigPacket::handle);
@@ -100,6 +100,17 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CSyncInteractablesPacket.class, S2CSyncInteractablesPacket::encode, S2CSyncInteractablesPacket::decode, S2CSyncInteractablesPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, C2SSecretConsoleCommandPacket.class, C2SSecretConsoleCommandPacket::encode, C2SSecretConsoleCommandPacket::decode, C2SSecretConsoleCommandPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
             INSTANCE.registerMessage(id++, S2CSecretConsoleLogPacket.class, S2CSecretConsoleLogPacket::encode, S2CSecretConsoleLogPacket::decode, S2CSecretConsoleLogPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CSyncCareerDataPacket.class, S2CSyncCareerDataPacket::encode, S2CSyncCareerDataPacket::decode, S2CSyncCareerDataPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CCareerNotificationPacket.class, S2CCareerNotificationPacket::encode, S2CCareerNotificationPacket::decode, S2CCareerNotificationPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, C2SBuyCamoPacket.class, C2SBuyCamoPacket::encode, C2SBuyCamoPacket::decode, C2SBuyCamoPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, C2SEquipCamoPacket.class, C2SEquipCamoPacket::encode, C2SEquipCamoPacket::decode, C2SEquipCamoPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, C2SSyncEquippedCamosPacket.class, C2SSyncEquippedCamosPacket::encode, C2SSyncEquippedCamosPacket::decode, C2SSyncEquippedCamosPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, C2SSyncEquippedSkinsPacket.class, C2SSyncEquippedSkinsPacket::encode, C2SSyncEquippedSkinsPacket::decode, C2SSyncEquippedSkinsPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, S2CAddZRFPacket.class, S2CAddZRFPacket::encode, S2CAddZRFPacket::decode, S2CAddZRFPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CProgressChallengePacket.class, S2CProgressChallengePacket::encode, S2CProgressChallengePacket::decode, S2CProgressChallengePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CProgressWeaponStatPacket.class, S2CProgressWeaponStatPacket::encode, S2CProgressWeaponStatPacket::new, S2CProgressWeaponStatPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CMatchRecapPacket.class, S2CMatchRecapPacket::encode, S2CMatchRecapPacket::decode, S2CMatchRecapPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CZombieBloodOverlayPacket.class, S2CZombieBloodOverlayPacket::encode, S2CZombieBloodOverlayPacket::decode, S2CZombieBloodOverlayPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         });
     }
 }

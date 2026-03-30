@@ -23,6 +23,7 @@ import me.cryo.zombierool.network.S2CPointGainPacket;
 import net.minecraftforge.network.PacketDistributor;
 
 public class PointManager {
+
     private static final Random RANDOM = new Random();
     public static final Map<java.util.UUID, PointGainInfo> LAST_POINT_GAINS = new ConcurrentHashMap<>();
 
@@ -38,6 +39,7 @@ public class PointManager {
 
     public static void modifyScore(Player player, int amount) {
         if (player.level().isClientSide()) return;
+
         int originalAmount = amount; 
 
         if (player.isCreative()) return;
@@ -52,6 +54,12 @@ public class PointManager {
             }
         }
 
+        if (amount > 0) {
+            amount = (int) (Math.round(amount / 5.0) * 5);
+        } else if (amount < 0) {
+            amount = (int) (Math.round(amount / 5.0) * 5);
+        }
+
         final int finalAmount = amount;
 
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
@@ -63,6 +71,7 @@ public class PointManager {
 
             Scoreboard scoreboard = player.level().getScoreboard();
             Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID); 
+
             if (objective == null) {
                 objective = scoreboard.addObjective(
                     ServerEventHandler.OBJECTIVE_ID,
@@ -70,7 +79,6 @@ public class PointManager {
                     Component.literal("Points"),
                     ObjectiveCriteria.RenderType.INTEGER
                 );
-                scoreboard.setDisplayObjective(1, objective);
             }
 
             Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
@@ -79,6 +87,7 @@ public class PointManager {
             if (player instanceof ServerPlayer serverPlayer) {
                 cap.sync(serverPlayer);
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CPointGainPacket(finalAmount));
+                
                 PlayerStatsManager.syncAll(serverPlayer.serverLevel());
             }
         });
@@ -100,12 +109,14 @@ public class PointManager {
         if (player.isCreative()) return;
 
         int finalAmount = Math.max(amount, 0);
+
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
             cap.setPoints(finalAmount);
             int finalScore = cap.getPoints();
 
             Scoreboard scoreboard = player.level().getScoreboard();
             Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID); 
+
             if (objective == null) {
                 objective = scoreboard.addObjective(
                     ServerEventHandler.OBJECTIVE_ID,
@@ -113,7 +124,6 @@ public class PointManager {
                     Component.literal("Points"),
                     ObjectiveCriteria.RenderType.INTEGER
                 );
-                scoreboard.setDisplayObjective(1, objective);
             }
 
             Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);

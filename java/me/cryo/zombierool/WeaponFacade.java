@@ -1,5 +1,6 @@
 package me.cryo.zombierool.core.system;
 
+import me.cryo.zombierool.career.ServerCareerManager;
 import me.cryo.zombierool.core.registry.ZRRegistry;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
@@ -7,7 +8,6 @@ import me.cryo.zombierool.api.IPackAPunchable;
 import me.cryo.zombierool.api.IReloadable;
 import me.cryo.zombierool.integration.TacZIntegration;
 import me.cryo.zombierool.item.throwable.ThrowableCore;
-
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -44,6 +44,7 @@ public class WeaponFacade {
     public static boolean isTaczWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (stack.hasTag() && stack.getTag().getBoolean("zombierool:is_tacz")) return true;
+
         ResourceLocation registryName = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (registryName != null && registryName.getNamespace().equals("tacz") && registryName.getPath().equals("modern_kinetic_gun")) {
             stack.getOrCreateTag().putBoolean("zombierool:is_tacz", true);
@@ -67,6 +68,7 @@ public class WeaponFacade {
         }
         WeaponSystem.Definition def = getDefinition(stack);
         if (def != null) return def.id;
+
         ResourceLocation rl = ForgeRegistries.ITEMS.getKey(stack.getItem());
         return rl != null ? rl.toString() : "";
     }
@@ -149,7 +151,6 @@ public class WeaponFacade {
                         TacZIntegration.applyTaczPap(taczStack, def);
                     } else {
                         setReserve(taczStack, TacZIntegration.getTacZWeaponMaxReserve(taczStack, def));
-                        
                         String nameKey = def.name;
                         Component baseNameComp;
                         if (nameKey != null && (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool."))) {
@@ -166,13 +167,26 @@ public class WeaponFacade {
 
         ResourceLocation zrLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + cleanId);
         Item zrItem = ForgeRegistries.ITEMS.getValue(zrLoc);
+
         if (zrItem != null && zrItem != Items.AIR) {
             ItemStack stack = new ItemStack(zrItem);
+
             if (zrItem instanceof IReloadable reloadable) reloadable.initializeIfNeeded(stack);
             if (pap && zrItem instanceof IPackAPunchable papable) papable.applyPackAPunch(stack);
+
+            if (player != null) {
+                String equippedSkin = ServerCareerManager.getEquippedSkin(player.getUUID(), cleanId);
+                String equippedCamo = ServerCareerManager.getEquippedCamo(player.getUUID(), cleanId);
+
+                if (!equippedSkin.isEmpty()) {
+                    stack.getOrCreateTag().putString("zr_skin", equippedSkin);
+                } else if (!equippedCamo.isEmpty()) {
+                    stack.getOrCreateTag().putString("zr_camo", equippedCamo);
+                }
+            }
+
             return stack;
         }
-
         return ItemStack.EMPTY;
     }
 
@@ -183,7 +197,6 @@ public class WeaponFacade {
             player.level().playSound(null, player.blockPosition(), ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "bowie_equip")), net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
             return;
         }
-
         if (baseWeapon.getItem() instanceof ThrowableCore.BaseThrowableItem) {
             ResourceLocation reg = ForgeRegistries.ITEMS.getKey(baseWeapon.getItem());
             if (reg != null) {
@@ -200,7 +213,6 @@ public class WeaponFacade {
 
         ItemStack stackToGive = baseWeapon.copy();
         stackToGive.setCount(1);
-
         WeaponSystem.Definition def = getDefinition(baseWeapon);
         boolean isTacz = isTaczWeapon(baseWeapon);
 
@@ -268,7 +280,6 @@ public class WeaponFacade {
         if (targetSlot == -1) {
             targetSlot = player.getInventory().selected;
             if (targetSlot < 1 || targetSlot > limit) targetSlot = 1;
-
             ItemStack toDrop = player.getInventory().getItem(targetSlot).copy();
             player.getInventory().setItem(targetSlot, ItemStack.EMPTY);
             player.drop(toDrop, true);
@@ -359,16 +370,14 @@ public class WeaponFacade {
     public static List<ResourceLocation> getUnmappedTaczGuns() {
         List<ResourceLocation> unmapped = new ArrayList<>();
         if (!ModList.get().isLoaded("tacz")) return unmapped;
-        
         List<ResourceLocation> allTacz = TacZIntegration.getAllTacZGunIds();
         Set<String> mappedTaczIds = new HashSet<>();
-        
+
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             if (def.tacz != null && def.tacz.gun_id != null) {
                 mappedTaczIds.add(def.tacz.gun_id);
             }
         }
-        
         for (ResourceLocation taczId : allTacz) {
             if (!mappedTaczIds.contains(taczId.toString())) {
                 unmapped.add(taczId);
@@ -405,11 +414,9 @@ public class WeaponFacade {
         boolean isPap = isPackAPunched(stack);
         float damage = def.stats.damage;
         if (isPap) damage += def.pap.damage_bonus;
-        
         float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
         float velocity = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity;
         int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
-        
         int penetration = def.stats.penetration;
         if (isPap) penetration += def.pap.penetration_bonus;
 
@@ -418,17 +425,16 @@ public class WeaponFacade {
             projectile.setBaseDamage(0); 
             net.minecraft.world.phys.Vec3 eyePos = player.getEyePosition();
             projectile.setPos(eyePos.x, eyePos.y - 0.1, eyePos.z);
-            
+
             float currentYaw = player.getYRot();
             if (count == 3 && isPap) {
                 if (i == 0) currentYaw -= 10.0f;
                 else if (i == 2) currentYaw += 10.0f;
             }
-            
+
             projectile.shootFromRotation(player, player.getXRot(), currentYaw, 0.0F, velocity, spread);
             projectile.setSilent(true);
             projectile.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.DISALLOWED;
-            
             if (penetration > 0) {
                 projectile.setPierceLevel((byte) Math.min(127, penetration));
             }
@@ -439,7 +445,7 @@ public class WeaponFacade {
             nbt.putBoolean("zombierool:invisible", true);
             nbt.putBoolean("zombierool:pap", isPap);
             nbt.putString("zombierool:trail_vfx", def.ballistics.trail_vfx);
-            
+
             if (def.explosion != null && (!def.explosion.pap_only || isPap)) {
                 nbt.putBoolean("zombierool:explosive", true);
                 nbt.putFloat("zr_exp_radius", def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0));
@@ -452,6 +458,7 @@ public class WeaponFacade {
             }
 
             if (!def.ballistics.gravity) projectile.setNoGravity(true);
+
             player.level().addFreshEntity(projectile);
         }
     }

@@ -1,5 +1,4 @@
 package me.cryo.zombierool.entity;
-
 import net.minecraftforge.network.PlayMessages;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraft.world.level.Level;
@@ -24,6 +23,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.InteractionResult;
@@ -41,6 +42,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
 import me.cryo.zombierool.PointManager;
+
 import java.util.List;
 import java.util.EnumSet;
 
@@ -49,7 +51,7 @@ public class WhiteKnightEntity extends TamableAnimal {
     
     private int sweepAttackCooldown = 0;
     private static final int SWEEP_COOLDOWN_TICKS = 60;
-
+    
     public static final double AGGRO_RADIUS = 24.0D; 
     public static final double OWNER_PROTECTION_RADIUS = 8.0D; 
 
@@ -65,13 +67,18 @@ public class WhiteKnightEntity extends TamableAnimal {
         setPersistenceRequired();
         this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
         this.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
-        
+
         if (this.getNavigation() instanceof GroundPathNavigation groundPathNavigation) {
             groundPathNavigation.setCanOpenDoors(true);
             groundPathNavigation.setCanPassDoors(true);
             groundPathNavigation.setCanWalkOverFences(true);
             groundPathNavigation.setCanFloat(true);
         }
+    }
+
+    @Override
+    public EntityDimensions getDimensions(Pose pose) {
+        return EntityDimensions.fixed(0.75f, 2.0f); // Elargi pour englober les bras
     }
 
     @Override
@@ -110,6 +117,7 @@ public class WhiteKnightEntity extends TamableAnimal {
 
         this.goalSelector.addGoal(1, new DefensiveMeleeGoal(this, 1.3D)); 
         this.goalSelector.addGoal(2, new SmartFollowOwnerGoal(this, 1.2D, 8.0F, 3.0F)); 
+        
         this.goalSelector.addGoal(3, new FloatGoal(this));
         this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
@@ -139,11 +147,9 @@ public class WhiteKnightEntity extends TamableAnimal {
         if (source.is(DamageTypes.FALL)) {
             return super.hurt(source, amount);
         }
-
         if (source.getEntity() instanceof Player || (source.getDirectEntity() instanceof AbstractArrow && ((AbstractArrow) source.getDirectEntity()).getOwner() instanceof Player)) {
             return false;
         }
-
         return super.hurt(source, amount);
     }
 
@@ -258,7 +264,6 @@ public class WhiteKnightEntity extends TamableAnimal {
 
         double sweepRange = 2.0;
         AABB sweepArea = target.getBoundingBox().inflate(sweepRange, 0.25D, sweepRange);
-
         List<LivingEntity> targetsInSweep = this.level().getEntitiesOfClass(LivingEntity.class, sweepArea, (entity) -> {
             return entity != this &&
                    (this.getOwner() == null || entity != this.getOwner()) &&

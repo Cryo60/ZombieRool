@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "type": "directory",
+      "source": "item/camos",
+      "prefix": "item/camos/"
+    },
+    {
+      "type": "directory",
+      "source": "item/skins",
+      "prefix": "item/skins/"
+    }
+  ]
+}

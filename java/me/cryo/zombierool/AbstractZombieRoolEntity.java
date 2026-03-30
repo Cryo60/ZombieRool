@@ -1,4 +1,5 @@
 package me.cryo.zombierool.entity;
+
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.bonuses.BonusManager;
@@ -54,6 +55,19 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
     }
 
+    public void resetStuckTimer() {
+        this.stuckTimer = 0;
+    }
+
+    @Override
+    protected void doPush(Entity entityIn) {}
+
+    @Override
+    public void push(Entity entityIn) {}
+
+    @Override
+    public boolean isPushable() { return false; }
+
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
@@ -61,18 +75,10 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         this.entityData.define(ZR_SCALE, 1.0f);
     }
 
-    public String getCustomSkin() {
-        return this.entityData.get(CUSTOM_SKIN);
-    }
+    public String getCustomSkin() { return this.entityData.get(CUSTOM_SKIN); }
+    public void setCustomSkin(String skinId) { this.entityData.set(CUSTOM_SKIN, skinId); }
 
-    public void setCustomSkin(String skinId) {
-        this.entityData.set(CUSTOM_SKIN, skinId);
-    }
-
-    public float getScale() {
-        return this.entityData.get(ZR_SCALE);
-    }
-
+    public float getScale() { return this.entityData.get(ZR_SCALE); }
     public void setScale(float scale) {
         this.entityData.set(ZR_SCALE, scale);
         this.refreshDimensions();
@@ -118,19 +124,13 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
     }
 
-    public boolean isHeadshotDeath() {
-        return this.headshotDeath;
-    }
+    public boolean isHeadshotDeath() { return this.headshotDeath; }
 
     @Override
-    public int getMaxFallDistance() {
-        return 20; 
-    }
+    public int getMaxFallDistance() { return 20; }
 
     @Override
-    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
-        return false;
-    }
+    public boolean removeWhenFarAway(double distanceToClosestPlayer) { return false; }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
@@ -138,9 +138,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     }
 
     @Override
-    public float getPickRadius() {
-        return 0.3F * getScale(); 
-    }
+    public float getPickRadius() { return 0.3F * getScale(); }
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
@@ -149,8 +147,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
 
         boolean headshot = false;
-        double headshotThreshold = this.getY() + this.getBbHeight() * 0.85;
-
+        double headshotThreshold = this.getY() + this.getBbHeight() * 0.75;
         boolean isProjectile = source.getDirectEntity() instanceof Projectile;
         boolean isHitscan = !isProjectile && source.getEntity() instanceof Player;
 
@@ -183,7 +180,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 this.headshotDeath = true;
                 this.headshotDeathTicks = 0;
                 this.hasTriggeredHeadshotKill = false;
-                
                 if (!this.level().isClientSide) {
                     this.level().broadcastEntityEvent(this, (byte) 99);
                 }
@@ -198,7 +194,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         super.handleEntityEvent(id);
         if (id == 99 && this.level().isClientSide) {
             this.setHeadshotDeath(true);
-            
             double x = this.getX(), y = this.getY() + this.getBbHeight() * 0.9, z = this.getZ();
             for (int i = 0; i < 30; i++) {
                 double dx = (this.random.nextDouble() - 0.5) * this.getBbWidth();
@@ -233,7 +228,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (player != null) {
                 boolean hasIngot = player.getInventory().items.stream()
                     .anyMatch(st -> st.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
-                
                 if (!hasIngot && player.level().random.nextFloat() < 0.0015f) {
                     player.getInventory().add(new ItemStack(
                         me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()));
@@ -266,7 +260,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public void tick() {
         super.tick();
-
         if (this.headshotDeath && !hasTriggeredHeadshotKill) {
             headshotDeathTicks++;
             if (headshotDeathTicks >= 5 && !this.level().isClientSide) {
@@ -283,7 +276,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (this.tickCount % 20 == 0) {
                 double distMoved = this.position().distanceToSqr(this.lastPos);
                 boolean nearPlayer = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 20.0, false) != null;
-                
+
                 if (distMoved < 0.01 && !nearPlayer && this.getTarget() != null) {
                     this.stuckTimer += 20;
                 } else {

@@ -1,9 +1,11 @@
 package me.cryo.zombierool.scripting;
+
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.system.WeaponFacade;
+import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CPlayGlobalSoundPacket;
 import me.cryo.zombierool.network.packet.S2CSetFogPresetPacket;
@@ -13,6 +15,7 @@ import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntit
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.player.PlayerDownManager;
 import me.cryo.zombierool.player.PlayerCrawlManager;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerBossEvent;
@@ -40,13 +43,15 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.network.PacketDistributor;
+
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class ZombieroolAPI {
+
     private final ServerLevel level;
     private static final Map<UUID, ServerBossEvent> playerObjectives = new ConcurrentHashMap<>();
 
@@ -88,10 +94,12 @@ public class ZombieroolAPI {
     public LuaTable getNearbyPlayers(double x, double y, double z, double radius) {
         LuaTable table = new LuaTable();
         AABB box = new AABB(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
+        
         List<ServerPlayer> players = level.getEntitiesOfClass(ServerPlayer.class, box, p -> 
             p.distanceToSqr(x, y, z) <= radius * radius && 
             (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
         );
+
         int i = 1;
         for (ServerPlayer p : players) {
             table.set(i++, LuaValue.valueOf(p.getUUID().toString()));
@@ -230,9 +238,38 @@ public class ZombieroolAPI {
     public void giveRandomWeapon(String uuidStr, String tier) {
         ServerPlayer player = getPlayer(uuidStr);
         if (player != null) {
-            ItemStack weapon = me.cryo.zombierool.MysteryBoxManager.get(level).getRandomWeapon(player, level);
-            if (!weapon.isEmpty()) {
-                WeaponFacade.grantWeaponToPlayer(player, weapon);
+            boolean pap = false;
+            String searchTier = tier != null ? tier.toUpperCase(Locale.ROOT) : "";
+            
+            if (searchTier.contains("PAP")) {
+                pap = true;
+                searchTier = searchTier.replace("PAP", "").trim();
+            }
+            
+            List<String> candidates = new ArrayList<>();
+            for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
+                boolean match = false;
+                if (searchTier.isEmpty() || searchTier.equals("ALL") || searchTier.equals("ANY")) {
+                    match = true;
+                } else if (searchTier.equals("WONDER")) {
+                    match = def.is_wonder_weapon || "WONDER".equalsIgnoreCase(def.type);
+                } else if (def.type != null && def.type.equalsIgnoreCase(searchTier)) {
+                    match = true;
+                } else if (def.tags != null && def.tags.contains(searchTier.toLowerCase(Locale.ROOT))) {
+                    match = true;
+                }
+                
+                if (match) {
+                    candidates.add(def.id);
+                }
+            }
+            
+            if (!candidates.isEmpty()) {
+                String chosen = candidates.get(level.random.nextInt(candidates.size()));
+                ItemStack weapon = WeaponFacade.createWeaponStack(chosen, pap, player);
+                if (!weapon.isEmpty()) {
+                    WeaponFacade.grantWeaponToPlayer(player, weapon);
+                }
             }
         }
     }
@@ -284,9 +321,11 @@ public class ZombieroolAPI {
                 living.setPos(x, y, z);
                 living.getAttribute(Attributes.MAX_HEALTH).setBaseValue(hp);
                 living.setHealth(hp);
+                
                 if (living.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
                     living.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed);
                 }
+                
                 if (living instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity zrEntity) {
                     zrEntity.setScale(scale);
                     String skin = me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin(rl.getPath());
@@ -300,6 +339,7 @@ public class ZombieroolAPI {
                         zrEntity.setCustomSkin(skin);
                     }
                 }
+                
                 level.addFreshEntity(living);
             }
         }
@@ -332,10 +372,12 @@ public class ZombieroolAPI {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
             me.cryo.zombierool.PerksManager.Perk perk = null;
+
             if (perkId.equalsIgnoreCase("random")) {
                 List<me.cryo.zombierool.PerksManager.Perk> unowned = me.cryo.zombierool.PerksManager.ALL_PERKS.values().stream()
                         .filter(p -> p.getAssociatedEffect() != null && !player.hasEffect(p.getAssociatedEffect()))
                         .collect(Collectors.toList());
+                
                 if (!unowned.isEmpty()) {
                     perk = unowned.get(level.random.nextInt(unowned.size()));
                 }
@@ -364,7 +406,7 @@ public class ZombieroolAPI {
     public void clearUnlockedChannels() {
         WaveManager.UNLOCKED_CHANNELS.clear();
     }
-
+    
     public void clearUnlockedZones() {
         WaveManager.UNLOCKED_ZONES.clear();
     }
@@ -390,18 +432,16 @@ public class ZombieroolAPI {
         try {
             int c = Integer.parseInt(channel);
             WaveManager.unlockChannel(c);
-
+            
             List<BlockPos> toBreak = new ArrayList<>();
             for (ObstacleDoorBlockEntity be : ObstacleDoorSystem.OBSTACLES) {
                 if (be.getLevel() == level && be.getCanalAsInt() == c) {
                     toBreak.add(be.getBlockPos());
                 }
             }
-
             for (BlockPos p : toBreak) {
                 level.setBlock(p, ZombieroolModBlocks.PATH.get().defaultBlockState(), 3);
             }
-
         } catch (NumberFormatException ignored) {}
     }
 
@@ -420,7 +460,7 @@ public class ZombieroolAPI {
             }
         }
     }
-
+    
     public void playDynamicSoundForPlayer(String playerUUIDStr, String soundId) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
@@ -442,6 +482,20 @@ public class ZombieroolAPI {
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetFogPresetPacket(
             preset, config.getCustomFogR(), config.getCustomFogG(), config.getCustomFogB(),
             config.getCustomFogNear(), config.getCustomFogFar()
+        ));
+    }
+    
+    public void setCustomFog(double r, double g, double b, double near, double far) {
+        WorldConfig config = WorldConfig.get(level);
+        config.setFogPreset("custom");
+        config.setCustomFogR((float)r);
+        config.setCustomFogG((float)g);
+        config.setCustomFogB((float)b);
+        config.setCustomFogNear((float)near);
+        config.setCustomFogFar((float)far);
+        config.setDirty();
+        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetFogPresetPacket(
+            "custom", (float)r, (float)g, (float)b, (float)near, (float)far
         ));
     }
 
@@ -477,11 +531,11 @@ public class ZombieroolAPI {
         BlockPos pos = new BlockPos(x, y, z);
         me.cryo.zombierool.MysteryBoxManager.get(level).forceLocation(level, pos, isLocked);
     }
-
+    
     public void excludeMysteryBox(int x, int y, int z, boolean exclude) {
         WorldConfig.get(level).setMysteryBoxExcluded(new BlockPos(x, y, z), exclude);
     }
-
+    
     public void excludeWunderfizz(int x, int y, int z, boolean exclude) {
         WorldConfig.get(level).setWunderfizzExcluded(new BlockPos(x, y, z), exclude);
     }
@@ -537,7 +591,7 @@ public class ZombieroolAPI {
             level.setBlock(pos, block.defaultBlockState(), 3);
         }
     }
-
+    
     public String getBlock(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
         level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
@@ -563,6 +617,7 @@ public class ZombieroolAPI {
             int maxY = Math.max(y1, y2);
             int minZ = Math.min(z1, z2);
             int maxZ = Math.max(z1, z2);
+            
             for (int i = minX; i <= maxX; i++) {
                 for (int j = minY; j <= maxY; j++) {
                     for (int k = minZ; k <= maxZ; k++) {
@@ -639,7 +694,7 @@ public class ZombieroolAPI {
         }
         return false;
     }
-
+    
     public LuaTable getInventory(String playerUUIDStr) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         LuaTable table = new LuaTable();
@@ -708,6 +763,7 @@ public class ZombieroolAPI {
                 .filter(p -> p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
                 .map(p -> p.getUUID().toString())
                 .collect(Collectors.toList());
+
         LuaTable table = new LuaTable();
         int i = 1;
         for (String uuid : activePlayers) {
@@ -723,11 +779,11 @@ public class ZombieroolAPI {
             return null;
         }
     }
-
+    
     public void triggerElderGuardianOverlay(String playerUUIDStr) {
         triggerScopeScreamer(playerUUIDStr);
     }
-
+    
     public void triggerScopeScreamer(String playerUUIDStr) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
@@ -884,23 +940,24 @@ public class ZombieroolAPI {
         } catch(Exception ignored) {}
     }
 
-    public void spawnGrenade(String ownerUuidStr, double x, double y, double z, double vx, double vy, double vz, int fuseTicks) {
+    public void spawnThrowable(String ownerUuidStr, String throwableType, double x, double y, double z, double vx, double vy, double vz, int fuseTicks) {
         try {
             ServerPlayer player = getPlayer(ownerUuidStr);
-            me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity grenade = new me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity(level, player, 100 - fuseTicks);
-            grenade.setPos(x, y, z);
-            grenade.setDeltaMovement(vx, vy, vz);
-            level.addFreshEntity(grenade);
-        } catch(Exception ignored) {}
-    }
-
-    public void spawnMolotov(String ownerUuidStr, double x, double y, double z, double vx, double vy, double vz) {
-        try {
-            ServerPlayer player = getPlayer(ownerUuidStr);
-            me.cryo.zombierool.item.throwable.Molotov.MolotovEntity molotov = new me.cryo.zombierool.item.throwable.Molotov.MolotovEntity(level, player);
-            molotov.setPos(x, y, z);
-            molotov.setDeltaMovement(vx, vy, vz);
-            level.addFreshEntity(molotov);
+            me.cryo.zombierool.item.throwable.ThrowableCore.BaseThrowableEntity proj = null;
+            if (throwableType.equalsIgnoreCase("molotov")) {
+                proj = new me.cryo.zombierool.item.throwable.Molotov.MolotovEntity(level, player);
+            } else if (throwableType.equalsIgnoreCase("stielhandgranate")) {
+                proj = new me.cryo.zombierool.item.throwable.Stielhandgranate.StielhandgranateEntity(level, player, 100 - fuseTicks);
+            } else if (throwableType.equalsIgnoreCase("monkey_bomb")) {
+                proj = new me.cryo.zombierool.item.throwable.MonkeyBomb.MonkeyBombEntity(level, player, 100 - fuseTicks);
+            } else {
+                proj = new me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity(level, player, 100 - fuseTicks);
+            }
+            if (proj != null) {
+                proj.setPos(x, y, z);
+                proj.setDeltaMovement(vx, vy, vz);
+                level.addFreshEntity(proj);
+            }
         } catch(Exception ignored) {}
     }
 
@@ -932,12 +989,12 @@ public class ZombieroolAPI {
             me.cryo.zombierool.AmmoCrateManager.get(level).tryPurchaseAmmo(player, level, me.cryo.zombierool.WaveManager.getCurrentWave());
         }
     }
-
+    
     public void placePerkMachine(int x, int y, int z, String facingStr, String perkId) {
         BlockPos pos = new BlockPos(x, y, z);
-        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase());
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-
+        
         level.setBlock(pos.below(), me.cryo.zombierool.block.system.PerksSystem.DUMMY_BLOCK.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaDummyBlock.PART, me.cryo.zombierool.block.system.PerksSystem.DummyPart.LOWER)
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaDummyBlock.FACING, facing), 3);
@@ -947,7 +1004,7 @@ public class ZombieroolAPI {
         level.setBlock(pos, me.cryo.zombierool.block.system.PerksSystem.BLOCK.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlock.PERK_TYPE, me.cryo.zombierool.block.system.PerksSystem.PerkType.fromString(perkId)), 3);
-        
+                
         net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlockEntity perkBE) {
             perkBE.setSavedPerkId(perkId);
@@ -956,44 +1013,43 @@ public class ZombieroolAPI {
             }
         }
     }
-
+    
     public void placeMysteryBox(int x, int y, int z, String facingStr, boolean active) {
         BlockPos pos = new BlockPos(x, y, z);
-        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase());
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-
+        
         BlockPos otherPos = me.cryo.zombierool.MysteryBoxManager.getOtherPartPos(pos, facing);
         
         level.setBlock(pos, me.cryo.zombierool.block.system.MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.PART, false)
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.ACTIVE, active), 3);
-        
         level.setBlock(otherPos, me.cryo.zombierool.block.system.MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.PART, true)
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.ACTIVE, active), 3);
     }
-
+    
     public void placeWunderfizz(int x, int y, int z, String facingStr) {
         BlockPos pos = new BlockPos(x, y, z);
-        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase());
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-
+        
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.DER_WUNDERFIZZ.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.DerWunderfizzBlock.FACING, facing), 3);
     }
-
+    
     public void placePowerSwitch(int x, int y, int z, String facingStr, boolean powered) {
         BlockPos pos = new BlockPos(x, y, z);
-        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase());
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-
+        
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.POWER_SWITCH.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.PowerSwitchBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.PowerSwitchBlock.POWERED, powered), 3);
     }
-
+    
     public void placeMeteorite(int x, int y, int z, boolean active) {
         BlockPos pos = new BlockPos(x, y, z);
         level.setBlock(pos, me.cryo.zombierool.core.registry.ZRBlocks.METEORITE.get().defaultBlockState()
@@ -1002,9 +1058,9 @@ public class ZombieroolAPI {
 
     public void placeAmmoCrate(int x, int y, int z, String facingStr) {
         BlockPos pos = new BlockPos(x, y, z);
-        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase());
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-
+        
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.AMMO_CRATE.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.AmmoCrateBlock.FACING, facing), 3);
     }

@@ -1,4 +1,5 @@
 package me.cryo.zombierool.handlers;
+
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock;
@@ -6,6 +7,8 @@ import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntit
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.item.IngotSaleItem;
 import me.cryo.zombierool.util.PlayerVoiceManager;
+import me.cryo.zombierool.career.CareerManager;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -17,34 +20,42 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.registries.ForgeRegistries;
+
 import java.util.HashSet;
 import java.util.Set;
 
 public class ObstaclePurchaseHandler {
-
+    
     public static void tryPurchase(Player player, BlockPos pos) {
         if (player.level().isClientSide() || player.isCreative()) return;
         if (!(player instanceof ServerPlayer serverPlayer)) return;
+
         if (player.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) > 4.0D) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.get_closer"));
             return;
         }
+
         BlockEntity te = player.level().getBlockEntity(pos);
         if (!(te instanceof ObstacleDoorBlockEntity be)) return;
+
         int prix = be.getPrix();
         int finalCanal = be.getCanalAsInt(); 
+
         if (prix <= 0) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.not_for_sale"));
             return;
         }
+
         int playerPoints = PointManager.getScore(player);
         boolean hasFireSale = player.getInventory().items.stream()
                 .anyMatch(stack -> stack.getItem() instanceof IngotSaleItem);
+
         if (!hasFireSale && playerPoints < prix) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.insufficient_points", prix));
             PlayerVoiceManager.playNoMoneySound(player, player.level());
             return;
         }
+
         if (hasFireSale) {
             for (ItemStack stack : player.getInventory().items) {
                 if (stack.getItem() instanceof IngotSaleItem) {
@@ -55,20 +66,26 @@ public class ObstaclePurchaseHandler {
         } else {
             PointManager.modifyScore(player, -prix);
         }
+
         Set<BlockPos> connected = new HashSet<>();
         findAllConnectedBlocks(player.level(), pos, connected);
         transformBlocks(player.level(), connected);
+        
         WaveManager.unlockChannel(finalCanal);
+        
         serverPlayer.playNotifySound(
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")),
                 SoundSource.BLOCKS,
                 1.0F,
                 1.0F
         );
+
+        CareerManager.progressChallenge(serverPlayer, CareerManager.ChallengeType.OBSTACLE_BOUGHT, 1);
     }
 
     private static void findAllConnectedBlocks(Level world, BlockPos startPos, Set<BlockPos> result) {
         if (result.contains(startPos)) return;
+
         if (isValidBlock(world, startPos)) {
             result.add(startPos);
             for (Direction dir : Direction.values()) {

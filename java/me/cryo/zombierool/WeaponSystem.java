@@ -32,17 +32,21 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.registries.ForgeRegistries;
+
 import me.cryo.zombierool.api.ICustomWeapon;
 import me.cryo.zombierool.api.IHeadshotWeapon;
 import me.cryo.zombierool.api.IOverheatable;
 import me.cryo.zombierool.api.IPackAPunchable;
 import me.cryo.zombierool.api.IReloadable;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
+import me.cryo.zombierool.init.ZombieroolModSounds;
 import me.cryo.zombierool.integration.TacZIntegration;
 import me.cryo.zombierool.util.PlayerVoiceManager;
+
 import net.minecraft.ChatFormatting;
 
 import javax.annotation.Nullable;
@@ -64,12 +68,13 @@ public class WeaponSystem {
         public boolean is_wonder_weapon = false;
         public List<String> lore = new ArrayList<>();
         public List<String> tags = new ArrayList<>();
-
+        
         public Stats stats = new Stats();
         public Ammo ammo = new Ammo();
         public Ballistics ballistics = new Ballistics();
         public Burst burst = new Burst();
         public Recoil recoil = new Recoil();
+        
         @SerializedName("pack_a_punch")
         public PackAPunch pap = new PackAPunch();
         public Headshot headshot = new Headshot();
@@ -141,7 +146,7 @@ public class WeaponSystem {
             public float base_bonus_damage = 0.0f;
             public float pap_bonus_damage = 0.0f;
             public boolean can_explode_head = true;
-            public float head_explosion_chance = 0.3f;
+            public float head_explosion_chance = 1.0f; 
         }
 
         public static class Sounds {
@@ -274,11 +279,13 @@ public class WeaponSystem {
             } else if ("PISTOL".equals(type)) {
                 return new WeaponImplementations.PistolGunItem(def);
             }
+
             return new WeaponImplementations.HitscanGunItem(def);
         }
 
         public static void loadWeapons() {
             LOADED_DEFINITIONS.clear();
+
             for (String weaponId : BUILTIN_WEAPONS) {
                 String path = "data/zombierool/gameplay/weapons/" + weaponId + ".json";
                 try (InputStream stream = Loader.class.getClassLoader().getResourceAsStream(path)) {
@@ -421,7 +428,9 @@ public class WeaponSystem {
             Vec3 lookVec = player.getViewVector(1.0F);
             Vec3 rightVec = lookVec.cross(new Vec3(0, 1, 0)).normalize();
             Vec3 upVec = rightVec.cross(lookVec).normalize();
+            
             float sideOffset = isLeft ? -0.45f : 0.45f;
+            
             return eyePos.add(rightVec.scale(sideOffset)).add(upVec.scale(-0.35)).add(lookVec.scale(0.6));
         }
 
@@ -442,6 +451,7 @@ public class WeaponSystem {
 
         @Override public int getReserve(ItemStack s) { return getOrCreateTag(s).getInt(TAG_RESERVE); }
         @Override public void setReserve(ItemStack s, int r) { getOrCreateTag(s).putInt(TAG_RESERVE, r); }
+
         @Override public int getReloadTimer(ItemStack s) { return getOrCreateTag(s).getInt(TAG_RELOAD_TIMER); }
         @Override public void setReloadTimer(ItemStack s, int t) { getOrCreateTag(s).putInt(TAG_RELOAD_TIMER, t); }
 
@@ -475,9 +485,9 @@ public class WeaponSystem {
             setReserve(stack, getMaxReserve(stack));
             if (hasDurability()) setDurability(stack, getMaxDurability(stack));
         }
-
         @Override public boolean isPackAPunched(ItemStack stack) { return getOrCreateTag(stack).getBoolean(TAG_PAP); }
         @Override public boolean isFoil(ItemStack stack) { return isPackAPunched(stack); }
+
         @Override public float getHeadshotBaseDamage(ItemStack stack) { return getDefinition().headshot.base_bonus_damage; }
         @Override public float getHeadshotPapBonusDamage(ItemStack stack) { return getDefinition().headshot.pap_bonus_damage; }
         @Override public float getWeaponDamage(ItemStack stack) { Definition currentDef = getDefinition(); return isPackAPunched(stack) ? currentDef.stats.damage + currentDef.pap.damage_bonus : currentDef.stats.damage; }
@@ -506,6 +516,7 @@ public class WeaponSystem {
                 if (isAkimbo(player.getItemInHand(hand))) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 }
+                
                 if (this.getDefinition().scoped != null && this.getDefinition().scoped.isScoped) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 } else {
@@ -536,8 +547,7 @@ public class WeaponSystem {
 
             if (!isAkimbo(stack) && player.getCooldowns().isOnCooldown(this)) return;
             if (getOrCreateTag(stack).getInt(TAG_BURST_SHOTS_LEFT) > 0) return;
-
-            if (now - lastFire < getFireRate(stack, player)) return;
+            if (now - lastFire < getFireRate(stack, player) - 1) return;
 
             int burstCount = currentDef.burst.count;
             if (isPackAPunched(stack) && currentDef.pap.burst_count_override > 0) {
@@ -564,7 +574,6 @@ public class WeaponSystem {
 
         protected boolean executeShot(ItemStack stack, Player player, float charge, boolean isLeft) {
             Definition currentDef = getDefinition();
-            
             if (hasOverheat()) {
                 if (getOrCreateTag(stack).getBoolean(TAG_IS_OVERHEATED) || getOverheat(stack) >= getMaxOverheat()) {
                     playSound(player.level(), player, currentDef.sounds.dry);
@@ -593,6 +602,7 @@ public class WeaponSystem {
             for (int m = 0; m < multiplier; m++) {
                 performShooting(stack, player, charge, isLeft);
             }
+
             PlayerVoiceManager.onPlayerShoot(player);
 
             if (!player.isCreative()) {
@@ -606,7 +616,6 @@ public class WeaponSystem {
                     }
                     setOverheat(stack, Math.min(getMaxOverheat(), getOverheat(stack) + heatAdd));
                 }
-
                 if (hasDurability()) {
                     setDurability(stack, getDurability(stack) - getDurabilityDrainPerShot(stack));
                 }
@@ -619,6 +628,7 @@ public class WeaponSystem {
                     }
                     int currentRight = getAmmo(stack);
                     int currentLeft = isAkimbo(stack) ? getAmmoLeft(stack) : 0;
+
                     if (currentRight <= 0 && (!isAkimbo(stack) || currentLeft <= 0)) {
                         if (isInfinite(stack) || getReserve(stack) > 0) {
                             startReload(stack, player);
@@ -639,7 +649,6 @@ public class WeaponSystem {
             }
 
             getOrCreateTag(stack).putBoolean(TAG_PUMP_PLAYED, false);
-
             return true;
         }
 
@@ -668,7 +677,7 @@ public class WeaponSystem {
             if (!isInfinite(stack) && getReserve(stack) <= 0 && !player.isCreative()) return;
 
             getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
-
+            
             Definition currentDef = getDefinition();
             float baseTime = currentDef.ammo.reload_time;
             if (isPackAPunched(stack)) baseTime *= currentDef.pap.reload_speed_mult;
@@ -677,7 +686,6 @@ public class WeaponSystem {
             int ticks = Math.max(1, (int) baseTime);
             setReloadTimer(stack, ticks);
             getOrCreateTag(stack).putBoolean(TAG_IS_RELOADING, true);
-
             if (!isAkimbo(stack)) {
                 player.getCooldowns().addCooldown(this, ticks);
             }
@@ -698,6 +706,28 @@ public class WeaponSystem {
                             me.cryo.zombierool.core.manager.DamageManager.applyDamage(e, player.level().damageSources().playerAttack(player), 5.0f);
                             e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
                         });
+
+                if (!player.level().isClientSide() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                    serverLevel.sendParticles(
+                        net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                        player.getX(), player.getY() + 1, player.getZ(),
+                        30, 1.5, 1.0, 1.5, 0.1
+                    );
+                    player.level().playSound(
+                        null,
+                        player.blockPosition(),
+                        me.cryo.zombierool.init.ZombieroolModSounds.RELOADING_WITH_CHERRY.get(),
+                        net.minecraft.sounds.SoundSource.PLAYERS,
+                        1.0f, 1.0f
+                    );
+                    player.level().playSound(
+                        null,
+                        player.blockPosition(),
+                        me.cryo.zombierool.init.ZombieroolModSounds.ZOMBIE_ELEC.get(),
+                        net.minecraft.sounds.SoundSource.PLAYERS,
+                        1.0f, 1.0f
+                    );
+                }
             }
         }
 
@@ -707,6 +737,7 @@ public class WeaponSystem {
         @Override
         public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
             if (!(entity instanceof Player player)) return;
+
             initializeIfNeeded(stack);
             CompoundTag tag = getOrCreateTag(stack);
             Definition currentDef = getDefinition();
@@ -714,7 +745,6 @@ public class WeaponSystem {
             if (hasOverheat()) {
                 int heat = getOverheat(stack);
                 boolean isOverheated = tag.getBoolean(TAG_IS_OVERHEATED);
-
                 if (heat >= getMaxOverheat() && !isOverheated) {
                     tag.putBoolean(TAG_IS_OVERHEATED, true);
                     if (!level.isClientSide) onOverheat(stack, player);
@@ -848,12 +878,13 @@ public class WeaponSystem {
         public Component getName(ItemStack stack) {
             Definition currentDef = getDefinition();
             boolean upgraded = isPackAPunched(stack);
+
             String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
             if (nameKey == null) nameKey = "Unknown Weapon";
             
             MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
                     Component.translatable(nameKey) : Component.literal(nameKey);
-            
+
             MutableComponent nameComponent = Component.empty().append(baseComp).withStyle(upgraded ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.WHITE);
 
             if (hasOverheat()) {

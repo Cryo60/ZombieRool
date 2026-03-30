@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.registries.ForgeRegistries;
+
 import me.cryo.zombierool.core.manager.BallisticManager;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
 import me.cryo.zombierool.init.ZombieroolModSounds;
@@ -36,12 +37,14 @@ public class WeaponImplementations {
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge, boolean isLeft) {
             if (player.level().isClientSide) return;
+            
             float damage = getWeaponDamage(stack);
             boolean isPap = isPackAPunched(stack);
             float spread = getDynamicSpread(stack, player);
             int penetration = def.stats.penetration;
             
             int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
+
             if (count == 3 && isPap && def.pap.pellet_count_override == 3) {
                 float angleOffset = 10.0f;
                 BallisticManager.fireBullet((ServerPlayer) player, (float) def.stats.range, damage, 0.0f, penetration, stack, 0.0f);
@@ -53,7 +56,7 @@ public class WeaponImplementations {
                 }
             }
         }
-        
+
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge) {
             performShooting(stack, player, charge, false);
@@ -78,12 +81,13 @@ public class WeaponImplementations {
             if (getReserve(stack) <= 0 && !player.isCreative()) return;
 
             getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
-            
+
             float baseTime = def.ammo.reload_time;
             if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get())) baseTime *= 0.5f;
-            
+
             setReloadTimer(stack, (int)baseTime);
             getOrCreateTag(stack).putBoolean(TAG_IS_RELOADING, true);
+
             player.getCooldowns().addCooldown(this, (int)baseTime);
 
             if (!player.level().isClientSide) {
@@ -100,7 +104,6 @@ public class WeaponImplementations {
         public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
             super.inventoryTick(stack, level, entity, slot, selected);
             if (!(entity instanceof Player player)) return;
-
             if (!getOrCreateTag(stack).getBoolean(TAG_IS_RELOADING)) return;
 
             int timer = getReloadTimer(stack);
@@ -122,9 +125,9 @@ public class WeaponImplementations {
 
                 float time = 15; 
                 if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get())) time *= 0.5f;
+
                 setReloadTimer(stack, (int) time);
                 player.getCooldowns().addCooldown(this, (int)time);
-
             } else {
                 getOrCreateTag(stack).putBoolean(TAG_IS_RELOADING, false);
                 if (!level.isClientSide) {
@@ -136,7 +139,7 @@ public class WeaponImplementations {
                 }
             }
         }
-        
+
         @Override
         protected void triggerCherryEffect(Player player) {
             if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_CHERRY.get())) {
@@ -145,24 +148,22 @@ public class WeaponImplementations {
                     .forEach(e -> {
                         me.cryo.zombierool.core.manager.DamageManager.applyDamage(e, player.level().damageSources().playerAttack(player), 5.0f);
                         e.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
+                        if (e instanceof me.cryo.zombierool.entity.ZombieEntity) {
+                            e.level().playSound(null, e.getX(), e.getY(), e.getZ(), ZombieroolModSounds.ZOMBIE_ELEC.get(), net.minecraft.sounds.SoundSource.HOSTILE, 1.0f, 1.0f);
+                        }
                     });
+
                 if (!player.level().isClientSide() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
                     serverLevel.sendParticles(
                         net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, 
                         player.getX(), player.getY() + 1, player.getZ(), 
                         30, 1.5, 1.0, 1.5, 0.1
                     );
+
                     player.level().playSound(
                         null, 
                         player.blockPosition(), 
                         ZombieroolModSounds.RELOADING_WITH_CHERRY.get(), 
-                        SoundSource.PLAYERS, 
-                        1.0f, 1.0f
-                    );
-                    player.level().playSound(
-                        null, 
-                        player.blockPosition(), 
-                        ZombieroolModSounds.ZOMBIE_ELEC.get(), 
                         SoundSource.PLAYERS, 
                         1.0f, 1.0f
                     );
@@ -185,6 +186,7 @@ public class WeaponImplementations {
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge, boolean isLeft) {
             if (player.level().isClientSide) return;
+            
             boolean isPap = isPackAPunched(stack);
             float damage = getWeaponDamage(stack);
             float spread = getDynamicSpread(stack, player);
@@ -192,17 +194,19 @@ public class WeaponImplementations {
             int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
             int penetration = def.stats.penetration;
             if (isPap) penetration += def.pap.penetration_bonus;
-            
+
             for (int i = 0; i < count; i++) {
                 Entity projectile;
                 Vec3 startPos = getVisualMuzzlePos(player, isLeft);
+
                 float currentYaw = player.getYRot();
                 if (count == 3 && isPap) {
                     if (i == 0) currentYaw -= 10.0f;
                     else if (i == 2) currentYaw += 10.0f;
                 }
-                float yawOffset = isLeft ? -3.0f : 3.0f;
                 
+                float yawOffset = isLeft ? -3.0f : 3.0f;
+
                 if ("GRENADE".equalsIgnoreCase(def.ballistics.type)) {
                     me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity grenade = new me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity(player.level(), player, 0);
                     grenade.setPos(startPos.x, startPos.y, startPos.z);
@@ -213,6 +217,7 @@ public class WeaponImplementations {
                     nbt.putFloat("zombierool:damage", damage);
                     nbt.putBoolean("zombierool:pap", isPap);
                     nbt.putString("zombierool:trail_vfx", def.ballistics.trail_vfx);
+
                     if (def.explosion != null && (!def.explosion.pap_only || isPap)) {
                         nbt.putBoolean("zombierool:explosive", true);
                         nbt.putFloat("zr_exp_radius", def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0));
@@ -223,8 +228,8 @@ public class WeaponImplementations {
                         nbt.putString("zr_exp_vfx", def.explosion.vfx_type);
                         nbt.putString("zr_exp_sound", def.explosion.sound);
                     }
+
                     if (!def.ballistics.gravity) grenade.setNoGravity(true);
-                    
                     projectile = grenade;
                 } else {
                     Arrow arrow = new Arrow(player.level(), player);
@@ -233,16 +238,18 @@ public class WeaponImplementations {
                     arrow.shootFromRotation(player, player.getXRot(), currentYaw + yawOffset, 0.0F, velocity, spread);
                     arrow.setSilent(true);
                     arrow.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.DISALLOWED;
+                    
                     if (penetration > 0) {
                         arrow.setPierceLevel((byte) Math.min(127, penetration));
                     }
-                    
+
                     CompoundTag nbt = arrow.getPersistentData();
                     nbt.putBoolean("zombierool:custom_projectile", true);
                     nbt.putFloat("zombierool:damage", damage);
                     nbt.putBoolean("zombierool:invisible", true); 
                     nbt.putBoolean("zombierool:pap", isPap);
                     nbt.putString("zombierool:trail_vfx", def.ballistics.trail_vfx);
+
                     if (def.explosion != null && (!def.explosion.pap_only || isPap)) {
                         nbt.putBoolean("zombierool:explosive", true);
                         nbt.putFloat("zr_exp_radius", def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0));
@@ -253,14 +260,14 @@ public class WeaponImplementations {
                         nbt.putString("zr_exp_vfx", def.explosion.vfx_type);
                         nbt.putString("zr_exp_sound", def.explosion.sound);
                     }
+
                     if (!def.ballistics.gravity) arrow.setNoGravity(true);
-                    
                     projectile = arrow;
                 }
                 player.level().addFreshEntity(projectile);
             }
         }
-        
+
         @Override
         protected void performShooting(ItemStack stack, Player player, float charge) {
             performShooting(stack, player, charge, false);
@@ -268,8 +275,10 @@ public class WeaponImplementations {
     }
 
     public static class MeleeWeaponItem extends WeaponSystem.BaseGunItem {
+
         public static final java.util.UUID BASE_ATTACK_DAMAGE_UUID = java.util.UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
         public static final java.util.UUID BASE_ATTACK_SPEED_UUID = java.util.UUID.fromString("FA233EE9-2F64-44F4-52E5-2792376F8AE5");
+
         protected static final String TAG_LAST_DASH_TICK = "LastDashTick";
 
         public MeleeWeaponItem(WeaponSystem.Definition def) { super(def); }
@@ -300,7 +309,7 @@ public class WeaponImplementations {
         protected float getDashDistance() { return 3.0f; }
         protected int getDashCooldownTicks() { return 40; }
         protected boolean canDash(ItemStack stack) { return true; }
-        
+
         protected SoundEvent getSwingSound(ItemStack stack) {
             String soundId = isPackAPunched(stack) ? def.sounds.fire_pap : def.sounds.fire;
             if (soundId != null && !soundId.isEmpty()) {
@@ -312,11 +321,11 @@ public class WeaponImplementations {
         @Override
         public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
             if (!(attacker instanceof Player player) || player.level().isClientSide) return true;
-            
+
             float baseDamage = getWeaponDamage(stack);
             boolean isCritical = player.level().random.nextFloat() < getCriticalChance();
             float actualDamage = isCritical ? baseDamage * getCriticalMultiplier() : baseDamage;
-            
+
             java.util.concurrent.atomic.AtomicInteger entitiesHit = new java.util.concurrent.atomic.AtomicInteger(0);
 
             if (isCritical) {
@@ -383,10 +392,10 @@ public class WeaponImplementations {
         @Override
         public void onUseTick(Level level, LivingEntity ent, ItemStack stack, int count) {
             if (!(ent instanceof Player player) || level.isClientSide) return;
-            
+
             long currentTick = level.getGameTime();
             long lastDash = getOrCreateTag(stack).getLong(TAG_LAST_DASH_TICK);
-            
+
             if (currentTick - lastDash >= getDashCooldownTicks()) {
                 Vec3 lookVec = player.getViewVector(1.0f).normalize();
                 float dashDist = getDashDistance();
@@ -409,8 +418,8 @@ public class WeaponImplementations {
                     player.setDeltaMovement(dash.x, player.getDeltaMovement().y, dash.z);
                     player.hurtMarked = true;
                     player.fallDistance = 0;
-                    
                     level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0f, 1.0f);
+                    
                     getOrCreateTag(stack).putLong(TAG_LAST_DASH_TICK, currentTick);
                     this.hurtEnemy(stack, target, player);
                     player.getCooldowns().addCooldown(this, getDashCooldownTicks());
