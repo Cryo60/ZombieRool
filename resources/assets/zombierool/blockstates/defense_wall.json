@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "facing=north,has_mimic=false,permanently_open=false,stage=0": { "model": "zombierool:block/wall_stage0" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=0": { "model": "zombierool:block/wall_stage0", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=0": { "model": "zombierool:block/wall_stage0", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=0": { "model": "zombierool:block/wall_stage0", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=1": { "model": "zombierool:block/wall_stage1" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=1": { "model": "zombierool:block/wall_stage1", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=1": { "model": "zombierool:block/wall_stage1", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=1": { "model": "zombierool:block/wall_stage1", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=2": { "model": "zombierool:block/wall_stage2" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=2": { "model": "zombierool:block/wall_stage2", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=2": { "model": "zombierool:block/wall_stage2", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=2": { "model": "zombierool:block/wall_stage2", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=3": { "model": "zombierool:block/wall_stage3" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=3": { "model": "zombierool:block/wall_stage3", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=3": { "model": "zombierool:block/wall_stage3", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=3": { "model": "zombierool:block/wall_stage3", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=4": { "model": "zombierool:block/wall_stage4" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=4": { "model": "zombierool:block/wall_stage4", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=4": { "model": "zombierool:block/wall_stage4", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=4": { "model": "zombierool:block/wall_stage4", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=5": { "model": "zombierool:block/wall_stage5" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=5": { "model": "zombierool:block/wall_stage5", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=5": { "model": "zombierool:block/wall_stage5", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=5": { "model": "zombierool:block/wall_stage5", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=6": { "model": "zombierool:block/wall_stage6" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=6": { "model": "zombierool:block/wall_stage6", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=6": { "model": "zombierool:block/wall_stage6", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=6": { "model": "zombierool:block/wall_stage6", "y": 270 },
+
+    "facing=north,has_mimic=false,permanently_open=false,stage=7": { "model": "zombierool:block/wall_stage7" },
+    "facing=east,has_mimic=false,permanently_open=false,stage=7": { "model": "zombierool:block/wall_stage7", "y": 90 },
+    "facing=south,has_mimic=false,permanently_open=false,stage=7": { "model": "zombierool:block/wall_stage7", "y": 180 },
+    "facing=west,has_mimic=false,permanently_open=false,stage=7": { "model": "zombierool:block/wall_stage7", "y": 270 }
+  }
+}

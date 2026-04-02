@@ -14,10 +14,10 @@ import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.integration.TacZIntegration;
-
 import java.util.function.Supplier;
 
 public class C2SSecretConsoleCommandPacket {
+
     private final String command;
 
     public C2SSecretConsoleCommandPacket(String command) {
@@ -53,23 +53,25 @@ public class C2SSecretConsoleCommandPacket {
 
             try {
                 if (cmd.startsWith("lua ")) {
+                    WaveManager.setCheatsUsed(true); 
                     String code = cmd.substring(4);
                     String result = LuaScriptManager.executeString(code);
                     sendLog(player, result);
                 } 
                 else if (cmd.startsWith("points ")) {
+                    WaveManager.setCheatsUsed(true); 
                     int amount = Integer.parseInt(cmd.substring(7).trim());
                     PointManager.modifyScore(player, amount);
                     sendLog(player, "§aPoints updated by " + amount);
                 } 
-                // LA COMMANDE ZRF EST MAINTENANT PUREMENT CLIENT DANS SecretConsoleScreen.java,
-                // plus besoin de l'intercepter ici !
                 else if (cmd.startsWith("wave ")) {
+                    WaveManager.setCheatsUsed(true); 
                     int wave = Integer.parseInt(cmd.substring(5).trim());
                     WaveManager.forceSetWave(level, wave);
                     sendLog(player, "§aWave forced to " + wave);
                 } 
                 else if (cmd.equals("killall")) {
+                    WaveManager.setCheatsUsed(true); 
                     int count = 0;
                     for (net.minecraft.world.entity.Entity e : level.getAllEntities()) {
                         if (e instanceof me.cryo.zombierool.entity.ZombieEntity ||
@@ -83,6 +85,7 @@ public class C2SSecretConsoleCommandPacket {
                     sendLog(player, "§aKilled " + count + " active zombies.");
                 } 
                 else if (cmd.startsWith("weapon ")) {
+                    WaveManager.setCheatsUsed(true); 
                     String id = cmd.substring(7).trim();
                     net.minecraft.world.item.ItemStack weapon = WeaponFacade.createWeaponStack(id, false, player);
                     if (!weapon.isEmpty()) {
@@ -93,6 +96,7 @@ public class C2SSecretConsoleCommandPacket {
                     }
                 } 
                 else if (cmd.equals("god") || cmd.equals("noclip")) {
+                    WaveManager.setCheatsUsed(true); 
                     if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
                         player.setGameMode(GameType.SURVIVAL);
                         sendLog(player, "§aGamemode set to Survival.");
@@ -141,7 +145,6 @@ public class C2SSecretConsoleCommandPacket {
                 else {
                     sendLog(player, "§cUnknown command. Available: lua, points, wave, killall, weapon, god, noclip, reload scripts, reload weapons, zombies, tp_last");
                 }
-
             } catch (Exception e) {
                 sendLog(player, "§cCommand error: " + e.getMessage());
             }

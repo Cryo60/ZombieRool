@@ -11,6 +11,8 @@
     "zombierool:player_spawner",
     "zombierool:universal_spawner",
     "zombierool:traitor",
-    "zombierool:zombie_pass"
+    "zombierool:zombie_pass",
+	"zombierool:defense_wall",
+    "zombierool:defense_wall_dummy"
   ]
 }

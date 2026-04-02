@@ -17,15 +17,18 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+
 import me.cryo.zombierool.core.block.ZRSandbagBlock;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ZRBlocks {
 	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, ZombieroolMod.MODID);
 	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ZombieroolMod.MODID);
+
 	public static final List<ResourceLocation> ITEM_IDS = new ArrayList<>();
 	public static final List<RegistryObject<Block>> CUTOUT_BLOCKS = new ArrayList<>();
 
@@ -118,6 +121,7 @@ public class ZRBlocks {
 	    registerFamily("planks_yellow", SoundType.WOOD, false);
 	    registerFamily("old_planks", SoundType.WOOD, false);
 	    registerFamily("deco_planks", SoundType.WOOD, false);
+
 	    registerFamily("balsatic_stone", SoundType.STONE, false);
 	    registerFamily("brick_granite", SoundType.STONE, false);
 	    registerFamily("brick_iron", SoundType.STONE, false);
@@ -150,12 +154,15 @@ public class ZRBlocks {
 	    registerFamily("steel_slate", SoundType.METAL, false);
 	    registerFamily("tile_block", SoundType.STONE, false);
 	    registerFamily("whitebrick", SoundType.STONE, false);
+
 	    registerGlassFamily("glass_steel", SoundType.GLASS);
 	    registerGlassFamily("glass_tinted", SoundType.GLASS);
 	    registerGlassFamily("retro_glass", SoundType.GLASS);
+
 	    registerSimple("haunted_glass", SoundType.GLASS, true);
 	    registerSimple("not_haunted_glass", SoundType.GLASS, true);
 	    registerSimple("haunted_window", SoundType.GLASS, true);
+
 	    registerFamily("mesh", SoundType.METAL, true);
 	    registerFamily("black_coarsed_dirt", SoundType.GRAVEL, false);
 	    registerFamily("black_dirt", SoundType.GRAVEL, false);
@@ -172,6 +179,7 @@ public class ZRBlocks {
 	    registerFamily("sorched_grass", SoundType.GRASS, false);
 	    registerFamily("weird_grass", SoundType.GRASS, false);
 	    registerFamily("wet_dirt", SoundType.WET_GRASS, false);
+
 	    registerSimple("purplewallpaper", SoundType.WOOL, false);
 	    registerCarpet("soul_lichen", SoundType.VINE);
 	    registerDirectional("machine_block", SoundType.METAL);
@@ -183,8 +191,10 @@ public class ZRBlocks {
 	    registerSimple("suspicious_haunted_planks", SoundType.WOOD, false);
 	    registerSimple("raw_obscurium", SoundType.STONE, false);
 	    registerSimple("obscurium", SoundType.AMETHYST, false);
+
 	    registerBlock("iron_stairs", () -> new StairBlock(() -> Blocks.IRON_BLOCK.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
 	    registerBlock("iron_slabs", () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+
 	    registerCross("spider_web", SoundType.STONE, true, 0);
 	    registerCross("tiny_bones", SoundType.GRAVEL, true, 0);
 	    registerCross("tiny_candles", SoundType.GRAVEL, true, 12);
@@ -204,16 +214,14 @@ public class ZRBlocks {
         registerSimple("corrupted_flesh", SoundType.HONEY_BLOCK, false);
         registerSimple("vile_flesh", SoundType.HONEY_BLOCK, false);
         registerCarpet("scattered_documents", SoundType.WOOD);
-        
         RegistryObject<Block> barbedWire = registerBlock("barbed_wire", () -> new BarbedWireBlock(BlockBehaviour.Properties.of().sound(SoundType.METAL).strength(2.0f, 3600000.0f).noOcclusion()));
         CUTOUT_BLOCKS.add(barbedWire);
-
         registerFamily("fabric", SoundType.WOOL, false);
         registerFamily("asphalt", SoundType.STONE, false);
         registerFamily("asphalt2", SoundType.STONE, false);
         registerFamily("dungeon_stone", SoundType.STONE, false);
         registerFamily("dungeon_stone2", SoundType.STONE, false);
-        registerFamily("arctic_ice", SoundType.GLASS, true); // Apparence verre, mais solid collision, pas de glissement
+        registerFamily("arctic_ice", SoundType.GLASS, true); 
         registerFamily("hard_ice", SoundType.GLASS, true);
         registerFamily("crackeled_dirt", SoundType.GRAVEL, false);
         registerBlock("zr_lava", () -> new ZRDecorativeBlock(SoundType.STONE, ZRDecorativeBlock.ShapeType.FULL, false, false, 15));

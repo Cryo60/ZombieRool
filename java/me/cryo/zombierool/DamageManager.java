@@ -1,8 +1,8 @@
 package me.cryo.zombierool.core.manager;
+
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.S2CProgressChallengePacket;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem.PlayerStatsManager;
 import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.core.system.WeaponSystem;
@@ -34,6 +34,7 @@ import me.cryo.zombierool.api.IHeadshotWeapon;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public class DamageManager {
+
     public static final String HEADSHOT_TAG = "zombierool:is_headshot_damage";
     public static final String GUN_DAMAGE_TAG = "zombierool:damage_by_gun";
     public static final String HIT_ZONE_TAG = "zombierool:hit_zone";
@@ -69,14 +70,13 @@ public class DamageManager {
 
     public static String computeHitZone(LivingEntity entity, Vec3 hitPos) {
         boolean isCrawler = entity instanceof CrawlerEntity || entity instanceof CrawlerCorpse;
-        
         Vec3 entityCenter = entity.position().add(0, entity.getBbHeight() / 2.0, 0);
         Vec3 toHit = hitPos.subtract(entityCenter);
-        
+
         Vec3 forward = Vec3.directionFromRotation(0, entity.getYRot()).normalize();
         Vec3 up;
         double lengthReference;
-        
+
         if (isCrawler) {
             up = forward;
             lengthReference = entity.getBbWidth(); 
@@ -84,21 +84,21 @@ public class DamageManager {
             up = new Vec3(0, 1, 0); 
             lengthReference = entity.getBbHeight();
         }
-        
+
         double alongBody = toHit.dot(up);
-        
         double ratio = (alongBody + lengthReference / 2.0) / lengthReference;
         ratio = Math.max(0, Math.min(1, ratio));
-        
+
         Vec3 right = isCrawler ? forward.cross(new Vec3(0, 1, 0)).normalize() : forward.cross(up).normalize();
         double lateral = toHit.dot(right);
-        
+
         double armThreshold = entity.getBbWidth() * 0.22;
-        
+
         if (ratio > 0.70) return "head"; 
         if (ratio > 0.35 && Math.abs(lateral) > armThreshold)
             return lateral > 0 ? "right_arm" : "left_arm";
         if (ratio > 0.35) return "torso";
+        
         return "legs";
     }
 
@@ -108,7 +108,7 @@ public class DamageManager {
         if (isHeadshot) {
             float globalMultiplier = 2.0f; 
             float flatBonus = 0.0f; 
-            
+
             if (weapon != null) {
                 WeaponSystem.Definition def = WeaponFacade.getDefinition(weapon);
                 if (def != null && "SNIPER".equalsIgnoreCase(def.type)) {
@@ -127,7 +127,6 @@ public class DamageManager {
                     }
                 }
             }
-
             damage = (baseGunDamage + flatBonus) * globalMultiplier;
         }
 
@@ -183,7 +182,6 @@ public class DamageManager {
         }
 
         if (!isValidTarget(target)) return;
-
         Entity attackerEntity = source.getEntity();
         if (!(attackerEntity instanceof ServerPlayer player)) return;
 
@@ -195,9 +193,8 @@ public class DamageManager {
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide) return;
-
         LivingEntity target = event.getEntity();
-
+        
         if (target.getPersistentData().getBoolean("zr_death_processed")) return;
         target.getPersistentData().putBoolean("zr_death_processed", true);
 
@@ -211,22 +208,27 @@ public class DamageManager {
             boolean isGunDamage = target.getPersistentData().getBoolean(GUN_DAMAGE_TAG);
             boolean wasHeadshotHit = target.getPersistentData().getBoolean(HEADSHOT_TAG);
             boolean isExplosive = target.getPersistentData().getBoolean("zombierool:explosive_damage") || source.is(DamageTypes.EXPLOSION) || source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.ThrowableProjectile;
-
             String mobType = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(target.getType()).toString();
 
             if (me.cryo.zombierool.WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
                 PlayerStatsManager.recordKill(target, player);
-                CareerManager.progressChallenge(player, CareerManager.ChallengeType.KILLS, 1);
                 
+                if (!me.cryo.zombierool.WaveManager.areCheatsUsed()) {
+                    CareerManager.progressChallenge(player, CareerManager.ChallengeType.KILLS, 1);
+                }
+
                 if (wasHeadshotHit) {
                     PlayerStatsManager.recordHeadshot(player);
-                    CareerManager.progressChallenge(player, CareerManager.ChallengeType.HEADSHOTS, 1);
+                    if (!me.cryo.zombierool.WaveManager.areCheatsUsed()) {
+                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.HEADSHOTS, 1);
+                    }
                 }
-                if (isExplosive) {
+
+                if (isExplosive && !me.cryo.zombierool.WaveManager.areCheatsUsed()) {
                     CareerManager.progressChallenge(player, CareerManager.ChallengeType.GRENADE_KILLS, 1);
                 }
-                
-                if (isGunDamage) {
+
+                if (isGunDamage && !me.cryo.zombierool.WaveManager.areCheatsUsed()) {
                     String wId = WeaponFacade.getWeaponId(player.getMainHandItem());
                     if (wId != null && !wId.isEmpty()) {
                         wId = wId.replace("zombierool:", "");
@@ -262,7 +264,6 @@ public class DamageManager {
             }
 
             int points = 40; 
-
             if (isGunDamage) {
                 points = wasHeadshotHit ? 90 : 40; 
             } else if (isExplosive) {
@@ -272,6 +273,7 @@ public class DamageManager {
             }
 
             PointManager.modifyScore(player, points);
+
         } else {
             PlayerStatsManager.cleanupEntity(target.getId());
         }

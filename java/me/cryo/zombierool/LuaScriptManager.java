@@ -12,7 +12,9 @@ import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -223,6 +225,8 @@ public class LuaScriptManager {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!activeTimers.isEmpty()) {
+            List<LuaTimer> toExecute = new ArrayList<>();
+            
             Iterator<Map.Entry<String, LuaTimer>> iterator = activeTimers.entrySet().iterator();
             while (iterator.hasNext()) {
                 LuaTimer timer = iterator.next().getValue();
@@ -230,13 +234,17 @@ public class LuaScriptManager {
 
                 if (timer.remainingTicks <= 0) {
                     iterator.remove();
-                    try {
-                        if (timer.callback.isfunction()) {
-                            timer.callback.call();
-                        }
-                    } catch (Throwable t) {
-                        System.err.println("[ZombieRool Lua] Error executing timer " + timer.id + ": " + t.getMessage());
+                    toExecute.add(timer);
+                }
+            }
+
+            for (LuaTimer timer : toExecute) {
+                try {
+                    if (timer.callback.isfunction()) {
+                        timer.callback.call();
                     }
+                } catch (Throwable t) {
+                    System.err.println("[ZombieRool Lua] Error executing timer " + timer.id + ": " + t.getMessage());
                 }
             }
         }

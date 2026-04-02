@@ -148,9 +148,11 @@ public class ZombieroolAPI {
 
     public String getBlockState(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
-        BlockState state = level.getBlockState(pos);
-        return state.toString();
+        if (level.isLoaded(pos)) {
+            BlockState state = level.getBlockState(pos);
+            return state.toString();
+        }
+        return "minecraft:air";
     }
 
     public void setPlayerGameMode(String uuidStr, String modeStr) {
@@ -587,23 +589,27 @@ public class ZombieroolAPI {
         Block block = ForgeRegistries.BLOCKS.getValue(rl);
         if (block != null) {
             BlockPos pos = new BlockPos(x, y, z);
-            level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
-            level.setBlock(pos, block.defaultBlockState(), 3);
+            if (level.isLoaded(pos)) {
+                level.setBlock(pos, block.defaultBlockState(), 3);
+            }
         }
     }
     
     public String getBlock(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
-        BlockState state = level.getBlockState(pos);
-        ResourceLocation rl = ForgeRegistries.BLOCKS.getKey(state.getBlock());
-        return rl != null ? rl.toString() : "minecraft:air";
+        if (level.isLoaded(pos)) {
+            BlockState state = level.getBlockState(pos);
+            ResourceLocation rl = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+            return rl != null ? rl.toString() : "minecraft:air";
+        }
+        return "minecraft:air";
     }
 
     public void destroyBlock(int x, int y, int z, boolean dropItems) {
         BlockPos pos = new BlockPos(x, y, z);
-        level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
-        level.destroyBlock(pos, dropItems);
+        if (level.isLoaded(pos)) {
+            level.destroyBlock(pos, dropItems);
+        }
     }
 
     public void fillBlocks(int x1, int y1, int z1, int x2, int y2, int z2, String blockId) {
@@ -622,8 +628,9 @@ public class ZombieroolAPI {
                 for (int j = minY; j <= maxY; j++) {
                     for (int k = minZ; k <= maxZ; k++) {
                         BlockPos pos = new BlockPos(i, j, k);
-                        level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, net.minecraft.world.level.chunk.ChunkStatus.FULL, true);
-                        level.setBlock(pos, state, 3);
+                        if (level.isLoaded(pos)) {
+                            level.setBlock(pos, state, 3);
+                        }
                     }
                 }
             }

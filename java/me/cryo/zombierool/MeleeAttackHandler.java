@@ -1,4 +1,5 @@
 package me.cryo.zombierool.procedures;
+
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.manager.DamageManager;
@@ -8,8 +9,10 @@ import me.cryo.zombierool.network.S2CScreenShakePacket;
 import me.cryo.zombierool.network.packet.S2CSyncThirdPersonAnimPacket;
 import me.cryo.zombierool.client.ScreenShakeHandler;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.block.system.DefenseWallSystem;
 import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.scripting.LuaScriptManager;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -36,6 +39,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3f;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +68,20 @@ public class MeleeAttackHandler {
         BlockHitResult result = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
         if (result.getType() == HitResult.Type.BLOCK) {
             BlockState state = level.getBlockState(result.getBlockPos());
+            boolean passThrough = false;
+
             if (state.getBlock() instanceof DefenseDoorSystem.BaseDefenseDoor || state.getBlock() instanceof me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock) {
+                passThrough = true;
+            } else if (state.getBlock() instanceof DefenseWallSystem.DefenseWallBlock && state.getValue(DefenseWallSystem.DefenseWallBlock.STAGE) < 7) {
+                passThrough = true;
+            } else if (state.getBlock() instanceof DefenseWallSystem.DefenseWallDummyBlock && state.getValue(DefenseWallSystem.DefenseWallDummyBlock.STAGE) < 7) {
+                DefenseWallSystem.WallPart part = state.getValue(DefenseWallSystem.DefenseWallDummyBlock.PART);
+                if (part == DefenseWallSystem.WallPart.BOTTOM_CENTER || part == DefenseWallSystem.WallPart.TOP_CENTER) {
+                    passThrough = true;
+                }
+            }
+            
+            if (passThrough) {
                 Vec3 dir = end.subtract(start).normalize();
                 Vec3 newStart = result.getLocation().add(dir.scale(0.1));
                 if (newStart.distanceToSqr(end) < 0.01) return false;
@@ -79,13 +96,12 @@ public class MeleeAttackHandler {
 	    if (player.level().isClientSide()) {
 	        return;
 	    }
-
 	    long currentTime = player.level().getGameTime();
 	    if (COOLDOWN_MAP.containsKey(player.getUUID()) && currentTime - COOLDOWN_MAP.get(player.getUUID()) < COOLDOWN_TICKS) {
 	        return;
 	    }
 	    ServerLevel level = (ServerLevel) player.level();
-        
+
         player.swing(InteractionHand.MAIN_HAND, true);
         NetworkHandler.INSTANCE.send(
             PacketDistributor.TRACKING_ENTITY.with(() -> player),
@@ -95,13 +111,12 @@ public class MeleeAttackHandler {
 	    Vec3 lookVec = player.getLookAngle();
 	    Vec3 startVec = player.getEyePosition(1.0F);
 	    Vec3 endVec = startVec.add(lookVec.scale(ATTACK_RANGE));
-
 	    LivingEntity targetEntity = null;
+
         AABB searchBox = player.getBoundingBox().expandTowards(lookVec.scale(ATTACK_RANGE)).inflate(1.0);
         List<LivingEntity> entitiesInArea = level.getEntitiesOfClass(LivingEntity.class, searchBox,
                 entity -> entity != player && !entity.isSpectator() && !entity.isDeadOrDying() && !(entity instanceof Player)
         );
-
         double minDistance = Double.MAX_VALUE;
         for (LivingEntity e : entitiesInArea) {
             AABB bbox = e.getBoundingBox().inflate(0.3);
@@ -121,35 +136,30 @@ public class MeleeAttackHandler {
 
 	    if (targetEntity != null) {
             strikePos = targetEntity.position().add(0, targetEntity.getBbHeight() / 2, 0);
-
             targetEntity.getPersistentData().remove(DamageManager.GUN_DAMAGE_TAG);
             targetEntity.getPersistentData().remove(DamageManager.HEADSHOT_TAG);
             targetEntity.getPersistentData().remove("zombierool:explosive_damage");
-
+            
             boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             float multiplier = hasBowie ? 3.0f : 1.0f;
 	        float finalDamage = 6.0f * multiplier;
-
             if (BonusManager.isInstaKillActive(player)) {
                 finalDamage = 100000f;
             }
 
 	        DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage);
-
 	        ResourceLocation slashSound = hasBowie ? new ResourceLocation("zombierool", "bowie_stab") : KNIFE_SLASH_BODY_SOUND;
 	        playLocalSound(player, slashSound, 1.0f, 1.0f);
-
 	        spawnAttackParticles(level, strikePos, lookVec);
+
 	        if (player instanceof ServerPlayer serverPlayer) {
 	            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CScreenShakePacket(10, 0.3f, ScreenShakeHandler.ShakeType.MELEE));
 	        }
-	        
 	        PlayerVoiceManager.playMeleeAttackSound(player, level);
-
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
+
 	    } else {
             BlockHitResult blockHit = level.clip(new ClipContext(startVec, endVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            
             if (blockHit.getType() == HitResult.Type.BLOCK) {
                 BlockState state = level.getBlockState(blockHit.getBlockPos());
                 BlockPos bPos = blockHit.getBlockPos();
@@ -162,7 +172,6 @@ public class MeleeAttackHandler {
                     spawnBlockHitParticles(level, blockHit.getLocation());
                 }
             }
-
 	        PlayerVoiceManager.playMeleeAttackSound(player, level);
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
 	    }

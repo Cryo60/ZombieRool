@@ -7,10 +7,15 @@ import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CSyncDynamicSkinPacket;
 import me.cryo.zombierool.network.packet.S2CSyncWeatherPacket;
 import me.cryo.zombierool.network.packet.S2CSyncBowieKnifePacket;
+import me.cryo.zombierool.network.packet.S2CSetEyeColorPacket;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.WorldConfig;
-
+import me.cryo.zombierool.career.CareerManager;
+import me.cryo.zombierool.core.system.WeaponFacade;
+import me.cryo.zombierool.util.PlayerVoiceManager;
+import me.cryo.zombierool.core.manager.GoreManager;
+import me.cryo.zombierool.PointManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -40,13 +45,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.ChatFormatting;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.world.entity.AreaEffectCloud;
 
 @Mod.EventBusSubscriber(modid = me.cryo.zombierool.ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ServerEventHandler {
+
     public static final String OBJECTIVE_ID = "zr_score";
     private static final Queue<ServerPlayer> playersToUpdateFog = new ConcurrentLinkedQueue<>();
 
@@ -68,33 +73,15 @@ public class ServerEventHandler {
 
             WorldConfig config = WorldConfig.get(serverLevel);
             config.refreshAllChunkTickets(serverLevel);
-            
+            config.loadFromJson(serverLevel);
+
             try {
                 java.io.File worldDir = serverLevel.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
                 java.io.File mapJson = new java.io.File(worldDir, "zombierool_map.json");
                 if (mapJson.exists()) {
                     try (java.io.FileReader reader = new java.io.FileReader(mapJson)) {
                         com.google.gson.JsonObject json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
-                        
                         if (json.has("id")) config.setMapId(json.get("id").getAsString());
-                        
-                        if (json.has("resource_pack")) {
-                            com.google.gson.JsonObject rp = json.getAsJsonObject("resource_pack");
-                            if (rp.has("url")) config.setResourcePackUrl(rp.get("url").getAsString());
-                            if (rp.has("name")) config.setResourcePackName(rp.get("name").getAsString());
-                        } else {
-                            if (json.has("resource_pack_url")) config.setResourcePackUrl(json.get("resource_pack_url").getAsString());
-                            if (json.has("resource_pack_name")) config.setResourcePackName(json.get("resource_pack_name").getAsString());
-                        }
-
-                        if (json.has("overrides")) {
-                            com.google.gson.JsonObject overrides = json.getAsJsonObject("overrides");
-                            if (overrides.has("spooky_ambience")) config.setSpookyAmbience(overrides.get("spooky_ambience").getAsBoolean());
-                            if (overrides.has("force_halloween")) config.setForceHalloween(overrides.get("force_halloween").getAsBoolean());
-                        } else {
-                            if (json.has("spooky_ambience")) config.setSpookyAmbience(json.get("spooky_ambience").getAsBoolean());
-                            if (json.has("force_halloween")) config.setForceHalloween(json.get("force_halloween").getAsBoolean());
-                        }
                     }
                 }
             } catch (Exception e) {
@@ -131,13 +118,11 @@ public class ServerEventHandler {
         }
 
         player.getPersistentData().remove("zr_has_bowie_knife");
-
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
             cap.resetStats();
             cap.resetPerkPurchases();
             cap.setLethalType(worldConfig.getStartingLethal());
             cap.setLethalCount(5);
-
             if (WaveManager.isGameRunning()) {
                 cap.setPoints(0);
                 player.setGameMode(GameType.SPECTATOR);
@@ -146,13 +131,11 @@ public class ServerEventHandler {
             } else {
                 cap.setPoints(500);
             }
-
             var safeObjective = scoreboard.getObjective(OBJECTIVE_ID);
             if (safeObjective != null) {
                 var score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), safeObjective);
                 score.setScore(cap.getPoints());
             }
-
             cap.sync(player);
         });
 
@@ -163,11 +146,12 @@ public class ServerEventHandler {
         if (musicPreset == null || musicPreset.isEmpty()) musicPreset = "default";
         player.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:" + musicPreset));
 
+        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CSetEyeColorPacket(worldConfig.getEyeColorPreset()));
+
         boolean particlesEnabled = worldConfig.areParticlesEnabled();
         ResourceLocation particleTypeId = worldConfig.getParticleTypeId();
         String particleDensity = worldConfig.getParticleDensity();
         String particleMode = worldConfig.getParticleMode();
-
         if (particlesEnabled && particleTypeId != null) {
             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player),
                     new S2CSyncWeatherPacket(true, particleTypeId.toString(), particleDensity, particleMode));
@@ -185,7 +169,6 @@ public class ServerEventHandler {
                     new S2CSyncDynamicSkinPacket(mobType, skinId, data));
             }
         }
-        
         DynamicResourceManager.sendAudioToPlayer(player);
     }
 
@@ -238,7 +221,6 @@ public class ServerEventHandler {
         for (ServerLevel level : event.getServer().getAllLevels()) {
             WorldConfig worldConfig = WorldConfig.get(level);
             String dayNightMode = worldConfig.getDayNightMode();
-
             switch (dayNightMode) {
                 case "day" -> level.setDayTime(6000);
                 case "night" -> level.setDayTime(18000);
@@ -252,7 +234,6 @@ public class ServerEventHandler {
             if (level.getGameTime() % 40 == 0) {
                 List<Entity> entities = new ArrayList<>();
                 level.getAllEntities().forEach(entities::add);
-
                 for (Entity entity : entities) {
                     if (shouldDespawn(entity)) {
                         entity.remove(Entity.RemovalReason.DISCARDED);
@@ -303,7 +284,6 @@ public class ServerEventHandler {
 
             boolean currentBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             boolean lastBowie = player.getPersistentData().getBoolean("zr_last_synced_bowie");
-
             if (currentBowie != lastBowie) {
                 player.getPersistentData().putBoolean("zr_last_synced_bowie", currentBowie);
                 NetworkHandler.INSTANCE.send(
@@ -319,7 +299,6 @@ public class ServerEventHandler {
                 if (!slot0.isEmpty()) {
                     player.getInventory().setItem(0, ItemStack.EMPTY);
                     boolean added = false;
-
                     if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(slot0)) {
                         for (int w = 1; w <= limit; w++) {
                             if (!me.cryo.zombierool.core.system.WeaponFacade.isWeapon(player.getInventory().getItem(w))) {
@@ -436,7 +415,6 @@ public class ServerEventHandler {
 
             long lastShot = me.cryo.zombierool.util.PlayerVoiceManager.getLastShotTime(player);
             long lastSeen = me.cryo.zombierool.util.PlayerVoiceManager.getLastZombieSeenTime(player);
-
             if (now - lastShot > 600 && now - lastSeen > 600) {
                 me.cryo.zombierool.util.PlayerVoiceManager.playRandomChatter(player, level);
                 me.cryo.zombierool.util.PlayerVoiceManager.onPlayerShoot(player);
@@ -486,7 +464,7 @@ public class ServerEventHandler {
     private static void updateFogForPlayer(ServerPlayer player) {
         WorldConfig worldConfig = WorldConfig.get(player.serverLevel());
         String clientFogPreset;
-        
+
         if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE
                 || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
             clientFogPreset = "none";
@@ -505,7 +483,6 @@ public class ServerEventHandler {
         if (entity == null || !entity.isAlive() || entity.isRemoved()) {
             return false;
         }
-        
         if (entity instanceof Player
                 || entity instanceof net.minecraft.world.entity.decoration.ArmorStand
                 || entity instanceof net.minecraft.world.entity.vehicle.AbstractMinecart
@@ -521,7 +498,7 @@ public class ServerEventHandler {
 
         if (entity.level() instanceof ServerLevel level) {
             WorldConfig config = WorldConfig.get(level);
-            
+
             if (entity instanceof ItemEntity itemEntity) {
                 ResourceLocation rl = ForgeRegistries.ITEMS.getKey(itemEntity.getItem().getItem());
                 if (rl != null && config.getAllowedItems().contains(rl.toString())) {
@@ -534,10 +511,8 @@ public class ServerEventHandler {
             if (rl != null && config.getAllowedMobs().contains(rl.toString())) {
                 return false;
             }
-            
             return true;
         }
-        
         return false;
     }
 
@@ -550,6 +525,32 @@ public class ServerEventHandler {
                     PacketDistributor.PLAYER.with(() -> tracker),
                     new S2CSyncBowieKnifePacket(targetPlayer.getId(), true)
                 );
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity().level().isClientSide) return;
+        net.minecraft.world.entity.LivingEntity target = event.getEntity();
+        if (target.getPersistentData().getBoolean("zr_death_processed")) return;
+        
+        Entity attackerEntity = event.getSource().getEntity();
+        if (attackerEntity instanceof ServerPlayer player) {
+            boolean isGunDamage = target.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
+            boolean wasHeadshotHit = target.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
+
+            if (isGunDamage && !me.cryo.zombierool.WaveManager.areCheatsUsed()) {
+                String wId = WeaponFacade.getWeaponId(player.getMainHandItem());
+                if (wId != null && !wId.isEmpty()) {
+                    wId = wId.replace("zombierool:", "");
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new me.cryo.zombierool.network.packet.S2CProgressWeaponStatPacket(wId, 1, wasHeadshotHit ? 1 : 0, 0));
+                    
+                    CareerManager.progressChallenge(player, CareerManager.ChallengeType.WEAPON_KILLS, 1, wId);
+                    if (wasHeadshotHit) {
+                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.WEAPON_HEADSHOTS, 1, wId);
+                    }
+                }
             }
         }
     }

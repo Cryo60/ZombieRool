@@ -1,5 +1,4 @@
 package me.cryo.zombierool.entity;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -47,6 +46,7 @@ import org.joml.Vector3f;
 
 public class ZombieEntity extends AbstractZombieRoolEntity {
     public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
+    
     private int ambientSoundCooldown = 0;
     private double baseSpeed = 0.23;
     private static final Random STATIC_RANDOM = new Random();
@@ -119,18 +119,14 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     public void makeCrawler() {
         if (isCrawler()) return;
-
         GoreManager.triggerLegsExplosion(this);
         this.setHealth(Math.min(this.getHealth(), 5.0f));
         this.setSuperSprinter(false);
-
         boolean isFast = this.random.nextFloat() < 0.35f;
         this.setFastCrawler(isFast);
-
         if (this.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
             this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(isFast ? 0.20 : 0.12);
         }
-
         this.refreshDimensions();
     }
 
@@ -138,9 +134,9 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     public EntityDimensions getDimensions(Pose pose) {
         float scale = getScale();
         if (isCrawler()) {
-            return EntityDimensions.fixed(0.6f, 0.8f).scale(scale); 
+            return EntityDimensions.fixed(0.5f, 0.8f).scale(scale); 
         }
-        return EntityDimensions.fixed(0.6f, 1.95f).scale(scale); 
+        return EntityDimensions.fixed(0.5f, 1.95f).scale(scale); 
     }
 
     @Override
@@ -158,11 +154,10 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     private void updateHalloweenLight() {
         if (!hasHalloweenLight()) return;
         if (this.level().isClientSide) return;
-
         lightUpdateTimer++;
         if (lightUpdateTimer < 10) return;
         lightUpdateTimer = 0;
-
+        
         if (this.level() instanceof ServerLevel serverLevel) {
             serverLevel.sendParticles(
                 net.minecraft.core.particles.ParticleTypes.FLAME,
@@ -173,7 +168,6 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 0.15, 0.1, 0.15,
                 0.001
             );
-            
             if (this.random.nextFloat() < 0.3f) {
                 serverLevel.sendParticles(
                     net.minecraft.core.particles.ParticleTypes.LAVA,
@@ -256,14 +250,12 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         
         if (flag && !this.level().isClientSide) {
             SoundEvent attackSound;
-            
             if (isCrawler()) {
                 attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_attack"));
             } else {
                 int idx = 1 + this.random.nextInt(16);
                 attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
             }
-
             if (attackSound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), attackSound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }

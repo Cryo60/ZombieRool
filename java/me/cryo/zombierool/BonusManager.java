@@ -52,7 +52,6 @@ import java.util.stream.StreamSupport;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class BonusManager {
-
     private static final Random RANDOM = new Random();
     private static final Gson GSON = new GsonBuilder().setLenient().create();
 
@@ -63,34 +62,29 @@ public class BonusManager {
     private static final Map<UUID, Integer> DOUBLE_POINTS_ACTIVE_TICKS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ZOMBIE_BLOOD_ACTIVE_TICKS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ON_THE_HOUSE_OVERRIDE_COUNT = new ConcurrentHashMap<>();
-
     private static final int MAX_ON_THE_HOUSE_OVERRIDES = 2; 
+
     private static final int BONUS_LIFESPAN_TICKS = 20 * 15; 
     private static final int LOOP_SOUND_INTERVAL_TICKS = 20;
 
     public static boolean bonusSpawnDisabledByNuke = false;
     private static long nukeSpawnDisableEndTime = 0;
-    
+
     private static final Queue<NukeSoundEvent> NUKE_SOUND_QUEUE = new LinkedList<>();
 
     public static final SoundEvent POWER_UP_GRAB_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "power_up_grab"));
     public static final SoundEvent POWER_UP_LOOP_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "power_up_loop"));
-
     public static final SoundEvent CARP_END_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "carp_end"));
     public static final SoundEvent ANN_CARPENTER_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ann_carpenter"));
     public static final SoundEvent CARP_LOOP_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "carp_loop"));
-    
     public static final SoundEvent DOUBLE_POINT_END_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "double_point_end"));
     public static final SoundEvent DOUBLE_POINT_LOOP_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "double_point_loop"));
     public static final SoundEvent ANN_DOUBLEPOINTS_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ann_doublepoints"));
-
     public static final SoundEvent INSTA_KILL_END_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "insta_kill_end"));
     public static final SoundEvent INSTA_KILL_LOOP_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "insta_kill_loop"));
     public static final SoundEvent ANN_INSTAKILL_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ann_instakill"));
-
     public static final SoundEvent ANN_MAXAMMO_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ann_maxammo"));
     public static final SoundEvent FULL_AMMO_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "full_ammo"));
-
     public static final SoundEvent ANN_NUKE_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ann_nuke"));
     public static final SoundEvent NUKE_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "nuke"));
 
@@ -202,7 +196,6 @@ public class BonusManager {
                         gun.setDurability(stack, gun.getMaxDurability(stack));
                     }
                 }
-                
                 WeaponFacade.refillAllTaczAmmo(targetPlayer);
 
                 targetPlayer.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
@@ -218,7 +211,7 @@ public class BonusManager {
 
         ACTIONS.put("nuke", (player, level, pos, bonus) -> {
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(ANN_NUKE_SOUND.getLocation(), 1.0f, 1.0f));
-            
+
             int numNukes = RANDOM.nextInt(4) + 4; 
             long currentScheduleTime = level.getGameTime();
 
@@ -266,23 +259,24 @@ public class BonusManager {
         ACTIONS.put("carpenter", (player, level, pos, bonus) -> {
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(ANN_CARPENTER_SOUND.getLocation(), 1.0f, 1.0f));
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(CARP_LOOP_SOUND.getLocation(), 1.0f, 1.0f));
-            
             for (ServerPlayer targetPlayer : level.getServer().getPlayerList().getPlayers()) {
                 PointManager.modifyScore(targetPlayer, 200);
                 targetPlayer.sendSystemMessage(Component.translatable("message.zombierool.bonus.carpenter").withStyle(ChatFormatting.GREEN));
             }
-            
             int searchRadius = 100;
             for (int x = (int)pos.x - searchRadius; x <= (int)pos.x + searchRadius; x++) {
                 for (int y = (int)pos.y - searchRadius; y <= (int)pos.y + searchRadius; y++) {
                     for (int z = (int)pos.z - searchRadius; z <= (int)pos.z + searchRadius; z++) {
                         BlockPos currentBlockPos = new BlockPos(x, y, z);
                         net.minecraft.world.level.block.state.BlockState blockState = level.getBlockState(currentBlockPos);
-                        
                         if (blockState.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) {
                             DefenseDoorSystem.DefenseDoorBlock defenseDoor = (DefenseDoorSystem.DefenseDoorBlock) blockState.getBlock();
                             if (blockState.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE) < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
                                 defenseDoor.updateStage(level, currentBlockPos, DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE);
+                            }
+                        } else if (blockState.getBlock() instanceof me.cryo.zombierool.block.system.DefenseWallSystem.DefenseWallBlock defenseWall) {
+                            if (blockState.getValue(me.cryo.zombierool.block.system.DefenseWallSystem.DefenseWallBlock.STAGE) < 7) {
+                                defenseWall.updateStage(level, currentBlockPos, 7);
                             }
                         }
                     }
@@ -324,7 +318,7 @@ public class BonusManager {
 
                 if (!unownedPerks.isEmpty()) {
                     PerksManager.Perk chosenPerk = unownedPerks.get(RANDOM.nextInt(unownedPerks.size()));
-
+                    
                     if (currentPerkCount >= PerksManager.MAX_PERKS_LIMIT) {
                         ON_THE_HOUSE_OVERRIDE_COUNT.put(player.getUUID(), currentOverrides + 1);
                         player.sendSystemMessage(Component.translatable("message.zombierool.bonus.on_the_house.bypassed", chosenPerk.getName()).withStyle(ChatFormatting.GREEN));
@@ -333,7 +327,7 @@ public class BonusManager {
                     } else {
                         player.sendSystemMessage(Component.translatable("message.zombierool.bonus.on_the_house.received", chosenPerk.getName()).withStyle(ChatFormatting.GREEN));
                     }
-
+                    
                     chosenPerk.applyEffect(player);
                     PerksManager.incrementPerkPurchases(chosenPerk.getId(), player);
                 } else {
@@ -349,8 +343,8 @@ public class BonusManager {
 
     public static void loadBonuses() {
         ALL_BONUSES.clear();
+
         String[] builtinBonuses = {"max_ammo", "nuke", "insta_kill", "double_points", "carpenter", "gold_rush", "zombie_blood", "wish", "on_the_house"};
-        
         for (String bonusId : builtinBonuses) {
             String path = "data/zombierool/gameplay/bonuses/" + bonusId + ".json";
             try (InputStream stream = BonusManager.class.getClassLoader().getResourceAsStream(path)) {
@@ -389,7 +383,6 @@ public class BonusManager {
         
         Map<Bonus, Double> effectiveChances = new ConcurrentHashMap<>();
         double totalChance = 0;
-
         double vultureMultiplier = 3.0; 
         boolean hasVulturePerk = player != null && player.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_VULTURE.get());
 
@@ -414,21 +407,21 @@ public class BonusManager {
         double cumulativeChance = 0;
         for (Bonus bonus : ALL_BONUSES.values()) {
             if (!effectiveChances.containsKey(bonus)) continue;
+            
             cumulativeChance += effectiveChances.get(bonus);
             if (roll <= cumulativeChance) {
                 return bonus;
             }
         }
-
         return null;
     }
 
     public static void spawnBonus(Bonus bonus, ServerLevel level, Vec3 pos) {
         if (bonus == null) return;
-        
+
         boolean bonusTypeAlreadyActive = ACTIVE_BONUSES_IN_WORLD.values().stream()
                 .anyMatch(activeBonus -> activeBonus.bonus.id.equals(bonus.id));
-
+        
         if (bonusTypeAlreadyActive) {
             return;
         }
@@ -439,7 +432,6 @@ public class BonusManager {
 
     static void collectBonus(Bonus bonus, Player player, ServerLevel level, Vec3 pos, UUID bonusId) {
         ACTIVE_BONUSES_IN_WORLD.remove(bonusId);
-        
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(POWER_UP_GRAB_SOUND.getLocation(), 1.0f, 1.0f));
 
         BonusAction action = ACTIONS.get(bonus.action_id);
@@ -508,7 +500,7 @@ public class BonusManager {
                     }
                 }
             }
-
+            
             Iterator<Map.Entry<UUID, Integer>> zombieBloodIterator = ZOMBIE_BLOOD_ACTIVE_TICKS.entrySet().iterator();
             while (zombieBloodIterator.hasNext()) {
                 Map.Entry<UUID, Integer> entry = zombieBloodIterator.next();
@@ -532,11 +524,10 @@ public class BonusManager {
                         zombieBloodIterator.remove();
                     } else { 
                         ZOMBIE_BLOOD_ACTIVE_TICKS.put(playerId, ticks - 1);
-                        
                         if (ticks % 100 == 0) {
                             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), 
                                 new S2CPlayGlobalSoundPacket(ZombieroolModSounds.ZB_LOOP.get().getLocation(), 0.3f, 1.0f));
-                            
+                                
                             net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(16.0);
                             serverLevel.getEntitiesOfClass(ServerPlayer.class, box, p -> p != player).forEach(p -> {
                                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), 
@@ -594,7 +585,7 @@ public class BonusManager {
             }
         }
     }
-
+    
     private static void spawnContinuousBonusParticles(ServerLevel level, Vec3 pos, Bonus bonus) {
         int count = 2;
         double offset = 0.3;

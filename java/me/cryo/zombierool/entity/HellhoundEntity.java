@@ -54,7 +54,6 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     private boolean spawnInitialized = false;
 
     public UUID assignedTarget = null;
-
     public static final EntityType<HellhoundEntity> TYPE = ZombieroolModEntities.HELLHOUND.get();
 
     private static final EntityDataAccessor<Boolean> REVEALED = SynchedEntityData.defineId(
@@ -86,7 +85,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return EntityDimensions.fixed(0.85F, 1.1F); // Elargi pour englober la tête et le corps du loup
+        return EntityDimensions.fixed(0.5F, 1.1F); 
     }
 
     @Override
@@ -123,10 +122,10 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
                 return canUse(); 
             }
         });
-        
+
         this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false) {
             private int pathRecalcDelay = 0;
-
+            
             @Override
             public boolean canUse() {
                 return HellhoundEntity.this.isRevealedClient() && super.canUse();
@@ -185,7 +184,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     @Override
     public boolean doHurtTarget(Entity target) {
         if (!this.isRevealedClient()) return false;
-
+        
         boolean flag = target.hurt(this.damageSources().mobAttack(this), 1.0f);
         if (flag) {
             this.playSound(ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:hellhound_bite")), 1.0f, 1.0f);
@@ -196,7 +195,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (!this.isRevealedClient()) return false;
-        
+
         if (source.is(DamageTypes.IN_FIRE) ||
             source.is(DamageTypes.FALL) ||
             source.is(DamageTypes.DROWN) ||
@@ -251,7 +250,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
                 return; 
             }
         }
-
+        
         List<ServerPlayer> validPlayers = serverLevel.getServer().getPlayerList().getPlayers().stream()
             .filter(p -> p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE))
             .collect(Collectors.toList());
@@ -270,7 +269,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             ServerPlayer chosen = validPlayers.stream()
                 .min(Comparator.comparingInt(p -> targetCounts.get(p.getUUID())))
                 .orElse(validPlayers.get(this.random.nextInt(validPlayers.size())));
-
+            
             assignedTarget = chosen.getUUID();
         } else {
             assignedTarget = null;
@@ -293,12 +292,15 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
         if (!spawnInitialized && !this.level().isClientSide()) {
             spawnInitialized = true;
+            
             if (WorldConfig.get((ServerLevel)this.level()).isHellhoundFireVariant() && this.random.nextInt(4) == 0) {
                 isFireVariant = true;
             }
+
             this.setInvisible(true);
             this.entityData.set(REVEALED, false);
             spawnTimer = 40;
+
             this.level().playSound(
                 null, this.blockPosition(),
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_prespawn")),
@@ -314,13 +316,14 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
         if (!this.level().isClientSide() && spawnInitialized && !this.entityData.get(REVEALED)) {
             this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
-
+            
             if (spawnTimer-- <= 0) {
                 this.setInvisible(false);
                 this.entityData.set(REVEALED, true);
                 if (isFireVariant) {
                     this.setSecondsOnFire(15);
                 }
+                
                 this.level().playSound(
                     null, this.blockPosition(),
                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_strike")),

@@ -11,20 +11,28 @@ import java.util.function.Supplier;
 public class S2CProgressChallengePacket {
     private final String type;
     private final int amount;
+    private final String context;
 
-    public S2CProgressChallengePacket(String type, int amount) {
+    public S2CProgressChallengePacket(String type, int amount, String context) {
         this.type = type;
         this.amount = amount;
+        this.context = context != null ? context : "";
+    }
+
+    public S2CProgressChallengePacket(String type, int amount) {
+        this(type, amount, "");
     }
 
     public S2CProgressChallengePacket(FriendlyByteBuf buf) {
         this.type = buf.readUtf();
         this.amount = buf.readInt();
+        this.context = buf.readUtf();
     }
 
     public static void encode(S2CProgressChallengePacket msg, FriendlyByteBuf buf) {
         buf.writeUtf(msg.type);
         buf.writeInt(msg.amount);
+        buf.writeUtf(msg.context);
     }
 
     public static S2CProgressChallengePacket decode(FriendlyByteBuf buf) {
@@ -34,7 +42,7 @@ public class S2CProgressChallengePacket {
     public static void handle(S2CProgressChallengePacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                LocalCareerManager.progressChallenge(LocalCareerManager.ChallengeType.valueOf(msg.type), msg.amount);
+                LocalCareerManager.progressChallenge(LocalCareerManager.ChallengeType.valueOf(msg.type), msg.amount, msg.context);
             });
         });
         ctx.get().setPacketHandled(true);

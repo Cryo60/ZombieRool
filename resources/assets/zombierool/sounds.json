@@ -4914,5 +4914,49 @@
         "stream": false
       }
     ]
+  },
+  "rock_slam": {
+    "sounds": [
+      {
+        "name": "zombierool:imp_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:imp_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:imp_02",
+        "stream": false
+      },
+      {
+        "name": "zombierool:imp_03",
+        "stream": false
+      }
+    ]
+  },
+  "repairing_rock": {
+    "sounds": [
+      {
+        "name": "zombierool:repair_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:repair_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:repair_02",
+        "stream": false
+      }
+    ]
+  },
+  "repairing_plank": {
+    "sounds": [
+      {
+        "name": "zombierool:board_repair_00",
+        "stream": false
+      }
+    ]
   }
 }

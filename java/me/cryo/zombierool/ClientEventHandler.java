@@ -13,7 +13,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.client.event.InputEvent;
@@ -21,6 +20,7 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import org.lwjgl.glfw.GLFW;
 
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.block.system.DefenseWallSystem;
 import me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlock;
 import me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlockEntity;
 import me.cryo.zombierool.core.system.WeaponFacade;
@@ -42,13 +42,14 @@ import me.cryo.zombierool.network.packet.C2SSyncEquippedCamosPacket;
 import me.cryo.zombierool.network.packet.C2SSyncEquippedSkinsPacket;
 import me.cryo.zombierool.configuration.ZRClientConfig;
 import me.cryo.zombierool.client.career.LocalCareerManager;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientEventHandler {
-
     private static boolean lastIsCreative = false;
     private static boolean wallPurchaseKeyWasDown = false;
     private static final double WALL_PURCHASE_MAX_DIST = 2.5;
@@ -81,13 +82,16 @@ public class ClientEventHandler {
     public static void onMouseScroll(net.minecraftforge.client.event.InputEvent.MouseScrollingEvent event) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
+
         if (player != null && me.cryo.zombierool.WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
             double delta = event.getScrollDelta();
             if (delta != 0) {
                 event.setCanceled(true); 
+                
                 int dir = delta > 0 ? -1 : 1;
                 int sel = player.getInventory().selected;
                 int limit = WeaponFacade.getWeaponLimit(player);
+                
                 List<Integer> validSlots = new ArrayList<>();
                 validSlots.add(0); 
                 for (int j = 1; j <= limit; j++) validSlots.add(j); 
@@ -96,12 +100,16 @@ public class ClientEventHandler {
                         validSlots.add(j);
                     }
                 }
+                
                 int currentIndex = validSlots.indexOf(sel);
                 if (currentIndex == -1) currentIndex = 0;
+                
                 int nextIndex = (currentIndex + dir) % validSlots.size();
                 if (nextIndex < 0) nextIndex += validSlots.size();
+                
                 int nextSlot = validSlots.get(nextIndex);
                 player.getInventory().selected = nextSlot;
+                
                 if (mc.getConnection() != null) {
                     mc.getConnection().send(new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(nextSlot));
                 }
@@ -112,6 +120,7 @@ public class ClientEventHandler {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
 
@@ -171,31 +180,43 @@ public class ClientEventHandler {
                 }
             }
         }
-
         if (!isFDown) {
             wallPurchaseKeyWasDown = false;
         }
 
         if (isFDown && !KeyInputHandler.isLocalPlayerDown) {
-            BlockPos doorPos = DefenseDoorSystem.DefenseDoorBlock.getDoorInRepairZone(mc.level, player.blockPosition());
-            if (doorPos != null) {
-                BlockState state = mc.level.getBlockState(doorPos);
-                if (state.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) {
-                    int currentStage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE);
-                    boolean isPermOpen = state.getValue(DefenseDoorSystem.DefenseDoorBlock.PERMANENTLY_OPEN);
-                    if (!isPermOpen && currentStage < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
-                        long now = System.currentTimeMillis();
-                        boolean hasSpeedCola = player.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get());
-                        long effectiveCooldown = (long) (BASE_REPAIR_COOLDOWN * (hasSpeedCola ? SPEED_COLA_REPAIR_MULTIPLIER : 1.0));
+            BlockPos targetPos = DefenseDoorSystem.DefenseDoorBlock.getDoorInRepairZone(mc.level, player.blockPosition());
+            boolean isWall = false;
 
-                        if (lastRepairTime == 0 || now - lastRepairTime >= effectiveCooldown) {
-                            lastRepairTime = now;
-                            NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(doorPos, InteractionType.REPAIR_BARRICADE));
+            if (targetPos == null) {
+                targetPos = DefenseWallSystem.getWallInRepairZone(mc.level, player.blockPosition());
+                isWall = true;
+            }
+
+            if (targetPos != null) {
+                BlockState state = mc.level.getBlockState(targetPos);
+                int currentStage = isWall ? state.getValue(DefenseWallSystem.DefenseWallBlock.STAGE) : state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE);
+                int maxStage = isWall ? 7 : DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE;
+                boolean isPermOpen = isWall ? state.getValue(DefenseWallSystem.DefenseWallBlock.PERMANENTLY_OPEN) : state.getValue(DefenseDoorSystem.DefenseDoorBlock.PERMANENTLY_OPEN);
+
+                if (!isPermOpen && currentStage < maxStage) {
+                    long now = System.currentTimeMillis();
+                    boolean hasSpeedCola = player.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get());
+                    long effectiveCooldown = (long) (BASE_REPAIR_COOLDOWN * (hasSpeedCola ? SPEED_COLA_REPAIR_MULTIPLIER : 1.0));
+
+                    if (lastRepairTime == 0 || now - lastRepairTime >= effectiveCooldown) {
+                        lastRepairTime = now;
+                        NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(targetPos, InteractionType.REPAIR_BARRICADE));
+                    }
+
+                    if (now - lastRepairSoundTime >= REPAIR_SOUND_INTERVAL) {
+                        if (isWall) {
+                            player.level().playSound(player, targetPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "rock_slam")), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                            player.level().playSound(player, targetPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_rock")), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
+                        } else {
+                            player.level().playSound(player, targetPos, ZombieroolModSounds.BOARDS_FLOAT.get(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
                         }
-                        if (now - lastRepairSoundTime >= REPAIR_SOUND_INTERVAL) {
-                            player.level().playSound(player, doorPos, ZombieroolModSounds.BOARDS_FLOAT.get(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                            lastRepairSoundTime = now;
-                        }
+                        lastRepairSoundTime = now;
                     }
                 }
             }
@@ -206,9 +227,11 @@ public class ClientEventHandler {
     public static void onKeyInput(InputEvent.Key event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
+
         if (KeyInputHandler.isLocalPlayerDown) {
             mc.options.keyJump.setDown(false);
         }
+
         if (KeyBindings.RELOAD_KEY.consumeClick()) {
             ItemStack stack = mc.player.getMainHandItem();
             if (stack.getItem() instanceof IReloadable reloadable) {
@@ -216,6 +239,7 @@ public class ClientEventHandler {
                 NetworkHandler.INSTANCE.sendToServer(new C2SReloadWeaponPacket());
             }
         }
+
         while (KeyBindings.MELEE_ATTACK_KEY.consumeClick()) {
             long now = System.currentTimeMillis();
             if (!CutsweepAnimationHandler.isRunning() && (now - lastMeleeTime > 800)) {
@@ -224,12 +248,15 @@ public class ClientEventHandler {
                 NetworkHandler.INSTANCE.sendToServer(new C2SMeleeAttackPacket());
             }
         }
+
         if (KeyBindings.CRAWL_KEY.consumeClick() && !KeyInputHandler.isLocalPlayerDown) {
             NetworkHandler.INSTANCE.sendToServer(new C2SToggleCrawlPacket());
         }
+
         if (KeyBindings.CONFIG_MENU_KEY.consumeClick()) {
             NetworkHandler.INSTANCE.sendToServer(new C2SRequestConfigMenuPacket());
         }
+
         if (event.getAction() == GLFW.GLFW_RELEASE && event.getKey() == KeyBindings.REPAIR_AND_PURCHASE_KEY.getKey().getValue()) {
             lastRepairSoundTime = 0;
         }

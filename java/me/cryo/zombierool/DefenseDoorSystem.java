@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.cryo.zombierool.PointManager;
 import me.cryo.zombierool.entity.ZombieEntity;
+import me.cryo.zombierool.entity.CrawlerEntity;
+import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.init.ZombieroolModExtraBlockEntities;
 import me.cryo.zombierool.core.registry.ZRBlocks;
 import net.minecraft.client.Minecraft;
@@ -73,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 
 public class DefenseDoorSystem {
-
     public static class RepairTracker {
         private static final Map<String, Integer> repairCount = new HashMap<>();
         private static final Map<String, Long> repairTimestamps = new HashMap<>();
@@ -83,14 +84,17 @@ public class DefenseDoorSystem {
         public static boolean tryAddRepair(Player player) {
             String uuid = player.getStringUUID();
             long now = System.currentTimeMillis();
+            
             if (!repairTimestamps.containsKey(uuid) || now - repairTimestamps.get(uuid) > RESET_TIME_MS) {
                 repairCount.put(uuid, 0);
                 repairTimestamps.put(uuid, now);
             }
+            
             int current = repairCount.getOrDefault(uuid, 0);
             if (current >= MAX_REPAIRS) {
                 return false;
             }
+            
             repairCount.put(uuid, current + 1);
             SoundEvent sound = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "buy"));
             player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 0.5f, 1.0f);
@@ -107,11 +111,14 @@ public class DefenseDoorSystem {
 
         public static void tick(Level level, BlockPos pos, BlockState state, DefenseDoorBlockEntity be) {
             if (level.isClientSide) return;
+            
             if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER && state.getBlock() instanceof DefenseDoorBlock) {
                 int currentStage = state.getValue(DefenseDoorBlock.STAGE);
                 if (currentStage <= 0) return;
+
                 AABB detectionBox = new AABB(pos).inflate(1.0);
                 List<ZombieEntity> zombies = level.getEntitiesOfClass(ZombieEntity.class, detectionBox);
+                
                 for (ZombieEntity zombie : zombies) {
                     if (!zombie.isCrawler()) { 
                         if (handleMobAttack(zombie, level, pos, state, currentStage)) {
@@ -126,11 +133,13 @@ public class DefenseDoorSystem {
             mob.resetStuckTimer();
             CompoundTag data = mob.getPersistentData();
             String key = "zombie_attack_time_" + pos.asLong();
+            
             if (!data.contains(key)) {
                 data.putLong(key, level.getGameTime());
             } else {
                 long startTime = data.getLong(key);
                 long elapsed = level.getGameTime() - startTime;
+                
                 if (elapsed >= 60) {
                     ((DefenseDoorBlock) state.getBlock()).updateStage(level, pos, currentStage - 1);
                     data.remove(key);
@@ -184,12 +193,13 @@ public class DefenseDoorSystem {
     public abstract static class BaseDefenseDoor extends DoorBlock implements EntityBlock {
         public static final BooleanProperty CENTERED = BooleanProperty.create("centered");
         public static final BooleanProperty HAS_MIMIC = BooleanProperty.create("has_mimic");
-        protected static final VoxelShape CENTERED_X_AABB = Shapes.block();
-        protected static final VoxelShape CENTERED_Z_AABB = Shapes.block();
-        protected static final VoxelShape SOUTH_AABB = Shapes.block();
-        protected static final VoxelShape NORTH_AABB = Shapes.block();
-        protected static final VoxelShape WEST_AABB = Shapes.block();
-        protected static final VoxelShape EAST_AABB = Shapes.block();
+        
+        protected static final VoxelShape CENTERED_X_AABB = Block.box(0.0, 0.0, 6.5, 16.0, 16.0, 9.5);
+        protected static final VoxelShape CENTERED_Z_AABB = Block.box(6.5, 0.0, 0.0, 9.5, 16.0, 16.0);
+        protected static final VoxelShape SOUTH_AABB = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
+        protected static final VoxelShape NORTH_AABB = Block.box(0.0, 0.0, 13.0, 16.0, 16.0, 16.0);
+        protected static final VoxelShape WEST_AABB = Block.box(13.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+        protected static final VoxelShape EAST_AABB = Block.box(0.0, 0.0, 0.0, 3.0, 16.0, 16.0);
 
         public BaseDefenseDoor(Properties properties) {
             super(properties, BlockSetType.IRON);
@@ -219,6 +229,7 @@ public class DefenseDoorSystem {
                     setMimic(level, pos, state, placementState);
                     return InteractionResult.SUCCESS;
                 }
+                
                 if (player.isShiftKeyDown() && heldItem.isEmpty() && this instanceof DefenseDoorBlock) {
                     return handleCreativePermOpen(state, level, pos, player);
                 }
@@ -234,10 +245,12 @@ public class DefenseDoorSystem {
             DoubleBlockHalf half = state.getValue(HALF);
             BlockPos lowerPos = (half == DoubleBlockHalf.LOWER) ? pos : pos.below();
             BlockPos upperPos = (half == DoubleBlockHalf.LOWER) ? pos.above() : pos;
+
             BlockEntity be = level.getBlockEntity(lowerPos);
             if (be instanceof DefenseDoorBlockEntity defenseBe) {
                 defenseBe.setMimicBlock(mimicState);
             }
+
             BlockState lowerState = level.getBlockState(lowerPos);
             if (lowerState.getBlock() instanceof BaseDefenseDoor) {
                 level.setBlock(lowerPos, lowerState.setValue(HAS_MIMIC, true), 3);
@@ -277,20 +290,22 @@ public class DefenseDoorSystem {
             boolean open = state.getValue(OPEN);
             boolean hingeRight = state.getValue(HINGE) == DoorHingeSide.RIGHT;
             boolean centered = state.getValue(CENTERED);
+
             if (centered) {
                 if (open) {
                     if (facing == Direction.NORTH)
-                        return hingeRight ? Shapes.box(0, 0, 0, 0.1875, 1, 1) : Shapes.box(0.8125, 0, 0, 1, 1, 1);
+                        return hingeRight ? Block.box(0, 0, 0, 3, 16, 16) : Block.box(13, 0, 0, 16, 16, 16);
                     if (facing == Direction.SOUTH)
-                        return hingeRight ? Shapes.box(0.8125, 0, 0, 1, 1, 1) : Shapes.box(0, 0, 0, 0.1875, 1, 1);
+                        return hingeRight ? Block.box(13, 0, 0, 16, 16, 16) : Block.box(0, 0, 0, 3, 16, 16);
                     if (facing == Direction.EAST)
-                        return hingeRight ? Shapes.box(0, 0, 0, 1, 1, 0.1875) : Shapes.box(0, 0, 0.8125, 1, 1, 1);
+                        return hingeRight ? Block.box(0, 0, 0, 16, 16, 3) : Block.box(0, 0, 13, 16, 16, 16);
                     if (facing == Direction.WEST)
-                        return hingeRight ? Shapes.box(0, 0, 0.8125, 1, 1, 1) : Shapes.box(0, 0, 0, 1, 1, 0.1875);
+                        return hingeRight ? Block.box(0, 0, 13, 16, 16, 16) : Block.box(0, 0, 0, 16, 16, 3);
                 }
                 if (facing.getAxis() == Direction.Axis.X) return CENTERED_X_AABB;
                 else return CENTERED_Z_AABB;
             }
+
             if (open) {
                 switch (facing) {
                     case NORTH: return hingeRight ? WEST_AABB : EAST_AABB;
@@ -312,6 +327,11 @@ public class DefenseDoorSystem {
 
         @Override
         public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+            return createDoorShape(state);
+        }
+        
+        @Override
+        public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
             return createDoorShape(state);
         }
 
@@ -364,7 +384,7 @@ public class DefenseDoorSystem {
                 state = level.getBlockState(pos);
                 if (!(state.getBlock() instanceof DefenseDoorBlock)) return InteractionResult.PASS;
             }
-
+            
             boolean currentState = state.getValue(PERMANENTLY_OPEN);
             boolean newState = !currentState;
             int newStage = newState ? 0 : MAX_STAGE;
@@ -418,6 +438,7 @@ public class DefenseDoorSystem {
                         PointManager.modifyScore(player, 10);
                     }
                 }
+                
                 if (newStage < currentStage) {
                     String soundNum = String.format("%02d", world.random.nextInt(6));
                     ResourceLocation soundId = new ResourceLocation("zombierool", "wood_snap_" + soundNum);
@@ -491,17 +512,17 @@ public class DefenseDoorSystem {
                 return Shapes.empty();
             }
 
-            int stage = state.getValue(STAGE);
             Entity entity = (context instanceof EntityCollisionContext ecc) ? ecc.getEntity() : null;
-
             if (entity == null || entity instanceof Projectile) return Shapes.empty();
             if (entity instanceof Player player && player.isCreative()) return Shapes.empty();
 
+            int stage = state.getValue(STAGE);
             VoxelShape shape = createDoorShape(state);
 
-            if (entity instanceof ZombieEntity) {
+            if (entity instanceof ZombieEntity || entity instanceof CrawlerEntity || entity instanceof HellhoundEntity) {
                 return (stage <= 0) ? Shapes.empty() : shape;
             }
+
             return shape;
         }
 
@@ -570,7 +591,6 @@ public class DefenseDoorSystem {
                     .setValue(DefenseDoorBlock.STAGE, 0)
                     .setValue(DefenseDoorBlock.PERMANENTLY_OPEN, true)
                     .setValue(DefenseDoorBlock.CENTERED, false);
-
             level.setBlock(pos, newState, 3);
         }
     }
@@ -583,18 +603,15 @@ public class DefenseDoorSystem {
         public void render(DefenseDoorBlockEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
             BlockState doorState = entity.getBlockState();
             if (!(doorState.getBlock() instanceof BaseDefenseDoor)) return;
-
             if (doorState.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
                 return;
             }
 
             BlockState mimicState = entity.getMimicBlock();
             if (mimicState == null) return;
-
+            
             mimicState = getConnectedStateFixed(mimicState);
-
             RenderType renderType = ItemBlockRenderTypes.getRenderType(mimicState, false);
-
             renderMimicFace(mimicState, doorState, poseStack, buffer, combinedLight, combinedOverlay, renderType);
         }
 
@@ -624,11 +641,9 @@ public class DefenseDoorSystem {
             } else if (isWall) {
                 WallSide sideHeight = WallSide.TALL;
                 WallSide sideNone = WallSide.NONE;
-
                 try {
                     mimicState = mimicState.setValue(net.minecraft.world.level.block.WallBlock.UP, false);
                 } catch (Exception ignored) {}
-
                 try {
                     mimicState = mimicState.setValue(net.minecraft.world.level.block.WallBlock.EAST_WALL, sideHeight)
                             .setValue(net.minecraft.world.level.block.WallBlock.WEST_WALL, sideHeight)
@@ -636,23 +651,21 @@ public class DefenseDoorSystem {
                             .setValue(net.minecraft.world.level.block.WallBlock.SOUTH_WALL, sideNone);
                 } catch (Exception ignored) {}
             }
-
             return mimicState;
         }
 
         private void renderMimicFace(BlockState mimicState, BlockState doorState, PoseStack poseStack, MultiBufferSource buffer, int light, int overlay, RenderType renderType) {
             boolean isSandbags = mimicState.getBlock() instanceof me.cryo.zombierool.core.block.ZRSandbagBlock;
-
+            
             Direction facing = doorState.getValue(DoorBlock.FACING);
             boolean open = doorState.getValue(DoorBlock.OPEN);
             DoorHingeSide hinge = doorState.getValue(DoorBlock.HINGE);
             boolean centered = doorState.hasProperty(DefenseDoorBlock.CENTERED) && doorState.getValue(DefenseDoorBlock.CENTERED);
 
             BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
-
             poseStack.pushPose();
-            poseStack.translate(0.5, 0, 0.5);
 
+            poseStack.translate(0.5, 0, 0.5);
             float yRot = -facing.toYRot();
             poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
 
@@ -669,7 +682,6 @@ public class DefenseDoorSystem {
                 } else {
                     scaleThickness = 8.0f / 16.0f;
                 }
-
                 scaleThickness += 0.002f;
                 scaleFace = 1.005f;
 
@@ -687,31 +699,29 @@ public class DefenseDoorSystem {
                 poseStack.translate(-0.5, 0, -0.5);
 
             } else {
-                float zOffset = 0.40625f;
+                float zOffset = 0.40625f; 
 
                 if (open) {
                     float pivotX = (hinge == DoorHingeSide.RIGHT) ? -0.5f : 0.5f;
                     float pivotZ = 0.5f;
                     float hingeRot = (hinge == DoorHingeSide.RIGHT) ? -90f : 90f;
-
                     poseStack.translate(pivotX, 0, pivotZ);
                     poseStack.mulPose(Axis.YP.rotationDegrees(hingeRot));
                     poseStack.translate(-pivotX, 0, -pivotZ);
                 }
 
                 poseStack.translate(0, 0, zOffset);
-
                 org.joml.Matrix3f normalMatrix = new org.joml.Matrix3f(poseStack.last().normal());
                 if (!isSandbags) {
                     poseStack.scale(scaleFace, 1.0f, scaleThickness);
                     poseStack.last().normal().set(normalMatrix);
                 }
-
                 poseStack.translate(-0.5, 0, -0.5);
             }
 
             BakedModel bakedModel = dispatcher.getBlockModel(mimicState);
             VertexConsumer vertexConsumer = buffer.getBuffer(renderType);
+
             dispatcher.getModelRenderer().renderModel(
                     poseStack.last(),
                     vertexConsumer,

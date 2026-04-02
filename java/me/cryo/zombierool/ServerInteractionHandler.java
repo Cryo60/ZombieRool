@@ -4,6 +4,7 @@ import me.cryo.zombierool.block.system.BlindBuySystem.BlindBuyCabinetBlock;
 import me.cryo.zombierool.block.system.BlindBuySystem.BlindBuyCabinetBlockEntity;
 import me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlockEntity;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
+import me.cryo.zombierool.block.system.DefenseWallSystem;
 import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
 import me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock;
 import me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlockEntity;
@@ -30,7 +31,6 @@ import me.cryo.zombierool.init.ZombieroolModMobEffects;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 import me.cryo.zombierool.util.PlayerVoiceManager;
 import me.cryo.zombierool.career.CareerManager;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -64,14 +64,14 @@ public class ServerInteractionHandler {
     }
 
     public static void handleInteraction(ServerPlayer player, BlockPos pos, InteractionType type) {
-        if (player == null || player.level().isClientSide) return;
+        if (player == null || player.level().isClientSide || player.isSpectator()) return;
         ServerLevel level = (ServerLevel) player.level();
 
         if (type != InteractionType.ACTION_KEY) {
             if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 16.0) {
                 return; 
             }
-            
+
             Vec3 eyePos = player.getEyePosition();
             Vec3 targetCenter = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
             net.minecraft.world.level.ClipContext ctx = new net.minecraft.world.level.ClipContext(
@@ -81,6 +81,7 @@ public class ServerInteractionHandler {
                 player
             );
             net.minecraft.world.phys.BlockHitResult hit = level.clip(ctx);
+
             if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && !hit.getBlockPos().equals(pos)) {
                 return; 
             }
@@ -101,7 +102,6 @@ public class ServerInteractionHandler {
             case POWER_SWITCH -> handlePowerSwitch(player, level, pos);
             case ACTION_KEY -> {
                 LuaScriptManager.callEvent("OnActionKeyPressed", player.getUUID().toString());
-                
                 for (me.cryo.zombierool.core.manager.InteractableManager.Interactable inter : me.cryo.zombierool.core.manager.InteractableManager.getInteractables().values()) {
                     if (player.distanceToSqr(inter.pos) <= inter.radius * inter.radius) {
                         LuaScriptManager.callEvent("OnCustomInteract", player.getUUID().toString(), inter.id);
@@ -139,7 +139,7 @@ public class ServerInteractionHandler {
             }
             if (hasIngot) consumeIngot(player);
             else PointManager.modifyScore(player, -price);
-            
+
             be.triggerPurchase();
             level.setBlock(pos, state.setValue(BlindBuyCabinetBlock.OPEN, true), 3);
             level.playSound(null, pos, ZombieroolModSounds.CABINET_OPEN.get(), SoundSource.BLOCKS, 1f, 1f);
@@ -172,15 +172,15 @@ public class ServerInteractionHandler {
                     PlayerVoiceManager.playNoMoneySound(player, level);
                     return;
                 }
-                
+
                 if (hasIngot) consumeIngot(player);
                 else PointManager.modifyScore(player, -halfPrice);
-                
+
                 be.triggerPurchase();
                 WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
                 WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
                 if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
-                
+
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
                 player.inventoryMenu.broadcastChanges();
             } else {
@@ -189,9 +189,10 @@ public class ServerInteractionHandler {
                     PlayerVoiceManager.playNoMoneySound(player, level);
                     return;
                 }
+
                 if (hasIngot) consumeIngot(player);
                 else PointManager.modifyScore(player, -price);
-                
+
                 be.triggerPurchase();
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
                 WeaponFacade.grantWeaponToPlayer(player, weaponToSell);
@@ -260,7 +261,6 @@ public class ServerInteractionHandler {
 
         ItemStack existing = ItemStack.EMPTY;
         String wId = WeaponFacade.getWeaponId(weaponToSell);
-
         if (isReloadable) {
             for (ItemStack s : player.getInventory().items) {
                 if (isTacz && WeaponFacade.isTaczWeapon(s)) {
@@ -284,7 +284,7 @@ public class ServerInteractionHandler {
             if (WeaponFacade.isPackAPunched(existing)) {
                 halfPrice += 5000; 
             }
-
+            
             if (hasIngot) {
                 consumeIngot(player);
             } else if (balance < halfPrice) {
@@ -294,7 +294,7 @@ public class ServerInteractionHandler {
             } else {
                 PointManager.modifyScore(player, -halfPrice);
             }
-
+            
             be.triggerPurchase();
             WeaponFacade.setAmmo(existing, WeaponFacade.getMaxAmmo(existing));
             WeaponFacade.setReserve(existing, WeaponFacade.getMaxReserve(existing));
@@ -304,7 +304,6 @@ public class ServerInteractionHandler {
             if (isTacz) WeaponFacade.refillHeldTaczAmmo(player, existing);
             
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
-            
             if (hasIngot) {
                 player.sendSystemMessage(Component.translatable("message.zombierool.wall_weapon.reloaded_ingot", existing.getHoverName().getString()).withStyle(ChatFormatting.GREEN));
             } else {
@@ -323,7 +322,6 @@ public class ServerInteractionHandler {
             }
 
             be.triggerPurchase();
-            
             if (isReloadable || isThrowable || isBowie) {
                 WeaponFacade.grantWeaponToPlayer(player, weaponToSell);
                 if (isReloadable) {
@@ -339,7 +337,6 @@ public class ServerInteractionHandler {
             
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.PLAYERS, 1f, 1f);
             level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "weapon")), SoundSource.PLAYERS, 1f, 1f);
-            
             if (hasIngot) {
                 player.sendSystemMessage(Component.translatable("message.zombierool.wall_weapon.purchased_ingot", weaponToSell.getHoverName().getString()).withStyle(ChatFormatting.GREEN));
             } else {
@@ -355,11 +352,11 @@ public class ServerInteractionHandler {
     private static void handleMysteryBox(ServerPlayer player, ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         MysteryBoxManager manager = MysteryBoxManager.get(level);
-        
+
         if (!(state.getBlock() instanceof MysteryBoxBlock)) {
             return;
         }
-
+        
         if (state.getValue(MysteryBoxBlock.PART)) {
             pos = MysteryBoxManager.getOppositeOtherPartPos(pos, state.getValue(MysteryBoxBlock.FACING));
             state = level.getBlockState(pos);
@@ -416,8 +413,10 @@ public class ServerInteractionHandler {
                 manager.currentActiveMysteryBoxPair.usesSinceLastMove++;
                 manager.setDirty();
             }
-            
-            CareerManager.progressChallenge(player, CareerManager.ChallengeType.MYSTERY_BOX_USED, 1);
+
+            if (!WaveManager.areCheatsUsed()) {
+                CareerManager.progressChallenge(player, CareerManager.ChallengeType.MYSTERY_BOX_USED, 1);
+            }
 
         } else if (mysteryBox.getBoxState() == 2 && !mysteryBox.isTeddy()) { 
             mysteryBox.collectWeapon(player);
@@ -433,8 +432,8 @@ public class ServerInteractionHandler {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof PerksAColaBlockEntity perksBE)) return;
-
         BlockState state = level.getBlockState(pos);
+
         if (!perksBE.isPowered()) {
             player.displayClientMessage(Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED), true);
             return;
@@ -500,11 +499,15 @@ public class ServerInteractionHandler {
                     if (player.isAlive()) {
                         perkToPurchase.applyEffect(player);
                         PerksManager.incrementPerkPurchases(perkId, player);
+
                         MutableComponent finalMessage = Component.translatable("message.zombierool.perk_activated", perkToPurchase.getNameComponent()).withStyle(ChatFormatting.GREEN).append(paymentMessage);
                         player.displayClientMessage(finalMessage, true);
                         PlayerVoiceManager.playTookPerk(player, level);
                         LuaScriptManager.callEvent("OnPerkBought", player.getUUID().toString(), perkToPurchase.getId());
-                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
+
+                        if (!WaveManager.areCheatsUsed()) {
+                            CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
+                        }
                     }
                 }
             ));
@@ -542,7 +545,7 @@ public class ServerInteractionHandler {
                 return effect != null && !player.hasEffect(effect) && !config.isRandomPerkDisabled(perkId);
             })
             .count();
-            
+
         if (availablePerksCount == 0) {
             player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.all_perks_owned").withStyle(ChatFormatting.RED), true);
             return;
@@ -612,7 +615,7 @@ public class ServerInteractionHandler {
         activeDrinkAnimations.put(player.getUUID(), now + 50);
         NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), "drink_perk", 50));
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CStartWunderfizzDrinkAnimationPacket(perkId));
-        
+
         final String finalPerkId = perkId;
         level.getServer().execute(() -> {
             level.getServer().tell(new net.minecraft.server.TickTask(
@@ -624,7 +627,10 @@ public class ServerInteractionHandler {
                         player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.obtained", perk.getNameComponent()).withStyle(ChatFormatting.GREEN), true);
                         PlayerVoiceManager.playTookPerk(player, level);
                         LuaScriptManager.callEvent("OnPerkBought", player.getUUID().toString(), perkId);
-                        CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
+
+                        if (!WaveManager.areCheatsUsed()) {
+                            CareerManager.progressChallenge(player, CareerManager.ChallengeType.PERK_BOUGHT, 1);
+                        }
                     }
                 }
             ));
@@ -649,23 +655,41 @@ public class ServerInteractionHandler {
     private static void handleRepairBarricade(ServerPlayer player, ServerLevel level, BlockPos pos) {
         UUID playerId = player.getUUID();
         long now = System.currentTimeMillis();
-
         boolean hasSpeedCola = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get());
         long effectiveCooldown = hasSpeedCola ? (long) (REPAIR_COOLDOWN * SPEED_COLA_REPAIR_MULTIPLIER) : REPAIR_COOLDOWN;
-
         long lastTime = lastRepairTimes.getOrDefault(playerId, 0L);
+
         if (now - lastTime < effectiveCooldown) return;
         lastRepairTimes.put(playerId, now);
 
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock door) { 
             int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
-            if (stage < 5) {
+            if (stage < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
                 door.updateStage(level, pos, stage + 1);
                 Random rand = new Random();
                 int soundIndex = rand.nextInt(3); 
                 String soundFile = "board_slam_0" + soundIndex;
                 level.playSound(null, pos, SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", soundFile)), SoundSource.BLOCKS, 1.0f, 1.0f);
+                level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_plank")), SoundSource.BLOCKS, 1.0f, 1.0f);
+            }
+        } else if (state.getBlock() instanceof DefenseWallSystem.DefenseWallBlock wall) {
+            int stage = state.getValue(DefenseWallSystem.DefenseWallBlock.STAGE);
+            if (stage < 7) {
+                wall.updateStage(level, pos, stage + 1);
+                level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "rock_slam")), SoundSource.BLOCKS, 1.0f, 1.0f);
+                level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_rock")), SoundSource.BLOCKS, 1.0f, 1.0f);
+            }
+        } else if (state.getBlock() instanceof DefenseWallSystem.DefenseWallDummyBlock dummy) {
+            BlockPos mainPos = dummy.getMainPos(pos, state);
+            BlockState mainState = level.getBlockState(mainPos);
+            if (mainState.getBlock() instanceof DefenseWallSystem.DefenseWallBlock wall) {
+                int stage = mainState.getValue(DefenseWallSystem.DefenseWallBlock.STAGE);
+                if (stage < 7) {
+                    wall.updateStage(level, mainPos, stage + 1);
+                    level.playSound(null, mainPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "rock_slam")), SoundSource.BLOCKS, 1.0f, 1.0f);
+                    level.playSound(null, mainPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_rock")), SoundSource.BLOCKS, 1.0f, 1.0f);
+                }
             }
         }
     }

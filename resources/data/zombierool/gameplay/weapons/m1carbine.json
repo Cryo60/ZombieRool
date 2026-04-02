@@ -70,7 +70,7 @@
   "sounds": {
     "fire": "zombierool:m1carbine_fire",
     "fire_pap": "zombierool:gun_fire_upgraded",
-    "reload": "zombierool:m1carbine_reloading",
+    "reload": "zombierool:m1_garand_reloading",
     "dry": "zombierool:rifle_dry",
     "equip": "zombierool:weapon_in_hand",
     "pump": ""

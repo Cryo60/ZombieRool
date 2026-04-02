@@ -12,12 +12,16 @@ import java.util.Map;
 
 public class CareerManager {
 
-    public enum ChallengeType { HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED }
+    public enum ChallengeType { 
+        HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED, 
+        WEAPON_KILLS, WEAPON_HEADSHOTS 
+    }
 
     public static class ChallengeDef {
         public ChallengeType type;
         public int target;
         public int reward;
+
         public ChallengeDef(ChallengeType type, int target, int reward) { 
             this.type = type; 
             this.target = target; 
@@ -28,6 +32,7 @@ public class CareerManager {
     public static class CamoDef {
         public String langKey;
         public int price;
+
         public CamoDef(String langKey, int price) { 
             this.langKey = langKey; 
             this.price = price; 
@@ -50,7 +55,12 @@ public class CareerManager {
     public static void equipCamo(ServerPlayer player, String weaponId, String camoId) {
     }
 
+    public static void progressChallenge(ServerPlayer player, ChallengeType type, int amount, String context) {
+        if (me.cryo.zombierool.WaveManager.areCheatsUsed()) return;
+        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CProgressChallengePacket(type.name(), amount, context));
+    }
+
     public static void progressChallenge(ServerPlayer player, ChallengeType type, int amount) {
-        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CProgressChallengePacket(type.name(), amount));
+        progressChallenge(player, type, amount, "");
     }
 }
