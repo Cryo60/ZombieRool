@@ -1,4 +1,3 @@
-// [main\java\me\cryo\zombierool\client\gui\MatchRecapScreen.java]
 package me.cryo.zombierool.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,9 +35,9 @@ public class MatchRecapScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(g);
-
+        
         g.fillGradient(0, 0, this.width, this.height, 0xEE000000, 0xEE222222);
-
+        
         g.drawCenteredString(this.font, this.title.getString(), this.width / 2, 20, 0xFFAA00);
 
         int col1X = this.width / 2 - 140;
@@ -46,6 +45,7 @@ public class MatchRecapScreen extends Screen {
         int startY = 60;
         int lineSpacing = 15;
 
+        // Column 1 - Match Stats
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.match_stats"), col1X, startY, 0x00FFFF);
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.waves", waves), col1X, startY + lineSpacing * 1, 0xFFFFFF);
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.score", score), col1X, startY + lineSpacing * 2, 0x55FF55);
@@ -54,6 +54,9 @@ public class MatchRecapScreen extends Screen {
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.assists", assists), col1X, startY + lineSpacing * 5, 0xFFFFFF);
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.downs", downs), col1X, startY + lineSpacing * 6, 0xFF5555);
 
+        g.drawString(this.font, Component.translatable("gui.zombierool.recap.zrf_earned", LocalCareerManager.sessionZrfEarned), col1X, startY + lineSpacing * 8, 0xFFFF00);
+
+        // Column 2 - Career Prog
         g.drawString(this.font, Component.translatable("gui.zombierool.recap.career"), col2X, startY, 0x00FFFF);
         
         LocalCareerManager.CareerData data = LocalCareerManager.getData();
@@ -66,7 +69,6 @@ public class MatchRecapScreen extends Screen {
         int xpY = startY + lineSpacing * 2 + 2;
         int barWidth = 100;
         g.fill(col2X, xpY, col2X + barWidth, xpY + 6, 0xFF333333);
-        
         if (data.currentLevel < 50) {
             int nextXp = LocalCareerManager.getXpRequiredForLevel(data.currentLevel);
             float progress = (float) data.currentXp / nextXp;

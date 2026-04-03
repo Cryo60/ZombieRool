@@ -1,15 +1,16 @@
-// [main\java\me\cryo\zombierool\network\packet\S2CStartGameAnimationPacket.java]
 package me.cryo.zombierool.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 import me.cryo.zombierool.client.ClientHUDHandler;
 import me.cryo.zombierool.WaveManager;
+import me.cryo.zombierool.client.career.LocalCareerManager;
 
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 
 public class S2CStartGameAnimationPacket {
+
     private final int waveNumber;
     private final String musicPreset;
 
@@ -37,6 +38,9 @@ public class S2CStartGameAnimationPacket {
                 ClientHUDHandler.triggerStartGameAnimation(msg.waveNumber);
                 WaveManager.setClientWave(msg.waveNumber);
                 me.cryo.zombierool.client.ZombieSoundHandler.applyMusicPreset(msg.musicPreset);
+                
+                // Remise a zero des ZRF gagnes au lancement 
+                LocalCareerManager.sessionZrfEarned = 0;
             });
         });
         context.setPacketHandled(true);

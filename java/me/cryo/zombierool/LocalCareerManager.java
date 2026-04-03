@@ -36,7 +36,6 @@ public class LocalCareerManager {
     private static final File GLOBAL_DIR = new File(System.getProperty("user.home"), ".zombierool");
     private static final File CAREER_FILE = new File(GLOBAL_DIR, "zombierool_career.dat");
     private static final File LEGACY_CAREER_FILE = FMLPaths.GAMEDIR.get().resolve("zombierool_career.dat").toFile();
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static final int MAX_PRESTIGE = 5;
@@ -49,6 +48,9 @@ public class LocalCareerManager {
     private static int memLvl = 1 ^ memKey;
     private static int memXp = 0;
     private static int memPrest = 0;
+    
+    // Géré coté client, reset a 0 en debut de game.
+    public static int sessionZrfEarned = 0;
 
     private static final Object FILE_LOCK = new Object();
     private static boolean isLoaded = false;
@@ -73,120 +75,27 @@ public class LocalCareerManager {
             this.spawnTime = System.currentTimeMillis();
         }
     }
-
     public static final List<Notification> activeNotifications = new CopyOnWriteArrayList<>();
-
     public static void pushNotification(String text, int color) {
         activeNotifications.add(new Notification(text, color));
-    }
-
-    public static final Map<String, SkinDef> SKINS = new LinkedHashMap<>();
-    public static final Map<String, CamoDef> CAMOS = new LinkedHashMap<>();
-
-    static {
-        SKINS.put("golden_deagle", new SkinDef("skin.zombierool.golden_deagle", "HEADSHOTS", 100, 0, "deagle"));
-        SKINS.put("silver_m1911", new SkinDef("skin.zombierool.silver_m1911", "BUY", 0, 200, "m1911"));
-        SKINS.put("vandal_dragon", new SkinDef("skin.zombierool.vandal_dragon", "PAP", 100, 0, "vandal"));
-        SKINS.put("royal_guard_p90", new SkinDef("skin.zombierool.royal_guard_p90", "BUY", 0, 20000, "p90"));
-        SKINS.put("royal_guard_famas", new SkinDef("skin.zombierool.royal_guard_famas", "BUY", 0, 20000, "famas"));
-
-        CAMOS.put("camo_woodland", new CamoDef("camo.zombierool.woodland", 500, false, 0, false, "common"));
-        CAMOS.put("camo_desert", new CamoDef("camo.zombierool.desert", 500, false, 0, false, "common"));
-        CAMOS.put("camo_arctic", new CamoDef("camo.zombierool.arctic", 500, false, 0, false, "common"));
-        CAMOS.put("camo_jungle", new CamoDef("camo.zombierool.jungle", 600, false, 0, false, "common"));
-        CAMOS.put("camo_urban", new CamoDef("camo.zombierool.urban", 600, false, 0, false, "common"));
-        CAMOS.put("camo_sandstorm", new CamoDef("camo.zombierool.sandstorm", 500, false, 0, false, "common"));
-        CAMOS.put("camo_olive", new CamoDef("camo.zombierool.olive", 500, false, 0, false, "common"));
-        CAMOS.put("camo_multicam", new CamoDef("camo.zombierool.multicam", 600, false, 0, false, "common"));
-
-        CAMOS.put("camo_red_tiger", new CamoDef("camo.zombierool.red_tiger", 1000, false, 0, false, "rare"));
-        CAMOS.put("camo_blue_tiger", new CamoDef("camo.zombierool.blue_tiger", 1000, false, 0, false, "rare"));
-        CAMOS.put("camo_digital", new CamoDef("camo.zombierool.digital", 1200, false, 0, false, "rare"));
-        CAMOS.put("camo_cherry_blossom", new CamoDef("camo.zombierool.cherry_blossom", 1500, false, 0, false, "rare"));
-        CAMOS.put("camo_bloodshot", new CamoDef("camo.zombierool.bloodshot", 1500, false, 0, false, "rare"));
-        CAMOS.put("camo_hex", new CamoDef("camo.zombierool.hex", 2000, false, 0, false, "rare"));
-        CAMOS.put("camo_midnight", new CamoDef("camo.zombierool.midnight", 2000, false, 0, false, "rare"));
-        CAMOS.put("camo_toxic", new CamoDef("camo.zombierool.toxic", 2500, false, 0, false, "rare"));
-        CAMOS.put("camo_coral", new CamoDef("camo.zombierool.coral", 2500, false, 0, false, "rare"));
-
-        CAMOS.put("camo_trollface", new CamoDef("camo.zombierool.trollface", 3000, false, 0, false, "epic"));
-        CAMOS.put("camo_doge", new CamoDef("camo.zombierool.doge", 3000, false, 0, false, "epic"));
-        CAMOS.put("camo_gigachad", new CamoDef("camo.zombierool.gigachad", 3000, false, 0, false, "epic"));
-        CAMOS.put("camo_lordaeron", new CamoDef("camo.zombierool.lordaeron", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_quel_thalas", new CamoDef("camo.zombierool.quel_thalas", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_alliance", new CamoDef("camo.zombierool.alliance", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_scarlet_crusade", new CamoDef("camo.zombierool.scarlet_crusade", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_burning_legion", new CamoDef("camo.zombierool.burning_legion", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_scourge", new CamoDef("camo.zombierool.scourge", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_forsaken", new CamoDef("camo.zombierool.forsaken", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_silvermoon", new CamoDef("camo.zombierool.silvermoon", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_horde", new CamoDef("camo.zombierool.horde", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_gold", new CamoDef("camo.zombierool.gold", 7500, false, 0, true, "epic")); 
-        CAMOS.put("camo_diamond", new CamoDef("camo.zombierool.diamond", 10000, false, 0, true, "epic"));
-        CAMOS.put("camo_damascus", new CamoDef("camo.zombierool.damascus", 12500, false, 0, true, "epic"));
-
-        CAMOS.put("camo_dark_matter", new CamoDef("camo.zombierool.dark_matter", 15000, false, 0, false, "legendary"));
-        CAMOS.put("camo_magma", new CamoDef("camo.zombierool.magma", 12500, false, 0, true, "legendary"));
-        CAMOS.put("camo_matrix", new CamoDef("camo.zombierool.matrix", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_plasma", new CamoDef("camo.zombierool.plasma", 15000, false, 0, true, "legendary")); 
-        CAMOS.put("camo_retro_8bit", new CamoDef("camo.zombierool.retro_8bit", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_mojang", new CamoDef("camo.zombierool.mojang", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_bedrock", new CamoDef("camo.zombierool.bedrock", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_missing_textures", new CamoDef("camo.zombierool.missing_textures", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_merc_red", new CamoDef("camo.zombierool.merc_red", 10000, false, 0, false, "legendary"));
-        CAMOS.put("camo_fast_food", new CamoDef("camo.zombierool.fast_food", 10000, false, 0, false, "legendary"));
-        CAMOS.put("camo_masterchief", new CamoDef("camo.zombierool.masterchief", 10000, false, 0, false, "legendary"));
-        CAMOS.put("camo_asiimov", new CamoDef("camo.zombierool.asiimov", 15000, false, 0, false, "legendary"));
-        CAMOS.put("camo_hyper_beast", new CamoDef("camo.zombierool.hyper_beast", 15000, false, 0, false, "legendary"));
-        CAMOS.put("camo_rain_storm", new CamoDef("camo.zombierool.rain_storm", 12500, false, 0, true, "legendary"));
-        CAMOS.put("camo_lightning", new CamoDef("camo.zombierool.lightning", 12500, false, 0, true, "legendary"));
-        CAMOS.put("camo_red_soda", new CamoDef("camo.zombierool.red_soda", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_lava", new CamoDef("camo.zombierool.lava", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_ocean", new CamoDef("camo.zombierool.ocean", 12500, false, 0, true, "legendary"));
-        CAMOS.put("camo_water", new CamoDef("camo.zombierool.water", 10000, false, 0, true, "legendary"));
-        CAMOS.put("camo_bubbles", new CamoDef("camo.zombierool.bubbles", 12500, false, 0, true, "legendary"));
-        CAMOS.put("camo_galaxy", new CamoDef("camo.zombierool.galaxy", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_venom", new CamoDef("camo.zombierool.venom", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_blood", new CamoDef("camo.zombierool.blood", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_marmot", new CamoDef("camo.zombierool.marmot", 15000, false, 0, true, "legendary"));
-
-        CAMOS.put("camo_solid_gold", new CamoDef("camo.zombierool.solid_gold", 0, false, 0, false, "mastery"));
-        CAMOS.put("camo_black_ice", new CamoDef("camo.zombierool.black_ice", 0, false, 0, false, "mastery"));
-
-        CAMOS.put("camo_prestige", new CamoDef("camo.zombierool.prestige", 0, true, 1, true, "prestige"));
-        CAMOS.put("camo_supernova", new CamoDef("camo.zombierool.supernova", 0, true, 2, true, "prestige"));
-        CAMOS.put("camo_void", new CamoDef("camo.zombierool.void", 0, true, 3, true, "prestige"));
-        CAMOS.put("camo_nebula", new CamoDef("camo.zombierool.nebula", 0, true, 4, true, "prestige"));
-        CAMOS.put("camo_celestial", new CamoDef("camo.zombierool.celestial", 0, true, 5, true, "prestige"));
-
-        CAMOS.put("camo_contributor", new CamoDef("camo.zombierool.contributor", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_glitch_cartridge", new CamoDef("camo.zombierool.glitch_cartridge", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_resprune", new CamoDef("camo.zombierool.resprune", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_cryo", new CamoDef("camo.zombierool.cryo", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_mdxu", new CamoDef("camo.zombierool.mdxu", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_anniversary", new CamoDef("camo.zombierool.anniversary", 0, false, 0, true, "exclusive"));
     }
 
     public enum ChallengeType { 
         HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED, 
         WEAPON_KILLS, WEAPON_HEADSHOTS 
     }
-
     public static class ChallengeDef {
         public ChallengeType type;
         public int target;
         public int reward;
         public String context;
-
         public ChallengeDef(ChallengeType type, int target, int reward, String context) { 
             this.type = type; this.target = target; this.reward = reward; this.context = context;
         }
-
         public ChallengeDef(ChallengeType type, int target, int reward) { 
             this(type, target, reward, ""); 
         }
     }
-
     private static final List<ChallengeDef> POSSIBLE_CHALLENGES = Arrays.asList(
         new ChallengeDef(ChallengeType.HEADSHOTS, 25, 100),
         new ChallengeDef(ChallengeType.HEADSHOTS, 50, 250),
@@ -208,47 +117,12 @@ public class LocalCareerManager {
         new ChallengeDef(ChallengeType.MYSTERY_BOX_USED, 15, 200)
     );
 
-    public static class SkinDef {
-        public String langKey;
-        public String unlockType; 
-        public int unlockReq;
-        public int price;
-        public List<String> exclusiveWeapons;
-
-        public SkinDef(String langKey, String unlockType, int unlockReq, int price, String... exclusiveWeapons) {
-            this.langKey = langKey;
-            this.unlockType = unlockType;
-            this.unlockReq = unlockReq;
-            this.price = price;
-            this.exclusiveWeapons = Arrays.asList(exclusiveWeapons);
-        }
-    }
-
-    public static class CamoDef {
-        public String langKey;
-        public int price;
-        public boolean isPrestige;
-        public int prestigeLevelReq;
-        public boolean isGlobalUnlock;
-        public String rarity; 
-        public List<String> exclusiveWeapons;
-
-        public CamoDef(String langKey, int price, boolean isPrestige, int prestigeLevelReq, boolean isGlobalUnlock, String rarity, String... exclusiveWeapons) { 
-            this.langKey = langKey; 
-            this.price = price; 
-            this.isPrestige = isPrestige;
-            this.prestigeLevelReq = prestigeLevelReq;
-            this.isGlobalUnlock = isGlobalUnlock;
-            this.rarity = rarity;
-            this.exclusiveWeapons = Arrays.asList(exclusiveWeapons);
-        }
-    }
-
     public static class CareerData {
         public int zrfBalance = 0;
         public int currentLevel = 1;
         public int currentXp = 0;
         public int prestigeLevel = 0;
+
         public int lifetimeKills = 0;
         public int lifetimeHeadshots = 0;
         public int lifetimeWaves = 0;
@@ -257,24 +131,24 @@ public class LocalCareerManager {
         public Map<String, Integer> weaponKills = new HashMap<>();
         public Map<String, Integer> weaponHeadshots = new HashMap<>();
         public Map<String, Integer> weaponPaps = new HashMap<>(); 
-        
+
         public List<String> unlockedCamos = new ArrayList<>(); 
         public List<String> globalUnlockedCamos = new ArrayList<>();
         public List<String> unlockedSkins = new ArrayList<>();
         public Map<String, List<String>> weaponUnlockedCamos = new HashMap<>(); 
-        
         public Map<String, String> equippedCamos = new HashMap<>();
         public Map<String, String> equippedSkins = new HashMap<>(); 
-        
+
         public Map<String, Integer> challengeProgress = new HashMap<>();
         public Map<String, Boolean> challengeCompleted = new HashMap<>();
         public Map<String, ChallengeDef> activeChallenges = new HashMap<>();
+
         public Map<String, Float> dailyDiscounts = new HashMap<>(); 
-        
+        public Map<String, Float> dailySkinDiscounts = new HashMap<>();
+
         public long lastChallengeResetTime = 0;
         public long lastDailyRewardTime = 0;
         public List<String> redeemedCodes = new ArrayList<>();
-
         public int lastAnniversaryYear = 0;
     }
 
@@ -283,17 +157,14 @@ public class LocalCareerManager {
         String p2 = "13r0";
         String p3 = "0L_s3C";
         String base = p1 + p2 + p3;
-
         String machineInfo = System.getProperty("user.name") 
                            + System.getProperty("os.name") 
                            + System.getProperty("user.home")
                            + Runtime.getRuntime().availableProcessors();
-        
         String envComputerName = System.getenv("COMPUTERNAME");
         if (envComputerName != null) machineInfo += envComputerName;
         String envHostName = System.getenv("HOSTNAME");
         if (envHostName != null) machineInfo += envHostName;
-
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         return digest.digest((base + machineInfo).getBytes(StandardCharsets.UTF_8));
     }
@@ -363,14 +234,11 @@ public class LocalCareerManager {
         LocalDate now = LocalDate.now();
         int month = now.getMonthValue();
         int day = now.getDayOfMonth();
-
         if ((month == 10 && day >= 20) || (month == 11 && day <= 5)) return 0.75f;
         if (month == 12 && day >= 20) return 0.75f;
         if (month == 11 && day >= 23 && day <= 30) return 0.60f;
-
         LocalDate easter = getEasterDate(now.getYear());
         if (!now.isBefore(easter.minusDays(7)) && !now.isAfter(easter.plusDays(7))) return 0.75f;
-
         return 1.0f;
     }
 
@@ -396,14 +264,11 @@ public class LocalCareerManager {
         LocalDate now = LocalDate.now();
         int month = now.getMonthValue();
         int day = now.getDayOfMonth();
-
         if ((month == 10 && day >= 20) || (month == 11 && day <= 5)) return Component.translatable("gui.zombierool.career.event.halloween").getString();
         if (month == 12 && day >= 20) return Component.translatable("gui.zombierool.career.event.christmas").getString();
         if (month == 11 && day >= 23 && day <= 30) return Component.translatable("gui.zombierool.career.event.black_friday").getString();
-
         LocalDate easter = getEasterDate(now.getYear());
         if (!now.isBefore(easter.minusDays(7)) && !now.isAfter(easter.plusDays(7))) return Component.translatable("gui.zombierool.career.event.easter").getString();
-
         return "";
     }
 
@@ -432,6 +297,7 @@ public class LocalCareerManager {
         if (data.challengeCompleted == null) data.challengeCompleted = new HashMap<>();
         if (data.activeChallenges == null) data.activeChallenges = new HashMap<>();
         if (data.dailyDiscounts == null) data.dailyDiscounts = new HashMap<>();
+        if (data.dailySkinDiscounts == null) data.dailySkinDiscounts = new HashMap<>();
         if (data.weaponKills == null) data.weaponKills = new HashMap<>();
         if (data.weaponHeadshots == null) data.weaponHeadshots = new HashMap<>();
         if (data.weaponPaps == null) data.weaponPaps = new HashMap<>();
@@ -440,7 +306,6 @@ public class LocalCareerManager {
 
     public static void load() {
         if (isLoaded) return; 
-
         synchronized (FILE_LOCK) {
             if (!CAREER_FILE.exists() && LEGACY_CAREER_FILE.exists()) {
                 try {
@@ -457,8 +322,8 @@ public class LocalCareerManager {
                     byte[] encryptedAndIv = Files.readAllBytes(CAREER_FILE.toPath());
                     byte[] decrypted = decrypt(encryptedAndIv);
                     String payload = new String(decrypted, StandardCharsets.UTF_8);
-                    String[] parts = payload.split("::", 2);
 
+                    String[] parts = payload.split("::", 2);
                     if (parts.length == 2) {
                         String savedHash = parts[0];
                         String json = parts[1];
@@ -485,7 +350,7 @@ public class LocalCareerManager {
                                     setXp(currentData.currentXp);
                                     setPrest(currentData.prestigeLevel);
 
-                                    for (Map.Entry<String, CamoDef> entry : CAMOS.entrySet()) {
+                                    for (Map.Entry<String, CareerUnlockables.CamoDef> entry : CareerUnlockables.CAMOS.entrySet()) {
                                         if (entry.getValue().isPrestige && getPrest() >= entry.getValue().prestigeLevelReq) {
                                             if (!currentData.globalUnlockedCamos.contains(entry.getKey())) {
                                                 currentData.globalUnlockedCamos.add(entry.getKey());
@@ -509,7 +374,7 @@ public class LocalCareerManager {
                     ZombieroolMod.LOGGER.error("Failed to load Career Data. Resetting profile...", e);
                 }
             }
-            
+
             memKey = new Random().nextInt();
             setZrf(0);
             setLvl(1);
@@ -537,10 +402,11 @@ public class LocalCareerManager {
                     String hash = calculateSHA256(json);
                     String payload = hash + "::" + json;
                     byte[] encrypted = encrypt(payload.getBytes(StandardCharsets.UTF_8));
-                    
+
                     if (!GLOBAL_DIR.exists()) {
                         GLOBAL_DIR.mkdirs();
                     }
+
                     File tempFile = new File(GLOBAL_DIR, "zombierool_career.tmp");
                     Files.write(tempFile.toPath(), encrypted);
 
@@ -562,7 +428,6 @@ public class LocalCareerManager {
         currentData.currentLevel = getLvl();
         currentData.currentXp = getXp();
         currentData.prestigeLevel = getPrest();
-
         try {
             String json;
             synchronized(currentData) {
@@ -571,7 +436,7 @@ public class LocalCareerManager {
             String hash = calculateSHA256(json);
             String payload = hash + "::" + json;
             byte[] encrypted = encrypt(payload.getBytes(StandardCharsets.UTF_8));
-            
+
             synchronized(FILE_LOCK) {
                 if (!GLOBAL_DIR.exists()) GLOBAL_DIR.mkdirs();
                 File tempFile = new File(GLOBAL_DIR, "zombierool_career.tmp");
@@ -581,7 +446,6 @@ public class LocalCareerManager {
                 if (CAREER_FILE.exists()) {
                     Files.copy(CAREER_FILE.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
-
                 Files.move(tempFile.toPath(), CAREER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception e) {
@@ -618,9 +482,9 @@ public class LocalCareerManager {
         int kills = currentData.weaponKills.getOrDefault(weaponId, 0);
         int headshots = currentData.weaponHeadshots.getOrDefault(weaponId, 0);
         int weaponXp = kills + (headshots * 2);
+        
         int level = 1;
         int xpForNext = 2;
-
         while (weaponXp >= xpForNext && level < 100) {
             weaponXp -= xpForNext;
             level++;
@@ -633,9 +497,9 @@ public class LocalCareerManager {
         int kills = currentData.weaponKills.getOrDefault(weaponId, 0);
         int headshots = currentData.weaponHeadshots.getOrDefault(weaponId, 0);
         int weaponXp = kills + (headshots * 2);
+        
         int level = 1;
         int xpForNext = 2;
-
         while (weaponXp >= xpForNext && level < 100) {
             weaponXp -= xpForNext;
             level++;
@@ -655,7 +519,7 @@ public class LocalCareerManager {
         currentData.weaponKills.put(weaponId, currentData.weaponKills.getOrDefault(weaponId, 0) + kills);
         currentData.weaponHeadshots.put(weaponId, currentData.weaponHeadshots.getOrDefault(weaponId, 0) + headshots);
         currentData.weaponPaps.put(weaponId, currentData.weaponPaps.getOrDefault(weaponId, 0) + papCount);
-
+        
         int newLevel = getWeaponLevel(weaponId);
         if (newLevel > oldLevel) {
             checkMasteryUnlocks(weaponId, newLevel);
@@ -696,13 +560,14 @@ public class LocalCareerManager {
     }
 
     private static void checkSkinUnlocks(String weaponId) {
-        for (Map.Entry<String, SkinDef> entry : SKINS.entrySet()) {
+        for (Map.Entry<String, CareerUnlockables.SkinDef> entry : CareerUnlockables.SKINS.entrySet()) {
             String skinId = entry.getKey();
-            SkinDef def = entry.getValue();
+            CareerUnlockables.SkinDef def = entry.getValue();
 
             if (def.exclusiveWeapons.isEmpty() || def.exclusiveWeapons.contains(weaponId)) {
                 if (!isSkinUnlocked(weaponId, skinId)) {
                     boolean unlocked = false;
+
                     if ("HEADSHOTS".equals(def.unlockType)) {
                         if ("golden_deagle".equals(skinId) && "deagle".equals(weaponId)) {
                             unlocked = currentData.weaponHeadshots.getOrDefault("deagle", 0) >= def.unlockReq &&
@@ -730,6 +595,7 @@ public class LocalCareerManager {
 
     public static boolean isSkinUnlocked(String weaponId, String skinId) {
         if (skinId == null || skinId.isEmpty()) return true;
+
         if ("golden_deagle".equals(skinId)) {
             return currentData.weaponHeadshots.getOrDefault("deagle", 0) >= 100 &&
                    isUnlocked("deagle", "camo_gold") &&
@@ -739,7 +605,7 @@ public class LocalCareerManager {
             return currentData.unlockedSkins.contains("silver_m1911");
         }
 
-        SkinDef def = SKINS.get(skinId);
+        CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(skinId);
         if (def == null) return false;
 
         if ("HEADSHOTS".equals(def.unlockType)) {
@@ -753,12 +619,23 @@ public class LocalCareerManager {
         return false;
     }
 
+    public static int getDiscountedSkinPrice(String skinId) {
+        CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(skinId);
+        if (def == null) return 0;
+        float dailyMult = currentData.dailySkinDiscounts.getOrDefault(skinId, 1.0f);
+        float eventMult = getEventDiscountMultiplier();
+        int rawPrice = (int) (def.price * dailyMult * eventMult);
+        return (int) (Math.round(rawPrice / 5.0) * 5); // Arrondi par pas de 5
+    }
+
     public static boolean buySkin(String weaponId, String skinId) {
-        SkinDef def = SKINS.get(skinId);
+        CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(skinId);
         if (def == null || def.price <= 0 || isSkinUnlocked(weaponId, skinId)) return false;
 
-        if (getZrf() >= def.price) {
-            setZrf(getZrf() - def.price);
+        int finalPrice = getDiscountedSkinPrice(skinId);
+
+        if (getZrf() >= finalPrice) {
+            setZrf(getZrf() - finalPrice);
             if (!currentData.unlockedSkins.contains(skinId)) {
                 currentData.unlockedSkins.add(skinId);
             }
@@ -776,6 +653,7 @@ public class LocalCareerManager {
             currentData.equippedSkins.put(weaponId, skinId);
         }
         forceSave();
+        
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
@@ -790,12 +668,19 @@ public class LocalCareerManager {
         if (applyBoosts && amount > 0) {
             amount = (int) (amount * getBoostMultiplier());
         }
+
         if (amount > 0) {
             amount = (int) (Math.round(amount / 5.0) * 5);
         }
-
         setZrf(getZrf() + amount);
+        
+        // Si game en cours, on traque ce qu'on a gagné
+        if (me.cryo.zombierool.WaveManager.isGameRunning()) {
+            sessionZrfEarned += amount;
+        }
+
         save();
+
         if (amount > 0) {
             pushNotification("+" + amount + " ZRF", 0xFFD700);
         }
@@ -805,6 +690,7 @@ public class LocalCareerManager {
             mc.player.displayClientMessage(Component.translatable(reasonKey, amount).withStyle(net.minecraft.ChatFormatting.GOLD), true);
             mc.player.playSound(SoundEvents.PLAYER_LEVELUP, 0.5f, 2.0f);
         }
+
         if (mc.screen instanceof CareerScreen careerScreen) {
             careerScreen.refreshData();
         }
@@ -836,6 +722,7 @@ public class LocalCareerManager {
         while (currentLvlVal < 50 && currentXpVal >= getXpRequiredForLevel(currentLvlVal)) {
             currentXpVal -= getXpRequiredForLevel(currentLvlVal);
             currentLvlVal++;
+            
             int zrfReward = 100 + (currentLvlVal * 10);
             addZRF(zrfReward, "", false); 
             leveledUp = true;
@@ -855,6 +742,7 @@ public class LocalCareerManager {
             mc.player.displayClientMessage(Component.translatable("message.zombierool.career.levelup", getLvl()).withStyle(net.minecraft.ChatFormatting.AQUA), true);
             mc.player.playSound(SoundEvents.PLAYER_LEVELUP, 1.0f, 1.0f);
         }
+
         if (mc.screen instanceof CareerScreen careerScreen) {
             careerScreen.refreshData();
         }
@@ -869,14 +757,13 @@ public class LocalCareerManager {
     public static boolean isCamoUnlocked(String camoId) {
         if (camoId == null || camoId.isEmpty()) return true;
         if (currentData.globalUnlockedCamos.contains(camoId)) return true;
-
-        CamoDef def = CAMOS.get(camoId);
+        
+        CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def != null && !def.exclusiveWeapons.isEmpty()) {
             for (String wpn : def.exclusiveWeapons) {
                 if (currentData.weaponUnlockedCamos.getOrDefault(wpn, new ArrayList<>()).contains(camoId)) return true;
             }
         }
-
         return false;
     }
 
@@ -888,23 +775,22 @@ public class LocalCareerManager {
     }
 
     public static int getDiscountedPrice(String camoId) {
-        CamoDef def = CAMOS.get(camoId);
+        CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def == null) return 0;
         float dailyMult = currentData.dailyDiscounts.getOrDefault(camoId, 1.0f);
         float eventMult = getEventDiscountMultiplier();
         int rawPrice = (int) (def.price * dailyMult * eventMult);
-        return (int) (Math.round(rawPrice / 5.0) * 5);
+        return (int) (Math.round(rawPrice / 5.0) * 5); // Arrondi par pas de 5
     }
 
     public static boolean buyCamo(String weaponId, String camoId) {
-        CamoDef def = CAMOS.get(camoId);
+        CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def == null || def.isPrestige || "exclusive".equals(def.rarity) || def.price <= 0 || isUnlocked(weaponId, camoId)) return false;
 
         int finalPrice = getDiscountedPrice(camoId);
 
         if (getZrf() >= finalPrice) {
             setZrf(getZrf() - finalPrice);
-
             if (def.isGlobalUnlock) {
                 currentData.globalUnlockedCamos.add(camoId);
             } else {
@@ -916,7 +802,6 @@ public class LocalCareerManager {
                     currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new ArrayList<>()).add(camoId);
                 }
             }
-
             forceSave(); 
             return true;
         }
@@ -931,7 +816,6 @@ public class LocalCareerManager {
             currentData.equippedCamos.put(weaponId, camoId);
         }
         forceSave(); 
-
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -939,8 +823,9 @@ public class LocalCareerManager {
     }
 
     public static void equipCamoOnAll(String camoId) {
-        CamoDef def = CAMOS.get(camoId);
+        CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def == null) return;
+        
         for (String wpn : CareerScreen.getSupportedWeaponsCache()) {
             if (def.exclusiveWeapons.isEmpty() || def.exclusiveWeapons.contains(wpn)) {
                 currentData.equippedSkins.remove(wpn);
@@ -948,7 +833,6 @@ public class LocalCareerManager {
             }
         }
         forceSave(); 
-
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -993,7 +877,8 @@ public class LocalCareerManager {
                     currentData.challengeCompleted.put(challengeId, true);
                     pushNotification("Challenge Completed!", 0x55FF55);
                     addZRF(def.reward, "message.zombierool.career.challenge_done");
-
+                    
+                    // Remplacer directement par un autre 
                     currentData.activeChallenges.remove(challengeId);
                     currentData.challengeProgress.remove(challengeId);
                     currentData.challengeCompleted.remove(challengeId);
@@ -1007,7 +892,6 @@ public class LocalCareerManager {
                         shuffled.add(new ChallengeDef(ChallengeType.WEAPON_HEADSHOTS, 50, 400, w2));
                     }
                     Collections.shuffle(shuffled);
-
                     String newId = "daily_" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
                     currentData.activeChallenges.put(newId, shuffled.get(0));
                     currentData.challengeProgress.put(newId, 0);
@@ -1015,7 +899,7 @@ public class LocalCareerManager {
                 }
             }
         }
-
+        
         if (updated) save();
     }
 
@@ -1026,7 +910,7 @@ public class LocalCareerManager {
     public static boolean claimDailyReward() {
         long currentDay = LocalDate.now().toEpochDay();
         if (currentData.lastDailyRewardTime > 1000000) currentData.lastDailyRewardTime = 0; 
-        
+
         if (currentData.lastDailyRewardTime < currentDay) {
             currentData.lastDailyRewardTime = currentDay; 
             addZRF(200, "message.zombierool.career.zrf_earned", false); 
@@ -1053,12 +937,14 @@ public class LocalCareerManager {
             setXp(0);
             setZrf(0);
 
-            currentData.globalUnlockedCamos.removeIf(id -> CAMOS.containsKey(id) && !CAMOS.get(id).isPrestige);
+            // On retire tous les camos (SAUF CEUX DEJA DEBLOQUES PAR PRESTIGE INFERIEUR OU EXCLUSIFS SI ON VEUT)
+            currentData.globalUnlockedCamos.removeIf(id -> CareerUnlockables.CAMOS.containsKey(id) && !CareerUnlockables.CAMOS.get(id).isPrestige);
             currentData.weaponUnlockedCamos.clear();
             currentData.equippedCamos.clear();
             currentData.equippedSkins.clear();
 
-            for (Map.Entry<String, CamoDef> entry : CAMOS.entrySet()) {
+            // Re-evaluer les prestiges (ex: si je passe P2, je garde le camo P1)
+            for (Map.Entry<String, CareerUnlockables.CamoDef> entry : CareerUnlockables.CAMOS.entrySet()) {
                 if (entry.getValue().isPrestige && getPrest() >= entry.getValue().prestigeLevelReq) {
                     if (!currentData.globalUnlockedCamos.contains(entry.getKey())) {
                         currentData.globalUnlockedCamos.add(entry.getKey());
@@ -1067,7 +953,6 @@ public class LocalCareerManager {
             }
 
             forceSave(); 
-
             if (Minecraft.getInstance().getConnection() != null) {
                 NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
                 NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -1078,7 +963,7 @@ public class LocalCareerManager {
     private static void checkAndResetDailies() {
         long currentDay = LocalDate.now().toEpochDay();
         if (currentData.lastChallengeResetTime > 1000000) currentData.lastChallengeResetTime = 0; 
-
+        
         long currentYear = LocalDate.now().getYear();
         if (LocalDate.now().getMonth() == Month.OCTOBER && LocalDate.now().getDayOfMonth() == 1) {
             if (currentData.lastAnniversaryYear < currentYear) {
@@ -1092,6 +977,7 @@ public class LocalCareerManager {
             currentData.challengeProgress.clear();
             currentData.challengeCompleted.clear();
             currentData.dailyDiscounts.clear();
+            currentData.dailySkinDiscounts.clear();
 
             List<String> weapons = new ArrayList<>();
             for (me.cryo.zombierool.core.system.WeaponSystem.Definition def : me.cryo.zombierool.core.system.WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
@@ -1107,8 +993,8 @@ public class LocalCareerManager {
                 String w2 = weapons.get(new Random().nextInt(weapons.size()));
                 shuffled.add(new ChallengeDef(ChallengeType.WEAPON_HEADSHOTS, 50, 400, w2));
             }
-            Collections.shuffle(shuffled);
 
+            Collections.shuffle(shuffled);
             for (int i = 0; i < Math.min(3, shuffled.size()); i++) {
                 String id = "daily_" + i;
                 currentData.activeChallenges.put(id, shuffled.get(i));
@@ -1116,16 +1002,28 @@ public class LocalCareerManager {
                 currentData.challengeCompleted.put(id, false);
             }
 
-            List<String> camoIds = new ArrayList<>(CAMOS.keySet());
+            // Réductions Camo
+            List<String> camoIds = new ArrayList<>(CareerUnlockables.CAMOS.keySet());
             camoIds.removeIf(id -> {
-                CamoDef def = CAMOS.get(id);
+                CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(id);
                 return def.isPrestige || "exclusive".equals(def.rarity) || "mastery".equals(def.rarity);
             });
             Collections.shuffle(camoIds);
-
             for (int i = 0; i < Math.min(2, camoIds.size()); i++) {
                 float[] discounts = {0.75f, 0.5f}; 
                 currentData.dailyDiscounts.put(camoIds.get(i), discounts[new Random().nextInt(discounts.length)]);
+            }
+
+            // Réductions Skins
+            List<String> skinIds = new ArrayList<>(CareerUnlockables.SKINS.keySet());
+            skinIds.removeIf(id -> {
+                CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(id);
+                return !"BUY".equals(def.unlockType);
+            });
+            Collections.shuffle(skinIds);
+            for (int i = 0; i < Math.min(1, skinIds.size()); i++) {
+                float[] discounts = {0.75f, 0.5f}; 
+                currentData.dailySkinDiscounts.put(skinIds.get(i), discounts[new Random().nextInt(discounts.length)]);
             }
 
             currentData.lastChallengeResetTime = currentDay;

@@ -3,6 +3,7 @@ package me.cryo.zombierool.client.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import me.cryo.zombierool.client.career.CareerUnlockables;
 import me.cryo.zombierool.client.career.LocalCareerManager;
 import me.cryo.zombierool.client.career.RedeemCodeManager;
 import me.cryo.zombierool.configuration.ZRClientConfig;
@@ -29,7 +30,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,10 +78,10 @@ public class CareerScreen extends Screen {
     private int cellSpacing = 4;
 
     private final Screen parent;
-
     private Tab       currentTab      = Tab.ARSENAL;
     private ViewMode  currentViewMode = ViewMode.CAMOS;
     private static final List<String> supportedWeaponsCache = new ArrayList<>();
+
     private String selectedWeapon = "m1911";
     private String selectedCamo   = "";
     private String selectedSkin   = "";
@@ -97,6 +97,7 @@ public class CareerScreen extends Screen {
     private EditBox    camoSearchBox;
     private CycleButton<String> rarityFilterButton;
     private CycleButton<String> shopSortButton;
+
     private Button btnCamoTab;
     private Button btnSkinTab;
 
@@ -106,7 +107,6 @@ public class CareerScreen extends Screen {
 
     private Button resetButton;
     private int    resetConfirmTimer = 0;
-
     private Button dailyButton;
     private Button prestigeButton;
 
@@ -168,7 +168,6 @@ public class CareerScreen extends Screen {
         localData.challengeProgress      = data.challengeProgress;
         localData.challengeCompleted     = data.challengeCompleted;
         localData.lastChallengeResetTime = data.lastChallengeResetTime;
-        
         localData.activeChallenges.clear();
         for (Map.Entry<String, me.cryo.zombierool.career.CareerManager.ChallengeDef> entry : data.activeChallenges.entrySet()) {
             me.cryo.zombierool.career.CareerManager.ChallengeDef def = entry.getValue();
@@ -186,15 +185,16 @@ public class CareerScreen extends Screen {
     protected void init() {
         super.init();
         LocalCareerManager.load();
-
         scrollOffset        = 0;
         redeemStatusMessage = "";
         needsLayoutUpdate   = true;
 
         leftW   = clamp((int)(this.width * 0.15f), 60, 130);
         rightW  = clamp((int)(this.width * 0.22f), 110, 200);
+
         bodyY   = H_TOPBAR + H_TABS;
         bodyH   = this.height - bodyY - H_STATUSBAR;
+
         centerX = leftW;
         centerW = this.width - leftW - rightW;
         rightX  = this.width - rightW;
@@ -221,7 +221,6 @@ public class CareerScreen extends Screen {
         addTabButton(tabSX,              tabY, tabW, Tab.ARSENAL,    "gui.zombierool.career.tab.arsenal");
         addTabButton(tabSX + tabW,       tabY, tabW, Tab.CHALLENGES, "gui.zombierool.career.tab.challenges");
         addTabButton(tabSX + tabW * 2,   tabY, tabW, Tab.SHOP,       "gui.zombierool.career.tab.shop");
-        
         this.addRenderableWidget(
             Button.builder(Component.literal("Barracks"), btn -> switchTab(Tab.BARRACKS))
                   .bounds(tabSX + tabW * 3, tabY, tabW, 20).build()
@@ -233,11 +232,12 @@ public class CareerScreen extends Screen {
         );
 
         this.wpnSearchBox = new EditBox(this.font, 4, bodyY + 16, leftW - 8, 14, Component.literal("Search"));
-        
+
         if (currentTab == Tab.ARSENAL || currentTab == Tab.SHOP) {
             this.weaponList = new WeaponList(this.minecraft, leftW, bodyH - 34, bodyY + 34, this.height - H_STATUSBAR, 18);
             this.weaponList.setLeftPos(0);
             this.wpnSearchBox.setResponder(q -> weaponList.filter(q));
+
             this.addWidget(this.weaponList);
             this.addRenderableWidget(this.wpnSearchBox);
 
@@ -275,7 +275,7 @@ public class CareerScreen extends Screen {
                         currentShopSort = val; scrollOffset = 0; needsLayoutUpdate = true;
                     });
                 this.addRenderableWidget(this.shopSortButton);
-                
+
                 if (currentViewMode == ViewMode.SKINS) {
                     this.rarityFilterButton.visible = false;
                     this.shopSortButton.visible = false;
@@ -285,7 +285,6 @@ public class CareerScreen extends Screen {
             int abY  = this.height - H_STATUSBAR - 22;
             int abW  = rightW - 20;
             int abX  = rightX + 10;
-
             this.actionButton1 = Button.builder(Component.literal("EQUIP"), btn -> handleAction1())
                                        .bounds(abX, abY, abW, 16).build();
             this.actionButton2 = Button.builder(Component.literal("EQUIP ON ALL"), btn -> handleAction2())
@@ -296,6 +295,7 @@ public class CareerScreen extends Screen {
             this.addRenderableWidget(actionButton1);
             this.addRenderableWidget(actionButton2);
             if (currentTab == Tab.ARSENAL) this.addRenderableWidget(unequipAllButton);
+
             updateActionButtons();
         }
 
@@ -400,6 +400,7 @@ public class CareerScreen extends Screen {
     private void addFT(String text, int x, int y, int color) {
         this.floatingTexts.add(new FloatingText(text, x, y, color));
     }
+
     private void playSound() {
         this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
     }
@@ -417,6 +418,7 @@ public class CareerScreen extends Screen {
             if (Minecraft.getInstance().getConnection() != null)
                 NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(LocalCareerManager.getData().equippedSkins));
         }
+
         triggerFlash(0xFF5555); weaponPopScale = 0.7f;
         addFT("All Unequipped!", this.width / 2, this.height / 2, 0xFF5555);
         updateActionButtons(); needsLayoutUpdate = true;
@@ -426,7 +428,6 @@ public class CareerScreen extends Screen {
         if (actionButton1 == null || actionButton2 == null) return;
         actionButton1.visible = false;
         actionButton2.visible = false;
-
         int abW = rightW - 20;
         int abX = rightX + 10;
 
@@ -439,7 +440,8 @@ public class CareerScreen extends Screen {
         if (currentViewMode == ViewMode.CAMOS) {
             if (selectedCamo.isEmpty() && currentTab == Tab.SHOP) return;
             boolean isUnlocked = LocalCareerManager.isUnlocked(selectedWeapon, selectedCamo);
-            LocalCareerManager.CamoDef def = LocalCareerManager.CAMOS.get(selectedCamo);
+            CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(selectedCamo);
+
             String equipped   = LocalCareerManager.getData().equippedCamos.getOrDefault(selectedWeapon, "");
             boolean isEquipped = equipped.equals(selectedCamo);
             boolean isTrulyGlobal = def != null && def.isGlobalUnlock && def.exclusiveWeapons.isEmpty();
@@ -471,9 +473,9 @@ public class CareerScreen extends Screen {
                 actionButton1.setMessage(Component.literal(isEquipped ? "UNEQUIP" : "EQUIP"));
                 actionButton1.active = true;
             } else if (currentTab == Tab.SHOP && !isUnlocked) {
-                LocalCareerManager.SkinDef def = LocalCareerManager.SKINS.get(selectedSkin);
+                CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(selectedSkin);
                 if (def != null && "BUY".equals(def.unlockType)) {
-                    int price = def.price;
+                    int price = LocalCareerManager.getDiscountedSkinPrice(selectedSkin);
                     boolean canAfford = LocalCareerManager.getData().zrfBalance >= price;
                     actionButton1.visible = true;
                     actionButton1.setMessage(Component.literal("BUY (" + price + " ZRF)"));
@@ -620,13 +622,13 @@ public class CareerScreen extends Screen {
     public void render(GuiGraphics g, int mx, int my, float pt) {
         renderBG(g);
         renderBGGrid(g);
-
         if (flashAlpha > 0.01f) {
             int a = (int)(flashAlpha * 255);
             g.fill(0, 0, this.width, this.height, (a << 24) | (flashColor & 0xFFFFFF));
         }
 
         super.render(g, mx, my, pt);
+
         renderTopBar(g);
         renderTabsBackground(g);
 
@@ -642,7 +644,6 @@ public class CareerScreen extends Screen {
         }
 
         renderStatusBar(g);
-
         for (FloatingText ft : floatingTexts) {
             float alpha = 1.0f - ((float)ft.ticksAlive / ft.maxTicks);
             int a = (int)(alpha * 255);
@@ -655,7 +656,6 @@ public class CareerScreen extends Screen {
         g.fill(0, 0, this.width, this.height, 0xFF222222);
         g.fillGradient(0, 0, this.width, this.height, 0x44001122, 0xBB000000);
     }
-
     private void renderBGGrid(GuiGraphics g) {
         for (int gx = 0; gx < this.width;  gx += 32) g.fill(gx, 0, gx+1, this.height, C_BORDER_GRID);
         for (int gy = 0; gy < this.height; gy += 32) g.fill(0, gy, this.width, gy+1,   C_BORDER_GRID);
@@ -665,12 +665,10 @@ public class CareerScreen extends Screen {
         g.fill(0, 0, this.width, H_TOPBAR, 0xCC000000);
         g.fill(0, H_TOPBAR - 1, this.width, H_TOPBAR, C_BORDER_CYAN_DIM);
         g.drawCenteredString(font, "C A R E E R", this.width / 2, H_TOPBAR/2 - 4, C_TEXT_GOLD);
-
         String zrfTxt = "⬡ " + LocalCareerManager.getData().zrfBalance + " ZRF";
         int zrfX = this.width - font.width(zrfTxt) - 8;
         if (currentTab == Tab.SHOP && dailyButton != null) zrfX -= (dailyButton.getWidth() + 6);
         g.drawString(font, zrfTxt, zrfX, H_TOPBAR/2 - 4, C_TEXT_GREEN);
-
         String boostTxt = LocalCareerManager.getActiveBoostText();
         String eventTxt = LocalCareerManager.getActiveEventText();
         int infoY = H_TOPBAR/2 - 4;
@@ -705,7 +703,6 @@ public class CareerScreen extends Screen {
         int level   = LocalCareerManager.getWeaponLevel(selectedWeapon);
         int curXP   = LocalCareerManager.getWeaponXpInCurrentLevel(selectedWeapon);
         int nextXP  = LocalCareerManager.getWeaponXpForNextLevel(selectedWeapon);
-
         g.drawCenteredString(font, "LEVEL " + level + (level >= 100 ? " (MAX)" : ""), cx, sY, C_TEXT_CYAN);
         sY += 11;
 
@@ -714,7 +711,6 @@ public class CareerScreen extends Screen {
         String xpLbl = (level < 100) ? curXP + " / " + nextXP + " XP" : "MAX LEVEL";
         g.drawCenteredString(font, xpLbl, cx, sY, C_TEXT_DARK);
         sY += 9;
-
         g.fill(barX, sY, barX + barW, sY + 4, 0xFF1A1A1A);
         g.fill(barX - 1, sY - 1, barX + barW + 1, sY + 5, 0xFF222222);
         if (level < 100) {
@@ -724,12 +720,12 @@ public class CareerScreen extends Screen {
             g.fill(barX, sY, barX + barW, sY + 4, 0xFFFFCC00);
         }
         sY += 8;
+
         sY = renderDivider(g, sY);
 
         int prevW = (int)(rightW * 0.78f);
         int prevH = Math.min(80, bodyH / 5);
         int prevX = cx - prevW / 2;
-
         g.fill(prevX, sY, prevX + prevW, sY + prevH, C_BG_PREVIEW);
         g.renderOutline(prevX, sY, prevW, prevH, C_BORDER_CYAN_DIM);
         renderCorner(g, prevX,            sY,            true,  true);
@@ -749,13 +745,11 @@ public class CareerScreen extends Screen {
             } else if (!renderCamo.isEmpty()) {
                 stack.getOrCreateTag().putString("zr_camo", renderCamo);
             }
-
             PoseStack pose = g.pose();
             pose.pushPose();
             int renderCX = prevX + prevW / 2;
             int renderCY = sY + prevH / 2;
             pose.translate(renderCX, renderCY, 150);
-
             float scale = Math.min(prevW, prevH) * 0.65f * weaponPopScale;
             pose.scale(scale, -scale, scale);
             pose.mulPose(Axis.XP.rotationDegrees(15f));
@@ -767,7 +761,6 @@ public class CareerScreen extends Screen {
                 stack, ItemDisplayContext.FIXED, 0xF000F0,
                 net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
                 pose, g.bufferSource(), minecraft.level, 0);
-
             pose.popPose();
         }
 
@@ -781,7 +774,6 @@ public class CareerScreen extends Screen {
 
         int col1X = rightX + 10;
         int col2X = rightX + rightW / 2 + 4;
-        
         g.drawString(font, "KILLS",     col1X, sY,     C_TEXT_DARK);
         g.drawString(font, "HEADSHOTS", col2X, sY,     C_TEXT_DARK);
         sY += 9;
@@ -803,23 +795,24 @@ public class CareerScreen extends Screen {
             if (displayCamo.isEmpty()) {
                 g.drawCenteredString(font, "Default Camo", cx, sY, C_TEXT_MED);
             } else {
-                LocalCareerManager.CamoDef def = LocalCareerManager.CAMOS.get(displayCamo);
+                CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(displayCamo);
                 if (def != null) {
                     String name = Component.translatable(def.langKey).getString();
                     while (font.width(name) > rightW - 14 && name.length() > 4)
                         name = name.substring(0, name.length() - 1);
+
                     g.drawCenteredString(font, name, cx, sY, C_TEXT_ORANGE);
                     sY += 11;
-                    
                     String sub = LocalCareerManager.isUnlocked(selectedWeapon, displayCamo)
                         ? "EQUIPPED · " + def.rarity.toUpperCase()
                         : def.rarity.toUpperCase();
                     g.drawCenteredString(font, sub, cx, sY, C_TEXT_DARK);
                     sY += 11;
-                    
+
                     if (currentTab == Tab.SHOP && !def.isPrestige
                         && !LocalCareerManager.isUnlocked(selectedWeapon, displayCamo)
                         && !"mastery".equals(def.rarity)) {
+
                         int price    = LocalCareerManager.getDiscountedPrice(displayCamo);
                         boolean sale = price < def.price;
                         if (sale) {
@@ -838,7 +831,7 @@ public class CareerScreen extends Screen {
             if (displaySkin.isEmpty()) {
                 g.drawCenteredString(font, "Default Skin", cx, sY, C_TEXT_MED);
             } else {
-                LocalCareerManager.SkinDef def = LocalCareerManager.SKINS.get(displaySkin);
+                CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(displaySkin);
                 if (def != null) {
                     String name = Component.translatable(def.langKey).getString();
                     while (font.width(name) > rightW - 14 && name.length() > 4)
@@ -849,12 +842,19 @@ public class CareerScreen extends Screen {
                     boolean unlocked = LocalCareerManager.isSkinUnlocked(selectedWeapon, displaySkin);
                     g.drawCenteredString(font, unlocked ? "UNLOCKED" : "LOCKED", cx, sY,
                                          unlocked ? C_TEXT_GREEN : 0xFFFF5555);
-                    
+
                     if (currentTab == Tab.SHOP && !unlocked && "BUY".equals(def.unlockType)) {
                         sY += 11;
+                        int price = LocalCareerManager.getDiscountedSkinPrice(displaySkin);
+                        boolean sale = price < def.price;
+                        if (sale) {
+                            int pct = Math.round((1f - (float)price / def.price) * 100f);
+                            g.drawCenteredString(font, "SALE -" + pct + "%", cx, sY, 0xFFFF3333);
+                            sY += 10;
+                        }
                         int balance = LocalCareerManager.getData().zrfBalance;
-                        int priceColor = (balance >= def.price) ? 0x00FF00 : 0xFF0000;
-                        g.drawCenteredString(font, def.price + " ZRF", cx, sY, priceColor);
+                        int priceColor = (balance >= price) ? 0x00FF00 : 0xFF0000;
+                        g.drawCenteredString(font, price + " ZRF", cx, sY, priceColor);
                     }
                 }
             }
@@ -879,7 +879,7 @@ public class CareerScreen extends Screen {
         int sY = this.height - H_STATUSBAR;
         g.fill(0, sY, this.width, this.height, C_BG_PANEL_XDARK);
         g.fill(0, sY, this.width, sY + 1, C_BORDER_CYAN_DIM);
-        
+
         int hx = 8;
         hx = drawHint(g, "[CLICK] SELECT",       hx, sY + 4);
         if (this.width > 240)
@@ -912,13 +912,11 @@ public class CareerScreen extends Screen {
 
         if (currentViewMode == ViewMode.CAMOS) {
             Map<String, List<String>> grouped = new HashMap<>();
-
             if (currentTab == Tab.ARSENAL && query.isEmpty()) grouped.computeIfAbsent("basic", k -> new ArrayList<>()).add("");
 
-            for (Map.Entry<String, LocalCareerManager.CamoDef> e : LocalCareerManager.CAMOS.entrySet()) {
+            for (Map.Entry<String, CareerUnlockables.CamoDef> e : CareerUnlockables.CAMOS.entrySet()) {
                 String camo = e.getKey();
-                LocalCareerManager.CamoDef def = e.getValue();
-
+                CareerUnlockables.CamoDef def = e.getValue();
                 boolean weaponMatch = def.exclusiveWeapons.isEmpty() || def.exclusiveWeapons.contains(selectedWeapon);
                 if (!weaponMatch) continue;
 
@@ -941,6 +939,7 @@ public class CareerScreen extends Screen {
                 List<String> list = grouped.get(rarity);
                 if (list == null || list.isEmpty()) continue;
                 if (currentTab == Tab.SHOP) sortShopList(list);
+
                 addGridHeader(rarity);
                 for (int i = 0; i < list.size(); i++) {
                     GridElement cell = new GridElement();
@@ -957,9 +956,9 @@ public class CareerScreen extends Screen {
             if (currentTab == Tab.ARSENAL && query.isEmpty()) {
                 validSkins.add("");
             }
-            for (Map.Entry<String, LocalCareerManager.SkinDef> e : LocalCareerManager.SKINS.entrySet()) {
+            for (Map.Entry<String, CareerUnlockables.SkinDef> e : CareerUnlockables.SKINS.entrySet()) {
                 String skin = e.getKey();
-                LocalCareerManager.SkinDef def = e.getValue();
+                CareerUnlockables.SkinDef def = e.getValue();
                 boolean weaponMatch = def.exclusiveWeapons.isEmpty() || def.exclusiveWeapons.contains(selectedWeapon);
                 if (!weaponMatch) continue;
 
@@ -996,7 +995,6 @@ public class CareerScreen extends Screen {
                 if (isRowEnd) curY += cellSize + cellSpacing;
             }
         }
-
         maxScroll = Math.max(0, curY - (this.height - H_STATUSBAR) + cellSize + 20);
         scrollOffset  = clampScroll(scrollOffset);
     }
@@ -1010,8 +1008,8 @@ public class CareerScreen extends Screen {
 
     private void sortShopList(List<String> list) {
         list.sort((c1, c2) -> {
-            LocalCareerManager.CamoDef d1 = LocalCareerManager.CAMOS.get(c1);
-            LocalCareerManager.CamoDef d2 = LocalCareerManager.CAMOS.get(c2);
+            CareerUnlockables.CamoDef d1 = CareerUnlockables.CAMOS.get(c1);
+            CareerUnlockables.CamoDef d2 = CareerUnlockables.CAMOS.get(c2);
             return switch (currentShopSort) {
                 case "Price: Low-High" -> Integer.compare(
                     LocalCareerManager.getDiscountedPrice(c1),
@@ -1077,7 +1075,6 @@ public class CareerScreen extends Screen {
         String eqSkin = LocalCareerManager.getData().equippedSkins.getOrDefault(selectedWeapon, "");
 
         g.enableScissor(centerX, startY, centerX + centerW, this.height - H_STATUSBAR);
-
         for (GridElement elem : currentGridLayout) {
             int y = (int)(elem.y - scrollOffset);
             if (y + elem.height < startY || y > this.height) continue;
@@ -1103,7 +1100,7 @@ public class CareerScreen extends Screen {
         boolean isHovered  = mx >= elem.x && mx < elem.x + elem.width && my >= y && my < y + elem.height;
 
         String rarity = "basic";
-        LocalCareerManager.CamoDef def = camo.isEmpty() ? null : LocalCareerManager.CAMOS.get(camo);
+        CareerUnlockables.CamoDef def = camo.isEmpty() ? null : CareerUnlockables.CAMOS.get(camo);
         if (def != null) rarity = def.rarity;
 
         g.fill(elem.x, y, elem.x + elem.width, y + elem.height, getCamoBgColor(rarity, false));
@@ -1132,6 +1129,7 @@ public class CareerScreen extends Screen {
                 TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager()
                     .getAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS)
                     .getSprite(loc);
+
                 RenderSystem.setShaderTexture(0,
                     net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS);
                 RenderSystem.enableBlend();
@@ -1157,12 +1155,12 @@ public class CareerScreen extends Screen {
 
             boolean arsenalLocked = currentTab == Tab.ARSENAL
                 && !camo.isEmpty() && !LocalCareerManager.isUnlocked(selectedWeapon, camo);
+
             if (arsenalLocked) {
                 g.fill(elem.x, y, elem.x + elem.width, y + elem.height, 0xBB000000);
                 renderRotatedLabel(g, "LOCKED", elem.x, y, elem.width, elem.height, 0xFFFF5555);
                 if (isHovered) renderLockedTooltip(g, def, camo, mx, my);
             }
-
         } else {
             g.drawCenteredString(font, "Default", elem.x + elem.width/2, y + elem.height/2 - 4, C_TEXT_MED);
         }
@@ -1176,7 +1174,6 @@ public class CareerScreen extends Screen {
         boolean isLocked   = !skin.isEmpty() && !LocalCareerManager.isSkinUnlocked(selectedWeapon, skin);
 
         g.fill(elem.x, y, elem.x + elem.width, y + elem.height, 0xFF0D0D1A);
-
         int borderColor = isSelected ? 0xFFFF55FF : (isHovered ? 0x99FFFFFF : 0x1EFFFFFF);
         g.renderOutline(elem.x, y, elem.width, elem.height, borderColor);
 
@@ -1184,12 +1181,13 @@ public class CareerScreen extends Screen {
             g.fill(elem.x + 2, y + 2, elem.x + 8, y + 8, 0xFF44FF88);
 
         if (!skin.isEmpty()) {
-            LocalCareerManager.SkinDef def = LocalCareerManager.SKINS.get(skin);
+            CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(skin);
             try {
                 ResourceLocation loc = new ResourceLocation("zombierool", "item/skins/" + skin);
                 TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager()
                     .getAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS)
                     .getSprite(loc);
+
                 RenderSystem.setShaderTexture(0, net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS);
                 RenderSystem.enableBlend();
                 int m = Math.max(2, cellSize / 20);
@@ -1212,7 +1210,7 @@ public class CareerScreen extends Screen {
             if (isLocked) {
                 g.fill(elem.x, y, elem.x + elem.width, y + elem.height, 0xBB000000);
                 renderRotatedLabel(g, "LOCKED", elem.x, y, elem.width, elem.height, 0xFFFF5555);
-                
+
                 if (isHovered && def != null) {
                     List<Component> tooltip = new ArrayList<>();
                     tooltip.add(Component.translatable(def.langKey).withStyle(ChatFormatting.LIGHT_PURPLE));
@@ -1224,7 +1222,6 @@ public class CareerScreen extends Screen {
                     g.renderComponentTooltip(font, tooltip, mx, my);
                 }
             }
-
         } else {
             g.drawCenteredString(font, "Default", elem.x + elem.width/2, y + elem.height/2 - 4, C_TEXT_MED);
         }
@@ -1240,11 +1237,10 @@ public class CareerScreen extends Screen {
         pose.popPose();
     }
 
-    private void renderLockedTooltip(GuiGraphics g, LocalCareerManager.CamoDef def,
+    private void renderLockedTooltip(GuiGraphics g, CareerUnlockables.CamoDef def,
                                       String camo, int mx, int my) {
         List<Component> tip = new ArrayList<>();
         tip.add(Component.translatable(def.langKey).withStyle(ChatFormatting.GOLD));
-
         if ("mastery".equals(def.rarity)) {
             if ("camo_solid_gold".equals(camo))
                 tip.add(Component.translatable("gui.zombierool.career.unlock.gold").withStyle(ChatFormatting.RED));
@@ -1258,7 +1254,6 @@ public class CareerScreen extends Screen {
         } else {
             tip.add(Component.translatable("gui.zombierool.career.unlock.shop").withStyle(ChatFormatting.RED));
         }
-
         g.renderComponentTooltip(font, tip, mx, my);
     }
 
@@ -1270,7 +1265,6 @@ public class CareerScreen extends Screen {
             if (elem.isHeader) continue;
             int y = (int)(elem.y - scrollOffset);
             if (y + elem.height < startY || y > this.height) continue;
-
             if (!(mx >= elem.x && mx < elem.x + elem.width && my >= y && my < y + elem.height)) continue;
 
             if (elem.isCamo) {
@@ -1307,8 +1301,7 @@ public class CareerScreen extends Screen {
                 }
             } else {
                 String clicked = elem.id;
-                LocalCareerManager.SkinDef def = LocalCareerManager.SKINS.get(clicked);
-
+                
                 if (currentTab == Tab.SHOP && LocalCareerManager.isSkinUnlocked(selectedWeapon, clicked)) {
                     this.minecraft.getSoundManager().play(
                         SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.VILLAGER_NO, 1f));
@@ -1350,6 +1343,7 @@ public class CareerScreen extends Screen {
 
         for (Map.Entry<String, LocalCareerManager.ChallengeDef> entry
              : LocalCareerManager.getData().activeChallenges.entrySet()) {
+
             String id   = entry.getKey();
             var    def  = entry.getValue();
             int    prog = LocalCareerManager.getData().challengeProgress.getOrDefault(id, 0);
@@ -1365,6 +1359,7 @@ public class CareerScreen extends Screen {
             } else {
                 text = Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target);
             }
+
             g.drawString(font, text.getString(), sX + 8, y + 6, C_TEXT_WHITE);
 
             if (done) {
@@ -1376,6 +1371,7 @@ public class CareerScreen extends Screen {
                 float ratio = Math.min(1f, (float)prog / def.target);
                 g.fill(sX + 8, y + 24, sX + 8 + (int)((boxW - 16) * ratio), y + 33, C_TEXT_CYAN);
             }
+
             g.drawString(font, Component.translatable("gui.zombierool.career.challenge.reward", def.reward), sX + 8, y + 35, C_TEXT_GREEN);
             y += 56;
         }
@@ -1441,7 +1437,6 @@ public class CareerScreen extends Screen {
             super(mc, w, h, top, bottom, itemH);
             this.setRenderBackground(false);
             this.setRenderTopAndBottom(false);
-
             for (String wpn : supportedWeaponsCache) {
                 WeaponEntry e = new WeaponEntry(wpn);
                 allEntries.add(e); this.addEntry(e);
@@ -1477,8 +1472,8 @@ public class CareerScreen extends Screen {
             while (font.width(name) > w - 18 && name.length() > 2) name = name.substring(0, name.length() - 1);
             g.drawString(font, name, left + 6, top + h/2 - 4, color);
 
-            boolean hasStar = LocalCareerManager.CAMOS.values().stream().anyMatch(c -> c.exclusiveWeapons.contains(weaponId))
-                           || LocalCareerManager.SKINS.values().stream().anyMatch(s -> s.exclusiveWeapons.contains(weaponId));
+            boolean hasStar = CareerUnlockables.CAMOS.values().stream().anyMatch(c -> c.exclusiveWeapons.contains(weaponId))
+                           || CareerUnlockables.SKINS.values().stream().anyMatch(s -> s.exclusiveWeapons.contains(weaponId));
             if (hasStar) g.drawString(font, "★", left + w - 12, top + h/2 - 4, C_TEXT_ORANGE);
         }
         @Override
