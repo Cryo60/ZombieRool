@@ -24,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class ObstaclePurchaseHandler {
         if (player.level().isClientSide() || player.isCreative()) return;
         if (!(player instanceof ServerPlayer serverPlayer)) return;
 
-        if (player.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) > 4.0D) {
+        if (player.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > 9.0D) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.get_closer"));
             return;
         }
@@ -73,7 +74,9 @@ public class ObstaclePurchaseHandler {
 
         Set<BlockPos> connected = new HashSet<>();
         findAllConnectedBlocks(player.level(), pos, connected);
+
         transformBlocks(player.level(), connected);
+
         WaveManager.unlockChannel(finalCanal);
 
         serverPlayer.playNotifySound(
@@ -90,6 +93,7 @@ public class ObstaclePurchaseHandler {
 
     private static void findAllConnectedBlocks(Level world, BlockPos startPos, Set<BlockPos> result) {
         if (result.contains(startPos)) return;
+
         if (isValidBlock(world, startPos)) {
             result.add(startPos);
             for (Direction dir : Direction.values()) {
@@ -106,7 +110,6 @@ public class ObstaclePurchaseHandler {
         WorldConfig config = world instanceof ServerLevel sl ? WorldConfig.get(sl) : null;
         for (BlockPos pos : positions) {
             world.setBlock(pos, ZombieroolModBlocks.PATH.get().defaultBlockState(), 3);
-
             if (config != null) {
                 for (Direction dir : Direction.values()) {
                     String key = pos.getX() + "_" + pos.getY() + "_" + pos.getZ() + "_" + dir.getName();

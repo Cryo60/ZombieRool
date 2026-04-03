@@ -1,5 +1,4 @@
 package me.cryo.zombierool.core.registry;
-
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.block.system.DefenseDoorSystem;
 import me.cryo.zombierool.block.system.MeteoriteEasterEgg;
@@ -17,12 +16,11 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
 import me.cryo.zombierool.core.block.ZRSandbagBlock;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ZRBlocks {
@@ -44,6 +42,14 @@ public class ZRBlocks {
 	    ITEMS.register(bus);
 	    registerAllContent();
 	}
+
+    @SubscribeEvent
+    public static void buildContents(net.minecraftforge.event.BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey().location().equals(new net.minecraft.resources.ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
+            event.accept(DEFENSE_DOOR.get());
+            event.accept(METEORITE.get());
+        }
+    }
 
 	private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> blockFactory) {
 	    RegistryObject<T> block = BLOCKS.register(name, blockFactory);
@@ -162,8 +168,8 @@ public class ZRBlocks {
 	    registerSimple("haunted_glass", SoundType.GLASS, true);
 	    registerSimple("not_haunted_glass", SoundType.GLASS, true);
 	    registerSimple("haunted_window", SoundType.GLASS, true);
-
 	    registerFamily("mesh", SoundType.METAL, true);
+
 	    registerFamily("black_coarsed_dirt", SoundType.GRAVEL, false);
 	    registerFamily("black_dirt", SoundType.GRAVEL, false);
 	    registerFamily("deco_dirt", SoundType.WET_GRASS, false);
@@ -214,16 +220,20 @@ public class ZRBlocks {
         registerSimple("corrupted_flesh", SoundType.HONEY_BLOCK, false);
         registerSimple("vile_flesh", SoundType.HONEY_BLOCK, false);
         registerCarpet("scattered_documents", SoundType.WOOD);
+        
         RegistryObject<Block> barbedWire = registerBlock("barbed_wire", () -> new BarbedWireBlock(BlockBehaviour.Properties.of().sound(SoundType.METAL).strength(2.0f, 3600000.0f).noOcclusion()));
         CUTOUT_BLOCKS.add(barbedWire);
+        
         registerFamily("fabric", SoundType.WOOL, false);
         registerFamily("asphalt", SoundType.STONE, false);
         registerFamily("asphalt2", SoundType.STONE, false);
         registerFamily("dungeon_stone", SoundType.STONE, false);
         registerFamily("dungeon_stone2", SoundType.STONE, false);
+        
         registerFamily("arctic_ice", SoundType.GLASS, true); 
         registerFamily("hard_ice", SoundType.GLASS, true);
         registerFamily("crackeled_dirt", SoundType.GRAVEL, false);
+        
         registerBlock("zr_lava", () -> new ZRDecorativeBlock(SoundType.STONE, ZRDecorativeBlock.ShapeType.FULL, false, false, 15));
 	}
 }

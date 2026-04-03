@@ -1,5 +1,4 @@
 package me.cryo.zombierool.core.registry;
-
 import me.cryo.zombierool.ZombieroolMod;
 import me.cryo.zombierool.core.system.WeaponSystem;
 import me.cryo.zombierool.item.BowieKnifeItem;
@@ -16,12 +15,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ZRRegistry {
+
     public static final List<WeaponSystem.BaseGunItem> GUN_ITEMS = new ArrayList<>();
     private static ResourceKey<CreativeModeTab> TAB_KEY;
 
@@ -55,7 +54,6 @@ public class ZRRegistry {
                 ANIM_STIELHANDGRANATE = new Item(new Item.Properties());
                 ANIM_MONKEY_BOMB = new Item(new Item.Properties());
                 ANIM_LIGHTER = new Item(new Item.Properties());
-
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_bottle"), ANIM_BOTTLE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "anim_knife"), ANIM_KNIFE);
                 helper.register(new ResourceLocation(ZombieroolMod.MODID, "bowie_knife"), BOWIE_KNIFE);
@@ -96,7 +94,6 @@ public class ZRRegistry {
                     event.accept(papStack);
                 }
             }
-
             event.accept(BOWIE_KNIFE);
             event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.GRENADE_ITEM.get());
             event.accept(me.cryo.zombierool.core.registry.ZRThrowableRegistry.MOLOTOV_ITEM.get());

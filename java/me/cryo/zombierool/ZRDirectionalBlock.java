@@ -17,13 +17,13 @@ import java.util.List;
 public class ZRDirectionalBlock extends HorizontalDirectionalBlock {
 
     public ZRDirectionalBlock(SoundType sound) {
-	    super(BlockBehaviour.Properties.of()
-	            .sound(sound)
-	            .strength(-1.0f, 3600000.0f)
-	            .noLootTable()
-	            .noOcclusion());
-	    this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-	}
+        super(BlockBehaviour.Properties.of()
+                .sound(sound)
+                .strength(2.0f, 3600000.0f) // <-- CORRIGÉ ICI (2.0f au lieu de -1.0f)
+                .noLootTable()
+                .noOcclusion());
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

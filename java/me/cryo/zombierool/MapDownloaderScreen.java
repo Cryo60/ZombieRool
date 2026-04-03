@@ -53,23 +53,22 @@ public class MapDownloaderScreen extends Screen {
     // ─────────────────────────────────────────────
     //  DESIGN PALETTE  (ARGB)
     // ─────────────────────────────────────────────
-    // Backgrounds
     private static final int C_BG_DARK      = 0xCC000000;
     private static final int C_BG_PANEL     = 0x8C000000;
     private static final int C_BG_CARD      = 0x88000000;
     private static final int C_BG_CARD_SEL  = 0x0AFFCC00;
     private static final int C_BG_GRID      = 0x07006480;
-    // Borders
+
     private static final int C_BORDER_CYAN_DIM  = 0x26006480;
     private static final int C_BORDER_CYAN_MED  = 0x4D00C8FF;
     private static final int C_BORDER_CYAN_FULL = 0xFF00CCFF;
     private static final int C_BORDER_GOLD      = 0x59FFCC00;
     private static final int C_BORDER_CARD      = 0x12FFFFFF;
     private static final int C_BORDER_CARD_SEL  = 0x66FFCC00;
-    // Accent bars (left edge of card)
+
     private static final int C_ACCENT_INSTALLED = 0xFF44FF88;
     private static final int C_ACCENT_UPDATE    = 0xFFFFAA00;
-    // Text
+
     private static final int C_TEXT_WHITE    = 0xFFFFFFFF;
     private static final int C_TEXT_LIGHT    = 0xFFCCCCCC;
     private static final int C_TEXT_MED      = 0xFF888888;
@@ -79,12 +78,11 @@ public class MapDownloaderScreen extends Screen {
     private static final int C_TEXT_GOLD     = 0xFFFFCC00;
     private static final int C_TEXT_GREEN    = 0xFF44FF88;
     private static final int C_TEXT_ORANGE   = 0xFFFFAA00;
-    private static final int C_TEXT_PURPLE   = 0xFFAA66FF;
     private static final int C_TEXT_STARS    = 0xFFFFCC00;
     private static final int C_TEXT_DL       = 0xFF555555;
     private static final int C_TEXT_VERSION  = 0xFF3A3A3A;
     private static final int C_TEXT_DISCORD  = 0xFF5566FF;
-    // Buttons
+
     private static final int C_BTN_INSTALL   = 0xCC22C55E;
     private static final int C_BTN_UPDATE    = 0xCCF59E0B;
     private static final int C_BTN_DONE      = 0xCC50505A;
@@ -93,31 +91,32 @@ public class MapDownloaderScreen extends Screen {
     private static final int C_BTN_TXT_DONE  = 0xFFBBBBBB;
 
     // ─────────────────────────────────────────────
-    //  LAYOUT — computed in init()
+    //  LAYOUT
     // ─────────────────────────────────────────────
     private static final int H_TOPBAR      = 36;
     private static final int H_TABS        = 30;
-    private static final int H_BODY_PAD    = 10; // padding inside body
+    private static final int H_BODY_PAD    = 10; 
     private static final int H_FEATURED    = 88;
     private static final int H_PROGRESS    = 28;
     private static final int H_BOTTOMBAR   = 30;
+
     private static final int CARD_HEIGHT   = 76;
     private static final int CARD_GAP      = 6;
     private static final int CARD_IMG_W    = 110;
     private static final int CARD_BTN_W    = 88;
     private static final int CARD_BTN_H    = 20;
+    
     private static final int FEAT_IMG_W    = 130;
     private static final int FEAT_BTN_W    = 80;
     private static final int FEAT_BTN_H    = 22;
 
-    // computed
-    private int bodyY;      // y where body starts
-    private int listY;      // y where map list starts (below featured)
-    private int listBottom; // y where map list ends
-    private int progressY;  // y of progress bar row
-    private int bottomY;    // y of bottom bar
-    private int contentX;   // horizontal padding start
-    private int contentW;   // usable content width
+    private int bodyY;      
+    private int listY;      
+    private int listBottom; 
+    private int progressY;  
+    private int bottomY;    
+    private int contentX;   
+    private int contentW;   
 
     // ─────────────────────────────────────────────
     //  STATE
@@ -163,32 +162,23 @@ public class MapDownloaderScreen extends Screen {
 
     public enum MapInstallState { NOT_INSTALLED, UPDATE_AVAILABLE, INSTALLED }
 
-    // ─────────────────────────────────────────────
-    //  CONSTRUCTOR
-    // ─────────────────────────────────────────────
     public MapDownloaderScreen(Screen lastScreen) {
         super(Component.translatable("gui.zombierool.downloader.maps.title"));
         this.lastScreen = lastScreen;
     }
 
-    // ─────────────────────────────────────────────
-    //  INIT
-    // ─────────────────────────────────────────────
     @Override
     protected void init() {
-        // ── layout ─────────────────────────────────────────────────────────
         bodyY      = H_TOPBAR + H_TABS;
         bottomY    = this.height - H_BOTTOMBAR;
         progressY  = bottomY - H_PROGRESS;
         listBottom = progressY - H_BODY_PAD;
         listY      = bodyY + H_BODY_PAD + H_FEATURED + CARD_GAP;
 
-        // Responsive horizontal padding: 2% each side, clamped
         int pad    = clamp((int)(this.width * 0.02f), 8, 20);
         contentX   = pad;
         contentW   = this.width - pad * 2;
 
-        // ── TABS ───────────────────────────────────────────────────────────
         int tabW = Math.min(110, (this.width - 40) / 4);
         this.officialTabButton = this.addRenderableWidget(
             Button.builder(Component.translatable("gui.zombierool.downloader.official"),
@@ -200,7 +190,6 @@ public class MapDownloaderScreen extends Screen {
                 btn -> { playSound(); switchTab(false); })
                 .bounds(contentX + tabW + 4, H_TOPBAR + 4, tabW, 22).build());
 
-        // ── SORT + SEARCH (right side of tab row) ──────────────────────────
         int sortW   = Math.min(90, contentW / 5);
         int searchW = Math.min(140, contentW / 4);
         int sortX   = this.width - contentX - sortW - searchW - 6;
@@ -219,12 +208,10 @@ public class MapDownloaderScreen extends Screen {
         this.searchBox.setResponder(q -> filterMaps());
         this.addRenderableWidget(this.searchBox);
 
-        // ── MAP LIST ───────────────────────────────────────────────────────
         int listH = listBottom - listY;
         this.mapList = new MapList(this.minecraft, this.width, Math.max(10, listH), listY, listBottom, CARD_HEIGHT + CARD_GAP);
         this.addWidget(this.mapList);
 
-        // ── BOTTOM BUTTONS ─────────────────────────────────────────────────
         int btnCount = 4;
         int btnW     = Math.min(100, (contentW - (btnCount - 1) * 6) / btnCount);
         int bY       = bottomY + 5;
@@ -249,14 +236,10 @@ public class MapDownloaderScreen extends Screen {
                 btn -> { playSound(); this.minecraft.setScreen(lastScreen); })
                 .bounds(contentX + (btnW + 6) * 3, bY, btnW, 20).build());
 
-        // ── LOAD DATA ──────────────────────────────────────────────────────
         loadFeaturedData();
         switchTab(isOfficialTab);
     }
 
-    // ─────────────────────────────────────────────
-    //  HELPERS
-    // ─────────────────────────────────────────────
     private static int clamp(int v, int min, int max) { return Math.max(min, Math.min(max, v)); }
 
     private void playSound() {
@@ -264,9 +247,6 @@ public class MapDownloaderScreen extends Screen {
             SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
     }
 
-    // ─────────────────────────────────────────────
-    //  TAB SWITCHING
-    // ─────────────────────────────────────────────
     private void switchTab(boolean official) {
         this.isOfficialTab = official;
         this.loading       = true;
@@ -297,9 +277,6 @@ public class MapDownloaderScreen extends Screen {
         if (searchBox     != null) searchBox.setEditable(!isDownloading);
     }
 
-    // ─────────────────────────────────────────────
-    //  NETWORK — featured
-    // ─────────────────────────────────────────────
     private void loadFeaturedData() {
         new Thread(() -> {
             try {
@@ -314,6 +291,7 @@ public class MapDownloaderScreen extends Screen {
                 JsonObject json = new Gson().fromJson(sb.toString(), JsonObject.class);
                 if (json.has("official"))  officialFeaturedId  = json.get("official").getAsString();
                 if (json.has("community")) communityFeaturedId = json.get("community").getAsString();
+
                 loadingFeatured = false;
                 this.minecraft.execute(this::resolveFeaturedMap);
             } catch (Exception e) { loadingFeatured = false; }
@@ -332,9 +310,6 @@ public class MapDownloaderScreen extends Screen {
         updateTabStates();
     }
 
-    // ─────────────────────────────────────────────
-    //  NETWORK — map list
-    // ─────────────────────────────────────────────
     private void loadMapsFromUrl(String jsonUrl) {
         new Thread(() -> {
             try {
@@ -353,14 +328,6 @@ public class MapDownloaderScreen extends Screen {
                 allLoadedMaps.clear();
                 for (int i = 0; i < mapsArray.size(); i++) {
                     JsonObject mapObj = mapsArray.get(i).getAsJsonObject();
-
-                    String resourcePackUrl  = null;
-                    String resourcePackName = null;
-                    if (mapObj.has("resource_pack")) {
-                        JsonObject rpObj = mapObj.getAsJsonObject("resource_pack");
-                        if (rpObj.has("url"))  resourcePackUrl  = rpObj.get("url").getAsString();
-                        if (rpObj.has("name")) resourcePackName = rpObj.get("name").getAsString();
-                    }
 
                     float avgStars    = 0f;
                     int   reviewsCount = 0;
@@ -386,7 +353,6 @@ public class MapDownloaderScreen extends Screen {
                         mapObj.get("name").getAsString(),
                         mapObj.has("description") ? mapObj.get("description").getAsString() : "",
                         mapObj.get("download_url").getAsString(),
-                        resourcePackUrl, resourcePackName,
                         mapObj.has("sha256")       ? mapObj.get("sha256").getAsString()       : null,
                         mapObj.has("author")       ? mapObj.get("author").getAsString()       : "Official",
                         mapObj.has("image_url")    ? mapObj.get("image_url").getAsString()    : null,
@@ -420,9 +386,6 @@ public class MapDownloaderScreen extends Screen {
         }).start();
     }
 
-    // ─────────────────────────────────────────────
-    //  NETWORK — images
-    // ─────────────────────────────────────────────
     private void downloadImageAsync(MapEntry entry) {
         if (entry.imageUrl == null || entry.imageUrl.isEmpty()) return;
         if (imageCache.containsKey(entry.id)) return;
@@ -445,9 +408,6 @@ public class MapDownloaderScreen extends Screen {
         }).start();
     }
 
-    // ─────────────────────────────────────────────
-    //  INSTALL STATE CHECK
-    // ─────────────────────────────────────────────
     private void checkDownloadedMaps() {
         File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
         Gson gson     = new Gson();
@@ -467,10 +427,12 @@ public class MapDownloaderScreen extends Screen {
                     JsonObject vJson      = gson.fromJson(reader, JsonObject.class);
                     String     localSha   = vJson.has("sha256")   ? vJson.get("sha256").getAsString()   : "";
                     String     localVer   = vJson.has("version")  ? vJson.get("version").getAsString()  : "";
+
                     boolean    hashDiff   = mapObj.sha256  != null && !mapObj.sha256.isEmpty()
                                            && !localSha.equalsIgnoreCase(mapObj.sha256);
                     boolean    verDiff    = mapObj.version != null && !mapObj.version.isEmpty()
                                            && !localVer.equalsIgnoreCase(mapObj.version);
+
                     state = (hashDiff || verDiff) ? MapInstallState.UPDATE_AVAILABLE : MapInstallState.INSTALLED;
                 } catch (Exception e) { state = MapInstallState.UPDATE_AVAILABLE; }
             } else {
@@ -480,14 +442,11 @@ public class MapDownloaderScreen extends Screen {
         mapObj.state = state;
     }
 
-    // ─────────────────────────────────────────────
-    //  DOWNLOAD
-    // ─────────────────────────────────────────────
-    public void downloadMap(MapEntry map, boolean includeResourcePack) {
+    public void downloadMap(MapEntry map) {
         if (isDownloading) return;
         new Thread(() -> {
             try {
-                downloadMapInternal(map, includeResourcePack);
+                downloadMapInternal(map);
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 this.minecraft.execute(() -> {
@@ -512,7 +471,7 @@ public class MapDownloaderScreen extends Screen {
             chain = chain.thenCompose(v -> {
                 CompletableFuture<Void> f = new CompletableFuture<>();
                 new Thread(() -> {
-                    try { downloadMapInternal(map, map.hasResourcePack()); }
+                    try { downloadMapInternal(map); }
                     catch (Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                         this.minecraft.execute(() -> statusMessage = "Error on " + map.name + ": " + msg);
@@ -530,7 +489,7 @@ public class MapDownloaderScreen extends Screen {
         }));
     }
 
-    private void downloadMapInternal(MapEntry map, boolean includeResourcePack) throws Exception {
+    private void downloadMapInternal(MapEntry map) throws Exception {
         this.minecraft.execute(() -> {
             isDownloading    = true;
             downloadProgress = 0f;
@@ -538,18 +497,7 @@ public class MapDownloaderScreen extends Screen {
             updateButtonStates();
         });
 
-        downloadFile(map.downloadUrl, map.name, true, map.name + ".zip", map.sha256, map);
-
-        if (includeResourcePack && map.hasResourcePack()) {
-            this.minecraft.execute(() -> { statusMessage = "Downloading resource pack..."; downloadProgress = 0f; });
-            String rpName = map.resourcePackName != null ? map.resourcePackName : map.name;
-            downloadFile(map.resourcePackUrl, rpName, false, rpName + ".zip", null, null);
-            this.minecraft.execute(() -> {
-                try { Minecraft.getInstance().getResourcePackRepository().reload(); }
-                catch (Exception ignored) {}
-            });
-        }
-
+        downloadFile(map.downloadUrl, map.name, map.name + ".zip", map.sha256);
         recordDownloadOnServer(map.id);
 
         this.minecraft.execute(() -> {
@@ -581,8 +529,7 @@ public class MapDownloaderScreen extends Screen {
         }).start();
     }
 
-    private void downloadFile(String fileUrl, String name, boolean isMap,
-                               String fileName, String sha256Hash, MapEntry mapRef) throws Exception {
+    private void downloadFile(String fileUrl, String name, String fileName, String sha256Hash) throws Exception {
         System.setProperty("java.net.preferIPv4Stack", "true");
         HttpURLConnection conn = openConnectionWithRedirects(fileUrl);
 
@@ -596,10 +543,12 @@ public class MapDownloaderScreen extends Screen {
         try (InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(zipFile)) {
             byte[] buffer = new byte[8192]; int bytesRead; long totalRead = 0;
             long lastUpdate = System.currentTimeMillis();
+
             while ((bytesRead = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
                 totalRead += bytesRead;
                 if (totalRead > MAX_FILE_SIZE) throw new IOException("Limit exceeded during download");
+
                 long now = System.currentTimeMillis();
                 if (contentLength > 0 && now - lastUpdate > 100) {
                     final float p = (float) totalRead / contentLength;
@@ -610,49 +559,41 @@ public class MapDownloaderScreen extends Screen {
         }
         conn.disconnect();
 
-        if (isMap) {
-            this.minecraft.execute(() -> statusMessage = "Installing " + name + "...");
-            File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
-            File targetDir = new File(savesDir, name);
-            if (sha256Hash != null && !sha256Hash.isEmpty()) {
-                this.minecraft.execute(() -> statusMessage = "Verifying integrity...");
-                String actual = calculateSHA256(zipFile);
-                if (actual != null && !actual.equalsIgnoreCase(sha256Hash)) {
-                    zipFile.delete(); throw new Exception("Hash mismatch (integrity check failed)");
-                }
+        this.minecraft.execute(() -> statusMessage = "Installing " + name + "...");
+        File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
+        File targetDir = new File(savesDir, name);
+
+        if (sha256Hash != null && !sha256Hash.isEmpty()) {
+            this.minecraft.execute(() -> statusMessage = "Verifying integrity...");
+            String actual = calculateSHA256(zipFile);
+            if (actual != null && !actual.equalsIgnoreCase(sha256Hash)) {
+                zipFile.delete(); throw new Exception("Hash mismatch (integrity check failed)");
             }
-            if (targetDir.exists()) deleteDirectory(targetDir);
-            targetDir.mkdirs();
-            extractZip(zipFile, targetDir);
-            zipFile.delete();
-        } else {
-            this.minecraft.execute(() -> statusMessage = "Installing RP...");
-            File rpDir = new File(Minecraft.getInstance().gameDirectory, "resourcepacks");
-            rpDir.mkdirs();
-            File target = new File(rpDir, fileName);
-            if (target.exists()) target.delete();
-            java.nio.file.Files.move(zipFile.toPath(), target.toPath());
         }
+
+        if (targetDir.exists()) deleteDirectory(targetDir);
+        targetDir.mkdirs();
+
+        extractZip(zipFile, targetDir);
+        zipFile.delete();
     }
 
     private void saveUnifiedMetadata(MapEntry map, File worldDir) {
         try {
             File       metaFile = new File(worldDir, "zombierool_map.json");
             JsonObject json     = new JsonObject();
+
             if (metaFile.exists()) {
                 try (FileReader r = new FileReader(metaFile)) {
                     json = new Gson().fromJson(r, JsonObject.class);
                     if (json == null) json = new JsonObject();
                 } catch (Exception ignored) {}
             }
+
             json.addProperty("id",      map.id);
             json.addProperty("version", map.version != null ? map.version : "1.0.0");
             json.addProperty("sha256",  map.sha256  != null ? map.sha256  : "");
-            if (map.hasResourcePack()) {
-                json.addProperty("resource_pack_url",  map.resourcePackUrl);
-                json.addProperty("resource_pack_name",
-                    map.resourcePackName != null ? map.resourcePackName : map.name);
-            }
+
             try (FileWriter w = new FileWriter(metaFile)) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(json, w);
             }
@@ -688,6 +629,7 @@ public class MapDownloaderScreen extends Screen {
                 File file = new File(destDir, entry.getName());
                 if (!file.getCanonicalPath().startsWith(destDir.getCanonicalPath() + File.separator))
                     throw new IOException("Zip Slip detected");
+
                 if (entry.isDirectory()) { file.mkdirs(); }
                 else {
                     file.getParentFile().mkdirs();
@@ -701,12 +643,10 @@ public class MapDownloaderScreen extends Screen {
         }
     }
 
-    // ─────────────────────────────────────────────
-    //  FILTER / SORT
-    // ─────────────────────────────────────────────
     private void filterMaps() {
         String query = (searchBox != null) ? searchBox.getValue().toLowerCase().trim() : "";
         filteredMaps.clear();
+
         for (MapEntry m : allLoadedMaps) {
             if (query.isEmpty()
                 || m.name.toLowerCase().contains(query)
@@ -715,25 +655,23 @@ public class MapDownloaderScreen extends Screen {
                 filteredMaps.add(m);
             }
         }
+
         filteredMaps.sort((a, b) -> switch (currentSortIndex) {
             case 1  -> Integer.compare(b.downloads, a.downloads);
             case 2  -> Long.compare(b.timestamp, a.timestamp);
             default -> Float.compare(b.avgStars, a.avgStars);
         });
+
         if (mapList != null) mapList.refreshList();
     }
 
-    // ─────────────────────────────────────────────
-    //  INPUT
-    // ─────────────────────────────────────────────
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Discord link
         if (mouseX >= discordLinkX && mouseX <= discordLinkX + discordLinkWidth
             && mouseY >= discordLinkY && mouseY <= discordLinkY + 9) {
             playSound(); Util.getPlatform().openUri(DISCORD_INVITE); return true;
         }
-        // Featured button
+
         if (featuredMap != null && !loadingFeatured) {
             int featX   = contentX;
             int featBtnX = featX + contentW - FEAT_BTN_W - 10;
@@ -743,10 +681,8 @@ public class MapDownloaderScreen extends Screen {
                 playSound();
                 if (featuredMap.state != MapInstallState.NOT_INSTALLED) {
                     this.minecraft.setScreen(new OverwriteConfirmScreen(this, featuredMap));
-                } else if (featuredMap.hasResourcePack()) {
-                    this.minecraft.setScreen(new ResourcePackConfirmScreen(this, featuredMap));
                 } else {
-                    downloadMap(featuredMap, false);
+                    downloadMap(featuredMap);
                 }
                 return true;
             }
@@ -763,25 +699,16 @@ public class MapDownloaderScreen extends Screen {
         return super.keyPressed(kc, sc, mod);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — main
-    // ─────────────────────────────────────────────
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float pt) {
         lastMouseX = mouseX; lastMouseY = mouseY;
-
-        // Background
         this.renderBackground(g);
         renderBGGrid(g);
-
-        // Minecraft widgets (buttons, search box)
         super.render(g, mouseX, mouseY, pt);
 
-        // Chrome
         renderTopBar(g);
         renderTabsBackground(g);
 
-        // Content
         if (loading) {
             g.drawCenteredString(font,
                 Component.translatable("gui.zombierool.downloader.loading"),
@@ -797,34 +724,22 @@ public class MapDownloaderScreen extends Screen {
         renderBottomBar(g, mouseX, mouseY);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — background grid
-    // ─────────────────────────────────────────────
     private void renderBGGrid(GuiGraphics g) {
         for (int gx = 0; gx < this.width;  gx += 40) g.fill(gx, 0, gx + 1, this.height, C_BG_GRID);
         for (int gy = 0; gy < this.height; gy += 40) g.fill(0, gy, this.width, gy + 1,   C_BG_GRID);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — top bar
-    // ─────────────────────────────────────────────
     private void renderTopBar(GuiGraphics g) {
         g.fill(0, 0, this.width, H_TOPBAR, C_BG_DARK);
         g.fill(0, H_TOPBAR - 1, this.width, H_TOPBAR, C_BORDER_CYAN_DIM);
         g.drawCenteredString(font, "MAP DOWNLOADER", this.width / 2, H_TOPBAR / 2 - 4, C_TEXT_GOLD);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — tabs background
-    // ─────────────────────────────────────────────
     private void renderTabsBackground(GuiGraphics g) {
         g.fill(0, H_TOPBAR, this.width, bodyY, 0x99000000);
         g.fill(0, bodyY - 1, this.width, bodyY, C_BORDER_CYAN_DIM);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — featured card
-    // ─────────────────────────────────────────────
     private void renderFeatured(GuiGraphics g, int mouseX, int mouseY) {
         if (loadingFeatured) {
             g.drawCenteredString(font, "Loading featured...",
@@ -838,11 +753,9 @@ public class MapDownloaderScreen extends Screen {
         int fW = contentW;
         int fH = H_FEATURED;
 
-        // Card background + gold border
         g.fill(fX, fY, fX + fW, fY + fH, C_BG_CARD);
         g.renderOutline(fX, fY, fW, fH, C_BORDER_GOLD);
 
-        // Image zone
         ResourceLocation imgLoc = resourceLocationCache.get(featuredMap.id);
         if (imgLoc != null) {
             RenderSystem.enableBlend();
@@ -852,42 +765,35 @@ public class MapDownloaderScreen extends Screen {
             g.fill(fX + 1, fY + 1, fX + FEAT_IMG_W, fY + fH - 1, 0xFF111111);
             g.drawCenteredString(font, "No Image", fX + FEAT_IMG_W / 2, fY + fH / 2 - 4, C_TEXT_DARK);
         }
-
-        // Thin separator line between image and text
         g.fill(fX + FEAT_IMG_W, fY + 6, fX + FEAT_IMG_W + 1, fY + fH - 6, C_BORDER_CYAN_DIM);
 
-        // Text block
         int tX = fX + FEAT_IMG_W + 10;
         int tY = fY + 8;
         int tW = fW - FEAT_IMG_W - FEAT_BTN_W - 24;
 
-        // Badge
         g.drawString(font, "★ FEATURED", tX, tY, C_TEXT_GOLD);
         tY += 12;
 
-        // Name + status badge
         String statusSuffix = featuredMap.state == MapInstallState.UPDATE_AVAILABLE ? " [UPDATE]"
                             : featuredMap.state == MapInstallState.INSTALLED         ? " [INSTALLED]" : "";
         int nameColor = featuredMap.state == MapInstallState.UPDATE_AVAILABLE ? C_TEXT_ORANGE
                       : featuredMap.state == MapInstallState.INSTALLED         ? C_TEXT_GREEN : C_TEXT_WHITE;
+
         String displayName = featuredMap.name + statusSuffix;
         while (font.width(displayName) > tW && displayName.length() > 4)
             displayName = displayName.substring(0, displayName.length() - 1);
         g.drawString(font, displayName, tX, tY, nameColor);
         tY += 12;
 
-        // Description (1 line)
         String desc = font.plainSubstrByWidth(featuredMap.description, tW);
         g.drawString(font, desc, tX, tY, C_TEXT_MED);
         tY += 11;
 
-        // Meta
         String meta = "MC: " + featuredMap.gameVersion + "  ·  ZR: " + featuredMap.zrVersion
                     + "  ·  v" + featuredMap.version + "  ·  ⬇ " + featuredMap.downloads;
         g.drawString(font, meta, tX, tY, C_TEXT_DARK);
         tY += 11;
 
-        // Tags
         int tagX = tX;
         for (String tag : featuredMap.tags) {
             int tagW2 = font.width(tag) + 8;
@@ -898,24 +804,22 @@ public class MapDownloaderScreen extends Screen {
             tagX += tagW2 + 4;
         }
 
-        // Action button
         int btnX = fX + fW - FEAT_BTN_W - 10;
         int btnY = fY + fH - FEAT_BTN_H - 10;
         boolean btnHov = mouseX >= btnX && mouseX <= btnX + FEAT_BTN_W
                       && mouseY >= btnY && mouseY <= btnY + FEAT_BTN_H;
+
         int btnColor = isDownloading ? C_BTN_DISABLED
                      : featuredMap.state == MapInstallState.NOT_INSTALLED ? (btnHov ? 0xCC16A34A : C_BTN_INSTALL)
                      : featuredMap.state == MapInstallState.UPDATE_AVAILABLE ? (btnHov ? 0xCCD97706 : C_BTN_UPDATE)
                      : (btnHov ? 0xCC4B5563 : C_BTN_DONE);
+
         g.fill(btnX, btnY, btnX + FEAT_BTN_W, btnY + FEAT_BTN_H, btnColor);
         String btnTxt = featuredMap.state == MapInstallState.NOT_INSTALLED ? "Download"
                       : featuredMap.state == MapInstallState.UPDATE_AVAILABLE ? "Update" : "Reinstall";
         g.drawCenteredString(font, btnTxt, btnX + FEAT_BTN_W / 2, btnY + FEAT_BTN_H / 2 - 4, C_BTN_TXT);
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — progress row
-    // ─────────────────────────────────────────────
     private void renderProgressRow(GuiGraphics g) {
         g.fill(0, progressY, this.width, progressY + H_PROGRESS, 0x88000000);
         g.fill(0, progressY, this.width, progressY + 1, C_BORDER_CYAN_DIM);
@@ -926,12 +830,13 @@ public class MapDownloaderScreen extends Screen {
             String raw = statusMessage.startsWith("§a") ? statusMessage.substring(2) : statusMessage;
             int col = statusMessage.startsWith("§a") ? C_TEXT_GREEN
                     : (isDownloading ? C_TEXT_ORANGE : 0xFFFF5555);
+
             if (isDownloading && downloadProgress > 0) {
-                // Label left, bar centre-right
                 g.drawString(font, raw, contentX, cy, col);
                 int barW  = Math.min(200, contentW / 3);
                 int barX  = this.width - contentX - barW;
                 int barY  = progressY + H_PROGRESS / 2 - 3;
+
                 g.fill(barX, barY, barX + barW, barY + 6, 0xFF1A1A1A);
                 g.fill(barX - 1, barY - 1, barX + barW + 1, barY + 7, 0xFF252525);
                 g.fill(barX, barY, barX + (int)(barW * downloadProgress), barY + 6, C_TEXT_CYAN);
@@ -941,7 +846,6 @@ public class MapDownloaderScreen extends Screen {
                 g.drawCenteredString(font, raw, this.width / 2, cy, col);
             }
         } else {
-            // Discord link
             discordLinkWidth = font.width(DISCORD_MESSAGE);
             discordLinkX     = (this.width - discordLinkWidth) / 2;
             discordLinkY     = cy;
@@ -951,23 +855,16 @@ public class MapDownloaderScreen extends Screen {
         }
     }
 
-    // tiny helper — we store last mouseX/Y for hover checks outside render
     private int lastMouseX = 0, lastMouseY = 0;
     private boolean mouseCheck(int x, int y, int w, int h) {
         return lastMouseX >= x && lastMouseX <= x + w && lastMouseY >= y && lastMouseY <= y + h;
     }
 
-    // ─────────────────────────────────────────────
-    //  RENDER — bottom bar
-    // ─────────────────────────────────────────────
     private void renderBottomBar(GuiGraphics g, int mouseX, int mouseY) {
         g.fill(0, bottomY, this.width, this.height, C_BG_DARK);
         g.fill(0, bottomY, this.width, bottomY + 1, 0x14FFFFFF);
     }
 
-    // ─────────────────────────────────────────────
-    //  REMOVED
-    // ─────────────────────────────────────────────
     @Override
     public void removed() {
         super.removed();
@@ -976,9 +873,6 @@ public class MapDownloaderScreen extends Screen {
         resourceLocationCache.clear();
     }
 
-    // ─────────────────────────────────────────────
-    //  NETWORK UTIL
-    // ─────────────────────────────────────────────
     private HttpURLConnection openConnectionWithRedirects(String urlString) throws Exception {
         try {
             String decoded = URLDecoder.decode(urlString, StandardCharsets.UTF_8.name());
@@ -1015,9 +909,6 @@ public class MapDownloaderScreen extends Screen {
         return conn;
     }
 
-    // ─────────────────────────────────────────────
-    //  MAP LIST (inner)
-    // ─────────────────────────────────────────────
     private class MapList extends ObjectSelectionList<MapEntry> {
         public MapList(Minecraft mc, int width, int height, int top, int bottom, int itemHeight) {
             super(mc, width, height, top, bottom, itemHeight);
@@ -1039,12 +930,9 @@ public class MapDownloaderScreen extends Screen {
         @Override protected void renderBackground(GuiGraphics g) { /* transparent */ }
     }
 
-    // ─────────────────────────────────────────────
-    //  MAP ENTRY (inner)
-    // ─────────────────────────────────────────────
     private class MapEntry extends ObjectSelectionList.Entry<MapEntry> {
         public final String id, name, description, downloadUrl;
-        public final String resourcePackUrl, resourcePackName, sha256, author, imageUrl;
+        public final String sha256, author, imageUrl;
         public final List<String> tags;
         public final float avgStars;
         public final int   reviewsCount;
@@ -1054,21 +942,19 @@ public class MapDownloaderScreen extends Screen {
         public MapInstallState state = MapInstallState.NOT_INSTALLED;
 
         public MapEntry(String id, String name, String description, String downloadUrl,
-                        String resourcePackUrl, String resourcePackName, String sha256,
+                        String sha256,
                         String author, String imageUrl, List<String> tags,
                         float avgStars, int reviewsCount,
                         String gameVersion, String zrVersion, String version,
                         int downloads, long timestamp) {
             this.id = id; this.name = name; this.description = description;
-            this.downloadUrl = downloadUrl; this.resourcePackUrl = resourcePackUrl;
-            this.resourcePackName = resourcePackName; this.sha256 = sha256;
+            this.downloadUrl = downloadUrl; 
+            this.sha256 = sha256;
             this.author = author; this.imageUrl = imageUrl; this.tags = tags;
             this.avgStars = avgStars; this.reviewsCount = reviewsCount;
             this.gameVersion = gameVersion; this.zrVersion = zrVersion; this.version = version;
             this.downloads = downloads; this.timestamp = timestamp;
         }
-
-        public boolean hasResourcePack() { return resourcePackUrl != null && !resourcePackUrl.isEmpty(); }
 
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height,
@@ -1076,18 +962,15 @@ public class MapDownloaderScreen extends Screen {
             boolean isSelected = mapList.getSelected() == this;
             int cardH = height - CARD_GAP;
 
-            // ── Card background ─────────────────────────────────────────
             g.fill(left, top, left + width, top + cardH, isSelected ? C_BG_CARD_SEL : C_BG_CARD);
             g.renderOutline(left, top, width, cardH, isSelected ? C_BORDER_CARD_SEL : C_BORDER_CARD);
 
-            // ── Left accent bar (3px) ────────────────────────────────────
             if (state == MapInstallState.INSTALLED) {
                 g.fill(left, top, left + 3, top + cardH, C_ACCENT_INSTALLED);
             } else if (state == MapInstallState.UPDATE_AVAILABLE) {
                 g.fill(left, top, left + 3, top + cardH, C_ACCENT_UPDATE);
             }
 
-            // ── Image ────────────────────────────────────────────────────
             int imgX = left + 4;
             int imgY = top + (cardH - 68) / 2;
             ResourceLocation imgLoc = resourceLocationCache.get(id);
@@ -1099,18 +982,14 @@ public class MapDownloaderScreen extends Screen {
                 g.fill(imgX, imgY, imgX + CARD_IMG_W, imgY + 68, 0xFF0E0E0E);
                 g.drawCenteredString(font, "No Image", imgX + CARD_IMG_W / 2, imgY + 28, C_TEXT_DARK);
             }
-
-            // Thin separator
             g.fill(imgX + CARD_IMG_W + 2, top + 6, imgX + CARD_IMG_W + 3, top + cardH - 6, C_BORDER_CYAN_DIM);
 
-            // ── Text block ───────────────────────────────────────────────
             int tX  = imgX + CARD_IMG_W + 8;
             int tW  = width - CARD_IMG_W - CARD_BTN_W - 22;
             int tY1 = top + 8;
             int tY2 = top + cardH / 2 - 4;
             int tY3 = top + cardH - 18;
 
-            // Row 1 — name + author + badges
             String nameStr = font.plainSubstrByWidth(name, tW - 80);
             g.drawString(font, nameStr, tX, tY1, C_TEXT_WHITE);
 
@@ -1118,25 +997,15 @@ public class MapDownloaderScreen extends Screen {
             g.drawString(font, "by " + author, badgeX, tY1, C_TEXT_DARK);
             badgeX += font.width("by " + author) + 6;
 
-            if (hasResourcePack()) {
-                g.fill(badgeX, tY1 - 1, badgeX + font.width("[RP]") + 6, tY1 + 9, 0x1AAA66FF);
-                g.renderOutline(badgeX, tY1 - 1, font.width("[RP]") + 6, 10, 0x2CAA66FF);
-                g.drawString(font, "[RP]", badgeX + 3, tY1, C_TEXT_PURPLE);
-                badgeX += font.width("[RP]") + 10;
-            }
-
-            // Status badge
             if (state == MapInstallState.INSTALLED) {
                 g.drawString(font, "✓ INSTALLED", badgeX, tY1, C_TEXT_GREEN);
             } else if (state == MapInstallState.UPDATE_AVAILABLE) {
                 g.drawString(font, "↑ UPDATE", badgeX, tY1, C_TEXT_ORANGE);
             }
 
-            // Row 2 — description
             String desc = font.plainSubstrByWidth(description, tW);
             g.drawString(font, desc, tX, tY2, C_TEXT_MED);
 
-            // Row 3 — stars, downloads, version
             String starsStr = reviewsCount > 0
                 ? String.format("%.1f ★ (%d)", avgStars, reviewsCount) : "No ratings";
             g.drawString(font, starsStr, tX, tY3, C_TEXT_STARS);
@@ -1147,7 +1016,6 @@ public class MapDownloaderScreen extends Screen {
             int verX = dlX + font.width("⬇ " + downloads) + 10;
             g.drawString(font, "MC " + gameVersion + " · v" + version, verX, tY3, C_TEXT_VERSION);
 
-            // ── Action button ────────────────────────────────────────────
             int btnX = left + width - CARD_BTN_W - 8;
             int btnY = top + cardH / 2 - CARD_BTN_H / 2;
             boolean btnHov = mouseX >= btnX && mouseX <= btnX + CARD_BTN_W
@@ -1162,6 +1030,7 @@ public class MapDownloaderScreen extends Screen {
 
             String btnTxt = state == MapInstallState.NOT_INSTALLED    ? "Download"
                           : state == MapInstallState.UPDATE_AVAILABLE ? "Update" : "Reinstall";
+
             int txtColor = (state == MapInstallState.INSTALLED && !isDownloading) ? C_BTN_TXT_DONE : C_BTN_TXT;
             g.drawCenteredString(font, btnTxt, btnX + CARD_BTN_W / 2, btnY + CARD_BTN_H / 2 - 4, txtColor);
         }
@@ -1172,14 +1041,13 @@ public class MapDownloaderScreen extends Screen {
             int rowW  = mapList.getRowWidth();
             int left  = MapDownloaderScreen.this.width / 2 - rowW / 2;
             int btnX  = left + rowW - CARD_BTN_W - 8;
+
             if (mouseX >= btnX && mouseX <= btnX + CARD_BTN_W && !isDownloading) {
                 playSound();
                 if (state != MapInstallState.NOT_INSTALLED) {
                     minecraft.setScreen(new OverwriteConfirmScreen(MapDownloaderScreen.this, this));
-                } else if (hasResourcePack()) {
-                    minecraft.setScreen(new ResourcePackConfirmScreen(MapDownloaderScreen.this, this));
                 } else {
-                    downloadMap(this, false);
+                    downloadMap(this);
                 }
             }
             return true;
@@ -1188,9 +1056,6 @@ public class MapDownloaderScreen extends Screen {
         @Override public Component getNarration() { return Component.literal(name); }
     }
 
-    // ─────────────────────────────────────────────
-    //  CONFIRM SCREENS
-    // ─────────────────────────────────────────────
     private class OverwriteConfirmScreen extends Screen {
         private final MapDownloaderScreen parent;
         private final MapEntry map;
@@ -1204,13 +1069,15 @@ public class MapDownloaderScreen extends Screen {
         protected void init() {
             int bX = (this.width - 214) / 2;
             int bY = this.height / 2 + 28;
+
             this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.zombierool.overwrite.yes"), btn -> {
                     minecraft.getSoundManager().play(
                         SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1f));
-                    if (map.hasResourcePack()) minecraft.setScreen(new ResourcePackConfirmScreen(parent, map));
-                    else { minecraft.setScreen(parent); parent.downloadMap(map, false); }
+                    minecraft.setScreen(parent); 
+                    parent.downloadMap(map);
                 }).bounds(bX, bY, 100, 20).build());
+
             this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.zombierool.overwrite.cancel"), btn -> {
                     minecraft.getSoundManager().play(
@@ -1223,54 +1090,16 @@ public class MapDownloaderScreen extends Screen {
         public void render(GuiGraphics g, int mx, int my, float pt) {
             this.renderBackground(g);
             g.fill(0, 0, this.width, this.height, 0x99000000);
+
             int cX = this.width / 2;
             int cY = this.height / 2 - 38;
+
             g.fill(cX - 120, cY - 8, cX + 120, cY + 60, 0xEE0D1117);
             g.renderOutline(cX - 120, cY - 8, 240, 68, 0x59FF5555);
+
             g.drawCenteredString(font, this.title, cX, cY, 0xFFFF5555);
             g.drawCenteredString(font, Component.translatable("gui.zombierool.overwrite.warning1"), cX, cY + 16, C_TEXT_MED);
-            super.render(g, mx, my, pt);
-        }
-    }
 
-    private class ResourcePackConfirmScreen extends Screen {
-        private final MapDownloaderScreen parent;
-        private final MapEntry map;
-
-        ResourcePackConfirmScreen(MapDownloaderScreen parent, MapEntry map) {
-            super(Component.translatable("gui.zombierool.rp_confirm.title"));
-            this.parent = parent; this.map = map;
-        }
-
-        @Override
-        protected void init() {
-            int bX = (this.width - 214) / 2;
-            int bY = this.height / 2 + 28;
-            this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.yes"), btn -> {
-                    minecraft.getSoundManager().play(
-                        SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1f));
-                    minecraft.setScreen(parent); parent.downloadMap(map, true);
-                }).bounds(bX, bY, 100, 20).build());
-            this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.no"), btn -> {
-                    minecraft.getSoundManager().play(
-                        SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1f));
-                    minecraft.setScreen(parent); parent.downloadMap(map, false);
-                }).bounds(bX + 114, bY, 100, 20).build());
-        }
-
-        @Override
-        public void render(GuiGraphics g, int mx, int my, float pt) {
-            this.renderBackground(g);
-            g.fill(0, 0, this.width, this.height, 0x99000000);
-            int cX = this.width / 2;
-            int cY = this.height / 2 - 38;
-            g.fill(cX - 130, cY - 8, cX + 130, cY + 60, 0xEE0D1117);
-            g.renderOutline(cX - 130, cY - 8, 260, 68, C_BORDER_GOLD);
-            g.drawCenteredString(font, this.title, cX, cY, C_TEXT_GOLD);
-            g.drawCenteredString(font,
-                Component.translatable("gui.zombierool.rp_confirm.desc1"), cX, cY + 16, C_TEXT_WHITE);
             super.render(g, mx, my, pt);
         }
     }

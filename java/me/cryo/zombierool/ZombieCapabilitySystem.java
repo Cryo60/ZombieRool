@@ -1,5 +1,4 @@
 package me.cryo.zombierool.core.capability;
-
 import me.cryo.zombierool.client.career.LocalCareerManager;
 import me.cryo.zombierool.core.system.WeaponFacade;
 import me.cryo.zombierool.network.NetworkHandler;
@@ -24,7 +23,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,13 +43,10 @@ public class ZombieCapabilitySystem {
 
         int getKills();
         void addKill();
-
         int getHeadshots();
         void addHeadshot();
-
         int getAssists();
         void addAssist();
-
         int getDowns();
         void addDown();
 
@@ -61,10 +56,9 @@ public class ZombieCapabilitySystem {
 
         void resetStats();
         void resetPerkPurchases();
-
+        
         String getLethalType();
         void setLethalType(String type);
-
         int getLethalCount();
         void setLethalCount(int count);
 
@@ -75,6 +69,7 @@ public class ZombieCapabilitySystem {
     public static class Impl implements IData {
         private int points = 500;
         private int totalPoints = 0;
+        
         private int kills = 0;
         private int headshots = 0;
         private int assists = 0;
@@ -95,13 +90,10 @@ public class ZombieCapabilitySystem {
 
         @Override public int getKills() { return kills; }
         @Override public void addKill() { this.kills++; }
-
         @Override public int getHeadshots() { return headshots; }
         @Override public void addHeadshot() { this.headshots++; }
-
         @Override public int getAssists() { return assists; }
         @Override public void addAssist() { this.assists++; }
-
         @Override public int getDowns() { return downs; }
         @Override public void addDown() { this.downs++; }
 
@@ -111,7 +103,6 @@ public class ZombieCapabilitySystem {
 
         @Override public String getLethalType() { return lethalType; }
         @Override public void setLethalType(String type) { this.lethalType = type; }
-
         @Override public int getLethalCount() { return lethalCount; }
         @Override public void setLethalCount(int count) { this.lethalCount = Math.max(0, Math.min(5, count)); }
 
@@ -132,7 +123,7 @@ public class ZombieCapabilitySystem {
             this.downs = source.getDowns();
             this.lethalType = source.getLethalType();
             this.lethalCount = source.getLethalCount();
-
+            
             this.perkPurchases.clear();
             if (source instanceof Impl implSource) {
                 this.perkPurchases.putAll(implSource.perkPurchases);
@@ -151,7 +142,6 @@ public class ZombieCapabilitySystem {
             tag.putInt("Headshots", headshots);
             tag.putInt("Assists", assists);
             tag.putInt("Downs", downs);
-
             tag.putString("LethalType", lethalType);
             tag.putInt("LethalCount", lethalCount);
 
@@ -171,7 +161,6 @@ public class ZombieCapabilitySystem {
             if (nbt.contains("Headshots")) this.headshots = nbt.getInt("Headshots");
             if (nbt.contains("Assists")) this.assists = nbt.getInt("Assists");
             if (nbt.contains("Downs")) this.downs = nbt.getInt("Downs");
-
             if (nbt.contains("LethalType")) this.lethalType = nbt.getString("LethalType");
             if (nbt.contains("LethalCount")) this.lethalCount = nbt.getInt("LethalCount");
 
@@ -205,7 +194,6 @@ public class ZombieCapabilitySystem {
         @Override public CompoundTag serializeNBT() { 
             return this.getOrCreateBackend().serializeNBT(); 
         }
-
         @Override public void deserializeNBT(CompoundTag nbt) { 
             this.getOrCreateBackend().deserializeNBT(nbt); 
         }
@@ -352,6 +340,7 @@ public class ZombieCapabilitySystem {
             if (meteoriteCount > 0) {
                 totals.put("meteorite", meteoriteCount);
             }
+            
             syncAll(level);
         }
 
@@ -386,6 +375,7 @@ public class ZombieCapabilitySystem {
     @Mod.EventBusSubscriber(modid = "zombierool", value = net.minecraftforge.api.distmarker.Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ClientTabListRenderer {
         public static Map<UUID, PlayerStatsManager.PlayerStats> clientStats = new HashMap<>();
+        
         private static Map<String, Integer> clientPickablesCollected = new HashMap<>();
         private static Map<String, Integer> clientPickablesTotal = new HashMap<>();
 
@@ -402,6 +392,7 @@ public class ZombieCapabilitySystem {
         public static void onRenderTabList(net.minecraftforge.client.event.RenderGuiOverlayEvent.Pre event) {
             if (event.getOverlay() == net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.PLAYER_LIST.type()) {
                 event.setCanceled(true); 
+                
                 net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
                 if (mc.options.keyPlayerList.isDown() && mc.level != null) {
                     drawCustomTabList(event.getGuiGraphics(), mc);
@@ -412,10 +403,10 @@ public class ZombieCapabilitySystem {
         private static void drawCustomTabList(net.minecraft.client.gui.GuiGraphics graphics, net.minecraft.client.Minecraft mc) {
             net.minecraft.client.gui.Font font = mc.font;
             int screenWidth = mc.getWindow().getGuiScaledWidth();
-            
+
             java.util.Collection<net.minecraft.client.multiplayer.PlayerInfo> players = mc.getConnection().getListedOnlinePlayers();
             java.util.List<net.minecraft.client.multiplayer.PlayerInfo> sortedPlayers = new java.util.ArrayList<>(players);
-            
+
             sortedPlayers.sort((p1, p2) -> {
                 PlayerStatsManager.PlayerStats s1 = clientStats.getOrDefault(p1.getProfile().getId(), new PlayerStatsManager.PlayerStats());
                 PlayerStatsManager.PlayerStats s2 = clientStats.getOrDefault(p2.getProfile().getId(), new PlayerStatsManager.PlayerStats());
@@ -432,8 +423,8 @@ public class ZombieCapabilitySystem {
             int colDownsW = 35;
             int colAssistsW = 40;
             int colPingW = 30;
-
             int totalWidth = colNameW + colTotalW + colScoreW + colHeadshotsW + colKillsW + colDownsW + colAssistsW + colPingW + 20;
+            
             int startX = (screenWidth - totalWidth) / 2;
             int startY = 15;
             int rowHeight = 12;
@@ -461,7 +452,7 @@ public class ZombieCapabilitySystem {
             graphics.drawString(font, "Downs", xDowns, currentY, 0xFFAA00);
             graphics.drawString(font, "Assist", xAssists, currentY, 0xFFAA00);
             graphics.drawString(font, "Ping", xPing, currentY, 0xFFAA00);
-
+            
             currentY += rowHeight;
 
             for (net.minecraft.client.multiplayer.PlayerInfo pInfo : sortedPlayers) {
@@ -478,12 +469,12 @@ public class ZombieCapabilitySystem {
                 graphics.drawString(font, String.valueOf(pStats.deaths), xDowns, currentY, 0xFF5555);
                 graphics.drawString(font, String.valueOf(pStats.assists), xAssists, currentY, 0xAAAAAA);
                 graphics.drawString(font, pInfo.getLatency() + "ms", xPing, currentY, getPingColor(pInfo.getLatency()));
-
+                
                 currentY += rowHeight;
             }
 
             int lastBoxBottomY = startY + tableHeight + 10;
-            
+
             int activePickablesCount = (int) clientPickablesTotal.values().stream().filter(v -> v > 0).count();
             if (activePickablesCount > 0) {
                 int pickBoxHeight = 20 + (activePickablesCount * 20);
@@ -505,7 +496,7 @@ public class ZombieCapabilitySystem {
 
                     net.minecraft.world.item.ItemStack icon = net.minecraft.world.item.ItemStack.EMPTY;
                     String displayName = category;
-
+                    
                     if (category.equals("meteorite")) {
                         displayName = net.minecraft.network.chat.Component.translatable("gui.zombierool.tab.meteorites").getString();
                         icon = new net.minecraft.world.item.ItemStack(me.cryo.zombierool.core.registry.ZRBlocks.METEORITE.get());
@@ -521,7 +512,7 @@ public class ZombieCapabilitySystem {
                     graphics.drawString(font, displayName + ": " + countText, pickBoxX + 35, pY + 4, textColor);
                     pY += 20;
                 }
-                
+
                 lastBoxBottomY += pickBoxHeight + 10;
             }
 
@@ -542,7 +533,7 @@ public class ZombieCapabilitySystem {
             int nextXP = LocalCareerManager.getXpRequiredForLevel(playerLevel);
 
             graphics.drawString(font, "Player Level: " + playerLevel, careerBoxX + 10, pY, 0xFFFFFF);
-
+            
             if (playerLevel < 50) {
                 int barWidth = 100;
                 graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + barWidth, pY + 6, 0xFF333333);
@@ -552,6 +543,7 @@ public class ZombieCapabilitySystem {
             } else {
                 graphics.drawString(font, "MAX LEVEL", careerBoxX + 100, pY, 0xFFFF00);
             }
+            
             pY += 15;
 
             ItemStack heldWeapon = mc.player.getMainHandItem();
@@ -560,12 +552,12 @@ public class ZombieCapabilitySystem {
                 int wLevel = LocalCareerManager.getWeaponLevel(weaponId);
                 int wCurrentXP = LocalCareerManager.getWeaponXpInCurrentLevel(weaponId);
                 int wNextXP = LocalCareerManager.getWeaponXpForNextLevel(weaponId);
-
+                
                 String wpnName = heldWeapon.getHoverName().getString();
                 if (wpnName.length() > 10) wpnName = wpnName.substring(0, 10) + "..";
 
                 graphics.drawString(font, wpnName + " Lvl: " + wLevel, careerBoxX + 10, pY, 0x00FFFF);
-
+                
                 if (wLevel < 100) {
                     int barWidth = 100;
                     graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + barWidth, pY + 6, 0xFF333333);
@@ -578,25 +570,34 @@ public class ZombieCapabilitySystem {
             } else {
                 graphics.drawString(font, "Hold a weapon to see progression", careerBoxX + 10, pY, 0xAAAAAA);
             }
+
             pY += 20;
 
             graphics.drawString(font, "Active Challenges:", careerBoxX + 10, pY, 0xFFAA00);
             pY += 10;
+            
             for (Map.Entry<String, LocalCareerManager.ChallengeDef> entry : data.activeChallenges.entrySet()) {
                 String id = entry.getKey();
                 LocalCareerManager.ChallengeDef def = entry.getValue();
                 int prog = data.challengeProgress.getOrDefault(id, 0);
                 boolean done = data.challengeCompleted.getOrDefault(id, false);
-                
+
                 String typeStr = def.type.name().toLowerCase();
-                net.minecraft.network.chat.Component text = net.minecraft.network.chat.Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target);
-                
+                net.minecraft.network.chat.Component text;
+                if (def.context != null && !def.context.isEmpty()) {
+                    text = net.minecraft.network.chat.Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target, def.context.toUpperCase());
+                } else {
+                    text = net.minecraft.network.chat.Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target);
+                }
+
                 graphics.drawString(font, "- " + text.getString(), careerBoxX + 10, pY, 0xFFFFFF);
+
                 if (done) {
                     graphics.drawString(font, "DONE", careerBoxX + 210, pY, 0x00FF00);
                 } else {
                     graphics.drawString(font, prog + "/" + def.target, careerBoxX + 210, pY, 0xAAAAAA);
                 }
+
                 pY += 12;
             }
         }

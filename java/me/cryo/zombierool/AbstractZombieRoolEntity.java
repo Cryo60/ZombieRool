@@ -32,7 +32,6 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.nbt.CompoundTag;
 import java.util.List;
-
 public abstract class AbstractZombieRoolEntity extends Monster {
     protected boolean headshotDeath = false;
     protected int headshotDeathTicks = 0;
@@ -40,42 +39,34 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected boolean hasTriggeredHeadshotKill = false;
     protected int stuckTimer = 0;
     protected Vec3 lastPos = Vec3.ZERO;
-
     private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Float> ZR_SCALE = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.FLOAT);
-
     public AbstractZombieRoolEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         setMaxUpStep(1.25f);
         xpReward = 0;
         setNoAi(false);
         setPersistenceRequired();
-
         if (this.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
         }
     }
-
     public void resetStuckTimer() {
         this.stuckTimer = 0;
     }
-
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(CUSTOM_SKIN, "");
         this.entityData.define(ZR_SCALE, 1.0f);
     }
-
     public String getCustomSkin() { return this.entityData.get(CUSTOM_SKIN); }
     public void setCustomSkin(String skinId) { this.entityData.set(CUSTOM_SKIN, skinId); }
-
     public float getScale() { return this.entityData.get(ZR_SCALE); }
     public void setScale(float scale) {
         this.entityData.set(ZR_SCALE, scale);
         this.refreshDimensions();
     }
-
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> pKey) {
         if (ZR_SCALE.equals(pKey)) {
@@ -83,7 +74,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
         super.onSyncedDataUpdated(pKey);
     }
-
     @Override
     public EntityDimensions getDimensions(Pose pose) {
         float scale = getScale();
@@ -92,14 +82,12 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
         return super.getDimensions(pose);
     }
-
     @Override
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
         compound.putString("CustomSkin", getCustomSkin());
         compound.putFloat("zr_scale", getScale());
     }
-
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
@@ -108,55 +96,42 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             setScale(compound.getFloat("zr_scale"));
         }
     }
-
     public void setHeadshotDeath(boolean value) {
         this.headshotDeath = value;
         if (value) {
             this.headshotDeathTicks = 0;
         }
     }
-
     public boolean isHeadshotDeath() { return this.headshotDeath; }
-
     @Override
     public int getMaxFallDistance() { return 20; }
-
     @Override
     public boolean removeWhenFarAway(double distanceToClosestPlayer) { return false; }
-
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
-
     @Override
     public float getPickRadius() { return 0.3F * getScale(); }
-
     @Override
     public boolean isPushable() {
         return false; 
     }
-
     @Override
     protected void doPush(Entity entityIn) {
     }
-
     @Override
     public void push(Entity entityIn) {
     }
-
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (source.getDirectEntity() instanceof Player player && BonusManager.isInstaKillActive(player)) {
-            return super.hurt(source, Float.MAX_VALUE);
+        if (source.getEntity() instanceof Player player && BonusManager.isInstaKillActive(player)) {
+            amount = 100000f;
         }
-
         boolean headshot = false;
         double headshotThreshold = this.getY() + this.getBbHeight() * 0.75;
-        
         boolean isProjectile = source.getDirectEntity() instanceof Projectile;
         boolean isHitscan = !isProjectile && source.getEntity() instanceof Player;
-
         if (isProjectile) {
             Projectile p = (Projectile) source.getDirectEntity();
             headshot = p.getY() >= headshotThreshold;
@@ -165,7 +140,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             Vec3 lookVec = player.getViewVector(1.0f);
             Vec3 start = playerEyePos;
             Vec3 end = start.add(lookVec.scale(100));
-
             var hitResult = this.getBoundingBox().clip(start, end);
             if (hitResult.isPresent()) {
                 Vec3 actualHitPos = hitResult.get();
@@ -174,11 +148,9 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
-
         if (this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG)) {
             headshot = true;
         }
-
         if (headshot) {
             boolean lethal = amount >= this.getHealth();
             if (lethal && !this.headshotDeath) {
@@ -191,10 +163,8 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
-
         return super.hurt(source, amount);
     }
-
     @Override
     public void handleEntityEvent(byte id) {
         super.handleEntityEvent(id);
@@ -213,45 +183,37 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             }
         }
     }
-
     @Override
     public void die(DamageSource cause) {
         super.die(cause);
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             WaveManager.onMobDeath(this, serverLevel);
-
             Entity direct = cause.getDirectEntity();
             Entity src = cause.getEntity();
             Player player = null;
-
             if (src instanceof Player p1) {
                 player = p1;
             } else if (direct instanceof Projectile proj && proj.getOwner() instanceof Player p2) {
                 player = p2;
             }
-
             if (player != null) {
                 boolean hasIngot = player.getInventory().items.stream()
                     .anyMatch(st -> st.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
-                
                 if (!hasIngot && player.level().random.nextFloat() < 0.0015f) {
                     player.getInventory().add(new ItemStack(
                         me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()));
                     me.cryo.zombierool.FireSaleHandler.startFireSale(player);
                 }
             }
-
             if (player != null && WorldConfig.get(serverLevel).isBonusDropsEnabled()) {
                 int zombiesKilledSinceLastBonus = WaveManager.getZombiesKilledSinceLastBonus(serverLevel);
                 boolean shouldSpawnBonus = false;
-
                 if (zombiesKilledSinceLastBonus >= 150) {
                     shouldSpawnBonus = true;
                     WaveManager.resetZombiesKilledSinceLastBonus(serverLevel);
                 } else if (this.random.nextFloat() < 0.005f) {
                     shouldSpawnBonus = true;
                 }
-
                 if (shouldSpawnBonus) {
                     BonusManager.Bonus randomBonus = BonusManager.getRandomBonus(player);
                     if (randomBonus != null) {
@@ -262,15 +224,12 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             }
         }
     }
-
     @Override
     public void tick() {
         super.tick();
-
         if (!this.level().isClientSide() && this.isAlive()) {
             List<Entity> nearby = this.level().getEntities(this, this.getBoundingBox().inflate(0.3D), 
                 e -> e instanceof AbstractZombieRoolEntity && e.isAlive());
-            
             if (!nearby.isEmpty()) {
                 double pushX = 0;
                 double pushZ = 0;
@@ -279,7 +238,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                     double dx = this.getX() - other.getX();
                     double dz = this.getZ() - other.getZ();
                     double distSq = dx * dx + dz * dz;
-                    
                     if (distSq < 0.25) { 
                         double dist = Math.max(0.001, Math.sqrt(distSq));
                         double force = (0.5 - dist) * 0.06; 
@@ -293,7 +251,6 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
-
         if (this.headshotDeath && !hasTriggeredHeadshotKill) {
             headshotDeathTicks++;
             if (headshotDeathTicks >= 5 && !this.level().isClientSide) {
@@ -305,18 +262,15 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 }
             }
         }
-
         if (!this.level().isClientSide) {
             if (this.tickCount % 20 == 0) {
                 double distMoved = this.position().distanceToSqr(this.lastPos);
                 boolean nearPlayer = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 20.0, false) != null;
-                
                 if (distMoved < 0.01 && !nearPlayer && this.getTarget() != null) {
                     this.stuckTimer += 20;
                 } else {
                     this.stuckTimer = 0;
                 }
-
                 if (this.stuckTimer >= 300) { 
                     WaveManager.recycleMob(this, (ServerLevel) this.level());
                 }

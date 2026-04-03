@@ -10,10 +10,10 @@ import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.network.NetworkHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
+
 import java.util.function.Supplier;
 
 public class C2SUpdateConfigPacket {
-
     public final CompoundTag data;
 
     public C2SUpdateConfigPacket(CompoundTag data) {
@@ -35,10 +35,11 @@ public class C2SUpdateConfigPacket {
 
             ServerLevel level = player.serverLevel();
             WorldConfig config = WorldConfig.get(level);
+
             String action = msg.data.getString("action");
 
             if (action.equals("save_all")) {
-                config.setDataVersion(1); // Set to 1 so the legacy map warning disappears
+                config.setDataVersion(1); 
                 config.loadEditable(msg.data);
                 
                 java.io.File worldDir = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
@@ -59,6 +60,7 @@ public class C2SUpdateConfigPacket {
                 try {
                     java.io.File mapJson = new java.io.File(worldDir, "zombierool_map.json");
                     com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+
                     if (mapJson.exists()) {
                         try (java.io.FileReader reader = new java.io.FileReader(mapJson)) {
                             com.google.gson.JsonElement parsed = com.google.gson.JsonParser.parseReader(reader);
@@ -67,13 +69,8 @@ public class C2SUpdateConfigPacket {
                             }
                         } catch (Exception ignored){}
                     }
-                    
+
                     json.addProperty("id", config.getMapId());
-                    
-                    com.google.gson.JsonObject rpJson = new com.google.gson.JsonObject();
-                    rpJson.addProperty("url", config.getResourcePackUrl() != null ? config.getResourcePackUrl() : "");
-                    rpJson.addProperty("name", config.getResourcePackName() != null ? config.getResourcePackName() : "");
-                    json.add("resource_pack", rpJson);
 
                     com.google.gson.JsonObject overridesJson = new com.google.gson.JsonObject();
                     overridesJson.addProperty("spooky_ambience", config.isSpookyAmbience());
@@ -84,6 +81,7 @@ public class C2SUpdateConfigPacket {
                     json.remove("resource_pack_name");
                     json.remove("spooky_ambience");
                     json.remove("force_halloween");
+                    json.remove("resource_pack"); // Suppression de la section RP 
 
                     try (java.io.FileWriter writer = new java.io.FileWriter(mapJson)) {
                         new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(json, writer);
@@ -96,7 +94,6 @@ public class C2SUpdateConfigPacket {
                     config.getFogPreset(), config.getCustomFogR(), config.getCustomFogG(), config.getCustomFogB(), config.getCustomFogNear(), config.getCustomFogFar()
                 ));
                 NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetEyeColorPacket(config.getEyeColorPreset()));
-
                 if (config.getDayNightMode().equals("day")) level.setDayTime(6000);
                 else if (config.getDayNightMode().equals("night")) level.setDayTime(18000);
 
@@ -107,7 +104,6 @@ public class C2SUpdateConfigPacket {
                 }
 
                 player.sendSystemMessage(Component.translatable("message.zombierool.config.saved").withStyle(ChatFormatting.GREEN));
-
             } else if (action.equals("reset_general")) {
                 config.resetGeneral();
                 NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetEyeColorPacket(config.getEyeColorPreset()));

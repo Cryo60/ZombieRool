@@ -1,4 +1,5 @@
 package me.cryo.zombierool.core.system;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -38,7 +39,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import org.joml.Matrix4f;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,7 @@ public class OverlaySystem {
     private static class OverlayData {
         final String texturePath;
         final int rotation;
+
         OverlayData(String texturePath, int rotation) {
             this.texturePath = texturePath;
             this.rotation = rotation;
@@ -57,10 +61,12 @@ public class OverlaySystem {
     private static class BlockFaceKey {
         final BlockPos pos;
         final Direction face;
+
         BlockFaceKey(BlockPos pos, Direction face) {
             this.pos = pos.immutable();
             this.face = face;
         }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -68,6 +74,7 @@ public class OverlaySystem {
             BlockFaceKey that = (BlockFaceKey) o;
             return pos.equals(that.pos) && face == that.face;
         }
+
         @Override
         public int hashCode() {
             return 31 * pos.hashCode() + face.hashCode();
@@ -98,7 +105,7 @@ public class OverlaySystem {
                     int y = Integer.parseInt(parts[1]);
                     int z = Integer.parseInt(parts[2]);
                     Direction face = Direction.byName(parts[3]);
-                    
+
                     String[] valueParts = entry.getValue().split(";");
                     String texturePath = valueParts[0];
                     int rotation = valueParts.length > 1 ? Integer.parseInt(valueParts[1]) : 0;
@@ -114,6 +121,7 @@ public class OverlaySystem {
 
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ServerEvents {
+
         @SubscribeEvent
         public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
             Player player = event.getEntity();
@@ -251,6 +259,7 @@ public class OverlaySystem {
                     addVertex(consumer, matrix, 0, 1 + OFFSET, 0, uvCoords[3][0], uvCoords[3][1], light, overlay);
                     break;
             }
+
             poseStack.popPose();
         }
 
@@ -290,18 +299,32 @@ public class OverlaySystem {
             super(Component.translatable("gui.zombierool.chalk.title"));
             this.hand = hand;
             this.selectedTexture = chalkStack.getOrCreateTag().getString("chalk_texture");
-            if (this.selectedTexture.isEmpty()) {
-                this.selectedTexture = "zombierool:textures/chalks/chalk_a.png"; 
-            }
             this.currentRotation = chalkStack.getOrCreateTag().getInt("chalk_rotation");
 
-            availableChalks.add("zombierool:textures/chalks/chalk_a.png");
-            availableChalks.add("zombierool:textures/chalks/chalk_b.png");
-            availableChalks.add("zombierool:textures/chalks/chalk_d.png");
-            availableChalks.add("zombierool:textures/chalks/chalk_e.png");
+            // 1. Charger dynamiquement tous les fichiers de craies depuis les ressources du jeu (Built-in + Resource Packs)
+            Map<ResourceLocation, net.minecraft.server.packs.resources.Resource> map = 
+                Minecraft.getInstance().getResourceManager().listResources("textures/chalks", loc -> loc.getPath().endsWith(".png"));
+            
+            for (ResourceLocation rl : map.keySet()) {
+                availableChalks.add(rl.toString());
+            }
 
+            // 2. Charger les craies dynamiques provenant du serveur (Backend/Hébergement)
             for (ResourceLocation loc : DynamicResourceManager.getAllClientChalks()) {
-                availableChalks.add(loc.toString());
+                if (!availableChalks.contains(loc.toString())) {
+                    availableChalks.add(loc.toString());
+                }
+            }
+
+            // Trier par ordre alphabétique pour un rendu propre
+            Collections.sort(availableChalks);
+
+            // Si aucune craie n'est sélectionnée (nouvel item)
+            if (this.selectedTexture.isEmpty() && !availableChalks.isEmpty()) {
+                this.selectedTexture = availableChalks.get(0);
+            } else if (this.selectedTexture.isEmpty()) {
+                // Fallback de sécurité si aucun fichier n'a été détecté (ne devrait jamais arriver avec le mod de base)
+                this.selectedTexture = "zombierool:textures/chalks/chalk_a.png"; 
             }
         }
 
@@ -321,6 +344,7 @@ public class OverlaySystem {
                 this.onClose();
             }).bounds(centerX + 5, bottomY, 100, 20).build());
 
+            // Boutons de défilement (4 items par page)
             this.addRenderableWidget(Button.builder(Component.literal("<"), btn -> {
                 if (scrollOffset > 0) scrollOffset--;
             }).bounds(centerX - 120, this.height / 2 - 10, 20, 20).build());
@@ -338,6 +362,7 @@ public class OverlaySystem {
         public void render(GuiGraphics g, int mouseX, int mouseY, float pt) {
             this.renderBackground(g);
             super.render(g, mouseX, mouseY, pt);
+
             g.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFAA00);
 
             int startX = this.width / 2 - 80;
@@ -355,11 +380,12 @@ public class OverlaySystem {
                 int y = startY;
 
                 if (chalkPath.equals(selectedTexture)) {
-                    g.fill(x - 2, y - 2, x + iconSize + 2, y + iconSize + 2, 0xFF00FF00);
+                    g.fill(x - 2, y - 2, x + iconSize + 2, y + iconSize + 2, 0xFF00FF00); // Highlight vert
                 } else {
-                    g.fill(x - 1, y - 1, x + iconSize + 1, y + iconSize + 1, 0xFF555555);
+                    g.fill(x - 1, y - 1, x + iconSize + 1, y + iconSize + 1, 0xFF555555); // Bordure grise
                 }
-                g.fill(x, y, x + iconSize, y + iconSize, 0xFF222222);
+
+                g.fill(x, y, x + iconSize, y + iconSize, 0xFF222222); // Fond interne
 
                 RenderSystem.enableBlend();
                 g.blit(new ResourceLocation(chalkPath), x, y, 0, 0, iconSize, iconSize, iconSize, iconSize);

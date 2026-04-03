@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class LuaScriptManager {
-
     private static Globals globals;
     private static ServerLevel currentLevel;
 
@@ -52,7 +51,6 @@ public class LuaScriptManager {
             File scriptDir = new File(level.getServer().getWorldPath(LevelResource.ROOT).toFile(), "zr_scripts");
             if (!scriptDir.exists()) {
                 scriptDir.mkdirs();
-
                 FileWriter fw = new FileWriter(new File(scriptDir, "main.lua"));
                 fw.write("-- ZombieRool Main Lua Script\n");
                 fw.write("-- Available Events:\n");
@@ -78,7 +76,7 @@ public class LuaScriptManager {
                 fw.write("--   OnMeleeStrike(playerUUID, x, y, z)\n");
                 fw.write("--   OnExplosion(playerUUID, x, y, z, radius)\n");
                 fw.write("--   OnProjectileHit(playerUUID, x, y, z)\n\n");
-                
+
                 fw.write("-- Some API Functions:\n");
                 fw.write("--   ZombieroolAPI:registerTimer(id, delayTicks, callback)\n");
                 fw.write("--   ZombieroolAPI:cancelTimer(id)\n");
@@ -112,9 +110,9 @@ public class LuaScriptManager {
                 fw.write("--   ZombieroolAPI:setMusicPreset(preset)\n");
                 fw.write("--   ZombieroolAPI:setFog(preset)\n");
                 fw.write("--   ZombieroolAPI:setCustomFog(r, g, b, near, far)\n");
-                fw.write("--   ZombieroolAPI:playGlobalSound(soundId)\n");
-                fw.write("--   ZombieroolAPI:playSoundForPlayer(uuid, soundId)\n");
-                fw.write("--   ZombieroolAPI:playDynamicSoundForPlayer(uuid, soundId)\n");
+                fw.write("--   ZombieroolAPI:playGlobalSound(soundId, volume, pitch)\n");
+                fw.write("--   ZombieroolAPI:playSoundForPlayer(uuid, soundId, volume, pitch)\n");
+                fw.write("--   ZombieroolAPI:playDynamicSoundForPlayer(uuid, soundId, volume, pitch)\n");
                 fw.write("--   ZombieroolAPI:giveItem(uuid, itemId, count)\n");
                 fw.write("--   ZombieroolAPI:removeItem(uuid, itemId, count)\n");
                 fw.write("--   ZombieroolAPI:hasItem(uuid, itemId, count)  --> boolean\n");
@@ -151,12 +149,15 @@ public class LuaScriptManager {
                 fw.write("--   ZombieroolAPI:getPackAPunchState(x, y, z) --> int (0=IDLE, 1=UPGRADING, 2=READY)\n");
                 fw.write("--   ZombieroolAPI:insertPackAPunchWeapon(uuid, x, y, z, isFree) --> boolean\n");
                 fw.write("--   ZombieroolAPI:collectPackAPunchWeapon(uuid, x, y, z) --> boolean\n\n");
+
                 fw.write("function OnGameStart()\n");
                 fw.write("    -- ZombieroolAPI:registerTimer('mon_timer', 100, function() ZombieroolAPI:broadcastMessage('5 secondes plus tard !') end)\n");
                 fw.write("end\n\n");
+
                 fw.write("function OnWaveStart(wave)\n");
                 fw.write("    ZombieroolAPI:broadcastMessage('Wave ' .. wave .. ' started!')\n");
                 fw.write("end\n\n");
+
                 fw.close();
             }
 
@@ -171,7 +172,6 @@ public class LuaScriptManager {
                     }
                 }
             }
-
         } catch (Throwable t) {
             System.err.println("[ZombieRool Lua] Error initializing Lua engine: " + t.getMessage());
         }
@@ -226,12 +226,10 @@ public class LuaScriptManager {
 
         if (!activeTimers.isEmpty()) {
             List<LuaTimer> toExecute = new ArrayList<>();
-            
             Iterator<Map.Entry<String, LuaTimer>> iterator = activeTimers.entrySet().iterator();
             while (iterator.hasNext()) {
                 LuaTimer timer = iterator.next().getValue();
                 timer.remainingTicks--;
-
                 if (timer.remainingTicks <= 0) {
                     iterator.remove();
                     toExecute.add(timer);

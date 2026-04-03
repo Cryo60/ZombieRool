@@ -5,6 +5,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.loading.FMLPaths;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -13,7 +14,6 @@ import com.google.gson.JsonArray;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -21,7 +21,7 @@ import java.util.zip.ZipInputStream;
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class WorldMapLoader {
 
-    private static final String MAPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/refs/heads/main/maps.json";
+    private static final String MAPS_JSON_URL = "https://zombierool-community.onrender.com/api/maps";
     private static final String TARGET_MAP_ID = "zr_nacht";
     private static final String TARGET_MAP_NAME = "Nacht der Untoten";
 
@@ -48,13 +48,13 @@ public class WorldMapLoader {
 
         int status = conn.getResponseCode();
         int redirects = 0;
-        
         while (status == HttpURLConnection.HTTP_MOVED_TEMP || 
                status == HttpURLConnection.HTTP_MOVED_PERM || 
                status == HttpURLConnection.HTTP_SEE_OTHER ||
                status == 307 || status == 308) {
             
             if (redirects > 10) throw new IOException("Too many redirects");
+
             String newUrl = conn.getHeaderField("Location");
             conn.disconnect();
             
@@ -64,17 +64,18 @@ public class WorldMapLoader {
             conn.setReadTimeout(30000);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setInstanceFollowRedirects(false);
+
             status = conn.getResponseCode();
             redirects++;
         }
-        
+
         if (status >= 400) {
             if (status == 404 && urlString.endsWith(".json")) {
                 throw new FileNotFoundException("JSON File not found");
             }
             throw new IOException("HTTP Error " + status + " on " + url.getFile());
         }
-        
+
         return conn;
     }
 
@@ -87,8 +88,8 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Nacht der Untoten not found, downloading from GitHub...");
-                HttpURLConnection jsonConn = openConnectionWithRedirects(MAPS_JSON_URL);
 
+                HttpURLConnection jsonConn = openConnectionWithRedirects(MAPS_JSON_URL);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(jsonConn.getInputStream()));
                 StringBuilder response = new StringBuilder();
                 String line;
@@ -118,12 +119,12 @@ public class WorldMapLoader {
                 }
 
                 System.out.println("[ZombieRool] Downloading from: " + downloadUrl);
-                HttpURLConnection mapConn = openConnectionWithRedirects(downloadUrl);
 
+                HttpURLConnection mapConn = openConnectionWithRedirects(downloadUrl);
                 File tempDir = new File(FMLPaths.GAMEDIR.get().toFile(), "temp_downloads");
                 tempDir.mkdirs();
-                File zipFile = new File(tempDir, TARGET_MAP_NAME + ".zip");
 
+                File zipFile = new File(tempDir, TARGET_MAP_NAME + ".zip");
                 System.out.println("[ZombieRool] Downloading to: " + zipFile.getAbsolutePath());
 
                 try (InputStream in = mapConn.getInputStream();
@@ -147,26 +148,22 @@ public class WorldMapLoader {
                 if (!Files.exists(savesPath)) {
                     Files.createDirectories(savesPath);
                 }
-
                 File targetDir = new File(savesPath.toFile(), TARGET_MAP_NAME);
                 extractZip(zipFile, targetDir);
-                
+
                 File metaFile = new File(targetDir, "zombierool_map.json");
                 JsonObject metaJson = new JsonObject();
                 metaJson.addProperty("id", targetMapObj.get("id").getAsString());
                 if (targetMapObj.has("version")) metaJson.addProperty("version", targetMapObj.get("version").getAsString());
                 if (targetMapObj.has("sha256")) metaJson.addProperty("sha256", targetMapObj.get("sha256").getAsString());
-                if (targetMapObj.has("resource_pack")) {
-                    JsonObject rp = targetMapObj.getAsJsonObject("resource_pack");
-                    if (rp.has("url")) metaJson.addProperty("resource_pack_url", rp.get("url").getAsString());
-                    if (rp.has("name")) metaJson.addProperty("resource_pack_name", rp.get("name").getAsString());
-                }
+
                 try (FileWriter writer = new FileWriter(metaFile)) {
                     new GsonBuilder().setPrettyPrinting().create().toJson(metaJson, writer);
                 }
 
                 zipFile.delete();
                 tempDir.delete();
+
                 System.out.println("[ZombieRool] Nacht der Untoten installed successfully!");
 
             } catch (Exception e) {
@@ -185,7 +182,7 @@ public class WorldMapLoader {
                 File file = new File(destDir, entry.getName());
                 String canonicalDestPath = destDir.getCanonicalPath();
                 String canonicalFilePath = file.getCanonicalPath();
-
+                
                 if (!canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
                     throw new IOException("Zip Slip detected: " + entry.getName());
                 }

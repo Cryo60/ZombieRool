@@ -63,7 +63,21 @@ public class CareerUnlockables {
         CAMOS.put("camo_sandstorm", new CamoDef("camo.zombierool.sandstorm", 500, false, 0, false, "common"));
         CAMOS.put("camo_olive", new CamoDef("camo.zombierool.olive", 500, false, 0, false, "common"));
         CAMOS.put("camo_multicam", new CamoDef("camo.zombierool.multicam", 600, false, 0, false, "common"));
-        
+        CAMOS.put("camo_tigerstripe", new CamoDef("camo.zombierool.tigerstripe", 500, false, 0, false, "common"));
+		CAMOS.put("camo_brushstroke", new CamoDef("camo.zombierool.brushstroke", 500, false, 0, false, "common"));
+		CAMOS.put("camo_chocolate_chip", new CamoDef("camo.zombierool.chocolate_chip", 600, false, 0, false, "common"));
+		CAMOS.put("camo_erdl", new CamoDef("camo.zombierool.erdl", 600, false, 0, false, "common"));
+		CAMOS.put("camo_flecktarn", new CamoDef("camo.zombierool.flecktarn", 600, false, 0, false, "common"));
+		CAMOS.put("camo_strichtarn", new CamoDef("camo.zombierool.strichtarn", 500, false, 0, false, "common"));
+
+
+        CAMOS.put("camo_ucp", new CamoDef("camo.zombierool.ucp", 1000, false, 0, false, "rare"));
+		CAMOS.put("camo_cadpat", new CamoDef("camo.zombierool.cadpat", 1200, false, 0, false, "rare"));
+		CAMOS.put("camo_marpat", new CamoDef("camo.zombierool.marpat", 1200, false, 0, false, "rare"));
+		CAMOS.put("camo_ocp", new CamoDef("camo.zombierool.ocp", 1500, false, 0, false, "rare"));
+		CAMOS.put("camo_surpat", new CamoDef("camo.zombierool.surpat", 1500, false, 0, false, "rare"));
+		CAMOS.put("camo_auscam", new CamoDef("camo.zombierool.auscam", 1000, false, 0, false, "rare"));
+		CAMOS.put("camo_disruptive_patt", new CamoDef("camo.zombierool.disruptive_patt", 1200, false, 0, false, "rare"));
         CAMOS.put("camo_red_tiger", new CamoDef("camo.zombierool.red_tiger", 1000, false, 0, false, "rare"));
         CAMOS.put("camo_blue_tiger", new CamoDef("camo.zombierool.blue_tiger", 1000, false, 0, false, "rare"));
         CAMOS.put("camo_digital", new CamoDef("camo.zombierool.digital", 1200, false, 0, false, "rare"));

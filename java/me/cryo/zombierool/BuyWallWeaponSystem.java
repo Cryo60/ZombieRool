@@ -98,7 +98,6 @@ import me.cryo.zombierool.init.ZombieroolModBlocks;
 import me.cryo.zombierool.integration.TacZIntegration;
 import me.cryo.zombierool.network.NetworkHandler;
 import net.minecraft.ChatFormatting;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -130,7 +129,7 @@ public class BuyWallWeaponSystem {
 
     @SubscribeEvent
     public static void buildContents(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
+        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"))) {
             event.accept(ITEM.get());
         }
     }
@@ -181,7 +180,6 @@ public class BuyWallWeaponSystem {
         @Override
         public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (!player.isCreative()) return InteractionResult.PASS;
-
             ItemStack held = player.getItemInHand(hand);
             if (!held.isEmpty() && held.getItem() instanceof BlockItem bi) {
                 Block blockToCopy = bi.getBlock();
@@ -206,18 +204,16 @@ public class BuyWallWeaponSystem {
         }
 
         @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new BuyWallWeaponBlockEntity(pos, state); }
-        
+
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
             return (lvl, pos, st, be) -> { if (be instanceof BuyWallWeaponBlockEntity weapon) weapon.tick(lvl, pos, st); };
         }
 
         @Override public boolean isSignalSource(BlockState state) { return true; }
-        
         @Override public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction dir) {
             if (level.getBlockEntity(pos) instanceof BuyWallWeaponBlockEntity be) return be.isEmitting() ? 15 : 0;
             return 0;
         }
-        
         @Override
         public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction dir) {
             return getSignal(state, level, pos, dir);
@@ -227,7 +223,6 @@ public class BuyWallWeaponSystem {
     public static class BuyWallWeaponBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, MimicSystem.IMimicContainer, MenuProvider {
         private NonNullList<ItemStack> stacks = NonNullList.withSize(1, ItemStack.EMPTY);
         private final LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.values());
-        
         private int price = 0;
         private ResourceLocation itemToSell = null;
         private BlockState mimicBlockState = null;
@@ -247,17 +242,14 @@ public class BuyWallWeaponSystem {
 
         public void tick(Level level, BlockPos pos, BlockState state) {
             if (level.isClientSide) return;
-
             if (this.mimicBlockState != null && state.hasProperty(BuyWallWeaponBlock.HAS_MIMIC) && !state.getValue(BuyWallWeaponBlock.HAS_MIMIC)) {
                 state = state.setValue(BuyWallWeaponBlock.HAS_MIMIC, true);
                 level.setBlock(pos, state, 3);
             }
-
             if (!orientationFixed) {
                 fixOrientation(level, pos, state);
                 orientationFixed = true;
             }
-
             if (pulseTimer > 0) {
                 pulseTimer--;
                 if (pulseTimer == 0) {
@@ -273,7 +265,6 @@ public class BuyWallWeaponSystem {
             Direction currentFacing = state.getValue(BuyWallWeaponBlock.FACING);
             BlockPos front = pos.relative(currentFacing);
             if (level.getBlockState(front).isAir() && (level.getBlockState(front.below()).is(ZombieroolModBlocks.PATH.get()) || level.getBlockState(front.above()).is(ZombieroolModBlocks.PATH.get()))) return;
-
             for (Direction dir : Direction.Plane.HORIZONTAL) {
                 if (dir == currentFacing) continue;
                 BlockPos f = pos.relative(dir);
@@ -306,7 +297,6 @@ public class BuyWallWeaponSystem {
             this.isEmitting = nbt.getBoolean("IsEmitting");
             this.pulseTimer = nbt.getInt("PulseTimer");
             if (nbt.contains("OrientationFixed")) this.orientationFixed = nbt.getBoolean("OrientationFixed");
-
             if (nbt.contains("ItemToSell", Tag.TAG_STRING)) {
                 String fullId = nbt.getString("ItemToSell");
                 if (ID_MIGRATION_MAP.containsKey(fullId)) fullId = "zombierool:" + ID_MIGRATION_MAP.get(fullId);
@@ -401,11 +391,9 @@ public class BuyWallWeaponSystem {
             this.access = ContainerLevelAccess.create(inv.player.level(), this.pos);
             this.internal = new ItemStackHandler(1);
             boundBlockEntity = inv.player.level().getBlockEntity(this.pos);
-            
             if (boundBlockEntity != null) {
                 boundBlockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(cap -> this.internal = cap);
             }
-
             this.data = new ContainerData() {
                 @Override public int get(int index) {
                     if (boundBlockEntity instanceof BuyWallWeaponBlockEntity be) {
@@ -422,9 +410,7 @@ public class BuyWallWeaponSystem {
                 @Override public int getCount() { return 2; }
             };
             this.addDataSlots(data);
-            
             this.addSlot(new SlotItemHandler(internal, 0, 120, 20));
-            
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 9; ++j) {
                     this.addSlot(new Slot(inv, j + i * 9 + 9, 49 + j * 18, 125 + i * 18));
@@ -482,7 +468,6 @@ public class BuyWallWeaponSystem {
             currentRedstoneMode = this.menu.getRedstoneMode();
             int startX = (this.width - this.imageWidth) / 2;
             int startY = (this.height - this.imageHeight) / 2;
-            
             priceBox = new EditBox(this.font, startX + 80, startY + 40, 60, 16, Component.empty());
             priceBox.setMaxLength(6);
             if (this.menu.getConfiguredPrice() > 0) priceBox.setValue(String.valueOf(this.menu.getConfiguredPrice()));
@@ -491,7 +476,7 @@ public class BuyWallWeaponSystem {
             this.addRenderableWidget(CycleButton.builder((Integer mode) -> Component.literal(mode == 1 ? "CONTINUOUS" : mode == 2 ? "PULSE" : "OFF"))
                 .withValues(0, 1, 2).withInitialValue(currentRedstoneMode)
                 .create(startX + 80, startY + 65, 100, 20, Component.literal("Redstone: "), (btn, val) -> currentRedstoneMode = val));
-            
+
             this.addRenderableWidget(Button.builder(Component.literal("§aSave"), btn -> {
                 int p = 0; 
                 try { p = Integer.parseInt(priceBox.getValue()); } catch(Exception e){}
@@ -544,11 +529,9 @@ public class BuyWallWeaponSystem {
         private static class ColorOverrideVertexConsumer implements VertexConsumer {
             private final VertexConsumer delegate;
             private final int r, g, b, a;
-
             public ColorOverrideVertexConsumer(VertexConsumer delegate, int r, int g, int b, int a) {
                 this.delegate = delegate; this.r = r; this.g = g; this.b = b; this.a = a;
             }
-
             @Override public VertexConsumer vertex(double x, double y, double z) { delegate.vertex(x, y, z); return this; }
             @Override public VertexConsumer color(int red, int green, int blue, int alpha) { delegate.color(r, g, b, a); return this; }
             @Override public VertexConsumer uv(float u, float v) { delegate.uv(u, v); return this; }
@@ -594,7 +577,7 @@ public class BuyWallWeaponSystem {
 
                 boolean isTacz = WeaponFacade.isTaczWeapon(stack);
                 boolean isMissingTexture = originalTexture.getPath().equals("missingno") || isTacz;
-                
+
                 if (stack.getItem() instanceof me.cryo.zombierool.item.throwable.ThrowableCore.BaseThrowableItem) {
                     isMissingTexture = true; 
                 } else if (isTacz) {
@@ -642,7 +625,6 @@ public class BuyWallWeaponSystem {
                 double z = 0.5 + face.getStepZ() * offset;
 
                 poseStack.translate(x, y, z);
-
                 float angle = switch(face) {
                     case NORTH -> 180f;
                     case SOUTH -> 0f;
@@ -678,7 +660,7 @@ public class BuyWallWeaponSystem {
                         poseStack.translate(0, 0, -0.002);
                         renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
                         poseStack.popPose();
-                        
+
                         poseStack.pushPose();
                         poseStack.scale(0.95f, 0.95f, 1.0f);
                         poseStack.translate(0, 0, 0.002);
@@ -688,7 +670,6 @@ public class BuyWallWeaponSystem {
                         renderChalkQuad(poseStack, buffer, outlineTexture, frontLight, 0, 1, 0, 1);
                     }
                 }
-
                 poseStack.popPose();
             }
         }
@@ -699,6 +680,7 @@ public class BuyWallWeaponSystem {
             Matrix4f matrix = poseStack.last().pose();
             float size = 0.5f;
             int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+
             consumer.vertex(matrix, -size, -size, 0).color(255, 255, 255, 255).uv(u1, v1).overlayCoords(overlay).uv2(light).normal(0, 0, 1).endVertex();
             consumer.vertex(matrix, size, -size, 0).color(255, 255, 255, 255).uv(u0, v1).overlayCoords(overlay).uv2(light).normal(0, 0, 1).endVertex();
             consumer.vertex(matrix, size, size, 0).color(255, 255, 255, 255).uv(u0, v0).overlayCoords(overlay).uv2(light).normal(0, 0, 1).endVertex();
@@ -772,12 +754,13 @@ public class BuyWallWeaponSystem {
                 int width = original.getWidth();
                 int height = original.getHeight();
                 int maxSize = Math.max(width, height);
-
                 com.mojang.blaze3d.platform.NativeImage squared = new com.mojang.blaze3d.platform.NativeImage(maxSize, maxSize, true);
+
                 for (int y = 0; y < maxSize; y++) for (int x = 0; x < maxSize; x++) squared.setPixelRGBA(x, y, 0);
 
                 int offsetX = (maxSize - width) / 2;
                 int offsetY = (maxSize - height) / 2;
+
                 for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) squared.setPixelRGBA(x + offsetX, y + offsetY, original.getPixelRGBA(x, y));
 
                 DynamicTexture dynamicTexture = new DynamicTexture(squared);
@@ -799,6 +782,7 @@ public class BuyWallWeaponSystem {
                 var rm = Minecraft.getInstance().getResourceManager();
                 String namespace = location.getNamespace();
                 String cleanPath = location.getPath().replace("gun/icon/", "").replace("textures/", "").replace(".png", "");
+
                 if (cleanPath.startsWith("icon/")) cleanPath = cleanPath.substring(5);
 
                 Set<ResourceLocation> attempts = new HashSet<>(List.of(
@@ -824,7 +808,7 @@ public class BuyWallWeaponSystem {
             int width = original.getWidth(), height = original.getHeight();
             int thickness = Math.max(1, width / 64);
             int maxSize = Math.max(width, height);
-            
+
             com.mojang.blaze3d.platform.NativeImage outline = new com.mojang.blaze3d.platform.NativeImage(maxSize, maxSize, true);
             int offsetX = (maxSize - width) / 2, offsetY = (maxSize - height) / 2;
 
@@ -842,6 +826,7 @@ public class BuyWallWeaponSystem {
                             }
                             if (isEdge) break;
                         }
+
                         if (isEdge) {
                             int halfThickness = thickness / 2;
                             for (int dy = -halfThickness; dy <= halfThickness; dy++) {

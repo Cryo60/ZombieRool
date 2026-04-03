@@ -1,4 +1,5 @@
 package me.cryo.zombierool.block.system;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -76,6 +77,7 @@ import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.ChatFormatting;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -98,6 +100,7 @@ public class BlindBuySystem {
             return super.place(offsetContext);
         }
     });
+
     public static final RegistryObject<BlockEntityType<BlindBuyCabinetBlockEntity>> BE = BLOCK_ENTITIES.register("blind_buy_cabinet", () -> BlockEntityType.Builder.of(BlindBuyCabinetBlockEntity::new, BLOCK.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<BlindBuyManagerMenu>> MENU = MENUS.register("sys_blind_buy_manager", () -> IForgeMenuType.create(BlindBuyManagerMenu::new));
 
@@ -137,7 +140,7 @@ public class BlindBuySystem {
 
     @SubscribeEvent
     public static void buildContents(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
+        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"))) {
             event.accept(ITEM.get());
         }
     }
@@ -145,7 +148,6 @@ public class BlindBuySystem {
     public static class BlindBuyCabinetBlock extends Block implements EntityBlock {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
-
         protected static final VoxelShape SHAPE_NORTH = Shapes.block();
         protected static final VoxelShape SHAPE_SOUTH = Shapes.block();
         protected static final VoxelShape SHAPE_WEST  = Shapes.block();
@@ -324,41 +326,52 @@ public class BlindBuySystem {
 
     public static class BlindBuyManagerMenu extends AbstractContainerMenu {
         public final BlindBuyCabinetBlockEntity blockEntity;
+
         public BlindBuyManagerMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
             this(id, inv, (BlindBuyCabinetBlockEntity) inv.player.level().getBlockEntity(extraData.readBlockPos()));
         }
+
         public BlindBuyManagerMenu(int id, Inventory inv, BlindBuyCabinetBlockEntity blockEntity) {
             super(MENU.get(), id);
             this.blockEntity = blockEntity;
+
             blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
                 this.addSlot(new SlotItemHandler(handler, 0, 80, 24));
             });
+
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 9; ++j) {
                     this.addSlot(new Slot(inv, j + i * 9 + 9, 20 + j * 18, 90 + i * 18));
                 }
             }
+
             for (int k = 0; k < 9; ++k) {
                 this.addSlot(new Slot(inv, k, 20 + k * 18, 148));
             }
         }
+
         @Override
         public boolean stillValid(Player player) { return true; }
+
         @Override
         public ItemStack quickMoveStack(Player player, int index) {
             ItemStack itemstack = ItemStack.EMPTY;
             Slot slot = this.slots.get(index);
+
             if (slot != null && slot.hasItem()) {
                 ItemStack itemstack1 = slot.getItem();
                 itemstack = itemstack1.copy();
+
                 if (index == 0) {
                     if (!this.moveItemStackTo(itemstack1, 1, 37, true)) return ItemStack.EMPTY;
                 } else if (!this.moveItemStackTo(itemstack1, 0, 1, false)) {
                     return ItemStack.EMPTY;
                 }
+
                 if (itemstack1.isEmpty()) slot.set(ItemStack.EMPTY);
                 else slot.setChanged();
             }
+
             return itemstack;
         }
     }
@@ -366,20 +379,25 @@ public class BlindBuySystem {
     @OnlyIn(Dist.CLIENT)
     public static class BlindBuyManagerScreen extends me.cryo.zombierool.client.gui.UnifiedConfigScreen<BlindBuyManagerMenu> {
         private EditBox priceBox;
+
         public BlindBuyManagerScreen(BlindBuyManagerMenu menu, Inventory inv, Component title) {
             super(menu, inv, Component.literal("Mystery Cabinet"));
             this.imageWidth = 200;
             this.imageHeight = 175;
         }
+
         @Override
         protected void init() {
             super.init();
             int startX = (this.width - this.imageWidth) / 2;
             int startY = (this.height - this.imageHeight) / 2;
+
             priceBox = new EditBox(this.font, startX + 65, startY + 55, 60, 16, Component.empty());
             priceBox.setMaxLength(6);
             priceBox.setValue(String.valueOf(this.menu.blockEntity.getPrice()));
+
             this.addRenderableWidget(priceBox);
+
             this.addRenderableWidget(Button.builder(Component.literal("§aSave"), btn -> {
                 try {
                     int price = Integer.parseInt(priceBox.getValue());
@@ -388,6 +406,7 @@ public class BlindBuySystem {
                 } catch (Exception e) {}
             }).bounds(startX + 130, startY + 53, 60, 20).build());
         }
+
         @Override
         public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             this.renderBackground(g);
@@ -395,22 +414,28 @@ public class BlindBuySystem {
             this.priceBox.render(g, mouseX, mouseY, partialTick);
             this.renderTooltip(g, mouseX, mouseY);
         }
+
         @Override
         protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
             int startX = (this.width - this.imageWidth) / 2;
             int startY = (this.height - this.imageHeight) / 2;
+
             g.fillGradient(startX, startY, startX + this.imageWidth, startY + this.imageHeight, 0xEE000000, 0xEE222222);
             g.renderOutline(startX, startY, this.imageWidth, this.imageHeight, 0xFFAA00);
+
             drawSlotBg(g, startX + 79, startY + 23);
+
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 9; ++j) {
                     drawSlotBg(g, startX + 19 + j * 18, startY + 89 + i * 18);
                 }
             }
+
             for (int k = 0; k < 9; ++k) {
                 drawSlotBg(g, startX + 19 + k * 18, startY + 147);
             }
         }
+
         @Override
         protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
             g.drawCenteredString(this.font, "§l" + this.title.getString(), this.imageWidth / 2, 8, 0xFFAA00);
@@ -422,17 +447,21 @@ public class BlindBuySystem {
     @OnlyIn(Dist.CLIENT)
     public static class BlindBuyCabinetRenderer implements BlockEntityRenderer<BlindBuyCabinetBlockEntity> {
         public BlindBuyCabinetRenderer(BlockEntityRendererProvider.Context context) {}
+
         @Override
         public void render(BlindBuyCabinetBlockEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
             boolean isOpen = entity.getBlockState().getValue(BlindBuyCabinetBlock.OPEN);
             Direction facing = entity.getBlockState().getValue(BlindBuyCabinetBlock.FACING);
+
             poseStack.pushPose();
             poseStack.translate(0.5, 0.0, 0.5);
             float yRot = -facing.toYRot();
             poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
+
             float offsetX = 0.0f;
             float offsetY = 9.0f / 16.0f;
             float offsetZ = -0.2f;
+
             poseStack.translate(offsetX, offsetY, offsetZ);
 
             if (!isOpen) {
@@ -440,9 +469,11 @@ public class BlindBuySystem {
                 poseStack.mulPose(Axis.YP.rotationDegrees(180));
                 float textScale = 0.035f;
                 poseStack.scale(-textScale, -textScale, textScale);
+
                 Font font = Minecraft.getInstance().font;
                 String text = "?";
                 float textWidth = font.width(text);
+
                 font.drawInBatch(text, -textWidth / 2f, -font.lineHeight / 2f, 0xFFFFFFFF, false, poseStack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, packedLight);
                 poseStack.popPose();
             } else {
@@ -451,12 +482,15 @@ public class BlindBuySystem {
                     poseStack.pushPose();
                     poseStack.mulPose(Axis.YP.rotationDegrees(180));
                     poseStack.scale(0.7f, 0.7f, 0.7f);
+
                     Minecraft.getInstance().getItemRenderer().renderStatic(
                         weapon, ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack, bufferSource, entity.getLevel(), 0
                     );
+
                     poseStack.popPose();
                 }
             }
+
             poseStack.popPose();
         }
     }

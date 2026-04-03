@@ -1,4 +1,5 @@
 package me.cryo.zombierool.block.system;
+
 import me.cryo.zombierool.WorldConfig;
 import me.cryo.zombierool.WaveManager;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem.PickableManager;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class MeteoriteEasterEgg {
+
     public static void onMeteoriteFound(ServerLevel level, ServerPlayer player, BlockPos pos) {
         PickableManager.collect(level, "meteorite", pos.asLong() + "");
         int found = PickableManager.getCollectedCount("meteorite");
@@ -55,7 +57,6 @@ public class MeteoriteEasterEgg {
         } else if (found == total && total > 0) {
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), 
                 new S2CPlayGlobalSoundPacket(confirmSoundLoc, 1.0f, 1.0f));
-
             WaveManager.currentSessionMusic = "secret";
             level.getServer().getPlayerList().getPlayers().forEach(p -> {
                 p.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:secret"));
@@ -135,6 +136,7 @@ public class MeteoriteEasterEgg {
         @OnlyIn(Dist.CLIENT)
         public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
             if (!state.getValue(ACTIVE)) return;
+            
             if (!activeSounds.containsKey(pos) || activeSounds.get(pos).isStopped()) {
                 SoundEvent ambientSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "meteorite_ambient"));
                 if (ambientSound != null) {
@@ -143,6 +145,7 @@ public class MeteoriteEasterEgg {
                     activeSounds.put(pos.immutable(), sound);
                 }
             }
+
             if (random.nextInt(3) == 0) {
                 level.addParticle(ParticleTypes.PORTAL, 
                     pos.getX() + 0.5 + (random.nextDouble() - 0.5), 
@@ -188,6 +191,7 @@ public class MeteoriteEasterEgg {
                 this.stopSound();
                 return;
             }
+
             BlockState state = level.getBlockState(pos);
             if (!(state.getBlock() instanceof MeteoriteBlock) || !state.getValue(MeteoriteBlock.ACTIVE)) {
                 this.stopSound();

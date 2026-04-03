@@ -33,10 +33,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
+
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.chat.Component;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -59,7 +61,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class ZombieroolAPI {
-
     private final ServerLevel level;
     private static final Map<UUID, ServerBossEvent> playerObjectives = new ConcurrentHashMap<>();
 
@@ -94,12 +95,10 @@ public class ZombieroolAPI {
     public LuaTable getNearbyPlayers(double x, double y, double z, double radius) {
         LuaTable table = new LuaTable();
         AABB box = new AABB(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
-        
         List<ServerPlayer> players = level.getEntitiesOfClass(ServerPlayer.class, box, p -> 
             p.distanceToSqr(x, y, z) <= radius * radius && 
             (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
         );
-
         int i = 1;
         for (ServerPlayer p : players) {
             table.set(i++, LuaValue.valueOf(p.getUUID().toString()));
@@ -221,7 +220,7 @@ public class ZombieroolAPI {
         ServerPlayer player = getPlayer(uuidStr);
         if (player == null) return;
         UUID pId = player.getUUID();
-
+        
         if (text == null || text.isEmpty()) {
             if (playerObjectives.containsKey(pId)) {
                 playerObjectives.get(pId).removeAllPlayers();
@@ -247,7 +246,7 @@ public class ZombieroolAPI {
                 pap = true;
                 searchTier = searchTier.replace("PAP", "").trim();
             }
-            
+
             List<String> candidates = new ArrayList<>();
             for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
                 boolean match = false;
@@ -260,12 +259,12 @@ public class ZombieroolAPI {
                 } else if (def.tags != null && def.tags.contains(searchTier.toLowerCase(Locale.ROOT))) {
                     match = true;
                 }
-                
+
                 if (match) {
                     candidates.add(def.id);
                 }
             }
-            
+
             if (!candidates.isEmpty()) {
                 String chosen = candidates.get(level.random.nextInt(candidates.size()));
                 ItemStack weapon = WeaponFacade.createWeaponStack(chosen, pap, player);
@@ -323,7 +322,6 @@ public class ZombieroolAPI {
                 living.setPos(x, y, z);
                 living.getAttribute(Attributes.MAX_HEALTH).setBaseValue(hp);
                 living.setHealth(hp);
-                
                 if (living.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
                     living.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed);
                 }
@@ -374,12 +372,10 @@ public class ZombieroolAPI {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
             me.cryo.zombierool.PerksManager.Perk perk = null;
-
             if (perkId.equalsIgnoreCase("random")) {
                 List<me.cryo.zombierool.PerksManager.Perk> unowned = me.cryo.zombierool.PerksManager.ALL_PERKS.values().stream()
                         .filter(p -> p.getAssociatedEffect() != null && !player.hasEffect(p.getAssociatedEffect()))
                         .collect(Collectors.toList());
-                
                 if (!unowned.isEmpty()) {
                     perk = unowned.get(level.random.nextInt(unowned.size()));
                 }
@@ -408,7 +404,7 @@ public class ZombieroolAPI {
     public void clearUnlockedChannels() {
         WaveManager.UNLOCKED_CHANNELS.clear();
     }
-    
+
     public void clearUnlockedZones() {
         WaveManager.UNLOCKED_ZONES.clear();
     }
@@ -441,33 +437,34 @@ public class ZombieroolAPI {
                     toBreak.add(be.getBlockPos());
                 }
             }
+            
             for (BlockPos p : toBreak) {
                 level.setBlock(p, ZombieroolModBlocks.PATH.get().defaultBlockState(), 3);
             }
         } catch (NumberFormatException ignored) {}
     }
 
-    public void playGlobalSound(String soundId) {
+    public void playGlobalSound(String soundId, float volume, float pitch) {
         ResourceLocation rl = new ResourceLocation(soundId.contains(":") ? soundId : "zombierool:" + soundId);
-        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(rl, 1.0f, 1.0f));
+        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(rl, volume, pitch));
     }
 
-    public void playSoundForPlayer(String playerUUIDStr, String soundId) {
+    public void playSoundForPlayer(String playerUUIDStr, String soundId, float volume, float pitch) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
             ResourceLocation rl = new ResourceLocation(soundId.contains(":") ? soundId : "zombierool:" + soundId);
             SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(rl);
             if (sound != null) {
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, 1.0f, 1.0f);
+                player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, volume, pitch);
             }
         }
     }
-    
-    public void playDynamicSoundForPlayer(String playerUUIDStr, String soundId) {
+
+    public void playDynamicSoundForPlayer(String playerUUIDStr, String soundId, float volume, float pitch) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
             ResourceLocation rl = new ResourceLocation(soundId.contains(":") ? soundId : "zombierool:" + soundId);
-            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CPlayGlobalSoundPacket(rl, 1.0f, 1.0f));
+            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CPlayGlobalSoundPacket(rl, volume, pitch));
         }
     }
 
@@ -486,7 +483,7 @@ public class ZombieroolAPI {
             config.getCustomFogNear(), config.getCustomFogFar()
         ));
     }
-    
+
     public void setCustomFog(double r, double g, double b, double near, double far) {
         WorldConfig config = WorldConfig.get(level);
         config.setFogPreset("custom");
@@ -496,6 +493,7 @@ public class ZombieroolAPI {
         config.setCustomFogNear((float)near);
         config.setCustomFogFar((float)far);
         config.setDirty();
+        
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetFogPresetPacket(
             "custom", (float)r, (float)g, (float)b, (float)near, (float)far
         ));
@@ -533,11 +531,11 @@ public class ZombieroolAPI {
         BlockPos pos = new BlockPos(x, y, z);
         me.cryo.zombierool.MysteryBoxManager.get(level).forceLocation(level, pos, isLocked);
     }
-    
+
     public void excludeMysteryBox(int x, int y, int z, boolean exclude) {
         WorldConfig.get(level).setMysteryBoxExcluded(new BlockPos(x, y, z), exclude);
     }
-    
+
     public void excludeWunderfizz(int x, int y, int z, boolean exclude) {
         WorldConfig.get(level).setWunderfizzExcluded(new BlockPos(x, y, z), exclude);
     }
@@ -594,7 +592,7 @@ public class ZombieroolAPI {
             }
         }
     }
-    
+
     public String getBlock(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
         if (level.isLoaded(pos)) {
@@ -623,7 +621,7 @@ public class ZombieroolAPI {
             int maxY = Math.max(y1, y2);
             int minZ = Math.min(z1, z2);
             int maxZ = Math.max(z1, z2);
-            
+
             for (int i = minX; i <= maxX; i++) {
                 for (int j = minY; j <= maxY; j++) {
                     for (int k = minZ; k <= maxZ; k++) {
@@ -701,7 +699,7 @@ public class ZombieroolAPI {
         }
         return false;
     }
-    
+
     public LuaTable getInventory(String playerUUIDStr) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         LuaTable table = new LuaTable();
@@ -770,7 +768,6 @@ public class ZombieroolAPI {
                 .filter(p -> p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
                 .map(p -> p.getUUID().toString())
                 .collect(Collectors.toList());
-
         LuaTable table = new LuaTable();
         int i = 1;
         for (String uuid : activePlayers) {
@@ -786,11 +783,11 @@ public class ZombieroolAPI {
             return null;
         }
     }
-    
+
     public void triggerElderGuardianOverlay(String playerUUIDStr) {
         triggerScopeScreamer(playerUUIDStr);
     }
-    
+
     public void triggerScopeScreamer(String playerUUIDStr) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
@@ -951,6 +948,7 @@ public class ZombieroolAPI {
         try {
             ServerPlayer player = getPlayer(ownerUuidStr);
             me.cryo.zombierool.item.throwable.ThrowableCore.BaseThrowableEntity proj = null;
+
             if (throwableType.equalsIgnoreCase("molotov")) {
                 proj = new me.cryo.zombierool.item.throwable.Molotov.MolotovEntity(level, player);
             } else if (throwableType.equalsIgnoreCase("stielhandgranate")) {
@@ -960,6 +958,7 @@ public class ZombieroolAPI {
             } else {
                 proj = new me.cryo.zombierool.item.throwable.Grenade.GrenadeEntity(level, player, 100 - fuseTicks);
             }
+
             if (proj != null) {
                 proj.setPos(x, y, z);
                 proj.setDeltaMovement(vx, vy, vz);
@@ -996,12 +995,12 @@ public class ZombieroolAPI {
             me.cryo.zombierool.AmmoCrateManager.get(level).tryPurchaseAmmo(player, level, me.cryo.zombierool.WaveManager.getCurrentWave());
         }
     }
-    
+
     public void placePerkMachine(int x, int y, int z, String facingStr, String perkId) {
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-        
+
         level.setBlock(pos.below(), me.cryo.zombierool.block.system.PerksSystem.DUMMY_BLOCK.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaDummyBlock.PART, me.cryo.zombierool.block.system.PerksSystem.DummyPart.LOWER)
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaDummyBlock.FACING, facing), 3);
@@ -1011,7 +1010,7 @@ public class ZombieroolAPI {
         level.setBlock(pos, me.cryo.zombierool.block.system.PerksSystem.BLOCK.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlock.PERK_TYPE, me.cryo.zombierool.block.system.PerksSystem.PerkType.fromString(perkId)), 3);
-                
+
         net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof me.cryo.zombierool.block.system.PerksSystem.PerksAColaBlockEntity perkBE) {
             perkBE.setSavedPerkId(perkId);
@@ -1020,12 +1019,12 @@ public class ZombieroolAPI {
             }
         }
     }
-    
+
     public void placeMysteryBox(int x, int y, int z, String facingStr, boolean active) {
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-        
+
         BlockPos otherPos = me.cryo.zombierool.MysteryBoxManager.getOtherPartPos(pos, facing);
         
         level.setBlock(pos, me.cryo.zombierool.block.system.MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
@@ -1037,26 +1036,26 @@ public class ZombieroolAPI {
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.PART, true)
                 .setValue(me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock.ACTIVE, active), 3);
     }
-    
+
     public void placeWunderfizz(int x, int y, int z, String facingStr) {
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-        
+
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.DER_WUNDERFIZZ.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.DerWunderfizzBlock.FACING, facing), 3);
     }
-    
+
     public void placePowerSwitch(int x, int y, int z, String facingStr, boolean powered) {
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-        
+
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.POWER_SWITCH.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.PowerSwitchBlock.FACING, facing)
                 .setValue(me.cryo.zombierool.block.PowerSwitchBlock.POWERED, powered), 3);
     }
-    
+
     public void placeMeteorite(int x, int y, int z, boolean active) {
         BlockPos pos = new BlockPos(x, y, z);
         level.setBlock(pos, me.cryo.zombierool.core.registry.ZRBlocks.METEORITE.get().defaultBlockState()
@@ -1067,7 +1066,7 @@ public class ZombieroolAPI {
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(facingStr.toLowerCase(Locale.ROOT));
         if (facing == null) facing = net.minecraft.core.Direction.NORTH;
-        
+
         level.setBlock(pos, me.cryo.zombierool.init.ZombieroolModBlocks.AMMO_CRATE.get().defaultBlockState()
                 .setValue(me.cryo.zombierool.block.AmmoCrateBlock.FACING, facing), 3);
     }
@@ -1094,6 +1093,7 @@ public class ZombieroolAPI {
                         if (me.cryo.zombierool.PointManager.getScore(player) < price) return false;
                         me.cryo.zombierool.PointManager.modifyScore(player, -price);
                     }
+
                     be.startUpgrading(held.copy(), player.getUUID());
                     player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                     level.playSound(null, pos, net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation("zombierool", "buy")), net.minecraft.sounds.SoundSource.BLOCKS, 1f, 1f);
