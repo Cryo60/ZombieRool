@@ -4,7 +4,7 @@
 
 ![Minecraft Version](https://img.shields.io/badge/Minecraft-1.20.1-brightgreen?style=for-the-badge&logo=minecraft)
 ![Modloader](https://img.shields.io/badge/Modloader-Forge-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/License-All_Rights_Reserved-red?style=for-the-badge)
+![License]([https://img.shields.io/badge/License-All_Rights_Reserved-red?style=for-the-badge](https://img.shields.io/badge/License-MIT-red?style=for-the-badge))
 [![Discord](https://img.shields.io/badge/Discord-Join_Us!-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HGv2r44hXM)
 
 **ZombieRool** completely transforms your Minecraft world into a fully-fledged, round-based Zombies survival experience. Survive endless hordes of the undead, rack up points, buy weapons off the walls, unlock new areas, and upgrade your arsenal to face increasingly difficult waves!
