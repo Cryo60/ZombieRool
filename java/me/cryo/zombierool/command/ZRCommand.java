@@ -61,7 +61,7 @@ import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = "zombierool")
 public class ZRCommand {
     private static final int REQUIRED_PERMISSION_LEVEL = 2;
     private static final int DEFAULT_PLAYER_SCORE = 500;
