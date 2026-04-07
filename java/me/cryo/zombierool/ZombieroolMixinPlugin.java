@@ -4,18 +4,35 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.io.File;
 import java.util.List;
 import java.util.Set;
 
 public class ZombieroolMixinPlugin implements IMixinConfigPlugin {
-    private boolean hasTacz;
+
+    private boolean hasTacz = false;
 
     @Override
     public void onLoad(String mixinPackage) {
+        // MÉTHODE BARBARE ANTI-DEADLOCK :
+        // On contourne totalement le système de Forge et de Java.
+        // Au lieu de demander à Java si TacZ est chargé, on scanne physiquement 
+        // le dossier "mods" sur le disque dur. 
+        // Résultat : Zéro interaction avec Kotlin, zéro chance de freeze.
         try {
-            Class.forName("com.tacz.guns.GunMod", false, this.getClass().getClassLoader());
-            hasTacz = true;
-        } catch (ClassNotFoundException e) {
+            File modsDir = new File("mods");
+            if (modsDir.exists() && modsDir.isDirectory()) {
+                File[] files = modsDir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().toLowerCase().contains("tacz")) {
+                            hasTacz = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
             hasTacz = false;
         }
     }

@@ -28,14 +28,12 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3f;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = "zombierool", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ThirdPersonAnimHandler {
-
     public static final Map<UUID, ZRAnimationState> activeAnims = new ConcurrentHashMap<>();
     public static float debugX = 0.1f, debugY = -0.4f, debugZ = -0.1f;
 
@@ -61,7 +59,6 @@ public class ThirdPersonAnimHandler {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-
         activeAnims.values().removeIf(state -> {
             state.tick();
             return !state.isPlaying();
@@ -71,7 +68,6 @@ public class ThirdPersonAnimHandler {
     @SubscribeEvent
     public static void onCameraSetup(ViewportEvent.ComputeCameraAngles event) {
         if (!Minecraft.getInstance().options.getCameraType().isFirstPerson()) return;
-
         Player player = Minecraft.getInstance().player;
         if (player != null && isAnimationPlaying(player.getUUID())) {
             ZRAnimationState state = activeAnims.get(player.getUUID());
@@ -88,13 +84,14 @@ public class ThirdPersonAnimHandler {
     public static void onKeyInput(InputEvent.Key event) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-
         if (player != null && isAnimationPlaying(player.getUUID())) {
             if (mc.options.keyAttack.matches(event.getKey(), event.getScanCode()) ||
                 mc.options.keyUse.matches(event.getKey(), event.getScanCode()) ||
                 mc.options.keyDrop.matches(event.getKey(), event.getScanCode()) ||
                 mc.options.keySwapOffhand.matches(event.getKey(), event.getScanCode())) {
-                event.setCanceled(true);
+                if (event.isCancelable()) {
+                    event.setCanceled(true);
+                }
             }
         }
     }
@@ -103,11 +100,24 @@ public class ThirdPersonAnimHandler {
     public static void onMouseInput(InputEvent.MouseButton event) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-
         if (player != null && isAnimationPlaying(player.getUUID())) {
             if (mc.options.keyAttack.matchesMouse(event.getButton()) ||
                 mc.options.keyUse.matchesMouse(event.getButton())) {
+                if (event.isCancelable()) {
+                    event.setCanceled(true);
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+        Minecraft mc = Minecraft.getInstance();
+        Player player = mc.player;
+        if (player != null && isAnimationPlaying(player.getUUID())) {
+            if (event.isCancelable()) {
                 event.setCanceled(true);
+                event.setSwingHand(false);
             }
         }
     }
@@ -116,7 +126,6 @@ public class ThirdPersonAnimHandler {
     public static void onRenderHand(RenderHandEvent event) {
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
-
         ZRAnimationState state = activeAnims.get(player.getUUID());
         if (state != null && state.isPlaying()) {
             event.setCanceled(true);
@@ -130,12 +139,10 @@ public class ThirdPersonAnimHandler {
                                            Player player, ZRAnimationState state) {
         Minecraft mc = Minecraft.getInstance();
         AbstractClientPlayer clientPlayer = (AbstractClientPlayer) player;
-
         PlayerRenderer renderer = (PlayerRenderer) mc.getEntityRenderDispatcher().getRenderer(clientPlayer);
         PlayerModel<AbstractClientPlayer> model = renderer.getModel();
 
         poseStack.pushPose();
-
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, 0.60F, 0.0F);
         poseStack.translate(debugX, debugY, debugZ);
@@ -144,7 +151,6 @@ public class ThirdPersonAnimHandler {
 
         Vector3f armPos = state.hasBone("right_arm") ? state.getPos("right_arm") : new Vector3f();
         Vector3f armRot = state.hasBone("right_arm") ? state.getRot("right_arm") : new Vector3f();
-
         model.rightArm.xRot = (float) Math.toRadians(armRot.x());
         model.rightArm.yRot = (float) Math.toRadians(armRot.y()); 
         model.rightArm.zRot = (float) Math.toRadians(armRot.z());
@@ -155,7 +161,6 @@ public class ThirdPersonAnimHandler {
 
         Vector3f armLPos = state.hasBone("left_arm") ? state.getPos("left_arm") : new Vector3f();
         Vector3f armLRot = state.hasBone("left_arm") ? state.getRot("left_arm") : new Vector3f();
-
         model.leftArm.xRot = (float) Math.toRadians(armLRot.x());
         model.leftArm.yRot = (float) Math.toRadians(armLRot.y()); 
         model.leftArm.zRot = (float) Math.toRadians(armLRot.z());
@@ -165,6 +170,7 @@ public class ThirdPersonAnimHandler {
         model.leftSleeve.copyFrom(model.leftArm);
 
         VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.entityTranslucent(clientPlayer.getSkinTextureLocation()));
+
         model.rightArm.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY);
         model.rightSleeve.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY);
 
@@ -174,7 +180,6 @@ public class ThirdPersonAnimHandler {
         }
 
         poseStack.pushPose();
-
         model.rightArm.translateAndRotate(poseStack);
         poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
@@ -183,7 +188,6 @@ public class ThirdPersonAnimHandler {
         if (state.hasBone("Objet")) {
             Vector3f objPos = state.getPos("Objet");
             Vector3f objRot = state.getRot("Objet");
-
             poseStack.translate(-objPos.x() / 16f, -objPos.y() / 16f, objPos.z() / 16f);
             poseStack.mulPose(Axis.ZP.rotationDegrees(objRot.z()));
             poseStack.mulPose(Axis.YP.rotationDegrees(objRot.y()));
@@ -192,7 +196,6 @@ public class ThirdPersonAnimHandler {
 
         ItemStack itemToRender = player.getMainHandItem();
         String animName = state.getAnimation().name;
-
         if (animName.equals("knife_sweep")) {
             boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             itemToRender = new ItemStack(hasBowie ? ZRRegistry.BOWIE_KNIFE : ZRRegistry.ANIM_KNIFE);
@@ -211,7 +214,7 @@ public class ThirdPersonAnimHandler {
         if (!itemToRender.isEmpty()) {
             Minecraft.getInstance().getItemRenderer().renderStatic(
                 itemToRender,
-                ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, 
+                ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
                 light,
                 OverlayTexture.NO_OVERLAY,
                 poseStack,
@@ -221,16 +224,14 @@ public class ThirdPersonAnimHandler {
             );
         }
 
-        poseStack.popPose(); 
+        poseStack.popPose();
 
-        // --- Left Hand (Lighter for Molotov) ---
         if (animName.equals("molotov_light") && state.hasBone("left_arm")) {
             poseStack.pushPose();
             model.leftArm.translateAndRotate(poseStack);
             poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
             poseStack.translate(-0.0625F, 0.125F, -0.625F); 
-            
             Minecraft.getInstance().getItemRenderer().renderStatic(
                 new ItemStack(ZRRegistry.ANIM_LIGHTER), 
                 ItemDisplayContext.THIRD_PERSON_LEFT_HAND,

@@ -34,24 +34,27 @@ import java.util.concurrent.CompletableFuture;
 public class LocalCareerManager {
 
     private static final File GLOBAL_DIR = new File(System.getProperty("user.home"), ".zombierool");
-    private static final File CAREER_FILE = new File(GLOBAL_DIR, "zombierool_career.dat");
-    private static final File LEGACY_CAREER_FILE = FMLPaths.GAMEDIR.get().resolve("zombierool_career.dat").toFile();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    private static File getCareerFile() {
+        String uuidStr = Minecraft.getInstance().getUser().getUuid();
+        return new File(GLOBAL_DIR, "career_" + uuidStr + ".dat");
+    }
+
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().setLenient().create();
 
     public static final int MAX_PRESTIGE = 5;
     public static final int GOLD_LEVEL_REQ = 50;
     public static final int BLACK_ICE_LEVEL_REQ = 100;
 
     private static CareerData currentData = new CareerData();
-    private static int memKey = new Random().nextInt();
-    private static int memZrf = 0;
-    private static int memLvl = 1 ^ memKey;
-    private static int memXp = 0;
-    private static int memPrest = 0;
-    
-    // Géré coté client, reset a 0 en debut de game.
-    public static int sessionZrfEarned = 0;
 
+    private static int memKey = new Random().nextInt();
+    private static int memZrf = 0 ^ memKey;
+    private static int memLvl = 1 ^ memKey;
+    private static int memXp = 0 ^ memKey;
+    private static int memPrest = 0 ^ memKey;
+
+    public static int sessionZrfEarned = 0;
     private static final Object FILE_LOCK = new Object();
     private static boolean isLoaded = false;
 
@@ -75,7 +78,9 @@ public class LocalCareerManager {
             this.spawnTime = System.currentTimeMillis();
         }
     }
+
     public static final List<Notification> activeNotifications = new CopyOnWriteArrayList<>();
+
     public static void pushNotification(String text, int color) {
         activeNotifications.add(new Notification(text, color));
     }
@@ -84,11 +89,13 @@ public class LocalCareerManager {
         HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED, 
         WEAPON_KILLS, WEAPON_HEADSHOTS 
     }
+
     public static class ChallengeDef {
         public ChallengeType type;
         public int target;
         public int reward;
         public String context;
+
         public ChallengeDef(ChallengeType type, int target, int reward, String context) { 
             this.type = type; this.target = target; this.reward = reward; this.context = context;
         }
@@ -96,6 +103,7 @@ public class LocalCareerManager {
             this(type, target, reward, ""); 
         }
     }
+
     private static final List<ChallengeDef> POSSIBLE_CHALLENGES = Arrays.asList(
         new ChallengeDef(ChallengeType.HEADSHOTS, 25, 100),
         new ChallengeDef(ChallengeType.HEADSHOTS, 50, 250),
@@ -136,6 +144,7 @@ public class LocalCareerManager {
         public List<String> globalUnlockedCamos = new ArrayList<>();
         public List<String> unlockedSkins = new ArrayList<>();
         public Map<String, List<String>> weaponUnlockedCamos = new HashMap<>(); 
+
         public Map<String, String> equippedCamos = new HashMap<>();
         public Map<String, String> equippedSkins = new HashMap<>(); 
 
@@ -148,15 +157,26 @@ public class LocalCareerManager {
 
         public long lastChallengeResetTime = 0;
         public long lastDailyRewardTime = 0;
+
         public List<String> redeemedCodes = new ArrayList<>();
         public int lastAnniversaryYear = 0;
     }
 
-    private static byte[] getMachineKey() throws Exception {
-        String p1 = "Z0mB";
-        String p2 = "13r0";
-        String p3 = "0L_s3C";
-        String base = p1 + p2 + p3;
+    private static byte[] getStaticKey() throws Exception {
+        String base = "ZombieRool_Career_Static_Key_v1_DoNotChange";
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return digest.digest(base.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static byte[] getUUIDKey() throws Exception {
+        String base = "Z0mB13r00L_s3C";
+        String uuidStr = Minecraft.getInstance().getUser().getUuid();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return digest.digest((base + uuidStr).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static byte[] getLegacyMachineKey() throws Exception {
+        String base = "Z0mB13r00L_s3C";
         String machineInfo = System.getProperty("user.name") 
                            + System.getProperty("os.name") 
                            + System.getProperty("user.home")
@@ -165,33 +185,39 @@ public class LocalCareerManager {
         if (envComputerName != null) machineInfo += envComputerName;
         String envHostName = System.getenv("HOSTNAME");
         if (envHostName != null) machineInfo += envHostName;
+
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         return digest.digest((base + machineInfo).getBytes(StandardCharsets.UTF_8));
     }
 
     private static byte[] encrypt(byte[] data) throws Exception {
-        byte[] keyBytes = getMachineKey();
+        byte[] keyBytes = getStaticKey();
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+
         byte[] iv = new byte[16];
         new SecureRandom().nextBytes(iv);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
         byte[] encrypted = cipher.doFinal(data);
+
         byte[] result = new byte[iv.length + encrypted.length];
         System.arraycopy(iv, 0, result, 0, iv.length);
         System.arraycopy(encrypted, 0, result, iv.length, encrypted.length);
+
         return result;
     }
 
-    private static byte[] decrypt(byte[] encryptedAndIv) throws Exception {
-        byte[] keyBytes = getMachineKey();
+    private static byte[] decryptWithKey(byte[] encryptedAndIv, byte[] keyBytes) throws Exception {
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
         byte[] iv = new byte[16];
         System.arraycopy(encryptedAndIv, 0, iv, 0, iv.length);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+
         byte[] encrypted = new byte[encryptedAndIv.length - 16];
         System.arraycopy(encryptedAndIv, 16, encrypted, 0, encrypted.length);
         return cipher.doFinal(encrypted);
@@ -210,11 +236,15 @@ public class LocalCareerManager {
     }
 
     private static boolean performSanityChecks(CareerData data) {
-        if (data.zrfBalance > 9999999 || data.zrfBalance < 0) return false;
-        if (data.currentLevel > 50 || data.currentLevel < 1) return false;
-        if (data.prestigeLevel > MAX_PRESTIGE || data.prestigeLevel < 0) return false;
-        if (data.prestigeLevel > 0 && data.lifetimeKills < (data.prestigeLevel * 2500)) return false;
-        if (data.lifetimeHeadshots > data.lifetimeKills) return false;
+        if (data.zrfBalance < 0) data.zrfBalance = 0;
+        if (data.zrfBalance > 9999999) data.zrfBalance = 9999999;
+        if (data.currentLevel < 1) data.currentLevel = 1;
+        if (data.currentLevel > 50) data.currentLevel = 50;
+        if (data.prestigeLevel < 0) data.prestigeLevel = 0;
+        if (data.prestigeLevel > MAX_PRESTIGE) data.prestigeLevel = MAX_PRESTIGE;
+        if (data.lifetimeHeadshots > data.lifetimeKills) {
+            data.lifetimeHeadshots = data.lifetimeKills;
+        }
         return true;
     }
 
@@ -234,26 +264,21 @@ public class LocalCareerManager {
         LocalDate now = LocalDate.now();
         int month = now.getMonthValue();
         int day = now.getDayOfMonth();
+        
         if ((month == 10 && day >= 20) || (month == 11 && day <= 5)) return 0.75f;
         if (month == 12 && day >= 20) return 0.75f;
         if (month == 11 && day >= 23 && day <= 30) return 0.60f;
+        
         LocalDate easter = getEasterDate(now.getYear());
         if (!now.isBefore(easter.minusDays(7)) && !now.isAfter(easter.plusDays(7))) return 0.75f;
+        
         return 1.0f;
     }
 
     private static LocalDate getEasterDate(int year) {
-        int a = year % 19;
-        int b = year / 100;
-        int c = year % 100;
-        int d = b / 4;
-        int e = b % 4;
-        int f = (b + 8) / 25;
-        int g = (b - f + 1) / 3;
-        int h = (19 * a + b - d - g + 15) % 30;
-        int i = c / 4;
-        int k = c % 4;
-        int l = (32 + 2 * e + 2 * i - h - k) % 7;
+        int a = year % 19, b = year / 100, c = year % 100, d = b / 4, e = b % 4;
+        int f = (b + 8) / 25, g = (b - f + 1) / 3, h = (19 * a + b - d - g + 15) % 30;
+        int i = c / 4, k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
         int m = (a + 11 * h + 22 * l) / 451;
         int month = (h + l - 7 * m + 114) / 31;
         int day = ((h + l - 7 * m + 114) % 31) + 1;
@@ -262,8 +287,7 @@ public class LocalCareerManager {
 
     public static String getActiveEventText() {
         LocalDate now = LocalDate.now();
-        int month = now.getMonthValue();
-        int day = now.getDayOfMonth();
+        int month = now.getMonthValue(), day = now.getDayOfMonth();
         if ((month == 10 && day >= 20) || (month == 11 && day <= 5)) return Component.translatable("gui.zombierool.career.event.halloween").getString();
         if (month == 12 && day >= 20) return Component.translatable("gui.zombierool.career.event.christmas").getString();
         if (month == 11 && day >= 23 && day <= 30) return Component.translatable("gui.zombierool.career.event.black_friday").getString();
@@ -304,85 +328,162 @@ public class LocalCareerManager {
         if (data.redeemedCodes == null) data.redeemedCodes = new ArrayList<>();
     }
 
+    private static boolean tryMigrateFile(File source, File target) {
+        try {
+            byte[] encryptedAndIv = Files.readAllBytes(source.toPath());
+            byte[] decrypted = null;
+
+            try { decrypted = decryptWithKey(encryptedAndIv, getStaticKey()); } catch (Exception e) {}
+            if (decrypted == null) {
+                try { decrypted = decryptWithKey(encryptedAndIv, getUUIDKey()); } catch (Exception e) {}
+            }
+            if (decrypted == null) {
+                try { decrypted = decryptWithKey(encryptedAndIv, getLegacyMachineKey()); } catch (Exception e) {}
+            }
+
+            if (decrypted != null) {
+                Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                return true;
+            }
+        } catch (Exception e) {}
+        return false;
+    }
+
     public static void load() {
         if (isLoaded) return; 
         synchronized (FILE_LOCK) {
-            if (!CAREER_FILE.exists() && LEGACY_CAREER_FILE.exists()) {
-                try {
-                    GLOBAL_DIR.mkdirs();
-                    Files.copy(LEGACY_CAREER_FILE.toPath(), CAREER_FILE.toPath());
-                    ZombieroolMod.LOGGER.info("[ZombieRool] Migrated legacy career data to global directory.");
-                } catch (Exception e) {
-                    ZombieroolMod.LOGGER.error("[ZombieRool] Failed to migrate career data", e);
-                }
-            }
+            if (isLoaded) return; 
+            
+            File careerFile = getCareerFile();
+            File backupFile = new File(GLOBAL_DIR, careerFile.getName() + ".bak");
+            File sharedFile = new File(GLOBAL_DIR, "zombierool_career.dat");
+            File legacyFile = FMLPaths.GAMEDIR.get().resolve("zombierool_career.dat").toFile();
+            
+            if (!GLOBAL_DIR.exists()) GLOBAL_DIR.mkdirs();
 
-            if (CAREER_FILE.exists()) {
-                try {
-                    byte[] encryptedAndIv = Files.readAllBytes(CAREER_FILE.toPath());
-                    byte[] decrypted = decrypt(encryptedAndIv);
-                    String payload = new String(decrypted, StandardCharsets.UTF_8);
-
-                    String[] parts = payload.split("::", 2);
-                    if (parts.length == 2) {
-                        String savedHash = parts[0];
-                        String json = parts[1];
-
-                        if (calculateSHA256(json).equals(savedHash)) {
-                            CareerData loaded = GSON.fromJson(json, CareerData.class);
-                            if (loaded != null) {
-                                ensureCollectionsNotNull(loaded);
-                                if (performSanityChecks(loaded)) {
-                                    currentData = loaded;
-                                    if (currentData.currentLevel < 1) currentData.currentLevel = 1;
-                                    if (!currentData.unlockedCamos.isEmpty()) {
-                                        for (String c : currentData.unlockedCamos) {
-                                            if (!currentData.globalUnlockedCamos.contains(c)) {
-                                                currentData.globalUnlockedCamos.add(c);
-                                            }
-                                        }
-                                        currentData.unlockedCamos.clear();
-                                    }
-
-                                    memKey = new Random().nextInt();
-                                    setZrf(currentData.zrfBalance);
-                                    setLvl(currentData.currentLevel);
-                                    setXp(currentData.currentXp);
-                                    setPrest(currentData.prestigeLevel);
-
-                                    for (Map.Entry<String, CareerUnlockables.CamoDef> entry : CareerUnlockables.CAMOS.entrySet()) {
-                                        if (entry.getValue().isPrestige && getPrest() >= entry.getValue().prestigeLevelReq) {
-                                            if (!currentData.globalUnlockedCamos.contains(entry.getKey())) {
-                                                currentData.globalUnlockedCamos.add(entry.getKey());
-                                            }
-                                        }
-                                    }
-
-                                    isLoaded = true;
-                                    checkAndResetDailies();
-                                    return;
-                                } else {
-                                    ZombieroolMod.LOGGER.warn("Career Data failed sanity checks! Data has been wiped to prevent cheating.");
-                                    throw new IllegalStateException("Sanity check failed");
-                                }
-                            }
-                        } else {
-                            ZombieroolMod.LOGGER.warn("Career Data integrity check failed! File may be corrupted or manually altered.");
+            if (!careerFile.exists()) {
+                if (sharedFile.exists() && tryMigrateFile(sharedFile, careerFile)) {
+                    ZombieroolMod.LOGGER.info("[ZombieRool] Migrated shared career data to UUID-specific file.");
+                } else if (legacyFile.exists() && tryMigrateFile(legacyFile, careerFile)) {
+                    ZombieroolMod.LOGGER.info("[ZombieRool] Migrated legacy career data to UUID-specific file.");
+                } else {
+                    File[] existingCareers = GLOBAL_DIR.listFiles((d, name) -> name.startsWith("career_") && name.endsWith(".dat") && !name.equals(careerFile.getName()));
+                    if (existingCareers != null && existingCareers.length > 0) {
+                        File newest = Arrays.stream(existingCareers).max(Comparator.comparingLong(File::lastModified)).orElse(null);
+                        if (newest != null && tryMigrateFile(newest, careerFile)) {
+                            ZombieroolMod.LOGGER.info("[ZombieRool] Migrated from previous UUID career data.");
                         }
                     }
-                } catch (Exception e) {
-                    ZombieroolMod.LOGGER.error("Failed to load Career Data. Resetting profile...", e);
                 }
             }
 
-            memKey = new Random().nextInt();
-            setZrf(0);
-            setLvl(1);
-            setXp(0);
-            setPrest(0);
-            isLoaded = true;
-            checkAndResetDailies(); 
+            boolean loadedSuccessfully = false;
+            if (careerFile.exists()) {
+                loadedSuccessfully = tryLoadFile(careerFile);
+            }
+
+            if (!loadedSuccessfully && backupFile.exists()) {
+                ZombieroolMod.LOGGER.warn("[ZombieRool] Main career file failed or missing. Trying backup...");
+                loadedSuccessfully = tryLoadFile(backupFile);
+                if (loadedSuccessfully) {
+                    try {
+                        Files.copy(backupFile.toPath(), careerFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } catch (Exception e) {
+                        ZombieroolMod.LOGGER.error("Failed to restore backup file", e);
+                    }
+                }
+            }
+
+            if (!loadedSuccessfully) {
+                ZombieroolMod.LOGGER.warn("[ZombieRool] No valid career data found. Starting fresh.");
+                if (careerFile.exists()) {
+                    try {
+                        Files.copy(careerFile.toPath(), new File(GLOBAL_DIR, careerFile.getName() + ".corrupted_" + System.currentTimeMillis()).toPath());
+                    } catch (Exception e) {}
+                }
+                memKey = new Random().nextInt();
+                setZrf(0);
+                setLvl(1);
+                setXp(0);
+                setPrest(0);
+                isLoaded = true;
+                checkAndResetDailies(); 
+                forceSave(); 
+            }
         }
+    }
+
+    private static boolean tryLoadFile(File file) {
+        try {
+            byte[] encryptedAndIv = Files.readAllBytes(file.toPath());
+            byte[] decrypted = null;
+            boolean migrated = false;
+
+            try { decrypted = decryptWithKey(encryptedAndIv, getStaticKey()); } catch (Exception e) {}
+            
+            if (decrypted == null) {
+                try { decrypted = decryptWithKey(encryptedAndIv, getUUIDKey()); migrated = true; } catch (Exception e) {}
+            }
+            
+            if (decrypted == null) {
+                try { decrypted = decryptWithKey(encryptedAndIv, getLegacyMachineKey()); migrated = true; } catch (Exception e) {}
+            }
+
+            if (decrypted != null) {
+                String payload = new String(decrypted, StandardCharsets.UTF_8);
+                String[] parts = payload.split("::", 2);
+                if (parts.length == 2) {
+                    String savedHash = parts[0];
+                    String json = parts[1];
+
+                    if (calculateSHA256(json).equals(savedHash)) {
+                        CareerData loaded = GSON.fromJson(json, CareerData.class);
+                        if (loaded != null) {
+                            ensureCollectionsNotNull(loaded);
+                            performSanityChecks(loaded);
+                            currentData = loaded;
+
+                            if (currentData.currentLevel < 1) currentData.currentLevel = 1;
+                            if (!currentData.unlockedCamos.isEmpty()) {
+                                for (String c : currentData.unlockedCamos) {
+                                    if (!currentData.globalUnlockedCamos.contains(c)) {
+                                        currentData.globalUnlockedCamos.add(c);
+                                    }
+                                }
+                                currentData.unlockedCamos.clear();
+                            }
+
+                            memKey = new Random().nextInt();
+                            setZrf(currentData.zrfBalance);
+                            setLvl(currentData.currentLevel);
+                            setXp(currentData.currentXp);
+                            setPrest(currentData.prestigeLevel);
+
+                            for (Map.Entry<String, CareerUnlockables.CamoDef> entry : CareerUnlockables.CAMOS.entrySet()) {
+                                if (entry.getValue().isPrestige && getPrest() >= entry.getValue().prestigeLevelReq) {
+                                    if (!currentData.globalUnlockedCamos.contains(entry.getKey())) {
+                                        currentData.globalUnlockedCamos.add(entry.getKey());
+                                    }
+                                }
+                            }
+
+                            isLoaded = true;
+                            checkAndResetDailies();
+
+                            if (migrated) {
+                                forceSave();
+                            }
+                            return true;
+                        }
+                    } else {
+                        ZombieroolMod.LOGGER.warn("Career Data integrity check failed! File may be corrupted or manually altered.");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            ZombieroolMod.LOGGER.error("Error reading career file: " + file.getName(), e);
+        }
+        return false;
     }
 
     public static void save() {
@@ -407,15 +508,17 @@ public class LocalCareerManager {
                         GLOBAL_DIR.mkdirs();
                     }
 
-                    File tempFile = new File(GLOBAL_DIR, "zombierool_career.tmp");
+                    File careerFile = getCareerFile();
+                    File tempFile = new File(GLOBAL_DIR, careerFile.getName() + ".tmp");
                     Files.write(tempFile.toPath(), encrypted);
 
-                    File backupFile = new File(GLOBAL_DIR, "zombierool_career.bak");
-                    if (CAREER_FILE.exists()) {
-                        Files.copy(CAREER_FILE.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    File backupFile = new File(GLOBAL_DIR, careerFile.getName() + ".bak");
+                    if (careerFile.exists()) {
+                        Files.copy(careerFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
 
-                    Files.move(tempFile.toPath(), CAREER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Files.move(tempFile.toPath(), careerFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
                 } catch (Exception e) {
                     ZombieroolMod.LOGGER.error("Failed to save Career Data", e);
                 }
@@ -428,6 +531,7 @@ public class LocalCareerManager {
         currentData.currentLevel = getLvl();
         currentData.currentXp = getXp();
         currentData.prestigeLevel = getPrest();
+
         try {
             String json;
             synchronized(currentData) {
@@ -439,14 +543,16 @@ public class LocalCareerManager {
 
             synchronized(FILE_LOCK) {
                 if (!GLOBAL_DIR.exists()) GLOBAL_DIR.mkdirs();
-                File tempFile = new File(GLOBAL_DIR, "zombierool_career.tmp");
+                File careerFile = getCareerFile();
+                File tempFile = new File(GLOBAL_DIR, careerFile.getName() + ".tmp");
                 Files.write(tempFile.toPath(), encrypted);
 
-                File backupFile = new File(GLOBAL_DIR, "zombierool_career.bak");
-                if (CAREER_FILE.exists()) {
-                    Files.copy(CAREER_FILE.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File backupFile = new File(GLOBAL_DIR, careerFile.getName() + ".bak");
+                if (careerFile.exists()) {
+                    Files.copy(careerFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
-                Files.move(tempFile.toPath(), CAREER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                Files.move(tempFile.toPath(), careerFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception e) {
             ZombieroolMod.LOGGER.error("Failed to synchronously save Career Data", e);
@@ -482,9 +588,10 @@ public class LocalCareerManager {
         int kills = currentData.weaponKills.getOrDefault(weaponId, 0);
         int headshots = currentData.weaponHeadshots.getOrDefault(weaponId, 0);
         int weaponXp = kills + (headshots * 2);
-        
+
         int level = 1;
         int xpForNext = 2;
+        
         while (weaponXp >= xpForNext && level < 100) {
             weaponXp -= xpForNext;
             level++;
@@ -497,7 +604,7 @@ public class LocalCareerManager {
         int kills = currentData.weaponKills.getOrDefault(weaponId, 0);
         int headshots = currentData.weaponHeadshots.getOrDefault(weaponId, 0);
         int weaponXp = kills + (headshots * 2);
-        
+
         int level = 1;
         int xpForNext = 2;
         while (weaponXp >= xpForNext && level < 100) {
@@ -516,15 +623,18 @@ public class LocalCareerManager {
 
     public static void addWeaponStat(String weaponId, int kills, int headshots, int papCount) {
         int oldLevel = getWeaponLevel(weaponId);
+
         currentData.weaponKills.put(weaponId, currentData.weaponKills.getOrDefault(weaponId, 0) + kills);
         currentData.weaponHeadshots.put(weaponId, currentData.weaponHeadshots.getOrDefault(weaponId, 0) + headshots);
         currentData.weaponPaps.put(weaponId, currentData.weaponPaps.getOrDefault(weaponId, 0) + papCount);
-        
+
         int newLevel = getWeaponLevel(weaponId);
         if (newLevel > oldLevel) {
             checkMasteryUnlocks(weaponId, newLevel);
         }
+
         checkSkinUnlocks(weaponId);
+
         save();
     }
 
@@ -567,7 +677,7 @@ public class LocalCareerManager {
             if (def.exclusiveWeapons.isEmpty() || def.exclusiveWeapons.contains(weaponId)) {
                 if (!isSkinUnlocked(weaponId, skinId)) {
                     boolean unlocked = false;
-
+                    
                     if ("HEADSHOTS".equals(def.unlockType)) {
                         if ("golden_deagle".equals(skinId) && "deagle".equals(weaponId)) {
                             unlocked = currentData.weaponHeadshots.getOrDefault("deagle", 0) >= def.unlockReq &&
@@ -601,6 +711,7 @@ public class LocalCareerManager {
                    isUnlocked("deagle", "camo_gold") &&
                    isUnlocked("deagle", "camo_solid_gold");
         }
+
         if ("silver_m1911".equals(skinId)) {
             return currentData.unlockedSkins.contains("silver_m1911");
         }
@@ -622,10 +733,12 @@ public class LocalCareerManager {
     public static int getDiscountedSkinPrice(String skinId) {
         CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(skinId);
         if (def == null) return 0;
+        
         float dailyMult = currentData.dailySkinDiscounts.getOrDefault(skinId, 1.0f);
         float eventMult = getEventDiscountMultiplier();
+        
         int rawPrice = (int) (def.price * dailyMult * eventMult);
-        return (int) (Math.round(rawPrice / 5.0) * 5); // Arrondi par pas de 5
+        return (int) (Math.round(rawPrice / 5.0) * 5); 
     }
 
     public static boolean buySkin(String weaponId, String skinId) {
@@ -653,12 +766,13 @@ public class LocalCareerManager {
             currentData.equippedSkins.put(weaponId, skinId);
         }
         forceSave();
-        
+
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
         }
     }
+
 
     public static void addZRF(int amount, String reasonKey) {
         addZRF(amount, reasonKey, true);
@@ -672,9 +786,9 @@ public class LocalCareerManager {
         if (amount > 0) {
             amount = (int) (Math.round(amount / 5.0) * 5);
         }
+
         setZrf(getZrf() + amount);
         
-        // Si game en cours, on traque ce qu'on a gagné
         if (me.cryo.zombierool.WaveManager.isGameRunning()) {
             sessionZrfEarned += amount;
         }
@@ -690,7 +804,7 @@ public class LocalCareerManager {
             mc.player.displayClientMessage(Component.translatable(reasonKey, amount).withStyle(net.minecraft.ChatFormatting.GOLD), true);
             mc.player.playSound(SoundEvents.PLAYER_LEVELUP, 0.5f, 2.0f);
         }
-
+        
         if (mc.screen instanceof CareerScreen careerScreen) {
             careerScreen.refreshData();
         }
@@ -722,7 +836,6 @@ public class LocalCareerManager {
         while (currentLvlVal < 50 && currentXpVal >= getXpRequiredForLevel(currentLvlVal)) {
             currentXpVal -= getXpRequiredForLevel(currentLvlVal);
             currentLvlVal++;
-            
             int zrfReward = 100 + (currentLvlVal * 10);
             addZRF(zrfReward, "", false); 
             leveledUp = true;
@@ -750,7 +863,9 @@ public class LocalCareerManager {
 
     public static boolean isUnlocked(String weaponId, String camoId) {
         if (camoId == null || camoId.isEmpty()) return true; 
+
         if (currentData.globalUnlockedCamos.contains(camoId)) return true;
+
         return currentData.weaponUnlockedCamos.getOrDefault(weaponId, new ArrayList<>()).contains(camoId);
     }
 
@@ -777,10 +892,12 @@ public class LocalCareerManager {
     public static int getDiscountedPrice(String camoId) {
         CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def == null) return 0;
+
         float dailyMult = currentData.dailyDiscounts.getOrDefault(camoId, 1.0f);
         float eventMult = getEventDiscountMultiplier();
+
         int rawPrice = (int) (def.price * dailyMult * eventMult);
-        return (int) (Math.round(rawPrice / 5.0) * 5); // Arrondi par pas de 5
+        return (int) (Math.round(rawPrice / 5.0) * 5); 
     }
 
     public static boolean buyCamo(String weaponId, String camoId) {
@@ -791,6 +908,7 @@ public class LocalCareerManager {
 
         if (getZrf() >= finalPrice) {
             setZrf(getZrf() - finalPrice);
+
             if (def.isGlobalUnlock) {
                 currentData.globalUnlockedCamos.add(camoId);
             } else {
@@ -816,6 +934,7 @@ public class LocalCareerManager {
             currentData.equippedCamos.put(weaponId, camoId);
         }
         forceSave(); 
+
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -833,6 +952,7 @@ public class LocalCareerManager {
             }
         }
         forceSave(); 
+
         if (Minecraft.getInstance().getConnection() != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -856,6 +976,8 @@ public class LocalCareerManager {
             case WEAPON_HEADSHOTS -> { updated = true; }
         }
 
+        List<String> completedChallenges = new ArrayList<>();
+        
         for (Map.Entry<String, ChallengeDef> entry : currentData.activeChallenges.entrySet()) {
             String challengeId = entry.getKey();
             ChallengeDef def = entry.getValue();
@@ -874,32 +996,39 @@ public class LocalCareerManager {
                 }
 
                 if (current >= def.target) {
-                    currentData.challengeCompleted.put(challengeId, true);
-                    pushNotification("Challenge Completed!", 0x55FF55);
-                    addZRF(def.reward, "message.zombierool.career.challenge_done");
-                    
-                    // Remplacer directement par un autre 
-                    currentData.activeChallenges.remove(challengeId);
-                    currentData.challengeProgress.remove(challengeId);
-                    currentData.challengeCompleted.remove(challengeId);
-
-                    List<ChallengeDef> shuffled = new ArrayList<>(POSSIBLE_CHALLENGES);
-                    List<String> weapons = new ArrayList<>(CareerScreen.getSupportedWeaponsCache());
-                    if (!weapons.isEmpty()) {
-                        String w1 = weapons.get(new Random().nextInt(weapons.size()));
-                        shuffled.add(new ChallengeDef(ChallengeType.WEAPON_KILLS, 100, 300, w1));
-                        String w2 = weapons.get(new Random().nextInt(weapons.size()));
-                        shuffled.add(new ChallengeDef(ChallengeType.WEAPON_HEADSHOTS, 50, 400, w2));
-                    }
-                    Collections.shuffle(shuffled);
-                    String newId = "daily_" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
-                    currentData.activeChallenges.put(newId, shuffled.get(0));
-                    currentData.challengeProgress.put(newId, 0);
-                    currentData.challengeCompleted.put(newId, false);
+                    completedChallenges.add(challengeId);
                 }
             }
         }
-        
+
+        for (String challengeId : completedChallenges) {
+            ChallengeDef def = currentData.activeChallenges.get(challengeId);
+            if (def == null) continue;
+
+            currentData.challengeCompleted.put(challengeId, true);
+            pushNotification("Challenge Completed!", 0x55FF55);
+            addZRF(def.reward, "message.zombierool.career.challenge_done");
+
+            currentData.activeChallenges.remove(challengeId);
+            currentData.challengeProgress.remove(challengeId);
+            currentData.challengeCompleted.remove(challengeId);
+
+            List<ChallengeDef> shuffled = new ArrayList<>(POSSIBLE_CHALLENGES);
+            List<String> weapons = new ArrayList<>(CareerScreen.getSupportedWeaponsCache());
+            if (!weapons.isEmpty()) {
+                String w1 = weapons.get(new Random().nextInt(weapons.size()));
+                shuffled.add(new ChallengeDef(ChallengeType.WEAPON_KILLS, 100, 300, w1));
+                String w2 = weapons.get(new Random().nextInt(weapons.size()));
+                shuffled.add(new ChallengeDef(ChallengeType.WEAPON_HEADSHOTS, 50, 400, w2));
+            }
+
+            Collections.shuffle(shuffled);
+            String newId = "daily_" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
+            currentData.activeChallenges.put(newId, shuffled.get(0));
+            currentData.challengeProgress.put(newId, 0);
+            currentData.challengeCompleted.put(newId, false);
+        }
+
         if (updated) save();
     }
 
@@ -937,13 +1066,11 @@ public class LocalCareerManager {
             setXp(0);
             setZrf(0);
 
-            // On retire tous les camos (SAUF CEUX DEJA DEBLOQUES PAR PRESTIGE INFERIEUR OU EXCLUSIFS SI ON VEUT)
             currentData.globalUnlockedCamos.removeIf(id -> CareerUnlockables.CAMOS.containsKey(id) && !CareerUnlockables.CAMOS.get(id).isPrestige);
             currentData.weaponUnlockedCamos.clear();
             currentData.equippedCamos.clear();
             currentData.equippedSkins.clear();
 
-            // Re-evaluer les prestiges (ex: si je passe P2, je garde le camo P1)
             for (Map.Entry<String, CareerUnlockables.CamoDef> entry : CareerUnlockables.CAMOS.entrySet()) {
                 if (entry.getValue().isPrestige && getPrest() >= entry.getValue().prestigeLevelReq) {
                     if (!currentData.globalUnlockedCamos.contains(entry.getKey())) {
@@ -953,6 +1080,7 @@ public class LocalCareerManager {
             }
 
             forceSave(); 
+
             if (Minecraft.getInstance().getConnection() != null) {
                 NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedCamosPacket(currentData.equippedCamos));
                 NetworkHandler.INSTANCE.sendToServer(new C2SSyncEquippedSkinsPacket(currentData.equippedSkins));
@@ -963,7 +1091,7 @@ public class LocalCareerManager {
     private static void checkAndResetDailies() {
         long currentDay = LocalDate.now().toEpochDay();
         if (currentData.lastChallengeResetTime > 1000000) currentData.lastChallengeResetTime = 0; 
-        
+
         long currentYear = LocalDate.now().getYear();
         if (LocalDate.now().getMonth() == Month.OCTOBER && LocalDate.now().getDayOfMonth() == 1) {
             if (currentData.lastAnniversaryYear < currentYear) {
@@ -993,8 +1121,8 @@ public class LocalCareerManager {
                 String w2 = weapons.get(new Random().nextInt(weapons.size()));
                 shuffled.add(new ChallengeDef(ChallengeType.WEAPON_HEADSHOTS, 50, 400, w2));
             }
-
             Collections.shuffle(shuffled);
+
             for (int i = 0; i < Math.min(3, shuffled.size()); i++) {
                 String id = "daily_" + i;
                 currentData.activeChallenges.put(id, shuffled.get(i));
@@ -1002,7 +1130,6 @@ public class LocalCareerManager {
                 currentData.challengeCompleted.put(id, false);
             }
 
-            // Réductions Camo
             List<String> camoIds = new ArrayList<>(CareerUnlockables.CAMOS.keySet());
             camoIds.removeIf(id -> {
                 CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(id);
@@ -1014,7 +1141,6 @@ public class LocalCareerManager {
                 currentData.dailyDiscounts.put(camoIds.get(i), discounts[new Random().nextInt(discounts.length)]);
             }
 
-            // Réductions Skins
             List<String> skinIds = new ArrayList<>(CareerUnlockables.SKINS.keySet());
             skinIds.removeIf(id -> {
                 CareerUnlockables.SkinDef def = CareerUnlockables.SKINS.get(id);

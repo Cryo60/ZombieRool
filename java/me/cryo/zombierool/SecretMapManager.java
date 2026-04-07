@@ -108,36 +108,31 @@ public class SecretMapManager {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public static void loadSecretMap(String mapId, boolean isSurvival, SecretConsoleScreen console) {
+    public static void loadSecretMap(String mapId, boolean isSurvival, me.cryo.zombierool.client.gui.SecretConsoleScreen console) {
         String rawInput = mapId.trim();
-        if (!rawInput.toLowerCase(Locale.ROOT).startsWith("zr_")) {
-            console.addLog(Component.translatable("gui.zombierool.console.err_prefix").withStyle(ChatFormatting.RED));
+        if (!rawInput.toLowerCase(java.util.Locale.ROOT).startsWith("zr_")) {
+            console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.err_prefix").withStyle(net.minecraft.ChatFormatting.RED));
             return;
         }
-
-        Minecraft mc = Minecraft.getInstance();
-        File savesDir = new File(mc.gameDirectory, "saves");
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        java.io.File savesDir = new java.io.File(mc.gameDirectory, "saves");
         String folderName = isSurvival ? "temp_zr_secret" : rawInput;
-        File targetDir = new File(savesDir, folderName);
-
-        if (!isSurvival && targetDir.exists() && new File(targetDir, "level.dat").exists()) {
-            console.addLog(Component.translatable("gui.zombierool.console.devmap_exists", folderName).withStyle(ChatFormatting.YELLOW));
-            console.addLog(Component.translatable("gui.zombierool.console.devmap_load").withStyle(ChatFormatting.YELLOW));
+        java.io.File targetDir = new java.io.File(savesDir, folderName);
+        if (!isSurvival && targetDir.exists() && new java.io.File(targetDir, "level.dat").exists()) {
+            console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.devmap_exists", folderName).withStyle(net.minecraft.ChatFormatting.YELLOW));
+            console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.devmap_load").withStyle(net.minecraft.ChatFormatting.YELLOW));
             launchMap(mc, console, folderName, false);
             return;
         }
-
         String withoutZr = rawInput.substring(3);
         String[] attempts = {
             rawInput + ".zip",
-            rawInput.toLowerCase(Locale.ROOT) + ".zip",
+            rawInput.toLowerCase(java.util.Locale.ROOT) + ".zip",
             withoutZr + ".zip",
-            withoutZr.toLowerCase(Locale.ROOT) + ".zip"
+            withoutZr.toLowerCase(java.util.Locale.ROOT) + ".zip"
         };
-
-        InputStream foundStream = null;
+        java.io.InputStream foundStream = null;
         String matchedName = "";
-
         for (String attempt : attempts) {
             foundStream = ZombieroolMod.class.getResourceAsStream("/assets/zombierool/maps/" + attempt);
             if (foundStream != null) {
@@ -145,40 +140,37 @@ public class SecretMapManager {
                 break;
             }
         }
-
         if (foundStream == null) {
-            console.addLog(Component.translatable("gui.zombierool.console.err_notfound", rawInput).withStyle(ChatFormatting.RED));
+            console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.err_notfound", rawInput).withStyle(net.minecraft.ChatFormatting.RED));
             return;
         }
-
-        final InputStream is = foundStream;
+        final java.io.InputStream is = foundStream;
         final String finalMatchedName = matchedName;
-
-        console.addLog(Component.translatable("gui.zombierool.console.extracting", finalMatchedName).withStyle(ChatFormatting.YELLOW));
-
+        console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.extracting", finalMatchedName).withStyle(net.minecraft.ChatFormatting.YELLOW));
+        
         new Thread(() -> {
             try {
                 if (targetDir.exists()) {
                     deleteDirectory(targetDir);
                 }
                 targetDir.mkdirs();
-
-                try (ZipInputStream zis = new ZipInputStream(is)) {
-                    ZipEntry entry;
+                try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(is)) {
+                    java.util.zip.ZipEntry entry;
                     while ((entry = zis.getNextEntry()) != null) {
-                        File file = new File(targetDir, entry.getName());
+                        java.io.File file = new java.io.File(targetDir, entry.getName());
                         String canonicalDestPath = targetDir.getCanonicalPath();
                         String canonicalFilePath = file.getCanonicalPath();
-
-                        if (!canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
+                        
+                        // FIX 1 : Retrait du "+ File.separator"
+                        if (!canonicalFilePath.startsWith(canonicalDestPath)) {
                             throw new Exception("Zip Slip detected: " + entry.getName());
                         }
-
+                        
                         if (entry.isDirectory()) {
                             file.mkdirs();
                         } else {
                             file.getParentFile().mkdirs();
-                            try (FileOutputStream fos = new FileOutputStream(file)) {
+                            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
                                 byte[] buffer = new byte[8192];
                                 int len;
                                 while ((len = zis.read(buffer)) > 0) {
@@ -188,22 +180,20 @@ public class SecretMapManager {
                         }
                     }
                 }
-
-                File levelDat = new File(targetDir, "level.dat");
+                java.io.File levelDat = new java.io.File(targetDir, "level.dat");
                 if (levelDat.exists()) {
-                    CompoundTag root = NbtIo.readCompressed(levelDat);
-                    CompoundTag data = root.getCompound("Data");
+                    net.minecraft.nbt.CompoundTag root = net.minecraft.nbt.NbtIo.readCompressed(levelDat);
+                    net.minecraft.nbt.CompoundTag data = root.getCompound("Data");
                     data.putString("LevelName", folderName);
-                    NbtIo.writeCompressed(root, levelDat);
+                    net.minecraft.nbt.NbtIo.writeCompressed(root, levelDat);
                 }
-
                 mc.execute(() -> {
-                    console.addLog(Component.translatable("gui.zombierool.console.extracted").withStyle(ChatFormatting.GREEN));
+                    console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.extracted").withStyle(net.minecraft.ChatFormatting.GREEN));
                     launchMap(mc, console, folderName, isSurvival);
                 });
             } catch (Exception e) {
                 mc.execute(() -> {
-                    console.addLog(Component.literal("§cException: " + e.getMessage()));
+                    console.addLog(net.minecraft.network.chat.Component.literal("§cException: " + e.getMessage()));
                     e.printStackTrace();
                 });
             }

@@ -16,7 +16,7 @@ public class DrinkPerkAnimationHandler {
     private static int animationTimer = 0;
     private static Runnable onFinish = null;
     private static final int DURATION_TICKS = 70; 
-    
+
     private static int blurTimer = 0;
     private static final int BLUR_DURATION = 15; 
 
@@ -40,12 +40,9 @@ public class DrinkPerkAnimationHandler {
     @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return; 
-        
         if (animationTimer > 0) {
             animationTimer--;
             Minecraft mc = Minecraft.getInstance();
-
-            // 0.83s -> 16.6 ticks écoulés. 70 - 17 = 53
             if (animationTimer == 53 && mc.player != null) {
                 mc.level.playLocalSound(
                     mc.player.getX(), mc.player.getY(), mc.player.getZ(),
@@ -53,8 +50,6 @@ public class DrinkPerkAnimationHandler {
                     SoundSource.PLAYERS, 1f, 1f, false
                 );
             }
-            
-            // 2.38s -> 47.6 ticks écoulés. 70 - 48 = 22
             if (animationTimer == 22 && mc.player != null) {
                 mc.level.playLocalSound(
                     mc.player.getX(), mc.player.getY(), mc.player.getZ(),
@@ -71,7 +66,7 @@ public class DrinkPerkAnimationHandler {
                 }
             }
         }
-        
+
         if (blurTimer > 0) {
             blurTimer--;
         }
@@ -88,6 +83,14 @@ public class DrinkPerkAnimationHandler {
     public static void onMouseInput(InputEvent.MouseButton event) {
         if (isRunning() && event.isCancelable()) {
             event.setCanceled(true);
+        }
+    }
+    
+    @SubscribeEvent
+    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+        if (isRunning() && event.isCancelable()) {
+            event.setCanceled(true);
+            event.setSwingHand(false);
         }
     }
 

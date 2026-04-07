@@ -14,39 +14,29 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraftforge.fml.ModList;
 import me.cryo.zombierool.init.ZombieroolModSounds;
 import net.minecraft.Util;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class TacZPackDownloaderScreen extends Screen {
-    private static final String DEPS_JSON_URL = "https://raw.githubusercontent.com/Cryo-The-First/zombierool-repo/refs/heads/main/dependencies.json";
-    private static final long MAX_FILE_SIZE = 1000L * 1024L * 1024L; 
+
+    private static final String DEPS_JSON_URL = "https://raw.githubusercontent.com/Cryo60/zombierool-maps/refs/heads/main/dependencies.json";
     private static final int CONNECT_TIMEOUT = 15000;
     private static final int READ_TIMEOUT = 60000;
 
     private final Screen lastScreen;
     private DependencyList depList;
-    private Button directDownloadButton;
-    private Button manualDownloadButton;
-    private Button downloadAllButton;
+    private Button openBrowserButton;
     private Button backButton;
 
     private List<DependencyEntry> dependencies = new ArrayList<>();
     private boolean loading = true;
     private String errorMessage = null;
-    private boolean isDownloading = false;
-    private boolean requiresRestart = false;
-
-    private int currentDownloadIndex = 0;
-    private int totalDownloads = 0;
-    private String currentDownloadName = "";
-    private float currentFileProgress = 0.0f;
-    private String statusMessage = null;
 
     public TacZPackDownloaderScreen(Screen lastScreen) {
         super(Component.translatable("gui.zombierool.tacz.title"));
@@ -55,50 +45,38 @@ public class TacZPackDownloaderScreen extends Screen {
 
     @Override
     protected void init() {
-        loadDependencies();
+        if (!me.cryo.zombierool.configuration.ZRClientConfig.allowNetworkRequests()) {
+            this.errorMessage = Component.translatable("gui.zombierool.network.disabled").getString();
+            this.loading = false;
+        } else {
+            loadDependencies();
+        }
 
         int listTop = 45;
-        int buttonsPerRow = (this.width > 450) ? 4 : 2;
+        int buttonsPerRow = 2;
         int spacing = 5;
-        int buttonWidth = Math.min(100, (this.width - 20) / buttonsPerRow - spacing);
+        int buttonWidth = 150;
         int buttonHeight = 20;
-
-        int rows = (int) Math.ceil(4.0 / buttonsPerRow);
-        int totalButtonAreaHeight = rows * (buttonHeight + spacing);
-        int listHeight = this.height - listTop - totalButtonAreaHeight - 30;
+        int listHeight = this.height - listTop - buttonHeight - 30;
 
         this.depList = new DependencyList(this.minecraft, this.width, listHeight, listTop, listTop + listHeight, 20);
         this.addWidget(this.depList);
 
         int startX = (this.width - (buttonsPerRow * buttonWidth + (buttonsPerRow - 1) * spacing)) / 2;
-        int startY = this.height - totalButtonAreaHeight - 20;
+        int startY = this.height - buttonHeight - 20;
 
-        this.directDownloadButton = Button.builder(Component.translatable("gui.zombierool.tacz.direct"), btn -> {
+        // Bouton pour ouvrir le lien du mod/pack sélectionné
+        this.openBrowserButton = Button.builder(Component.translatable("gui.zombierool.tacz.manual"), btn -> {
             playSound();
-            downloadSelectedDirect();
+            openSelectedLink();
         }).bounds(startX, startY, buttonWidth, buttonHeight).build();
-
-        this.manualDownloadButton = Button.builder(Component.translatable("gui.zombierool.tacz.manual"), btn -> {
-            playSound();
-            openSelectedManualLink();
-        }).bounds(startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight).build();
-
-        int row2Y = (buttonsPerRow == 2) ? startY + buttonHeight + spacing : startY;
-        int row2X = (buttonsPerRow == 2) ? startX : startX + (buttonWidth + spacing) * 2;
-
-        this.downloadAllButton = Button.builder(Component.translatable("gui.zombierool.tacz.dl_all"), btn -> {
-            playSound();
-            downloadAllDirect();
-        }).bounds(row2X, row2Y, buttonWidth, buttonHeight).build();
 
         this.backButton = Button.builder(Component.translatable("gui.zombierool.downloader.back"), btn -> {
             playSound();
             this.minecraft.setScreen(lastScreen);
-        }).bounds(row2X + buttonWidth + spacing, row2Y, buttonWidth, buttonHeight).build();
+        }).bounds(startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight).build();
 
-        this.addRenderableWidget(directDownloadButton);
-        this.addRenderableWidget(manualDownloadButton);
-        this.addRenderableWidget(downloadAllButton);
+        this.addRenderableWidget(openBrowserButton);
         this.addRenderableWidget(backButton);
 
         updateButtonStates();
@@ -113,7 +91,7 @@ public class TacZPackDownloaderScreen extends Screen {
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(CONNECT_TIMEOUT);
                 conn.setReadTimeout(READ_TIMEOUT);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                conn.setRequestProperty("User-Agent", "ZombieRool-Mod/1.0 (Minecraft Forge)");
                 conn.setRequestProperty("Accept", "application/json");
                 conn.connect();
 
@@ -129,7 +107,7 @@ public class TacZPackDownloaderScreen extends Screen {
                 }
 
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    throw new IOException("HTTP " + responseCode);
+                    throw new java.io.IOException("HTTP " + responseCode);
                 }
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
@@ -140,20 +118,22 @@ public class TacZPackDownloaderScreen extends Screen {
                 }
                 reader.close();
 
-                JsonArray array = JsonParser.parseString(response.toString()).getAsJsonArray();
+                // L'objet racine du nouveau JSON est un objet qui contient un array "dependencies"
+                JsonObject root = JsonParser.parseString(response.toString()).getAsJsonObject();
+                JsonArray array = root.getAsJsonArray("dependencies");
+                
                 dependencies.clear();
 
                 for (JsonElement elem : array) {
                     JsonObject obj = elem.getAsJsonObject();
                     String id = obj.get("id").getAsString();
                     String name = obj.get("name").getAsString();
-                    String pageUrl = obj.get("pageUrl").getAsString();
-                    String downloadUrl = obj.get("downloadUrl").getAsString();
-                    String filename = obj.get("filename").getAsString();
+                    String pageUrl = obj.has("page_url") ? obj.get("page_url").getAsString() : "";
                     String type = obj.get("type").getAsString();
-
-                    DependencyEntry entry = new DependencyEntry(id, name, pageUrl, downloadUrl, filename, type);
+                    
+                    DependencyEntry entry = new DependencyEntry(id, name, pageUrl, type);
                     boolean installed = false;
+
                     File gameDir = Minecraft.getInstance().gameDirectory;
 
                     if (entry.type.equalsIgnoreCase("mod") && entry.id.equalsIgnoreCase("tacz")) {
@@ -170,6 +150,7 @@ public class TacZPackDownloaderScreen extends Screen {
                             }
                         }
                     } else {
+                        // Pour les gunpacks, on vérifie leur présence dans les dossiers tacz
                         File[] dirsToCheck = {
                             new File(gameDir, "tacz"),
                             new File(gameDir, "tacz/custom"),
@@ -188,11 +169,10 @@ public class TacZPackDownloaderScreen extends Screen {
                             }
                         }
                     }
-
                     entry.isInstalled = installed;
                     dependencies.add(entry);
                 }
-
+                
                 loading = false;
                 this.minecraft.execute(() -> {
                     if (depList != null) {
@@ -211,40 +191,13 @@ public class TacZPackDownloaderScreen extends Screen {
 
     private void updateButtonStates() {
         DependencyEntry selected = depList != null ? depList.getSelected() : null;
-
-        if (directDownloadButton != null) {
-            // SECURITÉ POUR CURSEFORGE : On désactive le Direct Download si c'est un "mod"
-            boolean isMod = selected != null && selected.type.equalsIgnoreCase("mod");
-            
-            directDownloadButton.active = selected != null && !selected.isInstalled && !isDownloading 
-                                          && selected.downloadUrl != null && !selected.downloadUrl.isEmpty() 
-                                          && !isMod; // Bloqué pour les mods
-                                          
-            if (isMod && !selected.isInstalled) {
-                directDownloadButton.setMessage(Component.literal("Browser Only"));
+        if (openBrowserButton != null) {
+            openBrowserButton.active = selected != null && selected.pageUrl != null && !selected.pageUrl.isEmpty();
+            if (selected != null && selected.isInstalled) {
+                openBrowserButton.setMessage(Component.literal("Already Installed (Open Link)"));
             } else {
-                directDownloadButton.setMessage(Component.translatable("gui.zombierool.tacz.direct"));
+                openBrowserButton.setMessage(Component.literal("Open CurseForge Link"));
             }
-        }
-        
-        if (manualDownloadButton != null) {
-            manualDownloadButton.active = selected != null && !isDownloading && selected.pageUrl != null && !selected.pageUrl.isEmpty();
-        }
-        
-        if (downloadAllButton != null) {
-            boolean hasMissingDirectPack = false;
-            for (DependencyEntry entry : dependencies) {
-                // Le "Download All" ne prend en compte QUE les packs (pas les mods)
-                if (!entry.isInstalled && entry.downloadUrl != null && !entry.downloadUrl.isEmpty() && !entry.type.equalsIgnoreCase("mod")) {
-                    hasMissingDirectPack = true;
-                    break;
-                }
-            }
-            downloadAllButton.active = !isDownloading && hasMissingDirectPack;
-        }
-        
-        if (backButton != null) {
-            backButton.active = !isDownloading;
         }
     }
 
@@ -252,144 +205,7 @@ public class TacZPackDownloaderScreen extends Screen {
         this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
     }
 
-    private void downloadSelectedDirect() {
-        DependencyEntry selected = depList.getSelected();
-        // Double sécurité : On refuse de télécharger un mod
-        if (selected == null || isDownloading || selected.isInstalled || selected.type.equalsIgnoreCase("mod")) return;
-
-        totalDownloads = 1;
-        currentDownloadIndex = 1;
-        isDownloading = true;
-        updateButtonStates();
-
-        new Thread(() -> {
-            boolean success = downloadDependency(selected);
-            this.minecraft.execute(() -> {
-                isDownloading = false;
-                if (success) {
-                    selected.isInstalled = true;
-                    requiresRestart = true;
-                }
-                updateButtonStates();
-            });
-        }).start();
-    }
-
-    private void downloadAllDirect() {
-        if (isDownloading) return;
-
-        List<DependencyEntry> toDownload = new ArrayList<>();
-        for (DependencyEntry entry : dependencies) {
-            // Double sécurité : On ne met dans la file d'attente QUE les packs
-            if (!entry.isInstalled && entry.downloadUrl != null && !entry.downloadUrl.isEmpty() && !entry.type.equalsIgnoreCase("mod")) {
-                toDownload.add(entry);
-            }
-        }
-
-        if (toDownload.isEmpty()) return;
-
-        totalDownloads = toDownload.size();
-        currentDownloadIndex = 1;
-        isDownloading = true;
-        updateButtonStates();
-
-        CompletableFuture.runAsync(() -> {
-            for (DependencyEntry entry : toDownload) {
-                boolean success = downloadDependency(entry);
-                this.minecraft.execute(() -> {
-                    if (success) {
-                        entry.isInstalled = true;
-                        requiresRestart = true;
-                    }
-                    currentDownloadIndex++;
-                });
-            }
-            this.minecraft.execute(() -> {
-                isDownloading = false;
-                statusMessage = "All pack downloads complete!";
-                updateButtonStates();
-            });
-        });
-    }
-
-    private boolean downloadDependency(DependencyEntry entry) {
-        // Ultime vérification : on ne télécharge jamais de mod
-        if (entry.type.equalsIgnoreCase("mod")) return false;
-
-        this.minecraft.execute(() -> {
-            currentDownloadName = entry.name;
-            currentFileProgress = 0.0f;
-            statusMessage = "Downloading: " + entry.name;
-        });
-
-        try {
-            URL url = new URL(entry.downloadUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setInstanceFollowRedirects(true);
-            conn.setConnectTimeout(CONNECT_TIMEOUT);
-            conn.setReadTimeout(READ_TIMEOUT);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-            conn.connect();
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
-                responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                String newUrl = conn.getHeaderField("Location");
-                conn = (HttpURLConnection) new URL(newUrl).openConnection();
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-                conn.connect();
-                responseCode = conn.getResponseCode();
-            }
-
-            final int finalResponseCode = responseCode; 
-            if (finalResponseCode != HttpURLConnection.HTTP_OK) {
-                this.minecraft.execute(() -> statusMessage = "HTTP Error " + finalResponseCode + " for " + entry.name);
-                return false;
-            }
-
-            File gameDir = Minecraft.getInstance().gameDirectory;
-            // On ne télécharge que dans le dossier des custom packs de TacZ
-            File targetDir = new File(gameDir, "config/tacz/custom");
-            targetDir.mkdirs();
-
-            File targetFile = new File(targetDir, entry.filename);
-
-            long contentLength = conn.getContentLengthLong();
-            if (contentLength > MAX_FILE_SIZE) return false;
-
-            try (InputStream in = conn.getInputStream();
-                 FileOutputStream out = new FileOutputStream(targetFile)) {
-
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                long totalRead = 0;
-                long lastUpdate = System.currentTimeMillis();
-
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, bytesRead);
-                    totalRead += bytesRead;
-
-                    long now = System.currentTimeMillis();
-                    if (contentLength > 0 && now - lastUpdate > 100) {
-                        currentFileProgress = (float) totalRead / contentLength;
-                        lastUpdate = now;
-                    }
-                }
-            }
-
-            conn.disconnect();
-            return true;
-
-        } catch (Exception e) {
-            this.minecraft.execute(() -> statusMessage = "Download Error: " + e.getClass().getSimpleName());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private void openSelectedManualLink() {
+    private void openSelectedLink() {
         DependencyEntry selected = depList.getSelected();
         if (selected != null && selected.pageUrl != null && !selected.pageUrl.isEmpty()) {
             Util.getPlatform().openUri(selected.pageUrl);
@@ -399,7 +215,6 @@ public class TacZPackDownloaderScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
-
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF);
 
         if (!ModList.get().isLoaded("tacz") && !loading) {
@@ -412,27 +227,6 @@ public class TacZPackDownloaderScreen extends Screen {
             graphics.drawCenteredString(this.font, errorMessage, this.width / 2, this.height / 2, 0xFF5555);
         } else {
             this.depList.render(graphics, mouseX, mouseY, partialTick);
-        }
-
-        if (statusMessage != null) {
-            int color = isDownloading ? 0xFFAA00 : 0xFF5555;
-            graphics.drawCenteredString(this.font, statusMessage, this.width / 2, this.height - 45, color);
-        }
-
-        if (isDownloading) {
-            int barWidth = 200;
-            int barHeight = 10;
-            int barX = (this.width - barWidth) / 2;
-            int barY = this.height - 60;
-
-            String status = String.format("Downloading (%d/%d) : %s", currentDownloadIndex, totalDownloads, currentDownloadName);
-            graphics.drawCenteredString(this.font, status, this.width / 2, barY - 12, 0xFFFFFF);
-
-            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
-            graphics.fill(barX, barY, barX + (int)(barWidth * currentFileProgress), barY + barHeight, 0xFF00AA00);
-            graphics.renderOutline(barX, barY, barWidth, barHeight, 0xFFFFFFFF);
-        } else if (requiresRestart) {
-            graphics.drawCenteredString(this.font, Component.translatable("gui.zombierool.tacz.restart"), this.width / 2, this.height - 55, 0xFFFFAA00);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -458,24 +252,24 @@ public class TacZPackDownloaderScreen extends Screen {
     }
 
     private class DependencyEntry extends ObjectSelectionList.Entry<DependencyEntry> {
-        public final String id, name, pageUrl, downloadUrl, filename, type;
+        public final String id, name, pageUrl, type;
         public boolean isInstalled = false;
 
-        public DependencyEntry(String id, String name, String pageUrl, String downloadUrl, String filename, String type) {
-            this.id = id; this.name = name; this.pageUrl = pageUrl;
-            this.downloadUrl = downloadUrl; this.filename = filename; this.type = type;
+        public DependencyEntry(String id, String name, String pageUrl, String type) {
+            this.id = id; 
+            this.name = name; 
+            this.pageUrl = pageUrl;
+            this.type = type;
         }
 
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             int color = isInstalled ? 0x55FF55 : 0xFFFFFF;
+            String typePrefix = type.equalsIgnoreCase("mod") ? "[MOD] " : "[PACK] ";
+            String status = isInstalled ? "Installed" : "Click to get";
             
-            String typePrefix = type.equalsIgnoreCase("mod") ? Component.translatable("gui.zombierool.tacz.mod").getString() + " " : Component.translatable("gui.zombierool.tacz.pack").getString() + " ";
-            String status = isInstalled ? Component.translatable("gui.zombierool.tacz.installed").getString() : Component.translatable("gui.zombierool.tacz.missing").getString();
-
             graphics.drawString(font, typePrefix + name, left + 5, top + 5, color);
-            graphics.drawString(font, status, left + width - font.width(status) - 10, top + 5, 0xFFFFFF);
-            
+            graphics.drawString(font, status, left + width - font.width(status) - 10, top + 5, 0xAAAAAA);
             graphics.renderOutline(left, top, width, height - 2, 0xFF444444);
         }
 
