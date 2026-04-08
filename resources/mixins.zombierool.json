@@ -24,7 +24,8 @@
     "PlayerModelMixin",
     "ItemInHandLayerMixin",
     "CameraMixin",
-    "ClientLanguageMixin"
+    "ClientLanguageMixin",
+    "TacZScopeOverlayMixin"
   ],
   "client": [],
   "minVersion": "0.8"

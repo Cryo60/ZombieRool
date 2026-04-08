@@ -27,6 +27,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CompletableFuture;
 
@@ -136,29 +137,30 @@ public class LocalCareerManager {
         public int lifetimeWaves = 0;
         public int lifetimeRevives = 0;
 
-        public Map<String, Integer> weaponKills = new HashMap<>();
-        public Map<String, Integer> weaponHeadshots = new HashMap<>();
-        public Map<String, Integer> weaponPaps = new HashMap<>(); 
+        // Toutes les collections sont passées en thread-safe
+        public Map<String, Integer> weaponKills = new ConcurrentHashMap<>();
+        public Map<String, Integer> weaponHeadshots = new ConcurrentHashMap<>();
+        public Map<String, Integer> weaponPaps = new ConcurrentHashMap<>(); 
 
-        public List<String> unlockedCamos = new ArrayList<>(); 
-        public List<String> globalUnlockedCamos = new ArrayList<>();
-        public List<String> unlockedSkins = new ArrayList<>();
-        public Map<String, List<String>> weaponUnlockedCamos = new HashMap<>(); 
+        public List<String> unlockedCamos = new CopyOnWriteArrayList<>(); 
+        public List<String> globalUnlockedCamos = new CopyOnWriteArrayList<>();
+        public List<String> unlockedSkins = new CopyOnWriteArrayList<>();
+        public Map<String, List<String>> weaponUnlockedCamos = new ConcurrentHashMap<>(); 
 
-        public Map<String, String> equippedCamos = new HashMap<>();
-        public Map<String, String> equippedSkins = new HashMap<>(); 
+        public Map<String, String> equippedCamos = new ConcurrentHashMap<>();
+        public Map<String, String> equippedSkins = new ConcurrentHashMap<>(); 
 
-        public Map<String, Integer> challengeProgress = new HashMap<>();
-        public Map<String, Boolean> challengeCompleted = new HashMap<>();
-        public Map<String, ChallengeDef> activeChallenges = new HashMap<>();
+        public Map<String, Integer> challengeProgress = new ConcurrentHashMap<>();
+        public Map<String, Boolean> challengeCompleted = new ConcurrentHashMap<>();
+        public Map<String, ChallengeDef> activeChallenges = new ConcurrentHashMap<>();
 
-        public Map<String, Float> dailyDiscounts = new HashMap<>(); 
-        public Map<String, Float> dailySkinDiscounts = new HashMap<>();
+        public Map<String, Float> dailyDiscounts = new ConcurrentHashMap<>(); 
+        public Map<String, Float> dailySkinDiscounts = new ConcurrentHashMap<>();
 
         public long lastChallengeResetTime = 0;
         public long lastDailyRewardTime = 0;
 
-        public List<String> redeemedCodes = new ArrayList<>();
+        public List<String> redeemedCodes = new CopyOnWriteArrayList<>();
         public int lastAnniversaryYear = 0;
     }
 
@@ -311,21 +313,65 @@ public class LocalCareerManager {
     }
 
     private static void ensureCollectionsNotNull(CareerData data) {
-        if (data.unlockedCamos == null) data.unlockedCamos = new ArrayList<>();
-        if (data.globalUnlockedCamos == null) data.globalUnlockedCamos = new ArrayList<>();
-        if (data.unlockedSkins == null) data.unlockedSkins = new ArrayList<>();
-        if (data.weaponUnlockedCamos == null) data.weaponUnlockedCamos = new HashMap<>();
-        if (data.equippedCamos == null) data.equippedCamos = new HashMap<>();
-        if (data.equippedSkins == null) data.equippedSkins = new HashMap<>();
-        if (data.challengeProgress == null) data.challengeProgress = new HashMap<>();
-        if (data.challengeCompleted == null) data.challengeCompleted = new HashMap<>();
-        if (data.activeChallenges == null) data.activeChallenges = new HashMap<>();
-        if (data.dailyDiscounts == null) data.dailyDiscounts = new HashMap<>();
-        if (data.dailySkinDiscounts == null) data.dailySkinDiscounts = new HashMap<>();
-        if (data.weaponKills == null) data.weaponKills = new HashMap<>();
-        if (data.weaponHeadshots == null) data.weaponHeadshots = new HashMap<>();
-        if (data.weaponPaps == null) data.weaponPaps = new HashMap<>();
-        if (data.redeemedCodes == null) data.redeemedCodes = new ArrayList<>();
+        // Wrap GSON's default ArrayLists and HashMaps into Concurrent variants to prevent crash
+        if (data.unlockedCamos == null) data.unlockedCamos = new CopyOnWriteArrayList<>();
+        else if (!(data.unlockedCamos instanceof CopyOnWriteArrayList)) data.unlockedCamos = new CopyOnWriteArrayList<>(data.unlockedCamos);
+
+        if (data.globalUnlockedCamos == null) data.globalUnlockedCamos = new CopyOnWriteArrayList<>();
+        else if (!(data.globalUnlockedCamos instanceof CopyOnWriteArrayList)) data.globalUnlockedCamos = new CopyOnWriteArrayList<>(data.globalUnlockedCamos);
+
+        if (data.unlockedSkins == null) data.unlockedSkins = new CopyOnWriteArrayList<>();
+        else if (!(data.unlockedSkins instanceof CopyOnWriteArrayList)) data.unlockedSkins = new CopyOnWriteArrayList<>(data.unlockedSkins);
+
+        if (data.weaponUnlockedCamos == null) data.weaponUnlockedCamos = new ConcurrentHashMap<>();
+        else {
+            if (!(data.weaponUnlockedCamos instanceof ConcurrentHashMap)) {
+                Map<String, List<String>> newMap = new ConcurrentHashMap<>();
+                for (Map.Entry<String, List<String>> entry : data.weaponUnlockedCamos.entrySet()) {
+                    newMap.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
+                }
+                data.weaponUnlockedCamos = newMap;
+            } else {
+                for (Map.Entry<String, List<String>> entry : data.weaponUnlockedCamos.entrySet()) {
+                    if (!(entry.getValue() instanceof CopyOnWriteArrayList)) {
+                        data.weaponUnlockedCamos.put(entry.getKey(), new CopyOnWriteArrayList<>(entry.getValue()));
+                    }
+                }
+            }
+        }
+
+        if (data.equippedCamos == null) data.equippedCamos = new ConcurrentHashMap<>();
+        else if (!(data.equippedCamos instanceof ConcurrentHashMap)) data.equippedCamos = new ConcurrentHashMap<>(data.equippedCamos);
+
+        if (data.equippedSkins == null) data.equippedSkins = new ConcurrentHashMap<>();
+        else if (!(data.equippedSkins instanceof ConcurrentHashMap)) data.equippedSkins = new ConcurrentHashMap<>(data.equippedSkins);
+
+        if (data.challengeProgress == null) data.challengeProgress = new ConcurrentHashMap<>();
+        else if (!(data.challengeProgress instanceof ConcurrentHashMap)) data.challengeProgress = new ConcurrentHashMap<>(data.challengeProgress);
+
+        if (data.challengeCompleted == null) data.challengeCompleted = new ConcurrentHashMap<>();
+        else if (!(data.challengeCompleted instanceof ConcurrentHashMap)) data.challengeCompleted = new ConcurrentHashMap<>(data.challengeCompleted);
+
+        if (data.activeChallenges == null) data.activeChallenges = new ConcurrentHashMap<>();
+        else if (!(data.activeChallenges instanceof ConcurrentHashMap)) data.activeChallenges = new ConcurrentHashMap<>(data.activeChallenges);
+
+        if (data.dailyDiscounts == null) data.dailyDiscounts = new ConcurrentHashMap<>();
+        else if (!(data.dailyDiscounts instanceof ConcurrentHashMap)) data.dailyDiscounts = new ConcurrentHashMap<>(data.dailyDiscounts);
+
+        if (data.dailySkinDiscounts == null) data.dailySkinDiscounts = new ConcurrentHashMap<>();
+        else if (!(data.dailySkinDiscounts instanceof ConcurrentHashMap)) data.dailySkinDiscounts = new ConcurrentHashMap<>(data.dailySkinDiscounts);
+
+        if (data.weaponKills == null) data.weaponKills = new ConcurrentHashMap<>();
+        else if (!(data.weaponKills instanceof ConcurrentHashMap)) data.weaponKills = new ConcurrentHashMap<>(data.weaponKills);
+
+        if (data.weaponHeadshots == null) data.weaponHeadshots = new ConcurrentHashMap<>();
+        else if (!(data.weaponHeadshots instanceof ConcurrentHashMap)) data.weaponHeadshots = new ConcurrentHashMap<>(data.weaponHeadshots);
+
+        if (data.weaponPaps == null) data.weaponPaps = new ConcurrentHashMap<>();
+        else if (!(data.weaponPaps instanceof ConcurrentHashMap)) data.weaponPaps = new ConcurrentHashMap<>(data.weaponPaps);
+
+        if (data.redeemedCodes == null) data.redeemedCodes = new CopyOnWriteArrayList<>();
+        else if (!(data.redeemedCodes instanceof CopyOnWriteArrayList)) data.redeemedCodes = new CopyOnWriteArrayList<>(data.redeemedCodes);
     }
 
     private static boolean tryMigrateFile(File source, File target) {
@@ -476,7 +522,8 @@ public class LocalCareerManager {
                             return true;
                         }
                     } else {
-                        ZombieroolMod.LOGGER.warn("Career Data integrity check failed! File may be corrupted or manually altered.");
+                        ZombieroolMod.LOGGER.error("[ZombieRool] CORRUPTION DETECTED! Expected Hash: " + savedHash + " | Calculated Hash: " + calculateSHA256(json));
+                        ZombieroolMod.LOGGER.error("[ZombieRool] JSON Content was: " + json);
                     }
                 }
             }
@@ -486,77 +533,53 @@ public class LocalCareerManager {
         return false;
     }
 
-    public static void save() {
-        currentData.zrfBalance = getZrf();
-        currentData.currentLevel = getLvl();
-        currentData.currentXp = getXp();
-        currentData.prestigeLevel = getPrest();
+    // NOUVELLE MÉTHODE PRIVÉE POUR VERROUILLER L'ÉCRITURE DU FICHIER ET ÉVITER LES CONFLITS
+    private static void executeSaveLocked() {
+        synchronized(FILE_LOCK) {
+            try {
+                currentData.zrfBalance = getZrf();
+                currentData.currentLevel = getLvl();
+                currentData.currentXp = getXp();
+                currentData.prestigeLevel = getPrest();
 
-        String json;
-        synchronized(currentData) {
-            json = GSON.toJson(currentData);
-        }
-
-        CompletableFuture.runAsync(() -> {
-            synchronized(FILE_LOCK) {
-                try {
-                    String hash = calculateSHA256(json);
-                    String payload = hash + "::" + json;
-                    byte[] encrypted = encrypt(payload.getBytes(StandardCharsets.UTF_8));
-
-                    if (!GLOBAL_DIR.exists()) {
-                        GLOBAL_DIR.mkdirs();
-                    }
-
-                    File careerFile = getCareerFile();
-                    File tempFile = new File(GLOBAL_DIR, careerFile.getName() + ".tmp");
-                    Files.write(tempFile.toPath(), encrypted);
-
-                    File backupFile = new File(GLOBAL_DIR, careerFile.getName() + ".bak");
-                    if (careerFile.exists()) {
-                        Files.copy(careerFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-
-                    Files.move(tempFile.toPath(), careerFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                } catch (Exception e) {
-                    ZombieroolMod.LOGGER.error("Failed to save Career Data", e);
+                String json;
+                synchronized(currentData) {
+                    json = GSON.toJson(currentData);
                 }
-            }
-        });
-    }
 
-    public static void forceSave() {
-        currentData.zrfBalance = getZrf();
-        currentData.currentLevel = getLvl();
-        currentData.currentXp = getXp();
-        currentData.prestigeLevel = getPrest();
+                String hash = calculateSHA256(json);
+                String payload = hash + "::" + json;
+                byte[] encrypted = encrypt(payload.getBytes(StandardCharsets.UTF_8));
 
-        try {
-            String json;
-            synchronized(currentData) {
-                json = GSON.toJson(currentData);
-            }
-            String hash = calculateSHA256(json);
-            String payload = hash + "::" + json;
-            byte[] encrypted = encrypt(payload.getBytes(StandardCharsets.UTF_8));
+                if (!GLOBAL_DIR.exists()) {
+                    GLOBAL_DIR.mkdirs();
+                }
 
-            synchronized(FILE_LOCK) {
-                if (!GLOBAL_DIR.exists()) GLOBAL_DIR.mkdirs();
                 File careerFile = getCareerFile();
                 File tempFile = new File(GLOBAL_DIR, careerFile.getName() + ".tmp");
                 Files.write(tempFile.toPath(), encrypted);
 
                 File backupFile = new File(GLOBAL_DIR, careerFile.getName() + ".bak");
-                if (careerFile.exists()) {
+                if (careerFile.exists() && careerFile.length() > 0) {
                     Files.copy(careerFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
 
                 Files.move(tempFile.toPath(), careerFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            } catch (Exception e) {
+                ZombieroolMod.LOGGER.error("[ZombieRool] CRITICAL ERROR: Failed to save Career Data! Your progress for this session might be lost.", e);
             }
-        } catch (Exception e) {
-            ZombieroolMod.LOGGER.error("Failed to synchronously save Career Data", e);
         }
+    }
+
+    public static void save() {
+        CompletableFuture.runAsync(() -> {
+            executeSaveLocked();
+        });
+    }
+
+    public static void forceSave() {
+        executeSaveLocked();
     }
 
     public static void resetAllData() {
@@ -643,14 +666,14 @@ public class LocalCareerManager {
         boolean unlockedBlackIce = false;
 
         if (level >= GOLD_LEVEL_REQ) {
-            List<String> list = currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new ArrayList<>());
+            List<String> list = currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new CopyOnWriteArrayList<>());
             if (!list.contains("camo_solid_gold")) {
                 list.add("camo_solid_gold");
                 unlockedGold = true;
             }
         }
         if (level >= BLACK_ICE_LEVEL_REQ) {
-            List<String> list = currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new ArrayList<>());
+            List<String> list = currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new CopyOnWriteArrayList<>());
             if (!list.contains("camo_black_ice")) {
                 list.add("camo_black_ice");
                 unlockedBlackIce = true;
@@ -866,7 +889,7 @@ public class LocalCareerManager {
 
         if (currentData.globalUnlockedCamos.contains(camoId)) return true;
 
-        return currentData.weaponUnlockedCamos.getOrDefault(weaponId, new ArrayList<>()).contains(camoId);
+        return currentData.weaponUnlockedCamos.getOrDefault(weaponId, new CopyOnWriteArrayList<>()).contains(camoId);
     }
 
     public static boolean isCamoUnlocked(String camoId) {
@@ -876,7 +899,7 @@ public class LocalCareerManager {
         CareerUnlockables.CamoDef def = CareerUnlockables.CAMOS.get(camoId);
         if (def != null && !def.exclusiveWeapons.isEmpty()) {
             for (String wpn : def.exclusiveWeapons) {
-                if (currentData.weaponUnlockedCamos.getOrDefault(wpn, new ArrayList<>()).contains(camoId)) return true;
+                if (currentData.weaponUnlockedCamos.getOrDefault(wpn, new CopyOnWriteArrayList<>()).contains(camoId)) return true;
             }
         }
         return false;
@@ -914,10 +937,10 @@ public class LocalCareerManager {
             } else {
                 if (!def.exclusiveWeapons.isEmpty()) {
                     for (String wpn : def.exclusiveWeapons) {
-                        currentData.weaponUnlockedCamos.computeIfAbsent(wpn, k -> new ArrayList<>()).add(camoId);
+                        currentData.weaponUnlockedCamos.computeIfAbsent(wpn, k -> new CopyOnWriteArrayList<>()).add(camoId);
                     }
                 } else {
-                    currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new ArrayList<>()).add(camoId);
+                    currentData.weaponUnlockedCamos.computeIfAbsent(weaponId, k -> new CopyOnWriteArrayList<>()).add(camoId);
                 }
             }
             forceSave(); 
