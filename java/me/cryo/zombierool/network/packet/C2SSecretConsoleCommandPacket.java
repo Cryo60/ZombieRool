@@ -143,7 +143,7 @@ public class C2SSecretConsoleCommandPacket {
                     }
                 }
                 else {
-                    sendLog(player, "§cUnknown command. Available: lua, points, wave, killall, weapon, god, noclip, reload scripts, reload weapons, zombies, tp_last");
+                    sendLog(player, "§cUnknown command. Type help.");
                 }
             } catch (Exception e) {
                 sendLog(player, "§cCommand error: " + e.getMessage());

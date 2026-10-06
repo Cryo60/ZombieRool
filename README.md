@@ -11,7 +11,7 @@
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-The latest **published** jar is **1.6.0-stable**. This page describes **1.6.1**, the build that follows it.
+The latest **published** jar is **1.6.3**.
 
 </div>
 
@@ -43,6 +43,8 @@ The latest **published** jar is **1.6.0-stable**. This page describes **1.6.1**,
 | Languages | English, French, German, Spanish, Brazilian Portuguese, Russian |
 
 ZombieRool has its own guns. TacZ is not required. If TacZ is installed, its guns can be balanced, Pack-a-Punched, and rolled from the Mystery Box.
+
+Lua and Discord Rich Presence are already inside the mod. LuaJ is packed into the jar under another package, so it does not clash with TacZ. Do not install a separate LuaJ mod. Rich Presence does not need an extra mod either.
 
 The easiest way to launch a community map is the [ZombieRool launcher](https://github.com/Cryo60/ZR-Launcher). **Play** builds a separate Forge instance for that map, so its mods do not replace your normal `mods` folder. **Install** only copies the world into the folder shown at the bottom of the launcher. In the launcher, **TaCZ and gun packs** is off unless you turn it on. Downloads are HTTPS only, and only from Modrinth, CurseForge, this GitHub account, or the official Minecraft and Forge servers.
 
@@ -310,6 +312,11 @@ function OnPerkBought(playerUUID, perkId) end
 function OnMysteryBoxUsed(playerUUID, weaponId) end
 function OnBonusCollected(playerUUID, bonusId) end
 function OnLookTriggerActivated(playerUUID, triggerId) end
+
+-- Barriers. kind is "death" or "damage".
+function OnBarrierSpotted(playerUUID, kind, x, y, z) end  -- countdown starts
+function OnBarrierExecute(playerUUID, kind, x, y, z) end  -- timer hits zero
+function OnBarrierMiss(playerUUID, kind, x, y, z) end     -- left during the last half-second, no hit
 ```
 
 ### ZombieroolAPI

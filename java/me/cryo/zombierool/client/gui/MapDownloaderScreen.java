@@ -210,7 +210,7 @@ public class MapDownloaderScreen extends Screen {
     }
 
     private void playSound() {
-        this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
+        this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.MENU_CLICK_ALT.get(), 1.0F));
     }
 
     private void switchTab(boolean official) {

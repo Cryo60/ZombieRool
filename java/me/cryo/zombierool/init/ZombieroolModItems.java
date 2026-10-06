@@ -25,6 +25,8 @@ public class ZombieroolModItems {
 	public static final RegistryObject<Item> ZOMBIE_SPAWN_EGG = REGISTRY.register("zombie_spawn_egg", () -> new ForgeSpawnEggItem(ZombieroolModEntities.ZOMBIE, -10092442, -10092544, new Item.Properties()));
 	public static final RegistryObject<Item> LIMIT = block(ZombieroolModBlocks.LIMIT);
 	public static final RegistryObject<Item> RESTRICT = block(ZombieroolModBlocks.RESTRICT);
+	public static final RegistryObject<Item> DEATH_BARRIER = block(ZombieroolModBlocks.DEATH_BARRIER);
+	public static final RegistryObject<Item> DAMAGE_BARRIER = block(ZombieroolModBlocks.DAMAGE_BARRIER);
 	public static final RegistryObject<Item> INGOT_SALE = REGISTRY.register("ingot_sale", () -> new IngotSaleItem());
 	public static final RegistryObject<Item> POWER_SWITCH = block(ZombieroolModBlocks.POWER_SWITCH);
 	public static final RegistryObject<Item> ACTIVATOR = block(ZombieroolModBlocks.ACTIVATOR);

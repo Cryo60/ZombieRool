@@ -491,30 +491,21 @@ class TacZImpl {
     }
 
     public static int getTacZWeaponMaxAmmo(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
-        int maxAmmo = 30;
-        int attachmentBonus = 0;
-
         if (stack.getItem() instanceof com.tacz.guns.api.item.IGun iGun) {
             ResourceLocation gunId = iGun.getGunId(stack);
             var indexOpt = com.tacz.guns.api.TimelessAPI.getCommonGunIndex(gunId);
             if (indexOpt.isPresent()) {
-                maxAmmo = indexOpt.get().getGunData().getAmmoAmount();
-            } else if (def != null) {
-                maxAmmo = def.ammo.clip_size;
+                return com.tacz.guns.util.AttachmentDataUtils.getAmmoCountWithAttachment(stack, indexOpt.get().getGunData());
             }
-
-            ResourceLocation magId = iGun.getAttachmentId(stack, com.tacz.guns.api.item.attachment.AttachmentType.EXTENDED_MAG);
-            if (!com.tacz.guns.api.DefaultAssets.isEmptyAttachmentId(magId)) {
-                var magIndex = com.tacz.guns.api.TimelessAPI.getCommonAttachmentIndex(magId);
-                if (magIndex.isPresent() && magIndex.get().getData() != null) {
-                    attachmentBonus = magIndex.get().getData().getExtendedMagLevel();
-                }
-            }
-        } else if (def != null) {
-            maxAmmo = def.ammo.clip_size;
         }
-
-        return maxAmmo + attachmentBonus;
+        if (def != null) {
+            int maxAmmo = def.ammo.clip_size;
+            if (me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack)) {
+                maxAmmo += def.pap.clip_bonus;
+            }
+            return maxAmmo;
+        }
+        return 30;
     }
 
     public static int getTacZWeaponMaxReserve(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {

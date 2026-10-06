@@ -50,6 +50,6 @@ public class NetworkPromptScreen extends Screen {
         return false;
     }
     private void playSound() {
-        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
+        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.MENU_CLICK_ALT.get(), 1.0F));
     }
 }

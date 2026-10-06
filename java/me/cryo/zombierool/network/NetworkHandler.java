@@ -111,7 +111,9 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CProgressWeaponStatPacket.class, S2CProgressWeaponStatPacket::encode, S2CProgressWeaponStatPacket::new, S2CProgressWeaponStatPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, S2CMatchRecapPacket.class, S2CMatchRecapPacket::encode, S2CMatchRecapPacket::decode, S2CMatchRecapPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, S2CZombieBloodOverlayPacket.class, S2CZombieBloodOverlayPacket::encode, S2CZombieBloodOverlayPacket::decode, S2CZombieBloodOverlayPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, S2CBarrierStaticPacket.class, S2CBarrierStaticPacket::encode, S2CBarrierStaticPacket::decode, S2CBarrierStaticPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, C2SSyncAimPacket.class, C2SSyncAimPacket::encode, C2SSyncAimPacket::decode, C2SSyncAimPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, C2SRestartLevelPacket.class, C2SRestartLevelPacket::encode, C2SRestartLevelPacket::decode, C2SRestartLevelPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         });
     }
 }

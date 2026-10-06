@@ -45,6 +45,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected int stuckTimer = 0;
     protected Vec3 lastPos = Vec3.ZERO;
     private static final EntityDataAccessor<String> CUSTOM_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> CUSTOM_EYE_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Float> ZR_SCALE = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> GORE_MASK = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> CHARRED = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.BOOLEAN);
@@ -76,6 +77,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(CUSTOM_SKIN, "");
+        this.entityData.define(CUSTOM_EYE_SKIN, "");
         this.entityData.define(ZR_SCALE, 1.0f);
         this.entityData.define(GORE_MASK, 0);
         this.entityData.define(CHARRED, false);
@@ -92,6 +94,33 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     }
     public String getCustomSkin() { return this.entityData.get(CUSTOM_SKIN); }
     public void setCustomSkin(String skinId) { this.entityData.set(CUSTOM_SKIN, skinId); }
+    public String getCustomEyeSkin() { return this.entityData.get(CUSTOM_EYE_SKIN); }
+    public void setCustomEyeSkin(String skinId) { this.entityData.set(CUSTOM_EYE_SKIN, skinId == null ? "" : skinId); }
+    public String getEyeSkinId() {
+        String eye = getCustomEyeSkin();
+        if (eye != null && !eye.isEmpty()) return eye;
+        return getCustomSkin();
+    }
+    public void assignRolledSkins(String mobType) {
+        String body = me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin(mobType);
+        setCustomSkin(body == null ? "" : body);
+        assignEyeSkin(mobType);
+    }
+    public void assignEyeSkin(String mobType) {
+        setCustomEyeSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.pickEyeSkin(mobType + "_eyes", getCustomSkin()));
+    }
+    public boolean isLingeringCorpse() {
+        return this.deathTime > 0 && !this.isRemoved() && this.isCorpseTarget();
+    }
+    protected boolean isCorpseTarget() {
+        return false;
+    }
+    protected void onCorpseShot(DamageSource source) {
+    }
+    private static boolean isPlayerDamage(DamageSource source) {
+        if (source.getEntity() instanceof Player || source.getDirectEntity() instanceof Player) return true;
+        return source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player;
+    }
     public float getScale() { return this.entityData.get(ZR_SCALE); }
     public void setScale(float scale) {
         this.entityData.set(ZR_SCALE, scale);
@@ -116,6 +145,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
         compound.putString("CustomSkin", getCustomSkin());
+        compound.putString("CustomEyeSkin", getCustomEyeSkin());
         compound.putFloat("zr_scale", getScale());
         compound.putInt("GoreMask", this.entityData.get(GORE_MASK));
         compound.putBoolean("Charred", this.isCharred());
@@ -124,6 +154,9 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
         setCustomSkin(compound.getString("CustomSkin"));
+        if (compound.contains("CustomEyeSkin")) {
+            setCustomEyeSkin(compound.getString("CustomEyeSkin"));
+        }
         if (compound.contains("zr_scale")) {
             setScale(compound.getFloat("zr_scale"));
         }
@@ -163,6 +196,13 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     }
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (this.isCorpseTarget() && (this.deathTime > 0 || this.getHealth() <= 0.0F)) {
+            boolean playerHit = isPlayerDamage(source);
+            if (!this.level().isClientSide() && playerHit) {
+                this.onCorpseShot(source);
+            }
+            return playerHit;
+        }
         if (source.getEntity() instanceof Player player && BonusManager.isInstaKillActive(player)) {
             amount = 100000f;
         }
@@ -222,6 +262,9 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         net.minecraft.world.phys.Vec3 motion = this.getDeltaMovement();
         this.setDeltaMovement(0.0, motion.y, 0.0);
         ++this.deathTime;
+        if (this.deathTime == 1) {
+            this.refreshDimensions();
+        }
         if (this.deathTime > 19) {
             this.deathTime = 19;
         }

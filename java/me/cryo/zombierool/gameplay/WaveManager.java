@@ -614,7 +614,7 @@ public class WaveManager {
                     HellhoundEntity h = ZombieroolModEntities.HELLHOUND.get().create(level);
                     if (h != null) {
                         WaveMobScaling.applyHealth(h, currentWave, level);
-                        h.setCustomSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin("hellhound"));
+                        h.assignRolledSkins("hellhound");
                         Vec3 v = Vec3.atBottomCenterOf(opt.get());
                         h.moveTo(v.x, v.y, v.z, rand.nextFloat() * 360F, 0);
                         level.addFreshEntity(h);
@@ -648,7 +648,7 @@ public class WaveManager {
             ZombieEntity z = new ZombieEntity(ZombieroolModEntities.ZOMBIE.get(), level);
             WaveMobScaling.applyHealth(z, currentWave, level);
             WaveMobScaling.applySpeed(z, currentWave, rand, level);
-            z.setCustomSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin("zombie"));
+            z.assignRolledSkins("zombie");
             mob = z;
         }
 
@@ -700,7 +700,7 @@ public class WaveManager {
         if (h == null) return;
 
         WaveMobScaling.applyHealth(h, currentWave, level);
-        h.setCustomSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin("hellhound"));
+        h.assignRolledSkins("hellhound");
         
         Vec3 v = Vec3.atBottomCenterOf(opt.get());
         h.moveTo(v.x, v.y, v.z, level.getRandom().nextFloat() * 360f, 0);
@@ -830,6 +830,18 @@ public class WaveManager {
     }
 
     public static synchronized void endGame(ServerLevel level, Component message) {
+        endMatch(level, message, true);
+    }
+
+    public static synchronized void restartLevel(ServerLevel level) {
+        if (gameRunning) {
+            endMatch(level, null, false);
+        }
+        level.getServer().getWorldData().setDifficulty(Difficulty.NORMAL);
+        startGame(level);
+    }
+
+    private static void endMatch(ServerLevel level, Component message, boolean recap) {
         if (!gameRunning) return;
         
         currentState = WaveState.OFF;
@@ -858,15 +870,17 @@ public class WaveManager {
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
 
         int wavesSurvived = currentWave;
-        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
-            p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
-                int k = cap.getKills();
-                int h = cap.getHeadshots();
-                int a = cap.getAssists();
-                int d = cap.getDowns();
-                int tp = cap.getTotalPoints();
-                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), new S2CMatchRecapPacket(wavesSurvived, k, h, a, d, tp));
-            });
+        if (recap) {
+            for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
+                p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
+                    int k = cap.getKills();
+                    int h = cap.getHeadshots();
+                    int a = cap.getAssists();
+                    int d = cap.getDowns();
+                    int tp = cap.getTotalPoints();
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), new S2CMatchRecapPacket(wavesSurvived, k, h, a, d, tp));
+                });
+            }
         }
 
         currentWave = 0;
@@ -889,7 +903,9 @@ public class WaveManager {
         
         PlayerStatsManager.syncAll(level);
 
-        ZrNetwork.broadcast(level, message);
+        if (message != null) {
+            ZrNetwork.broadcast(level, message);
+        }
     }
 
     public static int getZombiesKilledSinceLastBonus(ServerLevel level) { return zombiesKilledSinceLastBonus; }

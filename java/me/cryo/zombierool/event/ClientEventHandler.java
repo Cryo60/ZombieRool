@@ -164,7 +164,9 @@ public class ClientEventHandler {
         }
 
         if (DrinkPerkAnimationHandler.isRunning()) {
-            if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen)) {
+            if (mc.screen != null
+                && !(mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen)
+                && !(mc.screen instanceof me.cryo.zombierool.client.gui.WaWPauseScreen)) {
                 mc.setScreen(null);
             }
         }

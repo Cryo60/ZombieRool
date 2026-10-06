@@ -76,7 +76,28 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     @Override
     public EntityDimensions getDimensions(Pose pose) {
         float scale = Math.max(0.1f, getScale());
-        return EntityDimensions.fixed(1.4f * scale, 0.9f * scale);
+        if (this.deathTime > 0) {
+            return EntityDimensions.fixed(2.6f * scale, 0.95f * scale);
+        }
+        return EntityDimensions.fixed(2.2f * scale, 1.2f * scale);
+    }
+
+    @Override
+    protected boolean isCorpseTarget() {
+        return true;
+    }
+
+    @Override
+    protected void onCorpseShot(DamageSource source) {
+        if (this.isRemoved() || !(this.level() instanceof ServerLevel serverLevel)) return;
+        if (WorldConfig.get(serverLevel).isCrawlerGasExplosion()) {
+            this.entityData.set(WILL_EXPLODE, true);
+            this.level().broadcastEntityEvent(this, (byte) 61);
+            this.headshotDeath = false;
+            this.deathTime = Math.max(this.deathTime, 44);
+        } else {
+            this.discard();
+        }
     }
 
     @Override
@@ -112,7 +133,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
         this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, false) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
-                return (this.mob.getBbWidth() * 2.5F * this.mob.getBbWidth() * 2.5F + entity.getBbWidth());
+                return (1.4F * 2.5F) * (1.4F * 2.5F) + entity.getBbWidth();
             }
         });
     }
@@ -240,6 +261,9 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     protected void tickDeath() {
         if (this.isExplodingDeath()) {
             this.deathTime++;
+            if (this.deathTime == 1) {
+                this.refreshDimensions();
+            }
             
             if (this.level().isClientSide && this.deathTime % 3 == 0) {
                 this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getRandomX(0.5), this.getY() + 0.2, this.getRandomZ(0.5), 0, 0.05, 0);

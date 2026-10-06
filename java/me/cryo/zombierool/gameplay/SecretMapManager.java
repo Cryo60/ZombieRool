@@ -18,8 +18,13 @@ import me.cryo.zombierool.client.gui.SecretConsoleScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -151,42 +156,7 @@ public class SecretMapManager {
         
         new Thread(() -> {
             try {
-                if (targetDir.exists()) {
-                    deleteDirectory(targetDir);
-                }
-                targetDir.mkdirs();
-                try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(is)) {
-                    java.util.zip.ZipEntry entry;
-                    while ((entry = zis.getNextEntry()) != null) {
-                        java.io.File file = new java.io.File(targetDir, entry.getName());
-                        String canonicalDestPath = targetDir.getCanonicalPath();
-                        String canonicalFilePath = file.getCanonicalPath();
-                        
-                        if (!canonicalFilePath.equals(canonicalDestPath) && !canonicalFilePath.startsWith(canonicalDestPath + java.io.File.separator)) {
-                            throw new Exception("Zip Slip detected: " + entry.getName());
-                        }
-                        
-                        if (entry.isDirectory()) {
-                            file.mkdirs();
-                        } else {
-                            file.getParentFile().mkdirs();
-                            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
-                                byte[] buffer = new byte[8192];
-                                int len;
-                                while ((len = zis.read(buffer)) > 0) {
-                                    fos.write(buffer, 0, len);
-                                }
-                            }
-                        }
-                    }
-                }
-                java.io.File levelDat = new java.io.File(targetDir, "level.dat");
-                if (levelDat.exists()) {
-                    net.minecraft.nbt.CompoundTag root = net.minecraft.nbt.NbtIo.readCompressed(levelDat);
-                    net.minecraft.nbt.CompoundTag data = root.getCompound("Data");
-                    data.putString("LevelName", folderName);
-                    net.minecraft.nbt.NbtIo.writeCompressed(root, levelDat);
-                }
+                extractZip(is, targetDir, folderName);
                 mc.execute(() -> {
                     console.addLog(net.minecraft.network.chat.Component.translatable("gui.zombierool.console.extracted").withStyle(net.minecraft.ChatFormatting.GREEN));
                     launchMap(mc, console, folderName, isSurvival);
@@ -198,6 +168,210 @@ public class SecretMapManager {
                 });
             }
         }).start();
+    }
+
+    public static final class CopyResult {
+        public final String errorKey;
+        public final String arg;
+        public final boolean fromAssets;
+
+        private CopyResult(String errorKey, String arg, boolean fromAssets) {
+            this.errorKey = errorKey;
+            this.arg = arg;
+            this.fromAssets = fromAssets;
+        }
+
+        public boolean success() {
+            return errorKey == null;
+        }
+
+        public static CopyResult ok(boolean fromAssets) {
+            return new CopyResult(null, null, fromAssets);
+        }
+
+        public static CopyResult error(String errorKey, String arg) {
+            return new CopyResult(errorKey, arg, false);
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static CopyResult copyMap(String sourceName, String destName) {
+        if (!isSafeFolderName(sourceName) || !isSafeFolderName(destName)) {
+            return CopyResult.error("gui.zombierool.console.copy.badname", null);
+        }
+        if (sourceName.equalsIgnoreCase(destName)) {
+            return CopyResult.error("gui.zombierool.console.copy.same", null);
+        }
+        if (isReservedFolder(destName)) {
+            return CopyResult.error("gui.zombierool.console.copy.reserved", destName);
+        }
+
+        File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
+        File sourceDir = new File(savesDir, sourceName);
+        File destDir = new File(savesDir, destName);
+        try {
+            String savesCanon = savesDir.getCanonicalPath();
+            if (!isInside(savesCanon, sourceDir) || !isInside(savesCanon, destDir)) {
+                return CopyResult.error("gui.zombierool.console.copy.badname", null);
+            }
+        } catch (IOException e) {
+            return CopyResult.error("gui.zombierool.console.copy.fail", e.getMessage());
+        }
+        if (destDir.exists()) {
+            return CopyResult.error("gui.zombierool.console.copy.exists", destName);
+        }
+
+        if (sourceDir.isDirectory() && new File(sourceDir, "level.dat").isFile()) {
+            try {
+                copyDirectory(sourceDir, destDir);
+                renameLevel(destDir, destName);
+                return CopyResult.ok(false);
+            } catch (Exception e) {
+                deleteDirectory(destDir);
+                return CopyResult.error("gui.zombierool.console.copy.fail", errorText(e));
+            }
+        }
+
+        InputStream bundled = openBundledMap(sourceName);
+        if (bundled == null) {
+            return CopyResult.error("gui.zombierool.console.copy.notfound", sourceName);
+        }
+        try {
+            extractZip(bundled, destDir, destName);
+            if (!new File(destDir, "level.dat").isFile()) {
+                deleteDirectory(destDir);
+                return CopyResult.error("gui.zombierool.console.copy.fail", "level.dat");
+            }
+            return CopyResult.ok(true);
+        } catch (Exception e) {
+            deleteDirectory(destDir);
+            return CopyResult.error("gui.zombierool.console.copy.fail", errorText(e));
+        }
+    }
+
+    private static void extractZip(InputStream is, File targetDir, String levelName) throws Exception {
+        if (targetDir.exists()) {
+            deleteDirectory(targetDir);
+        }
+        targetDir.mkdirs();
+        try (InputStream in = is; ZipInputStream zis = new ZipInputStream(in)) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                File file = new File(targetDir, entry.getName());
+                String canonicalDestPath = targetDir.getCanonicalPath();
+                String canonicalFilePath = file.getCanonicalPath();
+                if (!canonicalFilePath.equals(canonicalDestPath) && !canonicalFilePath.startsWith(canonicalDestPath + File.separator)) {
+                    throw new Exception("Zip Slip detected: " + entry.getName());
+                }
+                if (entry.isDirectory()) {
+                    file.mkdirs();
+                } else {
+                    file.getParentFile().mkdirs();
+                    Files.copy(zis, file.toPath());
+                }
+            }
+        }
+        File levelDat = new File(targetDir, "level.dat");
+        if (levelDat.exists()) {
+            renameLevel(targetDir, levelName);
+        }
+    }
+
+    private static void copyDirectory(File source, File dest) throws IOException {
+        Path sourcePath = source.toPath();
+        Path destPath = dest.toPath();
+        Files.walkFileTree(sourcePath, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                Files.createDirectories(destPath.resolve(sourcePath.relativize(dir)));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String fileName = file.getFileName().toString();
+                if (fileName.equalsIgnoreCase("session.lock") || fileName.equalsIgnoreCase("level.dat_old")) {
+                    return FileVisitResult.CONTINUE;
+                }
+                Path target = destPath.resolve(sourcePath.relativize(file));
+                Files.createDirectories(target.getParent());
+                Files.copy(file, target);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private static void renameLevel(File worldDir, String levelName) throws IOException {
+        File levelDat = new File(worldDir, "level.dat");
+        if (!levelDat.isFile()) {
+            throw new IOException("level.dat missing");
+        }
+        net.minecraft.nbt.CompoundTag root = net.minecraft.nbt.NbtIo.readCompressed(levelDat);
+        net.minecraft.nbt.CompoundTag data = root.getCompound("Data");
+        data.putString("LevelName", levelName);
+        root.put("Data", data);
+        net.minecraft.nbt.NbtIo.writeCompressed(root, levelDat);
+    }
+
+    private static InputStream openBundledMap(String rawInput) {
+        if (!rawInput.toLowerCase(Locale.ROOT).startsWith("zr_")) {
+            return null;
+        }
+        String withoutZr = rawInput.substring(3);
+        String[] attempts = {
+            rawInput + ".zip",
+            rawInput.toLowerCase(Locale.ROOT) + ".zip",
+            withoutZr + ".zip",
+            withoutZr.toLowerCase(Locale.ROOT) + ".zip"
+        };
+        for (String attempt : attempts) {
+            InputStream stream = ZombieroolMod.class.getResourceAsStream("/assets/zombierool/maps/" + attempt);
+            if (stream != null) {
+                return stream;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isSafeFolderName(String name) {
+        if (name == null || name.isEmpty() || name.equals(".") || name.equals("..")) {
+            return false;
+        }
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (c < 32) {
+                return false;
+            }
+            switch (c) {
+                case '/':
+                case '\\':
+                case ':':
+                case '*':
+                case '?':
+                case '"':
+                case '<':
+                case '>':
+                case '|':
+                    return false;
+                default:
+                    break;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isReservedFolder(String name) {
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.equals("temp_zr_secret") || lower.equals("temp_zr_copy");
+    }
+
+    private static boolean isInside(String parentCanon, File child) throws IOException {
+        String childCanon = child.getCanonicalPath();
+        return childCanon.equals(parentCanon) || childCanon.startsWith(parentCanon + File.separator);
+    }
+
+    private static String errorText(Exception e) {
+        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 
     @OnlyIn(Dist.CLIENT)

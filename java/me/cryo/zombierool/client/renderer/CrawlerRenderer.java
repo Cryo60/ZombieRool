@@ -23,7 +23,7 @@ public class CrawlerRenderer extends MobRenderer<CrawlerEntity, ModelCrawler<Cra
         this.addLayer(new EyesLayer<CrawlerEntity, ModelCrawler<CrawlerEntity>>(this) {
             @Override
             public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, CrawlerEntity pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                ResourceLocation customEye = DynamicResourceManager.getClientSkin("crawler_eyes", pLivingEntity.getCustomSkin());
+                ResourceLocation customEye = DynamicResourceManager.getClientSkin("crawler_eyes", pLivingEntity.getEyeSkinId());
                 if (customEye != null) {
                     RenderType renderType = RenderType.eyes(customEye);
                     com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);

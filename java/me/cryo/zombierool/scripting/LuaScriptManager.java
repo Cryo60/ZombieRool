@@ -75,7 +75,10 @@ public class LuaScriptManager {
                 fw.write("--   OnLookTriggerActivated(playerUUID, triggerId)\n");
                 fw.write("--   OnMeleeStrike(playerUUID, x, y, z)\n");
                 fw.write("--   OnExplosion(playerUUID, x, y, z, radius)\n");
-                fw.write("--   OnProjectileHit(playerUUID, x, y, z)\n\n");
+                fw.write("--   OnProjectileHit(playerUUID, x, y, z)\n");
+                fw.write("--   OnBarrierSpotted(playerUUID, kind, x, y, z) --> kind: death ou damage, debut du compteur\n");
+                fw.write("--   OnBarrierExecute(playerUUID, kind, x, y, z) --> le compteur tombe a zero\n");
+                fw.write("--   OnBarrierMiss(playerUUID, kind, x, y, z) --> sorti dans la derniere demi-seconde\n\n");
 
                 fw.write("-- Some API Functions:\n");
                 fw.write("--   ZombieroolAPI:registerTimer(id, delayTicks, callback)\n");

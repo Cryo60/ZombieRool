@@ -117,6 +117,18 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         return GoreManager.hasLostLimb(this, GoreManager.Limb.LEFT_LEG) && GoreManager.hasLostLimb(this, GoreManager.Limb.RIGHT_LEG);
     }
 
+    @Override
+    protected boolean isCorpseTarget() {
+        return this.isCrawler();
+    }
+
+    @Override
+    protected void onCorpseShot(DamageSource source) {
+        if (!this.isRemoved()) {
+            this.discard();
+        }
+    }
+
     public void makeCrawler() {
         if (isCrawler()) return;
         GoreManager.triggerLegsExplosion(this);
@@ -134,7 +146,10 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     public EntityDimensions getDimensions(Pose pose) {
         float scale = getScale();
         if (isCrawler()) {
-            return EntityDimensions.fixed(0.5f, 0.8f).scale(scale); 
+            if (this.deathTime > 0) {
+                return EntityDimensions.fixed(1.7f, 1.0f).scale(scale);
+            }
+            return EntityDimensions.fixed(1.05f, 1.2f).scale(scale);
         }
         return EntityDimensions.fixed(0.5f, 1.95f).scale(scale); 
     }

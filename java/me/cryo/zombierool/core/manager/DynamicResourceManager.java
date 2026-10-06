@@ -456,6 +456,14 @@ public class DynamicResourceManager {
         return keys.get(RANDOM.nextInt(keys.size()));
     }
 
+    public static String pickEyeSkin(String eyeType, String bodyId) {
+        Map<String, byte[]> eyes = SERVER_SKIN_CACHE.get(eyeType);
+        if (eyes == null || eyes.isEmpty()) return "";
+        if (bodyId != null && !bodyId.isEmpty() && eyes.containsKey(bodyId)) return bodyId;
+        List<String> keys = new ArrayList<>(eyes.keySet());
+        return keys.get(RANDOM.nextInt(keys.size()));
+    }
+
     public static Map<String, Map<String, byte[]>> getAllServerSkins() {
         return SERVER_SKIN_CACHE;
     }

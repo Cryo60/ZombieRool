@@ -217,7 +217,8 @@ public class ServerEventHandler {
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(event.getTarget().getType());
         if (id == null || !"minecraft".equals(id.getNamespace())) return;
         String path = id.getPath();
-        if (path.contains("item_frame") || path.contains("armor_stand") || path.contains("minecart") || path.contains("chest_boat")) {
+        if (path.contains("chest_boat") || path.contains("chest_minecart") || path.contains("hopper_minecart")) return;
+        if (path.contains("item_frame") || path.contains("armor_stand") || path.contains("minecart")) {
             event.setCanceled(true);
         }
     }

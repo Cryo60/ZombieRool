@@ -1,8 +1,43 @@
+# ZombieRool 1.6.3
+
+## Menus
+
+- The title screen is a World at War style menu. The background is a dark grayscale block village, drawn on a grid and sliding in two layers. Entries sit on the left. The selected line is white. Solo, multiplayer, maps, career, guns (if TaCZ is loaded), options, mods, and quit.
+- Menu sounds: moving the cursor plays the slider, confirming a main entry plays the main click, options and the other mod screens play the secondary click, and opening the title menu plays the button sound.
+- Escape during a game opens a pause screen over the level, with black bars and a thin line at the top and bottom. On the right: PAUSED, then Resume, Options, Restart level, and Quit. The selected line is white, with a light bar behind it. Restart starts the match over without the end-of-game recap. On a server, only the host or an operator can restart. Quit saves and returns to the title menu.
+
+## Discord
+
+- Rich Presence is built into the mod. No extra jar. It shows ZombieRool, the map name, the round, and the player count, in the language selected in the game. It keeps refreshing so Discord does not drop it. The application id is in `config/zombierool-client.toml`.
+
+## Included library
+
+- LuaJ 3.0.1 is packed inside the mod jar, moved to `me.cryo.zombierool.shadow.luaj`, so it does not clash with the copy TaCZ already ships. Do not install a separate LuaJ mod.
+
+## Barriers
+
+- Stepping into a death barrier or a damage barrier starts a 5 second warning, with a countdown and a screen of static. Leaving in the last half second cancels it. Staying deals the hit once per second, or kills you when the death timer ends.
+- The normal return-to-combat voice plays with the warning. A longer variant plays about one time in twenty, cut so it ends with the warning.
+- Lua can listen with `OnBarrierSpotted`, `OnBarrierExecute`, and `OnBarrierMiss` (`playerUUID`, `kind` is `death` or `damage`, then x, y, z).
+
+## Match rules
+
+- Chests, barrels, shulkers, hoppers, and the ender chest can be opened during a match. Guns bought on the map (wall, mystery box, and the other map weapons) cannot be put inside. Normal items still can. A weapon already in the container can be taken out. Hoppers cannot move map weapons into storage either.
+
+## TaCZ and zombies
+
+- Speed Cola speeds up the TaCZ reload animation.
+- Pack-a-Punch clip bonus and Max Ammo refill TaCZ guns.
+- Eye skins no longer have to match the body name.
+- Crawlers and legless zombies have a hitbox you can actually shoot, including a corpse that is still lying there.
+
+# ZombieRool 1.6.2
+
+- Lua scripts load when TaCZ is not installed.
+
 # ZombieRool 1.6.1
 
 For players on the last public build, **1.6.0-stable** (8 April 2026). The hotfixes before that (through hotfix 6) stay included: the TaCZ startup crash, and careers no longer wiping themselves.
-
-GitHub `main` has not moved past that release except for one camo texture. These notes cover the local build that 1.6.1 will ship.
 
 ## Playing a match
 
@@ -46,9 +81,4 @@ Play and Install are different. Play builds a separate Forge instance for that m
 - **TaCZ and gun packs** is off by default. Leave it off and TaCZ, plus gun packs listed by the map, are not installed. Player Animator is still installed, because the mod needs it.
 - Downloads are HTTPS only, and only from Modrinth, CurseForge, the Cryo60 GitHub, or the official Minecraft and Forge servers. A map archive cannot contain a jar, an executable, or a script, and it cannot write outside its own folder.
 - CurseForge links are resolved to the real file, so the name you see is the mod, not `curseforge.com`.
-- A mod that cannot load (for example Command Block Delay, which Permafrost was pulling in) is skipped instead of taking the whole launch down. SecurityCraft is still skipped, because it wants a newer Forge than ZombieRool uses.
-
-## Site
-
-- Mod and gun-pack lists show a readable name.
-- The local preview can be browsed without a Discord account.
+- A mod that cannot load is skipped instead of taking the whole launch down.

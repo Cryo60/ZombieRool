@@ -46,12 +46,14 @@ public class MapEventManager {
         private final boolean halloweenForced;
         private final boolean allowDownMovement;
         private final boolean gameRunning;
+        private final String mapName;
         
-        public S2CMapConfigPacket(boolean spooky, boolean halloween, boolean allowDownMovement, boolean gameRunning) {
+        public S2CMapConfigPacket(boolean spooky, boolean halloween, boolean allowDownMovement, boolean gameRunning, String mapName) {
             this.spookyActive = spooky;
             this.halloweenForced = halloween;
             this.allowDownMovement = allowDownMovement;
             this.gameRunning = gameRunning;
+            this.mapName = mapName == null ? "" : mapName;
         }
 
         public S2CMapConfigPacket(FriendlyByteBuf buf) {
@@ -59,6 +61,7 @@ public class MapEventManager {
             this.halloweenForced = buf.readBoolean();
             this.allowDownMovement = buf.readBoolean();
             this.gameRunning = buf.readBoolean();
+            this.mapName = buf.readUtf();
         }
 
         public static void encode(S2CMapConfigPacket msg, FriendlyByteBuf buf) {
@@ -66,6 +69,7 @@ public class MapEventManager {
             buf.writeBoolean(msg.halloweenForced);
             buf.writeBoolean(msg.allowDownMovement);
             buf.writeBoolean(msg.gameRunning);
+            buf.writeUtf(msg.mapName);
         }
 
         public static S2CMapConfigPacket decode(FriendlyByteBuf buf) {
@@ -74,7 +78,7 @@ public class MapEventManager {
 
         public static void handle(S2CMapConfigPacket msg, Supplier<NetworkEvent.Context> ctx) {
             ctx.get().enqueueWork(() -> net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                    ClientHandler.handleMapConfig(msg.spookyActive, msg.halloweenForced, msg.allowDownMovement, msg.gameRunning)));
+                    ClientHandler.handleMapConfig(msg.spookyActive, msg.halloweenForced, msg.allowDownMovement, msg.gameRunning, msg.mapName)));
             ctx.get().setPacketHandled(true);
         }
     }
@@ -152,7 +156,7 @@ public class MapEventManager {
                     allowDownMovement = WorldConfig.get(player.serverLevel()).isAllowDownMovement();
                 }
                 me.cryo.zombierool.network.NetworkHandler.INSTANCE.sendTo(
-                    new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning()),
+                    new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning(), player.server.getWorldData().getLevelName()),
                     player.connection.connection,
                     NetworkDirection.PLAY_TO_CLIENT
                 );
@@ -224,7 +228,7 @@ public class MapEventManager {
             if (server.overworld() != null) {
                 allowDownMovement = WorldConfig.get(server.overworld()).isAllowDownMovement();
             }
-            S2CMapConfigPacket packet = new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning());
+            S2CMapConfigPacket packet = new S2CMapConfigPacket(serverSpookyActive, serverHalloweenForced, allowDownMovement, WaveManager.isGameRunning(), server.getWorldData().getLevelName());
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 me.cryo.zombierool.network.NetworkHandler.INSTANCE.sendTo(
                     packet, 
@@ -240,11 +244,13 @@ public class MapEventManager {
         private static boolean clientSpookyActive = false;
         private static boolean clientHalloweenForced = false;
         public static boolean allowDownMovement = false;
+        public static String mapName = "";
 
-        public static void handleMapConfig(boolean spooky, boolean halloween, boolean allowDownMvmt, boolean gameRunning) {
+        public static void handleMapConfig(boolean spooky, boolean halloween, boolean allowDownMvmt, boolean gameRunning, String name) {
             clientSpookyActive = spooky;
             clientHalloweenForced = halloween;
             allowDownMovement = allowDownMvmt;
+            mapName = name == null ? "" : name;
             me.cryo.zombierool.gameplay.WaveManager.setClientGameRunning(gameRunning);
         }
 

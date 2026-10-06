@@ -12,6 +12,8 @@ public class ZRClientConfig {
     public static final ForgeConfigSpec.BooleanValue REDUCED_GORE;
     public static final ForgeConfigSpec.BooleanValue ALLOW_NETWORK_REQUESTS;
     public static final ForgeConfigSpec.BooleanValue HAS_ANSWERED_NETWORK_PROMPT;
+    public static final ForgeConfigSpec.BooleanValue DISCORD_PRESENCE;
+    public static final ForgeConfigSpec.ConfigValue<String> DISCORD_APPLICATION_ID;
     public enum HalloweenMode {
         AUTO,      
         FORCE_ON,  
@@ -49,6 +51,14 @@ public class ZRClientConfig {
         HAS_ANSWERED_NETWORK_PROMPT = BUILDER
             .comment("Internal flag. True if the user has seen the network prompt.")
             .define("hasAnsweredNetworkPrompt", false);
+        DISCORD_PRESENCE = BUILDER
+            .comment("Show the current map, round and player count on Discord.")
+            .define("discordPresence", true);
+        DISCORD_APPLICATION_ID = BUILDER
+            .comment("Discord application ID. Create an application named ZombieRool at",
+                     "https://discord.com/developers/applications and paste its Application ID here.",
+                     "Empty disables Rich Presence. The name shown on Discord is the application name.")
+            .define("discordApplicationId", "1485989369902006352");
         BUILDER.pop();
         SPEC = BUILDER.build();
     }
@@ -107,5 +117,11 @@ public class ZRClientConfig {
     public static void setHasAnsweredNetworkPrompt(boolean answered) {
         HAS_ANSWERED_NETWORK_PROMPT.set(answered);
         SPEC.save();
+    }
+    public static boolean discordPresence() {
+        return !SPEC.isLoaded() || DISCORD_PRESENCE.get();
+    }
+    public static String discordApplicationId() {
+        return SPEC.isLoaded() ? DISCORD_APPLICATION_ID.get() : "1485989369902006352";
     }
 }

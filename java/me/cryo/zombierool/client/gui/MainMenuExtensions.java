@@ -4,6 +4,7 @@ import me.cryo.zombierool.configuration.ZRClientConfig;
 import me.cryo.zombierool.init.ZombieroolModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -17,6 +18,16 @@ import org.apache.logging.log4j.Logger;
 @Mod.EventBusSubscriber(modid = "zombierool", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class MainMenuExtensions {
     private static final Logger LOGGER = LogManager.getLogger();
+
+    @SubscribeEvent
+    public static void onOpening(ScreenEvent.Opening event) {
+        if (event.getNewScreen() instanceof TitleScreen) {
+            event.setNewScreen(new WaWMainMenuScreen());
+        } else if (event.getNewScreen() instanceof PauseScreen) {
+            event.setNewScreen(new WaWPauseScreen());
+        }
+    }
+
     @SubscribeEvent
     public static void onInitScreen(ScreenEvent.Init.Post event) {
         if (!(event.getScreen() instanceof TitleScreen screen)) {
@@ -66,6 +77,6 @@ public class MainMenuExtensions {
         }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
     }
     private static void playSound() {
-        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.UI_CHOOSE.get(), 1.0F));
+        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ZombieroolModSounds.MENU_CLICK_ALT.get(), 1.0F));
     }
 }

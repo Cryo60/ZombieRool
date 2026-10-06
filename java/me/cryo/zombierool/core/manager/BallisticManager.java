@@ -427,7 +427,7 @@ public class BallisticManager {
     }
 
     private static List<EntityHitResult> findAllEntitiesOnPath(Level level, Entity shooter, Vec3 start, Vec3 end, AABB searchBox) {
-        List<Entity> entities = level.getEntities(shooter, searchBox, e -> e instanceof LivingEntity && !e.isSpectator() && e.isAlive());
+        List<Entity> entities = level.getEntities(shooter, searchBox, e -> e instanceof LivingEntity && !e.isSpectator() && (e.isAlive() || (e instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity zr && zr.isLingeringCorpse())));
         List<EntityHitResult> results = new ArrayList<>();
 
         for (Entity entity : entities) {

@@ -306,7 +306,7 @@ public class ZombieroolAPI {
             if (entity != null) {
                 entity.setPos(x, y, z);
                 if (entity instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity zrEntity) {
-                    zrEntity.setCustomSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin(rl.getPath()));
+                    zrEntity.assignRolledSkins(rl.getPath());
                 }
                 level.addFreshEntity(entity);
             }
@@ -338,6 +338,7 @@ public class ZombieroolAPI {
                     if (skin != null && !skin.isEmpty()) {
                         zrEntity.setCustomSkin(skin);
                     }
+                    zrEntity.assignEyeSkin(rl.getPath());
                 }
                 
                 level.addFreshEntity(living);
@@ -926,7 +927,7 @@ public class ZombieroolAPI {
         me.cryo.zombierool.entity.CrawlerEntity crawler = me.cryo.zombierool.init.ZombieroolModEntities.CRAWLER.get().create(level);
         if (crawler != null) {
             crawler.setPos(x, y, z);
-            crawler.setCustomSkin(me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin("crawler"));
+            crawler.assignRolledSkins("crawler");
             level.addFreshEntity(crawler);
         }
     }

@@ -77,7 +77,18 @@ public class CrawlerCorpse extends Mob {
 
     @Override
     public boolean isInvulnerableTo(DamageSource source) {
-        return true;
+        return false;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (this.level().isClientSide()) return false;
+        if (source.getEntity() instanceof net.minecraft.world.entity.player.Player
+                || source.getDirectEntity() instanceof net.minecraft.world.entity.player.Player) {
+            this.deathTimer = MAX_DEATH_TIMER;
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -141,7 +152,7 @@ public class CrawlerCorpse extends Mob {
                         .setTrackingRange(64)
                         .setUpdateInterval(3)
                         .setCustomClientFactory(CrawlerCorpse::new)
-                        .sized(1f, 0.9f)
+                        .sized(2.2f, 1.0f)
                         .build("crawler_corpse");
                 event.register(ForgeRegistries.Keys.ENTITY_TYPES, helper -> helper.register(new ResourceLocation(ZombieroolMod.MODID, "crawler_corpse"), TYPE));
             }

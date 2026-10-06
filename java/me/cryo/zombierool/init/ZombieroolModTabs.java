@@ -22,6 +22,8 @@ public class ZombieroolModTabs {
 				tabData.accept(ZombieroolModItems.ZOMBIE_SPAWN_EGG.get());
 				tabData.accept(ZombieroolModBlocks.LIMIT.get().asItem());
 				tabData.accept(ZombieroolModBlocks.RESTRICT.get().asItem());
+				tabData.accept(ZombieroolModBlocks.DEATH_BARRIER.get().asItem());
+				tabData.accept(ZombieroolModBlocks.DAMAGE_BARRIER.get().asItem());
 				tabData.accept(ZombieroolModItems.INGOT_SALE.get());
 				tabData.accept(ZombieroolModBlocks.POWER_SWITCH.get().asItem());
 				tabData.accept(ZombieroolModBlocks.ACTIVATOR.get().asItem());

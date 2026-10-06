@@ -435,4 +435,10 @@ public class ZombieroolModSounds {
 	public static final RegistryObject<SoundEvent> ROCK_SLAM = REGISTRY.register("rock_slam", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "rock_slam")));
 	public static final RegistryObject<SoundEvent> REPAIRING_ROCK = REGISTRY.register("repairing_rock", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "repairing_rock")));
 	public static final RegistryObject<SoundEvent> REPAIRING_PLANK = REGISTRY.register("repairing_plank", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "repairing_plank")));
+	public static final RegistryObject<SoundEvent> RETURN_TO_COMBAT = REGISTRY.register("return_to_combat", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "return_to_combat")));
+	public static final RegistryObject<SoundEvent> RETURN_TO_COMBAT_EGG = REGISTRY.register("return_to_combat_egg", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "return_to_combat_egg")));
+	public static final RegistryObject<SoundEvent> MENU_SLIDER = REGISTRY.register("menu_slider", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_slider")));
+	public static final RegistryObject<SoundEvent> MENU_CLICK = REGISTRY.register("menu_click", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_click")));
+	public static final RegistryObject<SoundEvent> MENU_CLICK_ALT = REGISTRY.register("menu_click_alt", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_click_alt")));
+	public static final RegistryObject<SoundEvent> MENU_BUTTON = REGISTRY.register("menu_button", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_button")));
 }

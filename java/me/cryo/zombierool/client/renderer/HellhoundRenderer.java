@@ -23,7 +23,7 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
                 if (!entity.isRevealedClient()) {
                     return;
                 }
-                ResourceLocation customEye = DynamicResourceManager.getClientSkin("hellhound_eyes", entity.getCustomSkin());
+                ResourceLocation customEye = DynamicResourceManager.getClientSkin("hellhound_eyes", entity.getEyeSkinId());
                 RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(new ResourceLocation("zombierool:textures/entities/dark_hellhound_eyes.png"));
                 com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = buffers.getBuffer(renderType);
                 this.getParentModel().renderToBuffer(ms, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);

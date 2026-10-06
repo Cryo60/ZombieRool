@@ -120,13 +120,15 @@ public class DynamicSoundLoader {
         pendingTransfers.clear();
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) return;
-        
+
         Runnable clearTask = () -> {
             File cacheDir = new File(mc.gameDirectory, CACHE_DIR_NAME);
             deleteDirectory(cacheDir);
         };
-        
-        if (mc.isSameThread()) mc.execute(clearTask);
+
+        // Must run now. Deferring with execute() puts the delete after the sound
+        // packets already queued behind the weapon reload, so the new oggs are wiped.
+        if (mc.isSameThread()) clearTask.run();
         else mc.execute(clearTask);
     }
 

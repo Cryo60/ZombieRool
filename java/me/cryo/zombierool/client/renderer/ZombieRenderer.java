@@ -47,7 +47,7 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             
             @Override
             public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, ZombieEntity pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                ResourceLocation customEye = DynamicResourceManager.getClientSkin("zombie_eyes", pLivingEntity.getCustomSkin());
+                ResourceLocation customEye = DynamicResourceManager.getClientSkin("zombie_eyes", pLivingEntity.getEyeSkinId());
                 RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(currentEyeTexture);
                 com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);
                 this.getParentModel().renderToBuffer(pMatrixStack, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);

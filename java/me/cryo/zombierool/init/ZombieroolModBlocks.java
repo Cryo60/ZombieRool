@@ -15,6 +15,8 @@ import me.cryo.zombierool.block.AbstractReceptorBlock;
 import me.cryo.zombierool.block.ActivatorBlock;
 import me.cryo.zombierool.block.AmmoCrateBlock;
 import me.cryo.zombierool.block.BlackPumpkinBlock;
+import me.cryo.zombierool.block.DamageBarrierBlock;
+import me.cryo.zombierool.block.DeathBarrierBlock;
 import me.cryo.zombierool.block.DerWunderfizzBlock;
 import me.cryo.zombierool.block.LimitBlock;
 import me.cryo.zombierool.block.PathBlock;
@@ -30,6 +32,8 @@ public class ZombieroolModBlocks {
 	public static final RegistryObject<Block> PATH = REGISTRY.register("path", () -> new PathBlock());
 	public static final RegistryObject<Block> LIMIT = REGISTRY.register("limit", () -> new LimitBlock());
 	public static final RegistryObject<Block> RESTRICT = REGISTRY.register("restrict", () -> new RestrictBlock());
+	public static final RegistryObject<Block> DEATH_BARRIER = REGISTRY.register("death_barrier", () -> new DeathBarrierBlock());
+	public static final RegistryObject<Block> DAMAGE_BARRIER = REGISTRY.register("damage_barrier", () -> new DamageBarrierBlock());
 	public static final RegistryObject<Block> POWER_SWITCH = REGISTRY.register("power_switch", () -> new PowerSwitchBlock());
 	public static final RegistryObject<Block> ACTIVATOR = REGISTRY.register("activator", () -> new ActivatorBlock());
 	public static final RegistryObject<Block> ALPHA_ACTIVATOR = REGISTRY.register("alpha_activator", () -> new AbstractActivatorBlock(SignalChannel.ALPHA));
