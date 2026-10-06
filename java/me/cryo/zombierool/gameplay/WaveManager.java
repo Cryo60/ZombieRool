@@ -245,6 +245,7 @@ public class WaveManager {
                 PLAYER_RESPAWN_POINTS.put(player.getUUID(), spawnPos.immutable());
                 placeOnAssignedSpawner(player);
                 MatchPlayerReset.applyStartLoadout(player, worldConfig, charId);
+                giveStarterIfMissing(player, worldConfig);
                 charId = MatchPlayerReset.nextCharacterId(charId);
 
                 UNLOCKED_ZONES.add(currentZoneKey);
@@ -255,6 +256,7 @@ public class WaveManager {
             int charId = 1;
             for (ServerPlayer player : players) {
                 MatchPlayerReset.applyStartLoadout(player, worldConfig, charId);
+                giveStarterIfMissing(player, worldConfig);
                 charId = MatchPlayerReset.nextCharacterId(charId);
             }
         }
@@ -458,6 +460,16 @@ public class WaveManager {
                 BACKGROUND_AUDIO.tick(level, currentWave, isSpecialWave, activeMobs.size());
                 break;
         }
+    }
+
+    private static void giveStarterIfMissing(ServerPlayer player, WorldConfig config) {
+        if (player.isSpectator()) return;
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(player.getInventory().getItem(slot))) return;
+        }
+        ItemStack starter = me.cryo.zombierool.core.system.WeaponFacade.createStarterStack(player, config);
+        if (starter.isEmpty()) return;
+        if (!player.getInventory().add(starter)) player.drop(starter, false);
     }
 
     public static boolean placeOnAssignedSpawner(ServerPlayer player) {
