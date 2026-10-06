@@ -21,6 +21,7 @@ The latest **published** jar is **1.6.0-stable**. This page describes **1.6.1**,
 
 - [Requirements](#-requirements)
 - [How to Play](#-how-to-play)
+- [Perks](#-perks)
 - [Gore](#-gore)
 - [TacZ](#tacz)
 - [Map Creation](#️-map-creation)
@@ -56,7 +57,7 @@ The easiest way to launch a community map is the [ZombieRool launcher](https://g
 | **Start** | Wave 1, a pistol, and 500 points. Kills pay points. Headshots and knife kills pay more. |
 | **Guns** | You carry 2 weapons. Mule Kick raises that to 3. |
 | **Buy** | Wall weapons, the Mystery Box, perks, debris, and Pack-a-Punch (5,000 points once the power is on). |
-| **Perks** | Juggernog, Speed Cola, Quick Revive, Double Tap, PhD Flopper, Mule Kick, Electric Cherry, Vulture Aid, Blood Rage, and Royal Beer. The Wunderfizz rolls one at random. |
+| **Perks** | Juggernog, Speed Cola, Quick Revive, Double Tap, PhD Flopper, Mule Kick, Electric Cherry, Vulture Aid, Blood Rage, and Royal Beer. The Wunderfizz rolls one at random. What each one does is in [Perks](#-perks). |
 | **Power** | Perk machines, the Wunderfizz, and Pack-a-Punch need the power switch. Machines placed before the switch still wake up when the power comes on. |
 | **Last Stand** | At 0 health you go down. You can crawl and fire a pistol while someone revives you. |
 | **Death mid-round** | If you actually die during a round, you spectate until the next wave. You are not sent back to your spawner yet. |
@@ -84,6 +85,95 @@ Bullets and blood pass through invisible map-maker blocks such as Restrict. Play
 ### Fog
 
 The map fog uses Minecraft's fog, so a shader pack can draw it. In the map config, **fog outdoors only** is optional and off by default. When it is on, indoor fragments stay clear.
+
+---
+
+## 🥤 Perks
+
+You can hold **4 perks** at once. Going down removes every perk you have. The prices below are the default machine prices. A map can set a different price.
+
+| Perk | Id | Default price |
+|---|---|---|
+| Juggernog | `juggernog` | 2,500 |
+| Speed Cola | `speed_cola` | 3,000 |
+| Double Tap | `double_tap` | 2,000 |
+| Quick Revive | `quick_revive` | 1,500 |
+| Mule Kick | `mule_kick` | 4,000 |
+| Vulture Aid | `vulture` | 3,000 |
+| PhD Flopper | `phd_flopper` | 2,000 |
+| Electric Cherry | `cherry` | 2,000 |
+| Blood Rage | `blood_rage` | 2,500 |
+| Royal Beer | `royal_beer` | 2,500 |
+
+### Juggernog
+
+Health goes from 3 hearts to 5, and buying it fills you to full.
+
+### Speed Cola
+
+Reload, repairs, and a little movement.
+
+- Reload time is cut in half, including shell-by-shell reloads.
+- Barricades and defense walls repair twice as fast.
+- Movement speed is 5% higher.
+
+### Double Tap
+
+Fire rate and a second shot, together.
+
+- Built-in guns fire 2 bullets per trigger pull and only spend the ammo of 1. The delay between shots is 25% shorter.
+- TacZ guns deal double damage, fire about 50% faster, and cycle pump and bolt actions faster.
+
+### Quick Revive
+
+- In co-op, reviving a teammate takes 3 seconds instead of 6. There is no buy limit.
+- In solo, a fatal hit puts you down and you stand back up after 10 seconds. The perk is used up. You can buy it 3 times per game.
+- The down still removes every other perk you were holding.
+
+### Mule Kick
+
+You can carry a third gun.
+
+### Vulture Aid
+
+- Each time you gain points, there is a 30% chance to gain 10 more.
+- Throwing an item on the ground pays 100 to 300 points.
+- When a power-up drops, Zombie Blood, On the House, and Gold Rush are 3 times more likely to be the one that rolls.
+
+### PhD Flopper
+
+Explosions, falls, and fire.
+
+- Explosions do not hurt you, including your own grenades and wonder weapons. Fire, lava, magma, and falling blocks do not either.
+- A fall of more than 3 blocks deals no fall damage and creates a small explosion where you land. That blast does not break blocks and does not hurt players.
+- A crawler bite does not slow you. Crawler gas does not affect you. Flamethrower ground fire does not hurt you.
+
+### Electric Cherry
+
+Reloading releases a shock about 3 blocks around you. Monsters in it take a small hit and Slowness V for 4 seconds. This works on built-in guns and on TacZ.
+
+### Blood Rage
+
+Dealing damage can heal you. The chance rises as your health falls, and it cannot happen more than once a second.
+
+| Health | Chance |
+|---|---|
+| Full | about 5% |
+| Half | about 10% |
+| A quarter | about 20% |
+| Almost empty | nearly certain |
+
+A proc heals 15% of the damage you just dealt. Healing past full becomes absorption, up to 5 hearts. You also get Strength I for 5 seconds.
+
+### Royal Beer
+
+A White Knight follows you and fights zombies, crawlers, and hellhounds.
+
+- He has 15 hearts, heavy armor, a sword, and a shield. Player damage does not hurt him.
+- Every 3 seconds he sweeps up to 6 zombies.
+- You gain 10 points for each hit he lands, and 50 more if that hit kills.
+- If he dies, he comes back while you still have the perk. He disappears if you lose it.
+- You can buy this perk 5 times per game. A golden apple heals him.
 
 ---
 
