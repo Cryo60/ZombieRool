@@ -1,8 +1,0 @@
-{
-    "parent": "block/slab",
-    "textures": {
-        "bottom": "zombierool:block/deco/perfected_granite",
-        "top": "zombierool:block/deco/perfected_granite",
-        "side": "zombierool:block/deco/perfected_granite"
-    }
-}

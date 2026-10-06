@@ -1,6 +1,6 @@
 package me.cryo.zombierool.mixins;
 
-import me.cryo.zombierool.ZombiePlayerHandler; 
+import me.cryo.zombierool.gameplay.ZombiePlayerHandler; 
 import me.cryo.zombierool.init.ZombieroolModMobEffects; 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;

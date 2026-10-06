@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/pass_block",
-    "particle": "zombierool:block/pass_block"
-  },
-  "render_type": "translucent"
-}

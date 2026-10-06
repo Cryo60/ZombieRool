@@ -1,8 +1,0 @@
-{
-  "parent": "block/outer_stairs",
-  "textures": {
-    "bottom": "zombierool:block/deco/dirt_scorched",
-    "top": "zombierool:block/deco/dirt_scorched",
-    "side": "zombierool:block/deco/dirt_scorched"
-  }
-}

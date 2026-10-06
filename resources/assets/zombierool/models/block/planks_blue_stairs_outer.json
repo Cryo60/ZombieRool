@@ -1,8 +1,0 @@
-{
-    "parent": "block/outer_stairs",
-    "textures": {
-        "bottom": "zombierool:block/deco/planks_blue",
-        "top": "zombierool:block/deco/planks_blue",
-        "side": "zombierool:block/deco/planks_blue"
-    }
-}

@@ -100,6 +100,14 @@ public class DummyEntity extends Monster {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (source.getEntity() instanceof Player remover && !this.level().isClientSide) {
+            boolean emptySneak = remover.isShiftKeyDown() && remover.getMainHandItem().isEmpty();
+            if (remover.isCreative() || emptySneak || remover.getMainHandItem().is(Items.DIAMOND_PICKAXE)) {
+                this.discard();
+                remover.displayClientMessage(Component.translatable("message.zombierool.dummy.removed").withStyle(ChatFormatting.GREEN), true);
+                return true;
+            }
+        }
         if (!this.level().isClientSide) {
             boolean isHeadshotCalc = false;
             boolean isProjectile = source.getDirectEntity() instanceof Projectile;
@@ -123,11 +131,6 @@ public class DummyEntity extends Monster {
                         return acc;
                     }
                 });
-            }
-        }
-        if (source.getEntity() instanceof Player player) {
-            if (player.getMainHandItem().getItem() == Items.DIAMOND_PICKAXE) {
-                return super.hurt(source, amount); 
             }
         }
         this.setHealth(this.getMaxHealth());

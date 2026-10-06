@@ -1,9 +1,8 @@
 package me.cryo.zombierool.item;
-import me.cryo.zombierool.WorldConfig;
-import me.cryo.zombierool.core.system.OverlaySystem;
+import me.cryo.zombierool.client.ChalkClient;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CUpdateOverlayPacket;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -44,9 +43,7 @@ public class ChalkItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (level.isClientSide) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                Minecraft.getInstance().setScreen(new OverlaySystem.ChalkSelectionScreen(player.getItemInHand(hand), hand));
-            });
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ChalkClient.openSelection(player.getItemInHand(hand), hand));
         }
         return InteractionResultHolder.success(player.getItemInHand(hand));
     }
@@ -57,9 +54,7 @@ public class ChalkItem extends Item {
         Player player = context.getPlayer();
         if (player != null && player.isShiftKeyDown()) {
             if (level.isClientSide) {
-                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                    Minecraft.getInstance().setScreen(new OverlaySystem.ChalkSelectionScreen(context.getItemInHand(), context.getHand()));
-                });
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ChalkClient.openSelection(context.getItemInHand(), context.getHand()));
             }
             return InteractionResult.SUCCESS;
         }

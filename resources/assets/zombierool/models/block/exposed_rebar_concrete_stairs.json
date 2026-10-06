@@ -1,8 +1,0 @@
-{
-  "parent": "block/stairs",
-  "textures": {
-    "bottom": "zombierool:block/deco/exposed_rebar_concrete",
-    "top": "zombierool:block/deco/exposed_rebar_concrete",
-    "side": "zombierool:block/deco/exposed_rebar_concrete"
-  }
-}

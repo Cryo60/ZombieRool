@@ -1,8 +1,0 @@
-{
-    "parent": "block/slab_top",
-    "textures": {
-        "bottom": "zombierool:block/deco/retro_glass",
-        "top": "zombierool:block/deco/retro_glass",
-        "side": "zombierool:block/deco/retro_glass"
-    }
-}

@@ -18,5 +18,7 @@ public class ZombieroolModModels {
 	public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
 		event.registerLayerDefinition(Modelwolf.LAYER_LOCATION, Modelwolf::createBodyLayer);
 		event.registerLayerDefinition(Modelmannequin.LAYER_LOCATION, Modelmannequin::createBodyLayer);
+		event.registerLayerDefinition(me.cryo.zombierool.client.model.ZombieLimbModel.LAYER, me.cryo.zombierool.client.model.ZombieLimbModel::createBodyLayer);
+		event.registerLayerDefinition(me.cryo.zombierool.client.model.ZombieLimbModel.GIB_LAYER, me.cryo.zombierool.client.model.ZombieLimbModel::createGibLayer);
 	}
 }

@@ -24,5 +24,7 @@ public class ZombieroolModEntityRenderers {
 		event.registerEntityRenderer(ZombieroolModEntities.CRAWLER.get(), CrawlerRenderer::new);
 		event.registerEntityRenderer(ZombieroolModEntities.WHITE_KNIGHT.get(), WhiteKnightRenderer::new);
 		event.registerEntityRenderer(ZombieroolModEntities.DUMMY.get(), DummyRenderer::new);
+		event.registerEntityRenderer(ZombieroolModEntities.GORE_PIECE.get(), me.cryo.zombierool.entity.GorePieceEntity.GorePieceRenderer::new);
+		event.registerEntityRenderer(ZombieroolModEntities.BLOOD_DECAL.get(), me.cryo.zombierool.entity.BloodDecalEntity.BloodDecalRenderer::new);
 	}
 }

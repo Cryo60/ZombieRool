@@ -21,6 +21,8 @@ import me.cryo.zombierool.entity.WhiteKnightEntity;
 import me.cryo.zombierool.entity.HellhoundEntity;
 import me.cryo.zombierool.entity.DummyEntity;
 import me.cryo.zombierool.entity.CrawlerEntity;
+import me.cryo.zombierool.entity.GorePieceEntity;
+import me.cryo.zombierool.entity.BloodDecalEntity;
 import me.cryo.zombierool.ZombieroolMod;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -37,7 +39,7 @@ public class ZombieroolModEntities {
 	public static final RegistryObject<EntityType<CrawlerEntity>> CRAWLER = register("crawler",
 			EntityType.Builder.<CrawlerEntity>of(CrawlerEntity::new, MobCategory.MONSTER).setShouldReceiveVelocityUpdates(true).setTrackingRange(64).setUpdateInterval(3).setCustomClientFactory(CrawlerEntity::new)
 
-					.sized(1f, 0.9f));
+					.sized(1.4f, 0.9f));
 	public static final RegistryObject<EntityType<WhiteKnightEntity>> WHITE_KNIGHT = register("white_knight",
 			EntityType.Builder.<WhiteKnightEntity>of(WhiteKnightEntity::new, MobCategory.MONSTER).setShouldReceiveVelocityUpdates(true).setTrackingRange(64).setUpdateInterval(3).setCustomClientFactory(WhiteKnightEntity::new)
 
@@ -46,6 +48,12 @@ public class ZombieroolModEntities {
 			EntityType.Builder.<DummyEntity>of(DummyEntity::new, MobCategory.MONSTER).setShouldReceiveVelocityUpdates(true).setTrackingRange(64).setUpdateInterval(3).setCustomClientFactory(DummyEntity::new)
 
 					.sized(0.6f, 1.8f));
+	public static final RegistryObject<EntityType<GorePieceEntity>> GORE_PIECE = register("gore_piece",
+			EntityType.Builder.<GorePieceEntity>of(GorePieceEntity::new, MobCategory.MISC).setShouldReceiveVelocityUpdates(true).setTrackingRange(64).setUpdateInterval(2).setCustomClientFactory(GorePieceEntity::new)
+					.sized(0.3f, 0.3f));
+	public static final RegistryObject<EntityType<BloodDecalEntity>> BLOOD_DECAL = register("blood_decal",
+			EntityType.Builder.<BloodDecalEntity>of(BloodDecalEntity::new, MobCategory.MISC).setShouldReceiveVelocityUpdates(false).setTrackingRange(48).setUpdateInterval(20).setCustomClientFactory(BloodDecalEntity::new)
+					.sized(0.8f, 0.05f));
 
 	private static <T extends Entity> RegistryObject<EntityType<T>> register(String registryname, EntityType.Builder<T> entityTypeBuilder) {
 		return REGISTRY.register(registryname, () -> (EntityType<T>) entityTypeBuilder.build(registryname));

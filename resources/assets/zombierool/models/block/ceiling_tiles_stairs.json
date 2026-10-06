@@ -1,8 +1,0 @@
-{
-  "parent": "block/stairs",
-  "textures": {
-    "bottom": "zombierool:block/deco/ceiling_tiles",
-    "top": "zombierool:block/deco/ceiling_tiles",
-    "side": "zombierool:block/deco/ceiling_tiles"
-  }
-}

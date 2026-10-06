@@ -1,6 +1,7 @@
 {
   "required": true,
   "package": "me.cryo.zombierool.mixins",
+  "plugin": "me.cryo.zombierool.mixins.ZombieroolMixinPlugin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "mixins.zombierool.refmap.json",
   "mixins": [
@@ -8,25 +9,30 @@
     "ZombieroolWalkNodeEvaluatorMixin",
     "CustomStepSoundMixin",
     "PlayerMixin",
-    "OptionsScreenMixin",
     "FenceBlockMixin",
     "WallBlockMixin",
     "IronBarsAndPaneMixin",
-    "FireOverlayMixin",
-    "EntityTurnMixin",
     "TacZGlassProtectionMixin",
     "TacZShootIntervalMixin",
     "TacZReloadOperatorMixin",
     "TacZActionTickMixin",
     "LivingEntityMixin",
+    "LevelSetBlockMixin",
+    "HopperBlockEntityMixin",
+    "MobPickupMixin",
+    "InventoryDropSlotMixin"
+  ],
+  "client": [
+    "EntityTurnMixin",
+    "OptionsScreenMixin",
+    "FireOverlayMixin",
+    "LivingEntityRendererMixin",
+    "CameraMixin",
+    "TacZScopeOverlayMixin",
+    "ItemInHandLayerMixin",
     "SoundManagerMixin",
     "SoundBufferLibraryMixin",
-    "PlayerModelMixin",
-    "ItemInHandLayerMixin",
-    "CameraMixin",
-    "ClientLanguageMixin",
-    "TacZScopeOverlayMixin"
+    "DisconnectedScreenMixin"
   ],
-  "client": [],
   "minVersion": "0.8"
 }

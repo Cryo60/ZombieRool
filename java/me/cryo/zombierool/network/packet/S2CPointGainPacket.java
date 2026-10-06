@@ -1,0 +1,46 @@
+package me.cryo.zombierool.network.packet;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkDirection;
+import me.cryo.zombierool.gameplay.PointManager;
+import java.util.function.Supplier;
+
+public class S2CPointGainPacket {
+	private final int gainedAmount;
+
+	public S2CPointGainPacket(int gainedAmount) {
+	    this.gainedAmount = gainedAmount;
+	}
+
+	public static S2CPointGainPacket decode(FriendlyByteBuf buffer) {
+	    return new S2CPointGainPacket(buffer.readInt());
+	}
+
+	public void encode(FriendlyByteBuf buffer) {
+	    buffer.writeInt(gainedAmount);
+	}
+
+	public static void handle(S2CPointGainPacket message, Supplier<NetworkEvent.Context> contextSupplier) {
+	    NetworkEvent.Context context = contextSupplier.get();
+	    context.enqueueWork(() -> {
+	        if (context.getDirection() == NetworkDirection.PLAY_TO_CLIENT) {
+	            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientHandler.apply(message));
+	        }
+	    });
+	    context.setPacketHandled(true);
+	}
+
+	private static final class ClientHandler {
+	    private static void apply(S2CPointGainPacket message) {
+	        net.minecraft.client.player.LocalPlayer clientPlayer = net.minecraft.client.Minecraft.getInstance().player;
+	        if (clientPlayer == null) return;
+	        long now = clientPlayer.level().getGameTime();
+	        PointManager.PointGainInfo existingInfo = PointManager.LAST_POINT_GAINS.get(clientPlayer.getUUID());
+	        int newAmount = message.gainedAmount;
+	        if (existingInfo != null && (now - existingInfo.timestamp) < 5) {
+	            newAmount += existingInfo.amount;
+	        }
+	        PointManager.LAST_POINT_GAINS.put(clientPlayer.getUUID(), new PointManager.PointGainInfo(newAmount, now));
+	    }
+	}
+}

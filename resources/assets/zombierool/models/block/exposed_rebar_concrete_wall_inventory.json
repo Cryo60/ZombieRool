@@ -1,6 +1,0 @@
-{
-  "parent": "block/wall_inventory",
-  "textures": {
-    "wall": "zombierool:block/deco/exposed_rebar_concrete"
-  }
-}

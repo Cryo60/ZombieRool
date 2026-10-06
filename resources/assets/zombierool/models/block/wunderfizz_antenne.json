@@ -1,8 +1,0 @@
-{
-  "parent": "block/cross",
-  "textures": {
-    "cross": "zombierool:block/wunderfizz_antenne",
-    "particle": "zombierool:block/wunderfizz_antenne"
-  },
-  "render_type": "cutout"
-}

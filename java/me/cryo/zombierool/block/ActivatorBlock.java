@@ -1,5 +1,5 @@
 package me.cryo.zombierool.block;
-import me.cryo.zombierool.GlobalSwitchState;
+import me.cryo.zombierool.config.GlobalSwitchState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -36,6 +36,7 @@ public class ActivatorBlock extends Block {
         if (!world.isClientSide) {
             GlobalSwitchState.registerActivator(world, pos);
             world.updateNeighborsAt(pos, this);
+            if (world instanceof ServerLevel server) me.cryo.zombierool.gameplay.MapPower.refreshSoon(server);
         }
     }
 
@@ -44,6 +45,7 @@ public class ActivatorBlock extends Block {
         if (!world.isClientSide) {
             GlobalSwitchState.unregisterActivator(world, pos);
             world.updateNeighborsAt(pos, this);
+            if (world instanceof ServerLevel server) me.cryo.zombierool.gameplay.MapPower.refreshSoon(server);
         }
         super.onRemove(state, world, pos, newState, isMoving);
     }

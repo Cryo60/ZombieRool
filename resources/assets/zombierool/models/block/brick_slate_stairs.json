@@ -1,8 +1,0 @@
-{
-    "parent": "block/stairs",
-    "textures": {
-        "bottom": "zombierool:block/deco/brick_slate",
-        "top": "zombierool:block/deco/brick_slate",
-        "side": "zombierool:block/deco/brick_slate"
-    }
-}

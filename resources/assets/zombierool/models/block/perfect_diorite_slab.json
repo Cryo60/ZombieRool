@@ -1,8 +1,0 @@
-{
-    "parent": "block/slab",
-    "textures": {
-        "bottom": "zombierool:block/deco/perfect_diorite",
-        "top": "zombierool:block/deco/perfect_diorite",
-        "side": "zombierool:block/deco/perfect_diorite"
-    }
-}

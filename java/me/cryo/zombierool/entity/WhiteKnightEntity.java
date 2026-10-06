@@ -41,7 +41,7 @@ import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.core.particles.ParticleTypes;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModMobEffects;
-import me.cryo.zombierool.PointManager;
+import me.cryo.zombierool.gameplay.PointManager;
 
 import java.util.List;
 import java.util.EnumSet;

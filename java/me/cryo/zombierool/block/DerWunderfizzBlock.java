@@ -29,7 +29,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.util.StringRepresentable;
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
 import java.util.List;
 import java.util.Collections;
@@ -154,9 +154,8 @@ public class DerWunderfizzBlock extends Block implements EntityBlock {
 	public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
 	    super.neighborChanged(state, world, pos, block, fromPos, isMoving);
 	    if (!world.isClientSide) {
-	        boolean powered = world.hasNeighborSignal(pos);
-	        if (powered != state.getValue(POWERED)) {
-	            world.setBlock(pos, state.setValue(POWERED, powered), 3);
+	        if (world instanceof net.minecraft.server.level.ServerLevel server) {
+	            me.cryo.zombierool.gameplay.MapPower.syncFlag(server, pos, POWERED);
 	        }
 	    }
 	}

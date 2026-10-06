@@ -4,7 +4,7 @@ license="MIT License"
 
 [[mods]]
 modId="zombierool"
-version="1.20.11.6.0"
+version="${mod_version}"
 displayName="ZombieRool"
 credits="Created using mod maker MCreator - https://mcreator.net/about"
 displayURL="https://mcreator.net"
@@ -17,6 +17,13 @@ authors="Cryo"
     versionRange="[1.20.1]"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.zombierool]]
+    modId="playeranimator"
+    mandatory=true
+    versionRange="[1.0.0,)"
+    ordering="NONE"
+    side="CLIENT"
 
 
 

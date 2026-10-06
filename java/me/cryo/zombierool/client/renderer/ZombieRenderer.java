@@ -9,8 +9,11 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import me.cryo.zombierool.entity.ZombieEntity;
 import me.cryo.zombierool.client.model.ModelZombieArmsFront;
+import me.cryo.zombierool.client.model.ZombieLimbModel;
+import me.cryo.zombierool.configuration.ZRClientConfig;
 import me.cryo.zombierool.core.manager.DynamicResourceManager;
 
 public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
@@ -27,7 +30,7 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     private static ResourceLocation currentEyeTexture = EYE_TEXTURE_DEFAULT; 
 
     public ZombieRenderer(EntityRendererProvider.Context context) {
-        super(context, new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5f);
+        super(context, new ModelZombieArmsFront<>(context.bakeLayer(ZombieLimbModel.LAYER)), 0.5f);
         
         this.addLayer(new HumanoidArmorLayer<>(
             this,
@@ -52,6 +55,12 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
         });
         
         this.addLayer(new EmissivePumpkinHeadLayer<>(this));
+        this.addLayer(new GoreWoundLayer(this));
+        this.addLayer(new CharredLayer(this));
+    }
+
+    public static ResourceLocation skin(int index) {
+        return ZOMBIE_SKINS[Math.floorMod(index, ZOMBIE_SKINS.length)];
     }
 
     @Override
@@ -69,28 +78,38 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             ResourceLocation dyn = DynamicResourceManager.getClientSkin("zombie", customSkin);
             if (dyn != null) return dyn;
         }
-
-        int skinIndex = Math.abs(entity.getId() % ZOMBIE_SKINS.length);
-        return ZOMBIE_SKINS[skinIndex];
+        return skin(entity.getId());
     }
 
     @Override
     public void render(ZombieEntity entity, float yaw, float partialTicks, PoseStack matrixStack,
                        MultiBufferSource buffer, int packedLight) {
-                       
-       if (entity.isDeadOrDying() && entity.isHeadshotDeath()) {
+        this.shadowRadius = entity.deathTime > 0 || !entity.isAlive() ? 0.0F : 0.5F;
+        if (entity.isDeadOrDying() && entity.isHeadshotDeath() && !ZRClientConfig.isGoreReduced()) {
             boolean headVisible = this.model.head.visible;
             boolean hatVisible = this.model.hat.visible;
             this.model.head.visible = false;
             this.model.hat.visible = false;
-            
             super.render(entity, yaw, partialTicks, matrixStack, buffer, packedLight);
-            
             this.model.head.visible = headVisible;
             this.model.hat.visible = hatVisible;
         } else {
             super.render(entity, yaw, partialTicks, matrixStack, buffer, packedLight);
         }
+    }
+
+    @Override
+    protected void setupRotations(ZombieEntity entity, PoseStack pose, float ageInTicks, float rotationYaw, float partialTick) {
+        if (entity.deathTime > 0 && !ZRClientConfig.isGoreReduced()) {
+            me.cryo.zombierool.client.ZombieRagdoll.Pose ragdoll = me.cryo.zombierool.client.ZombieRagdoll.get(entity);
+            float t = ragdoll == null ? 1.0F : ragdoll.settle;
+            float twist = ragdoll == null ? 0.0F : ragdoll.yawTwist();
+            float flip = ragdoll == null ? 90.0F : ragdoll.flipDegrees();
+            pose.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw + twist * t));
+            pose.mulPose(Axis.ZP.rotationDegrees(flip * t));
+            return;
+        }
+        super.setupRotations(entity, pose, ageInTicks, rotationYaw, partialTick);
     }
 
     public static void setEyeTexture(String preset) {
@@ -108,6 +127,70 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             default:
                 currentEyeTexture = EYE_TEXTURE_DEFAULT;
                 break;
+        }
+    }
+
+    private static final class CharredLayer extends net.minecraft.client.renderer.entity.layers.RenderLayer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
+        private final ZombieRenderer parent;
+
+        private CharredLayer(ZombieRenderer parent) {
+            super(parent);
+            this.parent = parent;
+        }
+
+        @Override
+        public void render(PoseStack pose, MultiBufferSource buffer, int light, ZombieEntity entity, float limbSwing, float limbSwingAmount, float partial, float age, float yaw, float pitch) {
+            if (!entity.isCharred()) return;
+            var consumer = buffer.getBuffer(RenderType.entityTranslucent(this.parent.getTextureLocation(entity)));
+            this.getParentModel().renderToBuffer(pose, consumer, light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0.05F, 0.04F, 0.04F, 0.94F);
+        }
+    }
+
+    private static final class GoreWoundLayer extends net.minecraft.client.renderer.entity.layers.RenderLayer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
+        private static final ResourceLocation FLESH = new ResourceLocation("zombierool", "textures/entities/gore_flesh.png");
+
+        private GoreWoundLayer(ZombieRenderer parent) {
+            super(parent);
+        }
+
+        @Override
+        public void render(PoseStack pose, MultiBufferSource buffer, int light, ZombieEntity entity,
+                           float limbSwing, float limbSwingAmount, float partial, float age, float netHeadYaw, float headPitch) {
+            ModelZombieArmsFront<ZombieEntity> model = this.getParentModel();
+            var consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(FLESH));
+            int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+            if (model.showElbowStump(entity, true) && model.rightElbowStump != null) {
+                drawStump(pose, model.rightArm, null, model.rightElbowStump, consumer, light, overlay);
+            }
+            if (model.showElbowStump(entity, false) && model.leftElbowStump != null) {
+                drawStump(pose, model.leftArm, null, model.leftElbowStump, consumer, light, overlay);
+            }
+            if (model.showWristStump(entity, true) && model.rightWristStump != null && model.rightForearm != null) {
+                drawStump(pose, model.rightArm, model.rightForearm, model.rightWristStump, consumer, light, overlay);
+            }
+            if (model.showWristStump(entity, false) && model.leftWristStump != null && model.leftForearm != null) {
+                drawStump(pose, model.leftArm, model.leftForearm, model.leftWristStump, consumer, light, overlay);
+            }
+            if (model.showGutStump(entity) && model.gutStump != null) {
+                drawStump(pose, model.body, null, model.gutStump, consumer, light, overlay);
+            }
+            if (model.showSkullStump(entity) && model.skullStump != null) {
+                drawStump(pose, model.head, null, model.skullStump, consumer, light, overlay);
+            }
+        }
+
+        private static void drawStump(PoseStack pose, net.minecraft.client.model.geom.ModelPart parent,
+                                      net.minecraft.client.model.geom.ModelPart mid,
+                                      net.minecraft.client.model.geom.ModelPart stump,
+                                      com.mojang.blaze3d.vertex.VertexConsumer consumer, int light, int overlay) {
+            boolean was = stump.visible;
+            stump.visible = true;
+            pose.pushPose();
+            parent.translateAndRotate(pose);
+            if (mid != null) mid.translateAndRotate(pose);
+            stump.render(pose, consumer, light, overlay);
+            pose.popPose();
+            stump.visible = was;
         }
     }
 }

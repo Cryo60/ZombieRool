@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 import me.cryo.zombierool.init.ZombieroolModParticleTypes;
 import net.minecraft.core.BlockPos;
@@ -75,12 +75,13 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return EntityDimensions.fixed(0.45f, 0.6f); 
+        float scale = Math.max(0.1f, getScale());
+        return EntityDimensions.fixed(1.4f * scale, 0.9f * scale);
     }
 
     @Override
     protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
-        return 0.25f;
+        return dimensions.height * 0.45f;
     }
 
     public void setHalloweenSkin(boolean halloween) {
@@ -175,6 +176,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+        if (this.isDeadOrDying() || this.deathTime > 0) return;
 
         if (!this.level().isClientSide) {
             if (ambientSoundCooldown > 0) {

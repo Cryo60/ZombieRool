@@ -7,10 +7,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import me.cryo.zombierool.MysteryBoxManager;
-import me.cryo.zombierool.PointManager;
-import me.cryo.zombierool.WaveManager;
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.gameplay.MysteryBoxManager;
+import me.cryo.zombierool.gameplay.PointManager;
+import me.cryo.zombierool.gameplay.WaveManager;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.block.DerWunderfizzBlock;
 import me.cryo.zombierool.block.entity.DerWunderfizzBlockEntity;
 import me.cryo.zombierool.block.system.MysteryBoxSystem.MysteryBoxBlock;
@@ -21,7 +21,7 @@ import me.cryo.zombierool.block.ZombiePassBlock;
 import me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntity;
 import me.cryo.zombierool.block.system.UniversalSpawnerSystem;
 import me.cryo.zombierool.bonuses.BonusManager;
-import me.cryo.zombierool.PerksManager;
+import me.cryo.zombierool.gameplay.PerksManager;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CSetEyeColorPacket;
 import me.cryo.zombierool.network.packet.S2CSetFogPresetPacket;
@@ -97,8 +97,9 @@ public class ZRCommand {
                                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                                     ServerLevel level = player.serverLevel();
                                     me.cryo.zombierool.core.system.WeaponSystem.Loader.loadWeapons();
+                                    String weaponPayload = me.cryo.zombierool.core.system.WeaponSystem.Loader.applyWorldWeapons(level);
                                     me.cryo.zombierool.integration.TacZIntegration.syncTaczGunData();
-                                    NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CReloadWeaponsPacket());
+                                    NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CReloadWeaponsPacket(weaponPayload));
                                     me.cryo.zombierool.core.manager.DynamicResourceManager.loadWorldResources(level);
 
                                     for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
@@ -171,18 +172,12 @@ public class ZRCommand {
                                     }
                                     Collections.shuffle(spawnerPositions);
                                     WaveManager.PLAYER_RESPAWN_POINTS.clear();
-                                    ResourceLocation starterItemId = worldConfig.getStarterItem();
                                     for (int i = 0; i < players.size(); i++) {
                                         ServerPlayer player = players.get(i);
                                         BlockPos spawnPos = spawnerPositions.get(i);
                                         player.getInventory().clearContent();
                                         player.removeAllEffects();
-                                        ItemStack starterItemStack = me.cryo.zombierool.core.system.WeaponFacade.createWeaponStack(starterItemId.toString(), false, player);
-                                        if (starterItemStack.isEmpty()) {
-                                            net.minecraft.world.item.Item starterItem = BuiltInRegistries.ITEM.get(starterItemId);
-                                            if (starterItem == null) starterItem = net.minecraft.world.item.Items.WOODEN_SWORD;
-                                            starterItemStack = new ItemStack(starterItem);
-                                        }
+                                        ItemStack starterItemStack = me.cryo.zombierool.core.system.WeaponFacade.createStarterStack(player, worldConfig);
                                         WaveManager.PLAYER_RESPAWN_POINTS.put(player.getUUID(), spawnPos.immutable());
                                         player.teleportTo(spawnPos.getX() + TELEPORT_CENTER_OFFSET, spawnPos.getY() + TELEPORT_ABOVE_BLOCK_OFFSET, spawnPos.getZ() + TELEPORT_CENTER_OFFSET);
                                         player.setGameMode(GameType.ADVENTURE);
@@ -539,7 +534,7 @@ public class ZRCommand {
                                                             WorldConfig worldConfig = WorldConfig.get(level);
                                                             worldConfig.setFogPreset(preset);
                                                             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetFogPresetPacket(
-                                                                    preset, 0, 0, 0, 0.5f, 18.0f
+                                                                    preset, 0, 0, 0, 0.5f, 18.0f, worldConfig.isFogOutdoorsOnly()
                                                             ));
                                                             ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.fog_preset", preset), true);
                                                             return 1;
@@ -567,7 +562,7 @@ public class ZRCommand {
                                                                                             config.setCustomFogNear(near);
                                                                                             config.setCustomFogFar(far);
                                                                                             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetFogPresetPacket(
-                                                                                                    "custom", r, g, b, near, far
+                                                                                                    "custom", r, g, b, near, far, config.isFogOutdoorsOnly()
                                                                                             ));
                                                                                             ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.custom_fog"), true);
                                                                                             return 1;
@@ -585,12 +580,27 @@ public class ZRCommand {
                                                 .executes(ctx -> {
                                                     String itemIdString = StringArgumentType.getString(ctx, "item_id");
                                                     ServerLevel level = ctx.getSource().getLevel();
+                                                    WorldConfig worldConfig = WorldConfig.get(level);
+                                                    ItemStack held = ItemStack.EMPTY;
+                                                    if (ctx.getSource().getEntity() instanceof ServerPlayer holder) {
+                                                        held = holder.getMainHandItem();
+                                                    }
+                                                    if ("hand".equalsIgnoreCase(itemIdString)) {
+                                                        if (held.isEmpty()) throw ERROR_INVALID_ITEM.create();
+                                                        worldConfig.setStarterStack(held);
+                                                        ResourceLocation heldId = BuiltInRegistries.ITEM.getKey(held.getItem());
+                                                        ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.starter_item", heldId.toString()), true);
+                                                        return 1;
+                                                    }
                                                     ResourceLocation itemId = ResourceLocation.tryParse(itemIdString);
                                                     if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
                                                         throw ERROR_INVALID_ITEM.create();
                                                     }
-                                                    WorldConfig worldConfig = WorldConfig.get(level);
-                                                    worldConfig.setStarterItem(itemId);
+                                                    if (!held.isEmpty() && itemId.equals(BuiltInRegistries.ITEM.getKey(held.getItem()))) {
+                                                        worldConfig.setStarterStack(held);
+                                                    } else {
+                                                        worldConfig.setStarterItem(itemId);
+                                                    }
                                                     ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.starter_item", itemId.toString()), true);
                                                     return 1;
                                                 })

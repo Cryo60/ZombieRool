@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/jenaimarre",
-    "particle": "zombierool:block/jenaimarre"
-  },
-  "render_type": "translucent"
-}

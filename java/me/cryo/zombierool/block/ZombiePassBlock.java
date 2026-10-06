@@ -1,5 +1,5 @@
 package me.cryo.zombierool.block;
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.config.WorldConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;

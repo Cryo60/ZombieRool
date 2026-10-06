@@ -3,8 +3,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import me.cryo.zombierool.WorldConfig;
-import me.cryo.zombierool.WaveManager;
+import me.cryo.zombierool.config.WorldConfig;
+import me.cryo.zombierool.gameplay.WaveManager;
 import me.cryo.zombierool.bonuses.BonusManager;
 import me.cryo.zombierool.core.manager.GoreManager;
 import me.cryo.zombierool.init.ZombieroolModEntities;
@@ -309,6 +309,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+        if (this.isDeadOrDying() || this.deathTime > 0) return;
 
         if (!this.level().isClientSide) {
             if (ambientSoundCooldown > 0) {

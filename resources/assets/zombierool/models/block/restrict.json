@@ -1,8 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zombierool:block/invisible",
-    "particle": "zombierool:block/invisible"
-  },
-  "render_type": "translucent"
-}

@@ -1,6 +1,6 @@
 package me.cryo.zombierool.item;
 
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.network.NetworkHandler;
 import me.cryo.zombierool.network.packet.S2CUpdateOverlayPacket;
 import net.minecraft.core.BlockPos;

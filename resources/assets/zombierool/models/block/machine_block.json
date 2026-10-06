@@ -1,9 +1,0 @@
-{
-    "parent": "block/orientable",
-    "textures": {
-        "top": "zombierool:block/deco/machine_side",
-        "bottom": "zombierool:block/deco/machine_side",
-        "side": "zombierool:block/deco/machine_side",
-        "front": "zombierool:block/deco/machine_front"
-    }
-}

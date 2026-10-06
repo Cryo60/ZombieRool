@@ -19,8 +19,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.ChatFormatting;
-import me.cryo.zombierool.PerksManager;
-import me.cryo.zombierool.WorldConfig;
+import me.cryo.zombierool.gameplay.PerksManager;
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.block.DerWunderfizzBlock;
 
 import java.util.ArrayList;
@@ -43,6 +43,10 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
     private String selectedPerkId = null;
     private String currentlyDisplayedPerk = "idle";
     private java.util.UUID buyerUUID = null;
+    private boolean shared = false;
+    private int sharedTicks = 0;
+    private final java.util.Set<java.util.UUID> claimed = new java.util.HashSet<>();
+    private static final int SHARED_DURATION = 900;
     private String lastGivenPerkId = null; 
 
     private static final int FAST_PHASE_DURATION = 40;
@@ -98,7 +102,7 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
                         net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(
                             new net.minecraft.resources.ResourceLocation("zombierool:wunderfizz_loop")
                         ), 
-                        SoundSource.BLOCKS, 1.0F, 1.0F);
+                        SoundSource.BLOCKS, 0.35F, 1.0F);
                 }
 
                 String perkIdToDisplay = entity.calculateDisplayedPerk();
@@ -119,9 +123,16 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
                 }
                 break;
             case READY:
-                entity.readyTicks++;
-                if (entity.readyTicks >= READY_DURATION) {
-                    entity.resetToIdleState();
+                if (entity.shared) {
+                    entity.sharedTicks++;
+                    if (entity.sharedTicks >= SHARED_DURATION) {
+                        entity.resetToIdleState();
+                    }
+                } else {
+                    entity.readyTicks++;
+                    if (entity.readyTicks >= READY_DURATION) {
+                        entity.resetToIdleState();
+                    }
                 }
                 break;
         }
@@ -165,7 +176,7 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
             net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(
                 new net.minecraft.resources.ResourceLocation("zombierool:wunderfizz_end")
             ), 
-            SoundSource.BLOCKS, 1.0F, 1.0F);
+            SoundSource.BLOCKS, 0.35F, 1.0F);
 
         this.state = WunderfizzState.READY;
         this.currentlyDisplayedPerk = selectedPerkId;
@@ -185,11 +196,13 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
     }
     
     private void syncToClients(net.minecraft.server.level.ServerLevel level) {
-        me.cryo.zombierool.network.S2CSyncWunderfizzStatePacket packet = 
-            new me.cryo.zombierool.network.S2CSyncWunderfizzStatePacket(
+        me.cryo.zombierool.network.packet.S2CSyncWunderfizzStatePacket packet = 
+            new me.cryo.zombierool.network.packet.S2CSyncWunderfizzStatePacket(
                 worldPosition, 
                 state.name(), 
-                selectedPerkId
+                selectedPerkId,
+                shared,
+                buyerUUID
             );
         me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
             net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(worldPosition)),
@@ -201,6 +214,9 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
         if (state != WunderfizzState.IDLE) return;
         
         this.buyerUUID = buyer.getUUID();
+        this.shared = false;
+        this.sharedTicks = 0;
+        this.claimed.clear();
         availablePerks.clear();
         
         for (String perkId : PerksManager.ALL_PERKS.keySet()) {
@@ -236,16 +252,53 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
         }
     }
 
+    public boolean tryShare(Player player) {
+        if (state != WunderfizzState.READY || selectedPerkId == null || shared) {
+            return false;
+        }
+        if (buyerUUID != null && !buyerUUID.equals(player.getUUID())) {
+            return false;
+        }
+        if (player.level().players().size() <= 1) {
+            return false;
+        }
+        this.shared = true;
+        this.sharedTicks = 0;
+        this.claimed.add(player.getUUID());
+        setChanged();
+        player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.shared").withStyle(ChatFormatting.GREEN), true);
+        if (level instanceof ServerLevel serverLevel) {
+            syncToClients(serverLevel);
+        }
+        return true;
+    }
+
     public boolean collectDrink(Player player) {
         if (state != WunderfizzState.READY || selectedPerkId == null) {
             return false;
         }
-        if (buyerUUID != null && !buyerUUID.equals(player.getUUID())) {
+        if (shared && buyerUUID != null && buyerUUID.equals(player.getUUID())) {
+            player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.shared_locked").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        if (shared && claimed.contains(player.getUUID())) {
+            player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.already_taken").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        if (!shared && buyerUUID != null && !buyerUUID.equals(player.getUUID())) {
             player.displayClientMessage(Component.translatable("message.zombierool.wunderfizz.not_your_drink").withStyle(ChatFormatting.RED), true);
             return false;
         }
         return true; 
     }
+
+    public void markClaimed(Player player) {
+        claimed.add(player.getUUID());
+        resetToIdleState();
+    }
+
+    public boolean isShared() { return shared; }
+    public java.util.UUID getBuyerUUID() { return buyerUUID; }
 
     public void resetAfterCollect() {
         resetToIdleState();
@@ -258,6 +311,9 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
         this.selectedPerkId = null;
         this.currentlyDisplayedPerk = "idle";
         this.buyerUUID = null;
+        this.shared = false;
+        this.sharedTicks = 0;
+        this.claimed.clear();
         this.availablePerks.clear();
         
         setChanged();
@@ -269,6 +325,9 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
         }
+        if (level instanceof ServerLevel serverLevel) {
+            syncToClients(serverLevel);
+        }
     }
 
     public String getSelectedPerkId() { return selectedPerkId; }
@@ -276,15 +335,19 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
     public WunderfizzState getState() { return state; }
     public boolean isReady() { return state == WunderfizzState.READY; }
 
-    public void setStateFromPacket(String stateName, String perkId) {
+    public void setStateFromPacket(String stateName, String perkId, boolean shared, java.util.UUID buyer) {
         try {
             this.state = WunderfizzState.valueOf(stateName);
             this.selectedPerkId = perkId;
+            this.shared = shared && this.state == WunderfizzState.READY;
+            this.buyerUUID = buyer;
             if (state == WunderfizzState.READY) {
                 this.currentlyDisplayedPerk = perkId;
             }
         } catch (IllegalArgumentException e) {
             this.state = WunderfizzState.IDLE;
+            this.shared = false;
+            this.buyerUUID = null;
         }
     }
 
@@ -301,6 +364,13 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
         if (buyerUUID != null) {
             tag.putUUID("buyerUUID", buyerUUID);
         }
+        tag.putBoolean("shared", shared);
+        tag.putInt("sharedTicks", sharedTicks);
+        net.minecraft.nbt.ListTag claimedTag = new net.minecraft.nbt.ListTag();
+        for (java.util.UUID id : claimed) {
+            claimedTag.add(net.minecraft.nbt.StringTag.valueOf(id.toString()));
+        }
+        tag.put("claimed", claimedTag);
         tag.putInt("availablePerksCount", availablePerks.size());
         for (int i = 0; i < availablePerks.size(); i++) {
             tag.putString("availablePerk_" + i, availablePerks.get(i));
@@ -323,6 +393,15 @@ public class DerWunderfizzBlockEntity extends BlockEntity implements Container, 
         }
         if (tag.contains("buyerUUID")) {
             buyerUUID = tag.getUUID("buyerUUID");
+        }
+        shared = tag.getBoolean("shared");
+        sharedTicks = tag.getInt("sharedTicks");
+        claimed.clear();
+        net.minecraft.nbt.ListTag claimedTag = tag.getList("claimed", 8);
+        for (int i = 0; i < claimedTag.size(); i++) {
+            try {
+                claimed.add(java.util.UUID.fromString(claimedTag.getString(i)));
+            } catch (IllegalArgumentException ignored) {}
         }
         availablePerks.clear();
         int count = tag.getInt("availablePerksCount");

@@ -1,8 +1,0 @@
-{
-  "parent": "block/slab_top",
-  "textures": {
-    "bottom": "zombierool:block/deco/permaice",
-    "top": "zombierool:block/deco/permaice",
-    "side": "zombierool:block/deco/permaice"
-  }
-}

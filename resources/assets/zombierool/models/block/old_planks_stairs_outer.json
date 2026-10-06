@@ -1,8 +1,0 @@
-{
-  "parent": "block/outer_stairs",
-  "textures": {
-    "bottom": "zombierool:block/deco/oak_planks",
-    "top": "zombierool:block/deco/oak_planks",
-    "side": "zombierool:block/deco/oak_planks"
-  }
-}

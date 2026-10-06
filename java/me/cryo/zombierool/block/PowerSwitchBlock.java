@@ -33,8 +33,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import me.cryo.zombierool.GlobalSwitchState;
-import me.cryo.zombierool.WorldConfig; 
+import me.cryo.zombierool.config.GlobalSwitchState;
+import me.cryo.zombierool.config.WorldConfig; 
 import me.cryo.zombierool.util.PlayerVoiceManager;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 
@@ -253,6 +253,7 @@ public class PowerSwitchBlock extends Block {
                 }
             }
         }
+        if (world instanceof ServerLevel server) me.cryo.zombierool.gameplay.MapPower.refreshSoon(server);
     }
 
     @Override
@@ -261,6 +262,7 @@ public class PowerSwitchBlock extends Block {
             if (state.getValue(POWERED)) {
                 GlobalSwitchState.setActivated(world, false);
             }
+            me.cryo.zombierool.gameplay.MapPower.refreshSoon(serverLevel);
             WorldConfig.get(serverLevel).removePowerSwitchPosition(pos);
         }
         return super.onDestroyedByPlayer(state, world, pos, player, willHarvest, fluid);

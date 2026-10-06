@@ -1,8 +1,0 @@
-{
-  "parent": "block/slab_top",
-  "textures": {
-    "bottom": "zombierool:block/deco/arctic_ice",
-    "top": "zombierool:block/deco/arctic_ice",
-    "side": "zombierool:block/deco/arctic_ice"
-  }
-}

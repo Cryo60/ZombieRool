@@ -1,0 +1,43 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IntelliJ IDEA (on conserve la config partagee pour ouvrir le projet)
+.idea/*
+!.idea/runConfigurations/
+!.idea/runConfigurations/*
+!.idea/gradle.xml
+!.idea/misc.xml
+!.idea/compiler.xml
+!.idea/encodings.xml
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+eclipse/
+
+# Minecraft dev runtime
+run/
+runs/
+run-data/
+run-server/
+run-mp1/
+run-mp2/
+
+# Textures, sounds and models stay out of the public GitHub tree.
+# They are still packed into the mod jar.
+src/main/resources/assets/
+resources/assets/
+
+# MCreator leftovers
+.mcreator/
+elements/
+*.mcreator
+mcreator.gradle
+.custombuildconfig.properties

@@ -9,6 +9,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.api.distmarker.Dist;
 
+import me.cryo.zombierool.client.particle.BloodStainParticle;
 import me.cryo.zombierool.client.particle.ZombieBloodParticle;
 import me.cryo.zombierool.client.particle.WishParticle;
 import me.cryo.zombierool.client.particle.ToxicSmokeParticle;

@@ -1,0 +1,518 @@
+package me.cryo.zombierool.core.system;
+
+import me.cryo.zombierool.ZombieroolKeys;
+
+import me.cryo.zombierool.career.ServerCareerManager;
+import me.cryo.zombierool.config.WorldConfig;
+import me.cryo.zombierool.core.registry.ZRRegistry;
+import me.cryo.zombierool.core.capability.ZombieCapabilitySystem;
+import me.cryo.zombierool.init.ZombieroolModMobEffects;
+import me.cryo.zombierool.api.IPackAPunchable;
+import me.cryo.zombierool.api.IReloadable;
+import me.cryo.zombierool.integration.TacZIntegration;
+import me.cryo.zombierool.item.throwable.ThrowableCore;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class WeaponFacade {
+
+    public static int getWeaponLimit(Player player) {
+        if (player != null && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_MULE_KICK.get())) {
+            return 3;
+        }
+        return 2;
+    }
+
+    public static boolean isWeapon(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        return stack.getItem() instanceof me.cryo.zombierool.api.ICustomWeapon || isTaczWeapon(stack);
+    }
+
+    public static boolean isTaczWeapon(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.hasTag() && stack.getTag().getBoolean("zombierool:is_tacz")) return true;
+
+        ResourceLocation registryName = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (registryName != null && registryName.getNamespace().equals("tacz") && registryName.getPath().equals("modern_kinetic_gun")) {
+            stack.getOrCreateTag().putBoolean("zombierool:is_tacz", true);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isHandgun(ItemStack stack) {
+        if (stack.getItem() instanceof me.cryo.zombierool.item.IHandgunWeapon) return true;
+        if (isTaczWeapon(stack)) {
+            WeaponSystem.Definition def = getDefinition(stack);
+            return def != null && "PISTOL".equalsIgnoreCase(def.type);
+        }
+        return false;
+    }
+
+    public static String getWeaponId(ItemStack stack) {
+        if (isTaczWeapon(stack)) {
+            return stack.getOrCreateTag().getString("GunId");
+        }
+        WeaponSystem.Definition def = getDefinition(stack);
+        if (def != null) return def.id;
+
+        ResourceLocation rl = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return rl != null ? rl.toString() : "";
+    }
+
+    public static WeaponSystem.Definition getDefinition(ItemStack stack) {
+        if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) return gun.getDefinition();
+        if (isTaczWeapon(stack)) {
+            String wId = stack.hasTag() ? stack.getTag().getString("zombierool:weapon_id") : "";
+            if (!wId.isEmpty()) {
+                return WeaponSystem.Loader.LOADED_DEFINITIONS.get(wId.replace("zombierool:", ""));
+            }
+            String gunId = stack.getOrCreateTag().getString("GunId");
+            if (!gunId.isEmpty()) {
+                for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
+                    if (def.tacz != null && gunId.equals(def.tacz.gun_id)) {
+                        stack.getOrCreateTag().putString("zombierool:weapon_id", def.id.replace("zombierool:", ""));
+                        stack.getOrCreateTag().putBoolean("zombierool:is_tacz", true);
+                        return def;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static ItemStack createUnmappedTaczWeaponStack(ResourceLocation gunId, boolean pap) {
+        if (!TacZIntegration.isTaczGunAvailable(gunId.toString())) {
+            return ItemStack.EMPTY;
+        }
+        Item taczItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation("tacz:modern_kinetic_gun"));
+        if (taczItem == null || taczItem == Items.AIR) return ItemStack.EMPTY;
+
+        ItemStack stack = new ItemStack(taczItem);
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString("GunId", gunId.toString());
+        tag.putBoolean("zombierool:is_tacz", true);
+        tag.putBoolean("zombierool:unmapped", true);
+        tag.putBoolean("HasBulletInBarrel", false);
+
+        TacZIntegration.applyUnmappedTaczProperties(stack, gunId);
+        int baseAmmo = TacZIntegration.getTacZWeaponBaseAmmo(stack);
+        tag.putInt("GunCurrentAmmoCount", pap ? baseAmmo * 2 : baseAmmo);
+        setReserve(stack, pap ? baseAmmo * 8 : baseAmmo * 4);
+
+        if (pap) TacZIntegration.applyTaczPap(stack, null);
+        return stack;
+    }
+
+    public static ItemStack createWeaponStack(String zrId, boolean pap, @Nullable Player player) {
+        String cleanId = zrId.replace("zombierool:", "");
+        WeaponSystem.Definition def = WeaponSystem.Loader.LOADED_DEFINITIONS.get(cleanId);
+        if (def == null) return ItemStack.EMPTY;
+
+        boolean preferZr = player != null && player.getPersistentData().getBoolean("zr_prefer_zr_weapons");
+
+        if (!preferZr && def.tacz != null && def.tacz.gun_id != null && ModList.get().isLoaded("tacz")) {
+            if (TacZIntegration.isTaczGunAvailable(def.tacz.gun_id)) {
+                Item taczItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation("tacz:modern_kinetic_gun"));
+                if (taczItem != null && taczItem != Items.AIR) {
+                    ItemStack taczStack = new ItemStack(taczItem);
+                    CompoundTag tag = taczStack.getOrCreateTag();
+                    tag.putString("GunId", def.tacz.gun_id);
+                    tag.putBoolean("zombierool:is_tacz", true);
+                    tag.putString("zombierool:weapon_id", cleanId);
+                    tag.putBoolean("HasBulletInBarrel", false);
+
+                    String mode = "SEMI";
+                    if (def.burst != null && def.burst.count > 1) {
+                        mode = "BURST";
+                    } else if (def.stats.fire_rate <= 5) {
+                        mode = "AUTO";
+                    }
+                    tag.putString("GunFireMode", mode);
+
+                    TacZIntegration.applyDefaultAttachments(taczStack, def);
+                    int maxAmmo = TacZIntegration.getTacZWeaponMaxAmmo(taczStack, def);
+                    tag.putInt("GunCurrentAmmoCount", maxAmmo);
+
+                    if (pap) {
+                        TacZIntegration.applyTaczPap(taczStack, def);
+                    } else {
+                        setReserve(taczStack, TacZIntegration.getTacZWeaponMaxReserve(taczStack, def));
+                        String nameKey = def.name;
+                        Component baseNameComp;
+                        if (nameKey != null && (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool."))) {
+                            baseNameComp = Component.translatable(nameKey);
+                        } else {
+                            baseNameComp = Component.literal(nameKey != null ? nameKey : "Unknown Weapon");
+                        }
+                        taczStack.setHoverName(Component.empty().append(Component.literal("§a")).append(baseNameComp));
+                    }
+                    return taczStack;
+                }
+            }
+        }
+
+        ResourceLocation zrLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + cleanId);
+        Item zrItem = ForgeRegistries.ITEMS.getValue(zrLoc);
+
+        if (zrItem != null && zrItem != Items.AIR) {
+            ItemStack stack = new ItemStack(zrItem);
+
+            if (zrItem instanceof IReloadable reloadable) reloadable.initializeIfNeeded(stack);
+            if (pap && zrItem instanceof IPackAPunchable papable) papable.applyPackAPunch(stack);
+
+            if (player != null) {
+                String equippedSkin = ServerCareerManager.getEquippedSkin(player.getUUID(), cleanId);
+                String equippedCamo = ServerCareerManager.getEquippedCamo(player.getUUID(), cleanId);
+
+                if (!equippedSkin.isEmpty()) {
+                    stack.getOrCreateTag().putString(ZombieroolKeys.SKIN, equippedSkin);
+                } else if (!equippedCamo.isEmpty()) {
+                    stack.getOrCreateTag().putString(ZombieroolKeys.CAMO, equippedCamo);
+                }
+            }
+
+            return stack;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    public static ItemStack createStarterStack(Player player, WorldConfig config) {
+        CompoundTag saved = config.getStarterItemTag();
+        if (saved != null && !saved.isEmpty()) {
+            ItemStack configured = ItemStack.of(saved);
+            if (!configured.isEmpty()) {
+                ResourceLocation savedId = ForgeRegistries.ITEMS.getKey(configured.getItem());
+                if (savedId != null && savedId.equals(config.getStarterItem())) {
+                    return copyConfiguredWeapon(configured);
+                }
+            }
+        }
+        ItemStack fresh = createWeaponStack(config.getStarterItem().toString(), false, player);
+        if (fresh.isEmpty()) {
+            Item item = ForgeRegistries.ITEMS.getValue(config.getStarterItem());
+            if (item == null || item == Items.AIR) item = Items.WOODEN_SWORD;
+            fresh = new ItemStack(item);
+        }
+        return fresh;
+    }
+
+    public static ItemStack copyConfiguredWeapon(ItemStack template) {
+        ItemStack stack = template.copy();
+        stack.setCount(1);
+        WeaponSystem.Definition def = getDefinition(stack);
+        if (isTaczWeapon(stack)) {
+            CompoundTag tag = stack.getOrCreateTag();
+            if (def != null) {
+                tag.putString("zombierool:weapon_id", def.id.replace("zombierool:", ""));
+                tag.putBoolean("zombierool:is_tacz", true);
+                if (!hasAttachmentTags(tag)) {
+                    TacZIntegration.applyDefaultAttachments(stack, def);
+                }
+            }
+            int max = TacZIntegration.getTacZWeaponMaxAmmo(stack, def);
+            tag.putInt("GunCurrentAmmoCount", max);
+            setReserve(stack, def != null ? TacZIntegration.getTacZWeaponMaxReserve(stack, def) : Math.max(1, max) * 4);
+            return stack;
+        }
+        if (stack.getItem() instanceof IReloadable reloadable) {
+            reloadable.initializeIfNeeded(stack);
+            setAmmo(stack, getMaxAmmo(stack));
+            setReserve(stack, getMaxReserve(stack));
+        }
+        return stack;
+    }
+
+    private static boolean hasAttachmentTags(CompoundTag tag) {
+        for (String key : tag.getAllKeys()) {
+            if (key.startsWith("Attachment")) return true;
+        }
+        return false;
+    }
+
+    public static void grantWeaponToPlayer(ServerPlayer player, ItemStack baseWeapon) {
+        grantWeaponToPlayer(player, baseWeapon, false);
+    }
+
+    public static void grantWeaponToPlayer(ServerPlayer player, ItemStack baseWeapon, boolean alwaysNew) {
+        if (baseWeapon.getItem() == ZRRegistry.BOWIE_KNIFE) {
+            player.getPersistentData().putBoolean(ZombieroolKeys.HAS_BOWIE_KNIFE, true);
+            player.sendSystemMessage(Component.translatable("message.zombierool.bowie_knife.obtained").withStyle(net.minecraft.ChatFormatting.GREEN));
+            player.level().playSound(null, player.blockPosition(), ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "bowie_equip")), net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
+            return;
+        }
+        if (baseWeapon.getItem() instanceof ThrowableCore.BaseThrowableItem) {
+            ResourceLocation reg = ForgeRegistries.ITEMS.getKey(baseWeapon.getItem());
+            if (reg != null) {
+                player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
+                    cap.setLethalType(reg.toString());
+                    cap.setLethalCount(5);
+                    cap.sync(player);
+                });
+                player.sendSystemMessage(Component.literal("§aNouvel équipement létal acquis : " + baseWeapon.getHoverName().getString()));
+                player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1f, 1f);
+            }
+            return;
+        }
+
+        WeaponSystem.Definition def = getDefinition(baseWeapon);
+        boolean isTacz = isTaczWeapon(baseWeapon);
+        ItemStack stackToGive;
+        if (baseWeapon.hasTag() || isTacz) {
+            stackToGive = copyConfiguredWeapon(baseWeapon);
+        } else if (def != null) {
+            stackToGive = createWeaponStack(def.id, false, player);
+        } else if (baseWeapon.getItem() instanceof IReloadable r) {
+            stackToGive = baseWeapon.copy();
+            stackToGive.setCount(1);
+            r.initializeIfNeeded(stackToGive);
+        } else {
+            stackToGive = baseWeapon.copy();
+            stackToGive.setCount(1);
+        }
+
+        if (stackToGive.isEmpty() || !isWeapon(stackToGive)) {
+            player.sendSystemMessage(Component.literal("§cWeapon unavailable. Fallback to M1911."));
+            stackToGive = createWeaponStack("zombierool:m1911", false, player);
+            if (stackToGive.isEmpty()) stackToGive = new ItemStack(net.minecraft.world.item.Items.WOODEN_SWORD);
+        }
+
+        if (!isWeapon(stackToGive)) {
+            if (!player.getInventory().add(stackToGive)) {
+                player.drop(stackToGive, false);
+            }
+            player.inventoryMenu.broadcastChanges();
+            return;
+        }
+
+        int limit = getWeaponLimit(player);
+        String wId = getWeaponId(stackToGive);
+
+        for (int i = 1; i <= limit; i++) {
+            ItemStack s = player.getInventory().getItem(i);
+            if (!s.isEmpty() && isWeapon(s)) {
+                boolean match = false;
+                if (isTacz && isTaczWeapon(s)) {
+                    match = s.getOrCreateTag().getString("GunId").equals(stackToGive.getOrCreateTag().getString("GunId"));
+                } else if (!isTacz && def != null && isWeapon(s)) {
+                    WeaponSystem.Definition d = getDefinition(s);
+                    match = d != null && d.id.replace("zombierool:", "").equals(def.id.replace("zombierool:", ""));
+                } else if (!isTacz && def == null && s.getItem() == stackToGive.getItem()) {
+                    match = true;
+                }
+
+                if (match && !alwaysNew) {
+                    setAmmo(s, getMaxAmmo(s));
+                    setReserve(s, getMaxReserve(s));
+                    if (s.getItem() instanceof WeaponSystem.BaseGunItem gun && gun.hasDurability()) {
+                        gun.setDurability(s, gun.getMaxDurability(s));
+                    }
+                    if (isTacz) refillHeldTaczAmmo(player, s);
+                    player.sendSystemMessage(Component.literal("§aMunitions max !"));
+                    return;
+                }
+            }
+        }
+
+        int targetSlot = -1;
+        for (int i = 1; i <= limit; i++) {
+            ItemStack slotItem = player.getInventory().getItem(i);
+            if (slotItem.isEmpty() || !isWeapon(slotItem)) {
+                targetSlot = i;
+                break;
+            }
+        }
+
+        if (targetSlot == -1) {
+            targetSlot = player.getInventory().selected;
+            if (targetSlot < 1 || targetSlot > limit) targetSlot = 1;
+            ItemStack toDrop = player.getInventory().getItem(targetSlot).copy();
+            player.getInventory().setItem(targetSlot, ItemStack.EMPTY);
+            me.cryo.zombierool.gameplay.PrivateDrops.markPendingSlot(player, targetSlot);
+            player.drop(toDrop, true);
+        }
+
+        ItemStack existingInTarget = player.getInventory().getItem(targetSlot);
+        if (!existingInTarget.isEmpty() && !isWeapon(existingInTarget)) {
+            player.getInventory().setItem(targetSlot, ItemStack.EMPTY);
+            if (!player.getInventory().add(existingInTarget)) {
+                player.drop(existingInTarget, true);
+            }
+        }
+
+        player.getInventory().setItem(targetSlot, stackToGive);
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            me.cryo.zombierool.gameplay.PrivateDrops.reapReplacedSlots(serverLevel);
+        }
+        player.getInventory().selected = targetSlot;
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(targetSlot));
+        player.inventoryMenu.broadcastChanges();
+    }
+
+    public static boolean isPackAPunched(ItemStack stack) {
+        if (stack.getItem() instanceof IPackAPunchable pap) return pap.isPackAPunched(stack);
+        if (isTaczWeapon(stack)) return stack.getOrCreateTag().getBoolean(ZombieroolKeys.PAP);
+        return false;
+    }
+
+    public static boolean canBePackAPunched(ItemStack stack) {
+        if (stack.getItem() instanceof IPackAPunchable pap) return pap.canBePackAPunched(stack);
+        if (isTaczWeapon(stack)) return !isPackAPunched(stack);
+        return false;
+    }
+
+    public static int getAmmo(ItemStack stack) {
+        if (stack.getItem() instanceof IReloadable r) return r.getAmmo(stack);
+        if (isTaczWeapon(stack)) return stack.getOrCreateTag().getInt("GunCurrentAmmoCount");
+        return 0;
+    }
+
+    public static void setAmmo(ItemStack stack, int ammo) {
+        if (stack.getItem() instanceof IReloadable r) r.setAmmo(stack, ammo);
+        else if (isTaczWeapon(stack)) stack.getOrCreateTag().putInt("GunCurrentAmmoCount", Math.max(0, ammo));
+    }
+
+    public static int getReserve(ItemStack stack) {
+        if (stack.getItem() instanceof IReloadable r) return r.getReserve(stack);
+        if (isTaczWeapon(stack)) {
+            CompoundTag tag = stack.getOrCreateTag();
+            if (!tag.contains("DummyAmmo")) {
+                int max = getMaxReserve(stack);
+                tag.putInt("DummyAmmo", max);
+            }
+            return tag.getInt("DummyAmmo");
+        }
+        return 0;
+    }
+
+    public static void setReserve(ItemStack stack, int reserve) {
+        if (stack.getItem() instanceof IReloadable r) {
+            r.setReserve(stack, reserve);
+        } else if (isTaczWeapon(stack)) {
+            stack.getOrCreateTag().putInt("DummyAmmo", Math.max(0, reserve));
+        }
+    }
+
+    public static int getMaxAmmo(ItemStack stack) {
+        if (stack.getItem() instanceof IReloadable r) return r.getMaxAmmo(stack);
+        WeaponSystem.Definition def = getDefinition(stack);
+        if (isTaczWeapon(stack)) {
+            return TacZIntegration.getTacZWeaponMaxAmmo(stack, def);
+        }
+        if (def != null) return isPackAPunched(stack) ? def.ammo.clip_size + def.pap.clip_bonus : def.ammo.clip_size;
+        return 0;
+    }
+
+    public static int getMaxReserve(ItemStack stack) {
+        if (stack.getItem() instanceof IReloadable r) return r.getMaxReserve(stack);
+        WeaponSystem.Definition def = getDefinition(stack);
+        if (isTaczWeapon(stack)) {
+            return TacZIntegration.getTacZWeaponMaxReserve(stack, def);
+        }
+        if (def != null) return isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve;
+        return 0;
+    }
+
+    public static Item getAmmoItemForGun(ItemStack stack) {
+        return TacZIntegration.getAmmoItemForGun(stack);
+    }
+
+    public static List<ResourceLocation> getUnmappedTaczGuns() {
+        List<ResourceLocation> unmapped = new ArrayList<>();
+        if (!ModList.get().isLoaded("tacz")) return unmapped;
+        List<ResourceLocation> allTacz = TacZIntegration.getAllTacZGunIds();
+        Set<String> mappedTaczIds = new HashSet<>();
+
+        for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
+            if (def.tacz != null && def.tacz.gun_id != null) {
+                mappedTaczIds.add(def.tacz.gun_id);
+            }
+        }
+        for (ResourceLocation taczId : allTacz) {
+            if (!mappedTaczIds.contains(taczId.toString())) {
+                unmapped.add(taczId);
+            }
+        }
+        return unmapped;
+    }
+
+    public static void refillHeldTaczAmmo(Player player, ItemStack stack) {
+        if (!isTaczWeapon(stack)) return;
+        setAmmo(stack, getMaxAmmo(stack));
+        setReserve(stack, getMaxReserve(stack));
+    }
+
+    public static void refillAllTaczAmmo(Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (isTaczWeapon(stack)) {
+                refillHeldTaczAmmo(player, stack);
+            }
+        }
+    }
+
+    public static void applyPackAPunch(ItemStack stack) {
+        if (stack.getItem() instanceof IPackAPunchable pap) pap.applyPackAPunch(stack);
+        else if (isTaczWeapon(stack)) TacZIntegration.applyTaczPap(stack, getDefinition(stack));
+    }
+
+    public static ResourceLocation getTaczIcon(ResourceLocation gunId) {
+        return TacZIntegration.getGunIcon(gunId);
+    }
+
+    public static void shootCustomTaczProjectile(ServerPlayer player, ItemStack stack, WeaponSystem.Definition def) {
+        boolean isPap = isPackAPunched(stack);
+        float damage = def.stats.damage;
+        if (isPap) damage += def.pap.damage_bonus;
+        float spread = isPap ? def.ballistics.spread * def.pap.spread_mult : def.ballistics.spread;
+        float velocity = isPap ? def.ballistics.velocity * 1.25f : def.ballistics.velocity;
+        int count = (isPap && def.pap.pellet_count_override > 0) ? def.pap.pellet_count_override : def.ballistics.count;
+        int penetration = def.stats.penetration;
+        if (isPap) penetration += def.pap.penetration_bonus;
+
+        for (int i = 0; i < count; i++) {
+            net.minecraft.world.entity.projectile.Arrow projectile = new net.minecraft.world.entity.projectile.Arrow(player.level(), player);
+            projectile.setBaseDamage(0); 
+            net.minecraft.world.phys.Vec3 eyePos = player.getEyePosition();
+            projectile.setPos(eyePos.x, eyePos.y - 0.1, eyePos.z);
+
+            float currentYaw = player.getYRot();
+            if (count == 3 && isPap) {
+                if (i == 0) currentYaw -= 10.0f;
+                else if (i == 2) currentYaw += 10.0f;
+            }
+
+            projectile.shootFromRotation(player, player.getXRot(), currentYaw, 0.0F, velocity, spread);
+            projectile.setSilent(true);
+            projectile.pickup = net.minecraft.world.entity.projectile.AbstractArrow.Pickup.DISALLOWED;
+            if (penetration > 0) {
+                projectile.setPierceLevel((byte) Math.min(127, penetration));
+            }
+
+            net.minecraft.nbt.CompoundTag nbt = projectile.getPersistentData();
+            me.cryo.zombierool.item.PackAPunchProjectiles.applyCustom(nbt, damage, isPap);
+            me.cryo.zombierool.item.PackAPunchProjectiles.applyInvisibleTrail(nbt, def.ballistics.trail_vfx);
+            me.cryo.zombierool.item.PackAPunchProjectiles.applyExplosive(nbt, def, isPap);
+
+            if (!def.ballistics.gravity) projectile.setNoGravity(true);
+
+            player.level().addFreshEntity(projectile);
+        }
+    }
+}
