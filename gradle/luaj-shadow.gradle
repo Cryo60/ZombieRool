@@ -1,0 +1,6 @@
+// LuaJ is relocated into this mod, but its ScriptEngine service still names
+// org.luaj.vm2.script. Forge then exports that package from zombierool.
+// TacZ exports the same package from luaj.jse.figura, so the game cannot start.
+tasks.withType(AbstractCopyTask).configureEach {
+    exclude 'META-INF/services/javax.script.ScriptEngineFactory'
+}

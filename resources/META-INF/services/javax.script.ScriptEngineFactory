@@ -1,0 +1,2 @@
+# LuaJ is relocated inside ZombieRool. Do not list org.luaj.vm2.script here.
+# TacZ already exports that package, and Forge refuses to launch both mods.
