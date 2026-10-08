@@ -68,6 +68,25 @@ public class DefenseWallBakedModel implements BakedModel {
         return state;
     }
 
+    /** Resolve the saved master even when an old world's dummy has no cached model data yet. */
+    @Override
+    public ModelData getModelData(net.minecraft.world.level.BlockAndTintGetter view,
+            net.minecraft.core.BlockPos pos, BlockState state, ModelData incoming) {
+        net.minecraft.core.BlockPos masterPos = pos;
+        if (state.getBlock() instanceof DefenseWallSystem.DefenseWallDummyBlock dummy) {
+            masterPos = dummy.getMainPos(pos, state);
+        }
+        if (view.getBlockEntity(masterPos) instanceof DefenseWallSystem.DefenseWallBlockEntity wall) {
+            ModelData.Builder data = ModelData.builder();
+            BlockState mimic = wall.getMimic();
+            if (mimic != null) data.with(DefenseWallSystem.MIMIC, mimic);
+            BlockState masterState = wall.getBlockState();
+            data.with(DefenseWallSystem.HIDE, masterState.hasProperty(DefenseWallSystem.DefenseWallBlock.PERMANENTLY_OPEN)
+                    && masterState.getValue(DefenseWallSystem.DefenseWallBlock.PERMANENTLY_OPEN));
+            return data.build();
+        }
+        return incoming;
+    }
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
         return getQuads(state, side, rand, ModelData.EMPTY, null);
@@ -138,7 +157,7 @@ public class DefenseWallBakedModel implements BakedModel {
             vertexData[offset + 1] = Float.floatToRawIntBits(y);
             vertexData[offset + 2] = Float.floatToRawIntBits(z);
         }
-        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), quad.isShade());
+        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), false);
     }
 
     private static boolean intersectsCell(BakedQuad quad) {
@@ -189,7 +208,7 @@ public class DefenseWallBakedModel implements BakedModel {
             vertexData[offset + 4] = Float.floatToRawIntBits(newSprite.getU0() + normU * (newSprite.getU1() - newSprite.getU0()));
             vertexData[offset + 5] = Float.floatToRawIntBits(newSprite.getV0() + normV * (newSprite.getV1() - newSprite.getV0()));
         }
-        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), newSprite, quad.isShade());
+        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), newSprite, false);
     }
 
     @Override
@@ -220,7 +239,7 @@ public class DefenseWallBakedModel implements BakedModel {
         return original.getParticleIcon();
     }
 
-    @Override public boolean useAmbientOcclusion() { return true; }
+    @Override public boolean useAmbientOcclusion() { return false; }
     @Override public boolean isGui3d() { return original.isGui3d(); }
     @Override public boolean usesBlockLight() { return original.usesBlockLight(); }
     @Override public boolean isCustomRenderer() { return false; }

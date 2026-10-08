@@ -63,7 +63,7 @@ public final class MatchWorldJournal {
     public static void restore(ServerLevel level) {
         if (level == null || level.dimension() != Level.OVERWORLD) return;
         ensureLoaded(level);
-        if (ORIGINAL.isEmpty()) return;
+        if (ORIGINAL.isEmpty()) { me.cryo.zombierool.block.system.GlassDoorEvents.reset(level); return; }
         restoring = true;
         try {
             WorldConfig config = WorldConfig.get(level);
@@ -91,6 +91,7 @@ public final class MatchWorldJournal {
                     NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
                 }
             }
+            me.cryo.zombierool.block.system.GlassDoorEvents.reset(level);
             ORIGINAL.clear();
             dirty = false;
             File file = journalFile(level);

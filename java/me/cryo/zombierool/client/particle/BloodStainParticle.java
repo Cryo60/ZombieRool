@@ -91,7 +91,7 @@ public class BloodStainParticle extends TextureSheetParticle {
         this.yd = vy;
         this.zd = vz;
         this.quadSize = 0.07F + level.random.nextFloat() * 0.05F;
-        this.setColor(0.62F, 0.02F, 0.03F);
+        this.setColor(0.30F, 0.008F, 0.015F);
         this.setSize(0.12F, 0.12F);
         this.stuckSession = session;
     }

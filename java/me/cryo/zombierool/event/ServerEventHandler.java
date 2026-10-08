@@ -233,7 +233,7 @@ public class ServerEventHandler {
         if (id == null || !"minecraft".equals(id.getNamespace())) return false;
         String path = id.getPath();
         return path.contains("door") || path.contains("fence_gate")
-                || path.contains("chest") || path.contains("shulker") || path.contains("barrel")
+
                 || path.contains("hopper") || path.contains("furnace") || path.contains("smoker")
                 || path.contains("dispenser") || path.contains("dropper")
                 || path.contains("note_block") || path.contains("jukebox")

@@ -271,7 +271,7 @@ public class BonusManager {
                         net.minecraft.world.level.block.state.BlockState blockState = level.getBlockState(currentBlockPos);
                         if (blockState.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock) {
                             DefenseDoorSystem.DefenseDoorBlock defenseDoor = (DefenseDoorSystem.DefenseDoorBlock) blockState.getBlock();
-                            if (blockState.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE) < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
+                            if (defenseDoor.canRepair(blockState)) {
                                 defenseDoor.updateStage(level, currentBlockPos, DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE);
                             }
                         } else if (blockState.getBlock() instanceof me.cryo.zombierool.block.system.DefenseWallSystem.DefenseWallBlock defenseWall) {

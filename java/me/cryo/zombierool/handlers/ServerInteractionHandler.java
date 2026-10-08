@@ -88,6 +88,12 @@ public class ServerInteractionHandler {
             }
         }
         switch (type) {
+            case TRAP -> {
+                if(level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.system.MapDeviceSystem.Device d) {
+                    String error=d.activate(player,true);
+                    if(!error.isEmpty())player.displayClientMessage(Component.translatable(error),true);
+                }
+            }
             case WALL_WEAPON -> handleWallWeapon(player, level, pos);
             case OBSTACLE -> handleObstacle(player, level, pos);
             case MYSTERY_BOX -> handleMysteryBox(player, level, pos);
@@ -299,7 +305,7 @@ public class ServerInteractionHandler {
                 }
             } else {
                 ItemStack copy = weaponToSell.copy();
-                if (!player.getInventory().add(copy)) {
+                if (!me.cryo.zombierool.integration.TacZIntegration.equipWallAttachment(player,copy) && !player.getInventory().add(copy)) {
                     player.drop(copy, false);
                 }
             }
@@ -580,7 +586,7 @@ public class ServerInteractionHandler {
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock door) { 
             int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
-            if (stage < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
+            if (door.canRepair(state)) {
                 door.updateStage(level, pos, stage + 1);
                 Random rand = new Random();
                 int soundIndex = rand.nextInt(3); 

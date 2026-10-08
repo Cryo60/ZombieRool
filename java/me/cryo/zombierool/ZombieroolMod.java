@@ -48,6 +48,7 @@ public class ZombieroolMod {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		ZombieroolModSounds.REGISTRY.register(bus);
 		ZombieroolModBlocks.REGISTRY.register(bus);
+        me.cryo.zombierool.block.system.MapDeviceSystem.register(bus);
 		ZombieroolModBlockEntities.REGISTRY.register(bus);
 		ZombieroolModItems.REGISTRY.register(bus);
 		ZombieroolModEntities.REGISTRY.register(bus);

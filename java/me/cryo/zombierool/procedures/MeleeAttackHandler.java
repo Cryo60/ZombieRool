@@ -150,7 +150,9 @@ public class MeleeAttackHandler {
                 finalDamage = 100000f;
             }
 
-	        DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage);
+	        if (DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage)) {
+                me.cryo.zombierool.core.manager.GoreManager.onHit(targetEntity, false);
+            }
             if (targetEntity.isAlive()) {
                 targetEntity.getPersistentData().remove("zombierool:no_gore");
             }

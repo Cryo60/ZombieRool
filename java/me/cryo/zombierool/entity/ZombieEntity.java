@@ -45,6 +45,9 @@ import net.minecraft.core.particles.DustParticleOptions;
 import org.joml.Vector3f;
 
 public class ZombieEntity extends AbstractZombieRoolEntity {
+    @Override protected void playStepSound(BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+        if (isAlive() && !level().isClientSide && !isCrawler()) playSound(ZombieroolModSounds.ZOMBIE_STEP.get(), 0.4f, 0.95f + random.nextFloat()*0.1f);
+    }
     public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
     
     private int ambientSoundCooldown = 0;
@@ -201,7 +204,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     protected void registerGoals() {
         super.registerGoals();
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, false, false));
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2, false) {
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2, true) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
                 return (this.mob.getBbWidth() * 2.5F * this.mob.getBbWidth() * 2.5F + entity.getBbWidth());
@@ -260,7 +263,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity entity) {
-        float damage = this.isSuperSprinter() ? 4.0f : 2.0f;
+        float damage = this.isCrawler() ? 1.0f : 2.0f;
         boolean flag = entity.hurt(this.damageSources().mobAttack(this), damage);
         
         if (flag && !this.level().isClientSide) {
@@ -316,7 +319,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         builder = builder.add(Attributes.MAX_HEALTH, 4);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 2);
-        builder = builder.add(Attributes.FOLLOW_RANGE, 1024.0); 
+        builder = builder.add(Attributes.FOLLOW_RANGE, 128.0);
         builder = builder.add(Attributes.KNOCKBACK_RESISTANCE, 1);
         return builder;
     }

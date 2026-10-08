@@ -81,7 +81,8 @@ public class DynamicResourceManager {
         loadChalks(chalksDir);
 
         File audioDir = new File(zrDir, "audio");
-        loadAudioFiles(audioDir); 
+        loadAudioFiles(audioDir);
+        loadParticlePresets(new File(zrDir,"particles/custom"));
     }
 
     private static int countFiles(File dir, String extension) {
@@ -171,7 +172,37 @@ public class DynamicResourceManager {
         }
     }
 
+    private static final Map<String,String> PARTICLE_PRESETS = new ConcurrentHashMap<>();
+    public static java.util.Set<String> customParticleIds() { return java.util.Set.copyOf(PARTICLE_PRESETS.keySet()); }
+    public static String resolveParticlePreset(String id) { return PARTICLE_PRESETS.getOrDefault(id,id); }
+    private static void loadParticlePresets(File dir) {
+        PARTICLE_PRESETS.clear(); dir.mkdirs();
+        File[] files=dir.listFiles((d,n) -> n.endsWith(".json")); if(files==null)return;
+        for(File file:files) {
+            if(file.length()>8192)continue;
+            try(var reader=new FileReader(file)) {
+                JsonObject preset=GSON.fromJson(reader,JsonObject.class);
+                String effect=preset.get("particle").getAsString();
+                String name=file.getName().substring(0,file.getName().length()-5).toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_.-]","_");
+                if(effect.length()<=512)PARTICLE_PRESETS.put("zombierool:custom/"+name,effect);
+            }catch(Exception e){me.cryo.zombierool.ZombieroolMod.LOGGER.warn("Invalid particle preset: {}",file.getName());}
+        }
+    }
+    public static java.util.Set<String> customAudioIds() {
+        return SERVER_AUDIO_CACHE.keySet().stream().filter(s -> s.startsWith("zombierool:custom/")).collect(java.util.stream.Collectors.toSet());
+    }
+    private static void loadCustomAudio(File dir) {
+        if (!dir.isDirectory()) return;
+        try (var paths = java.nio.file.Files.walk(dir.toPath(), 8)) {
+            paths.filter(java.nio.file.Files::isRegularFile).filter(p -> p.toString().toLowerCase(java.util.Locale.ROOT).endsWith(".ogg")).limit(2048).forEach(p -> {
+                String relative = dir.toPath().relativize(p).toString().replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
+                String id = "zombierool:custom/" + relative.substring(0, relative.length()-4).replaceAll("[^a-z0-9_./-]", "_");
+                storeAudioFile(p.toFile(), id, "custom");
+            });
+        } catch (java.io.IOException e) { me.cryo.zombierool.ZombieroolMod.LOGGER.warn("Cannot load custom emitter audio", e); }
+    }
     private static void loadAudioFiles(File audioDir) {
+        loadCustomAudio(new File(audioDir, "custom"));
         File musicDir = new File(audioDir, "music");
         File voicesDir = new File(audioDir, "voices");
         File sfxDir = new File(audioDir, "sfx");
@@ -572,6 +603,7 @@ public class DynamicResourceManager {
         new File(sfxDir, "misc").mkdirs();
 
         new File(zrDir, "audio/voices").mkdirs();
+        new File(zrDir, "audio/custom").mkdirs();
 
         File musicDir = new File(zrDir, "audio/music");
         musicDir.mkdirs();

@@ -125,10 +125,10 @@ public class BloodDecalEntity extends Entity {
             VertexConsumer vc = buffer.getBuffer(ZrBloodRenderType.DECAL);
             Matrix4f matrix = pose.last().pose();
             int overlay = OverlayTexture.NO_OVERLAY;
-            vc.vertex(matrix, -0.5F, 0.0F, -0.5F).color(255, 255, 255, 230).uv(0.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, -0.5F, 0.0F, 0.5F).color(255, 255, 255, 230).uv(0.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, 0.5F).color(255, 255, 255, 230).uv(1.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, -0.5F).color(255, 255, 255, 230).uv(1.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, -0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(0.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, -0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(0.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, 0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(1.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, 0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(1.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
             pose.popPose();
         }
 

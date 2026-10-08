@@ -693,8 +693,10 @@ public class WeaponSystem {
                 }
             }
 
-            String soundId = isPackAPunched(stack) ? currentDef.sounds.fire_pap : currentDef.sounds.fire;
-            playSound(player.level(), player, soundId);
+            playSound(player.level(), player, currentDef.sounds.fire);
+            if (isPackAPunched(stack) && !java.util.Objects.equals(currentDef.sounds.fire, currentDef.sounds.fire_pap)) {
+                playSound(player.level(), player, currentDef.sounds.fire_pap);
+            }
 
             if (currentDef.id != null && currentDef.id.contains("raygunmarkii")) {
                 Vec3 look = player.getViewVector(1.0f);

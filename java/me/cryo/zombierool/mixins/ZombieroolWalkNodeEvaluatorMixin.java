@@ -24,6 +24,7 @@ public abstract class ZombieroolWalkNodeEvaluatorMixin {
 
     @Inject(method = "getBlockPathType", at = @At("RETURN"), cancellable = true)
     private void zombierool_getBlockPathType(BlockGetter world, int x, int y, int z, Mob entity, CallbackInfoReturnable<BlockPathTypes> cir) {
+        if (!(entity instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity)) return;
         BlockPathTypes originalType = cir.getReturnValue();
 
         // Si le type de chemin est déjà BLOCKED, pas besoin de vérifier davantage

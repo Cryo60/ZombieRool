@@ -68,6 +68,8 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         setPersistenceRequired();
         if (this.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
+            nav.setCanFloat(true);
+            nav.setMaxVisitedNodesMultiplier(4.0f);
         }
     }
     public void resetStuckTimer() {
@@ -246,7 +248,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         }
         boolean hurt = super.hurt(source, amount);
         if (hurt && !this.level().isClientSide && this.isAlive() && !quietHit) {
-            GoreManager.onHit(this);
+            GoreManager.onHit(this, GoreManager.canDismember(source));
         }
         return hurt;
     }
@@ -254,7 +256,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     protected void tickDeath() {
         boolean reduced = this.level() instanceof ServerLevel serverLevel && WorldConfig.get(serverLevel).isReducedGore();
-        if (reduced) {
+        if (reduced || this instanceof HellhoundEntity) {
             super.tickDeath();
             return;
         }
@@ -304,7 +306,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         super.die(cause);
         if (!this.level().isClientSide) {
             if (fireKill) GoreManager.onChar(this);
-            else if (!skipGore) GoreManager.onDeath(this);
+            else if (!skipGore && !(this instanceof HellhoundEntity)) GoreManager.onDeath(this, GoreManager.canDismember(cause));
         }
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             WaveManager.onMobDeath(this, serverLevel);
@@ -385,6 +387,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         if (!this.level().isClientSide) {
             if (this.tickCount % 20 == 0) {
                 double distMoved = this.position().distanceToSqr(this.lastPos);
+                if (distMoved < 0.01 && this.isAlive() && this.getTarget() != null && this.tickCount % 40 == 0) this.getNavigation().recomputePath();
                 boolean nearPlayer = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 20.0, false) != null;
                 if (distMoved < 0.01 && !nearPlayer && this.getTarget() != null) {
                     this.stuckTimer += 20;

@@ -37,7 +37,8 @@ public class PointManager {
         }
     }
 
-    public static void modifyScore(Player player, int amount) {
+    public static void modifyScore(Player player, int amount) { modifyScore(player,amount,true); }
+    public static void modifyScore(Player player, int amount, boolean round) {
         if (player.level().isClientSide()) return;
 
         int originalAmount = amount; 
@@ -56,10 +57,11 @@ public class PointManager {
 
         if (amount > 0) {
             amount = (int) (Math.round(amount / 5.0) * 5);
-        } else if (amount < 0) {
+        } else if (amount < 0 && round) {
             amount = (int) (Math.round(amount / 5.0) * 5);
         }
 
+        if (amount > 0 && me.cryo.zombierool.block.system.MapDeviceSystem.isTrapDamage()) amount /= 2;
         final int finalAmount = amount;
 
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {

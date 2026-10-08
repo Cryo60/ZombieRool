@@ -146,6 +146,7 @@ public class BallisticManager {
             double distToHit = currentTraceStart.distanceTo(blockHit.getLocation());
             double totalDist = accumulatedDist + distToHit;
 
+            me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(level, hitPos);
             boolean passThrough = false;
 
             if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock || 
@@ -279,7 +280,7 @@ public class BallisticManager {
                             if (isHeadshot) {
                                 boolean canExplode = def == null || def.headshot.can_explode_head;
                                 float headshotChance = def == null ? 1.0f : def.headshot.head_explosion_chance;
-                                if (canExplode && RANDOM.nextFloat() <= headshotChance) {
+                                if (GoreManager.canDismember(def) && canExplode && RANDOM.nextFloat() <= headshotChance) {
                                     me.cryo.zombierool.core.manager.GoreManager.triggerHeadExplosion(livingTarget);
                                 }
 
@@ -302,7 +303,7 @@ public class BallisticManager {
                             }
                         } else {
                             if (!isHeadshot) {
-                                me.cryo.zombierool.core.manager.GoreManager.tryDismemberLimb(livingTarget, finalDamage);
+                                if (GoreManager.canDismember(def)) GoreManager.tryDismemberLimb(livingTarget, finalDamage);
                             }
                         }
                     }
@@ -427,7 +428,7 @@ public class BallisticManager {
     }
 
     private static List<EntityHitResult> findAllEntitiesOnPath(Level level, Entity shooter, Vec3 start, Vec3 end, AABB searchBox) {
-        List<Entity> entities = level.getEntities(shooter, searchBox, e -> e instanceof LivingEntity && !e.isSpectator() && (e.isAlive() || (e instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity zr && zr.isLingeringCorpse())));
+        List<Entity> entities = level.getEntities(shooter, searchBox, e -> e instanceof LivingEntity && !(e instanceof me.cryo.zombierool.entity.CrawlerCorpse) && !e.isSpectator() && (e.isAlive() || (e instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity zr && zr.isLingeringCorpse() && !(zr instanceof me.cryo.zombierool.entity.CrawlerEntity))));
         List<EntityHitResult> results = new ArrayList<>();
 
         for (Entity entity : entities) {

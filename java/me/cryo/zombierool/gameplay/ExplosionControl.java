@@ -51,6 +51,8 @@ public class ExplosionControl {
         String ownerUuid = source instanceof Player p ? p.getUUID().toString() : "";
         LuaScriptManager.callEvent("OnExplosion", ownerUuid, pos.x, pos.y, pos.z, (double)radius);
 
+        if (source instanceof Player owner && owner.level() == level && owner.distanceToSqr(pos) <= radius * radius) FixedPlayerDamage.selfExplosion(owner);
+
         for (Entity entity : entities) {
             if (entity instanceof Painting || entity instanceof ItemFrame) continue;
 
@@ -60,32 +62,8 @@ public class ExplosionControl {
                     if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                         continue;
                     }
-                    if (entity == source) {
-                        long now = level.getGameTime();
-                        long lastSelfDmg = p.getPersistentData().getLong("zr_last_self_exp");
-                        
-                        if (selfDmgCap >= 100.0f) {
-                            if (kbStrength <= 0.0f) p.getPersistentData().putBoolean("zr_prevent_knockback", true);
-                            p.hurt(dmgSource, selfDmgCap);
-                            p.getPersistentData().remove("zr_prevent_knockback");
-                            continue;
-                        }
-
-                        if (now - lastSelfDmg < 10) continue;
-                        double dist = Math.sqrt(distSq);
-                        float distRatio = 1.0f - (float)(dist / radius);
-                        if (distRatio > 0.2f) {
-                            float selfDmg = Math.min(actualDamage * selfDmgMult * distRatio, selfDmgCap);
-                            if (selfDmg >= 0.5f) {
-                                if (kbStrength <= 0.0f) p.getPersistentData().putBoolean("zr_prevent_knockback", true);
-                                p.hurt(dmgSource, selfDmg);
-                                p.getPersistentData().remove("zr_prevent_knockback");
-                                p.getPersistentData().putLong("zr_last_self_exp", now);
-                            }
-                        }
-                        continue;
-                    }
-                    continue; 
+                    // Owner was handled once before the entity loop.
+                    continue;
                 }
 
                 float finalDamage = actualDamage;
@@ -125,6 +103,8 @@ public class ExplosionControl {
         List<Entity> entities = level.getEntities((Entity) null, area);
         DamageSource dmgSource = source instanceof Player ? level.damageSources().playerAttack((Player)source) : level.damageSources().generic();
 
+        if (source instanceof Player owner && owner.level() == level && owner.distanceToSqr(pos) <= outerRadius * outerRadius) FixedPlayerDamage.selfExplosion(owner);
+
         for (Entity entity : entities) {
             if (entity instanceof Painting || entity instanceof ItemFrame) continue;
 
@@ -137,18 +117,8 @@ public class ExplosionControl {
                     if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                         continue;
                     }
-                    if (entity == source) {
-                        long now = level.getGameTime();
-                        long lastSelfDmg = p.getPersistentData().getLong("zr_last_self_exp");
-                        if (now - lastSelfDmg < 10) continue;
-
-                        if (dist <= outerRadius * 0.6) {
-                            float selfDmg = 1.0f; 
-                            p.hurt(dmgSource, selfDmg);
-                            p.getPersistentData().putLong("zr_last_self_exp", now);
-                        }
-                    }
-                    continue; 
+                    // Owner was handled once before the entity loop.
+                    continue;
                 }
 
                 float finalDamage = inInner ? baseDamage : baseDamage * 0.45f;

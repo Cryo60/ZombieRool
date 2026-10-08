@@ -23,6 +23,7 @@ public class CrawlerRenderer extends MobRenderer<CrawlerEntity, ModelCrawler<Cra
         this.addLayer(new EyesLayer<CrawlerEntity, ModelCrawler<CrawlerEntity>>(this) {
             @Override
             public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, CrawlerEntity pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
+                if (!pLivingEntity.isAlive() || pLivingEntity.deathTime > 0) return;
                 ResourceLocation customEye = DynamicResourceManager.getClientSkin("crawler_eyes", pLivingEntity.getEyeSkinId());
                 if (customEye != null) {
                     RenderType renderType = RenderType.eyes(customEye);
@@ -75,11 +76,11 @@ public class CrawlerRenderer extends MobRenderer<CrawlerEntity, ModelCrawler<Cra
 
     @Override
     protected void setupRotations(CrawlerEntity entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTicks) {
-        if (entity.deathTime > 0 && !ZRClientConfig.isGoreReduced() && !entity.isExplodingDeath()) {
+        if (entity.deathTime > 0) {
             ZombieRagdoll.Pose ragdoll = ZombieRagdoll.get(entity);
             float t = ragdoll == null ? 1.0F : ragdoll.settle;
             float twist = ragdoll == null ? 0.0F : ragdoll.yawTwist();
-            float flip = ragdoll == null ? 90.0F : ragdoll.flipDegrees();
+            float flip = Math.floorMod(entity.getUUID().hashCode(),5) == 0 ? 75.0F : 0.0F;
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw + twist * t));
             poseStack.mulPose(Axis.ZP.rotationDegrees(flip * t));
             return;

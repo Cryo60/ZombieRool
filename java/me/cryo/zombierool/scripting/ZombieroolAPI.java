@@ -1125,4 +1125,84 @@ public class ZombieroolAPI {
         }
         return false;
     }
+
+    // All positions and registries are resolved in this map's dimension.
+    private me.cryo.zombierool.block.system.MapDeviceSystem.Device mapDevice(int x,int y,int z) {
+        BlockPos pos = new BlockPos(x,y,z);
+        return level.hasChunkAt(pos) && level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.system.MapDeviceSystem.Device d ? d : null;
+    }
+    public boolean placeGlassDefenseDoor(int x,int y,int z,String facing) {
+        var direction=net.minecraft.core.Direction.byName(facing.toLowerCase(Locale.ROOT));
+        BlockPos pos=new BlockPos(x,y,z);
+        if(direction==null||direction.getAxis().isVertical()||!level.hasChunkAt(pos)||level.isOutsideBuildHeight(pos.above()))return false;
+        var block=me.cryo.zombierool.core.registry.ZRBlocks.GLASS_DEFENSE_DOOR.get();
+        var state=block.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING,direction);
+        level.setBlock(pos,state,3);level.setBlock(pos.above(),state.setValue(net.minecraft.world.level.block.DoorBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),3);
+        me.cryo.zombierool.block.system.GlassDoorEvents.track(level,pos);me.cryo.zombierool.block.system.GlassDoorEvents.track(level,pos.above());return true;
+    }
+    public LuaTable getGlassDefenseDoor(int x,int y,int z) {
+        var out=new LuaTable();var state=level.getBlockState(new BlockPos(x,y,z));
+        if(state.getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock){out.set("stage",state.getValue(me.cryo.zombierool.block.system.GlassDefenseDoorBlock.STAGE));out.set("breached",LuaValue.valueOf(state.getValue(me.cryo.zombierool.block.system.GlassDefenseDoorBlock.BREACHED)));}return out;
+    }
+    public boolean damageGlassDefenseDoor(int x,int y,int z) {
+        BlockPos pos=new BlockPos(x,y,z);if(!(level.getBlockState(pos).getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock))return false;
+        me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(level,pos);return true;
+    }
+    public boolean repairGlassDefenseDoor(int x,int y,int z,int planks) {
+        BlockPos pos=new BlockPos(x,y,z);var state=level.getBlockState(pos);
+        if(!(state.getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock door)||!state.getValue(me.cryo.zombierool.block.system.GlassDefenseDoorBlock.BREACHED))return false;
+        door.updateStage(level,pos,Math.max(0,Math.min(5,planks)));return true;
+    }
+    public boolean placeMapDevice(int x,int y,int z,String kind,String facing) {
+        try {
+            var type=me.cryo.zombierool.block.system.MapDeviceSystem.Kind.valueOf(kind.toUpperCase(Locale.ROOT));
+            var direction=net.minecraft.core.Direction.byName(facing.toLowerCase(Locale.ROOT));
+            BlockPos pos=new BlockPos(x,y,z);
+            if(direction==null || !level.hasChunkAt(pos) || level.isOutsideBuildHeight(pos))return false;
+            return level.setBlock(pos,me.cryo.zombierool.block.system.MapDeviceSystem.TYPES.get(type).get().defaultBlockState().setValue(me.cryo.zombierool.block.system.MapDeviceSystem.DeviceBlock.FACING,direction),3);
+        }catch(IllegalArgumentException e){return false;}
+    }
+    public LuaTable getMapDevice(int x,int y,int z) {
+        LuaTable result = new LuaTable(); var d = mapDevice(x,y,z); if(d==null)return result;
+        var n=d.config();
+        for(String key:n.getAllKeys()) {
+            if(key.equals("channel") || key.equals("effect")) result.set(key,n.getString(key));
+            else if((key.equals("enabled") || key.equals("requires_power"))) result.set(key,LuaValue.valueOf(n.getBoolean(key)));
+            else result.set(key,LuaValue.valueOf(n.getDouble(key)));
+        }
+        result.set("kind",d.kind().name());result.set("active_ticks",d.remaining);result.set("cooldown_ticks",d.cooldown);
+        result.set("owner",d.owner==null?"":d.owner.toString());result.set("error",d.lastError);return result;
+    }
+    public boolean configureMapDevice(int x,int y,int z,LuaTable config) {
+        var d=mapDevice(x,y,z);if(d==null)return false;var n=d.config();
+        for(String key:n.getAllKeys()) {
+            LuaValue v=config.get(key);if(v.isnil())continue;
+            if(key.equals("channel") || key.equals("effect"))n.putString(key,v.checkjstring());
+            else if((key.equals("enabled") || key.equals("requires_power")))n.putBoolean(key,v.checkboolean());
+            else if(java.util.Set.of("interval","count","cost","duration","recharge").contains(key))n.putInt(key,v.checkint());
+            else n.putFloat(key,(float)v.checkdouble());
+        }
+        d.stop();d.configure(n);return true;
+    }
+    public boolean setEmitterEnabled(int x,int y,int z,boolean enabled) {
+        var d=mapDevice(x,y,z);if(d==null || !me.cryo.zombierool.block.system.MapDeviceSystem.isEmitter(d.kind()))return false;var n=d.config();n.putBoolean("enabled",enabled);d.configure(n);return true;
+    }
+    public boolean pulseEmitter(int x,int y,int z) {var d=mapDevice(x,y,z);return d!=null && d.emit();}
+    public String activateTrap(int x,int y,int z,String playerUUID,boolean charge) {
+        var d=mapDevice(x,y,z);if(d==null)return "message.zombierool.trap.not_found";
+        try {return d.activate(level.getServer().getPlayerList().getPlayer(UUID.fromString(playerUUID)),charge);}
+        catch(IllegalArgumentException e){return "message.zombierool.trap.invalid_player";}
+    }
+    public boolean stopTrap(int x,int y,int z){var d=mapDevice(x,y,z);if(d==null)return false;d.stop();return true;}
+    public boolean resetTrap(int x,int y,int z){var d=mapDevice(x,y,z);if(d==null)return false;d.stop();d.cooldown=0;return true;}
+    public LuaTable listMapDevices() {
+        LuaTable out=new LuaTable();int i=1;
+        for(var d:me.cryo.zombierool.block.system.MapDeviceSystem.devices(level)) {var pos=d.getBlockPos();var item=getMapDevice(pos.getX(),pos.getY(),pos.getZ());item.set("x",pos.getX());item.set("y",pos.getY());item.set("z",pos.getZ());out.set(i++,item);}return out;
+    }
+    public LuaTable listEmitterEffects(String kind) {
+        java.util.TreeSet<String> ids=new java.util.TreeSet<>();
+        if("sound".equalsIgnoreCase(kind)){ForgeRegistries.SOUND_EVENTS.getKeys().forEach(id -> ids.add(id.toString()));ids.addAll(me.cryo.zombierool.core.manager.DynamicResourceManager.customAudioIds());}
+        else { ForgeRegistries.PARTICLE_TYPES.getKeys().forEach(id -> ids.add(id.toString())); ids.addAll(me.cryo.zombierool.core.manager.DynamicResourceManager.customParticleIds()); }
+        LuaTable out=new LuaTable();int i=1;for(String id:ids)out.set(i++,id);return out;
+    }
 }

@@ -23,6 +23,7 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
                 if (!entity.isRevealedClient()) {
                     return;
                 }
+                if (!entity.isAlive() || entity.deathTime > 0) return;
                 ResourceLocation customEye = DynamicResourceManager.getClientSkin("hellhound_eyes", entity.getEyeSkinId());
                 RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(new ResourceLocation("zombierool:textures/entities/dark_hellhound_eyes.png"));
                 com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = buffers.getBuffer(renderType);

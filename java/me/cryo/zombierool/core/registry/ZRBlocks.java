@@ -32,6 +32,7 @@ public class ZRBlocks {
 	public static final List<RegistryObject<Block>> CUTOUT_BLOCKS = new ArrayList<>();
 
 	public static final RegistryObject<Block> DEFENSE_DOOR = registerTallBlock("defense_door", DefenseDoorSystem.DefenseDoorBlock::new);
+	public static final RegistryObject<Block> GLASS_DEFENSE_DOOR = registerTallBlock("glass_defense_door", me.cryo.zombierool.block.system.GlassDefenseDoorBlock::new);
 	public static final RegistryObject<Block> STORAGE_BOX = registerBlock("storage_box", () -> new ZRDecorativeBlock(SoundType.WOOD, ZRDecorativeBlock.ShapeType.FULL, true));
 	public static final RegistryObject<Block> DEFENSE_DOOR_OPENED = registerBlockNoItem("defense_door_opened", DefenseDoorSystem.DefenseDoorOpenedBlock::new);
 	public static final RegistryObject<Block> SANDBAGS = registerBlock("sandbags", () -> new ZRSandbagBlock(SoundType.GRAVEL));
@@ -49,6 +50,7 @@ public class ZRBlocks {
     public static void buildContents(net.minecraftforge.event.BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey().location().equals(new net.minecraft.resources.ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
             event.accept(DEFENSE_DOOR.get());
+            event.accept(GLASS_DEFENSE_DOOR.get());
             event.accept(METEORITE.get());
         }
     }

@@ -73,6 +73,9 @@ public class GorePieceEntity extends Entity {
         piece.entityData.set(SKIN, skin);
         piece.entityData.set(CUSTOM_SKIN, customSkin == null ? "" : customSkin);
         double yaw = level.random.nextDouble() * Math.PI * 2.0;
+        // Start outside the source hitbox so corpse collision cannot trap the piece.
+        double radius = from.getBbWidth() * 0.5 + piece.getBbWidth() + 0.05;
+        piece.setPos(from.getX() + Math.cos(yaw) * radius, piece.getY(), from.getZ() + Math.sin(yaw) * radius);
         double speed = 0.35 + level.random.nextDouble() * 0.45;
         piece.setDeltaMovement(Math.cos(yaw) * speed, 0.35 + level.random.nextDouble() * 0.55, Math.sin(yaw) * speed);
         piece.setYRot(level.random.nextFloat() * 360.0F);
@@ -103,7 +106,7 @@ public class GorePieceEntity extends Entity {
         this.setDeltaMovement(this.getDeltaMovement().add(0.0, -0.05, 0.0));
         this.move(MoverType.SELF, this.getDeltaMovement());
         this.setDeltaMovement(this.getDeltaMovement().scale(0.98));
-        if (this.onGround()) {
+        if (!this.level().isClientSide && this.onGround()) {
             this.entityData.set(STUCK, true);
             this.setDeltaMovement(Vec3.ZERO);
         } else if (!this.level().isClientSide && (this.tickCount > 80 || this.getY() < this.level().getMinBuildHeight() - 8)) {
@@ -160,7 +163,7 @@ public class GorePieceEntity extends Entity {
                 pose.mulPose(Axis.YP.rotationDegrees(entity.getYRot()));
                 pose.mulPose(Axis.XP.rotationDegrees(90.0F));
             }
-            pose.scale(0.11F, 0.11F, 0.11F);
+            pose.scale(-0.75F, -0.75F, 0.75F);
             part.render(pose, buffer.getBuffer(RenderType.entityCutoutNoCull(getTextureLocation(entity))), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }

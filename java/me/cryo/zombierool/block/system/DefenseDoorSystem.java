@@ -120,6 +120,7 @@ public class DefenseDoorSystem {
             if (level.isClientSide) return;
 
             if (state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER && state.getBlock() instanceof DefenseDoorBlock) {
+                if (state.getBlock() instanceof GlassDefenseDoorBlock && level instanceof ServerLevel server) { GlassDoorEvents.track(server, pos); GlassDoorEvents.track(server, pos.above()); }
                 int currentStage = state.getValue(DefenseDoorBlock.STAGE);
                 if (currentStage <= 0) return;
 
@@ -362,7 +363,7 @@ public class DefenseDoorSystem {
     }
 
     public static class DefenseDoorBlock extends BaseDefenseDoor {
-        public static final IntegerProperty STAGE = IntegerProperty.create("stage", 0, 5);
+        public static final IntegerProperty STAGE = IntegerProperty.create("stage", 0, 7);
         public static final BooleanProperty PERMANENTLY_OPEN = BooleanProperty.create("permanently_open");
         public static final int MAX_STAGE = 5;
 
@@ -429,7 +430,10 @@ public class DefenseDoorSystem {
             list.add(Component.translatable("block.zombierool.defense_door.tooltip.9").withStyle(ChatFormatting.RED));
         }
 
+        public boolean canRepair(BlockState state) { return !state.getValue(PERMANENTLY_OPEN) && state.getValue(STAGE) < MAX_STAGE; }
+
         public void updateStage(Level world, BlockPos pos, int newStage) {
+            newStage = Math.max(0, Math.min(MAX_STAGE, newStage));
             BlockState state = world.getBlockState(pos);
 
             if (state.getBlock() instanceof DefenseDoorBlock) {
@@ -482,7 +486,7 @@ public class DefenseDoorSystem {
                 BlockPos neighborPos = pos.relative(side);
                 BlockState neighborState = level.getBlockState(neighborPos);
 
-                if (neighborState.getBlock() instanceof DefenseDoorBlock && neighborState.getValue(FACING) == facing) {
+                if (neighborState.is(state.getBlock()) && neighborState.getValue(FACING) == facing) {
                     return neighborPos;
                 }
             }
@@ -623,6 +627,7 @@ public class DefenseDoorSystem {
             
             if (!(doorState.getBlock() instanceof BaseDefenseDoor)) return;
             
+            if (doorState.getBlock() instanceof GlassDefenseDoorBlock) return;
             if (doorState.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
                 return;
             }

@@ -11,16 +11,16 @@ public final class TacZReloadSpeed {
 
     public static double bonus(LivingEntity shooter, ItemStack gun) {
         if (shooter == null || gun == null || gun.isEmpty()) return 0.0;
-        double speedBonus = 0.0;
+        double durationMultiplier = 1.0;
         if (shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get())) {
-            speedBonus += 0.5;
+            durationMultiplier *= 0.5;
         }
         if (WeaponFacade.isTaczWeapon(gun) && WeaponFacade.isPackAPunched(gun)) {
             WeaponSystem.Definition def = WeaponFacade.getDefinition(gun);
             if (def != null && def.pap.reload_speed_mult > 0 && def.pap.reload_speed_mult < 1.0f) {
-                speedBonus += (1.0f - def.pap.reload_speed_mult);
+                durationMultiplier *= def.pap.reload_speed_mult;
             }
         }
-        return speedBonus;
+        return 1.0 / durationMultiplier - 1.0;
     }
 }

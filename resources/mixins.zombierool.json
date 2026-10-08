@@ -25,7 +25,9 @@
     "ShulkerBoxWeaponSlotMixin",
     "ContainerClickMixin",
     "MobPickupMixin",
-    "InventoryDropSlotMixin"
+    "InventoryDropSlotMixin",
+    "FoodDataMixin",
+    "PackAPunchFoilMixin"
   ],
   "client": [
     "EntityTurnMixin",
@@ -38,7 +40,11 @@
     "ItemInHandLayerMixin",
     "SoundManagerMixin",
     "SoundBufferLibraryMixin",
-    "DisconnectedScreenMixin"
+    "DisconnectedScreenMixin",
+    "TacZReloadSoundMixin",
+    "TacZPapSoundMixin",
+    "TacZPapGlintMixin",
+    "TacZPapAccelerationMixin"
   ],
   "minVersion": "0.8"
 }

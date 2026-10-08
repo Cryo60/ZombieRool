@@ -163,6 +163,7 @@ public class WaveManager {
         processedDeaths.clear();
         if (gameRunning) return;
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
+        me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
         MatchWorldJournal.restore(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
@@ -880,6 +881,7 @@ public class WaveManager {
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(false));
         clearAllActiveMobs(level);
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
+        me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
 
         int wavesSurvived = currentWave;
         if (recap) {

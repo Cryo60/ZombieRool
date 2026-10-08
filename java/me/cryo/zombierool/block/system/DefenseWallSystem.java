@@ -203,6 +203,17 @@ public class DefenseWallSystem {
             if (mimicBlockState == null) return ModelData.EMPTY;
             return ModelData.builder().with(MIMIC, mimicBlockState).build();
         }
+        @Override
+        public void onLoad() {
+            super.onLoad();
+            refreshClientModel();
+        }
+        private void refreshClientModel() {
+            if (level == null || !level.isClientSide) return;
+            requestModelDataUpdate();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            ensureDummyBlockEntities();
+        }
         public void ensureDummyBlockEntities() {
             ensureDummyBlockEntities(null);
         }
@@ -222,6 +233,7 @@ public class DefenseWallSystem {
                     BlockEntity dummy = target.getBlockEntity(dummyPos);
                     if (dummy != null && level.isClientSide) {
                         dummy.requestModelDataUpdate();
+                        level.sendBlockUpdated(dummyPos, dummyState, dummyState, 3);
                     }
                 }
             }
@@ -271,6 +283,7 @@ public class DefenseWallSystem {
         public void load(CompoundTag tag) {
             super.load(tag);
             this.mimicBlockState = MimicSystem.loadMimic(tag, this.level, "MimicBlock", false);
+            refreshClientModel();
         }
         @Override
         protected void saveAdditional(CompoundTag tag) {
@@ -645,6 +658,14 @@ public class DefenseWallSystem {
             super(DUMMY_BE.get(), pos, state);
         }
         @Override
+        public void onLoad() {
+            super.onLoad();
+            if (level != null && level.isClientSide) {
+                requestModelDataUpdate();
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            }
+        }
+        @Override
         public ModelData getModelData() {
             if (level == null || !(getBlockState().getBlock() instanceof DefenseWallDummyBlock dummy)) {
                 return ModelData.EMPTY;
@@ -668,10 +689,20 @@ public class DefenseWallSystem {
             if (event.getLevel() == null || !event.getLevel().isClientSide()) return;
             if (!(event.getChunk() instanceof LevelChunk chunk)) return;
             List<DefenseWallBlockEntity> walls = new ArrayList<>();
-            for (BlockEntity be : chunk.getBlockEntities().values()) {
-                if (be instanceof DefenseWallBlockEntity wall) walls.add(wall);
+            // A 3x3 wall may have its master in the chunk loaded before this one.
+            for (int cx = -1; cx <= 1; cx++) for (int cz = -1; cz <= 1; cz++) {
+                LevelChunk nearby = cx == 0 && cz == 0 ? chunk
+                        : chunk.getLevel().getChunkSource().getChunkNow(chunk.getPos().x + cx, chunk.getPos().z + cz);
+                if (nearby == null) continue;
+                for (BlockEntity be : new ArrayList<>(nearby.getBlockEntities().values())) {
+                    if (be instanceof DefenseWallBlockEntity wall) walls.add(wall);
+                }
             }
-            for (DefenseWallBlockEntity wall : walls) wall.ensureDummyBlockEntities(chunk);
+            for (DefenseWallBlockEntity wall : walls) {
+                wall.requestModelDataUpdate();
+                chunk.getLevel().sendBlockUpdated(wall.getBlockPos(),wall.getBlockState(),wall.getBlockState(),3);
+                wall.ensureDummyBlockEntities(chunk);
+            }
         }
     }
 }

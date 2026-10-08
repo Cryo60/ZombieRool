@@ -17,6 +17,10 @@ class TacZImpl {
     }
 
     public static class TacZEventHandlers {
+        private static void playLayeredFire(net.minecraft.server.level.ServerPlayer player, me.cryo.zombierool.core.system.WeaponSystem.Definition definition, boolean pap) {
+            java.util.LinkedHashSet<String> tracks=new java.util.LinkedHashSet<>();tracks.add(definition.sounds.fire);if(pap)tracks.add(definition.sounds.fire_pap);
+            for(String id:tracks){if(id==null||id.isBlank())continue;var sound=net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(id));if(sound!=null)player.level().playSound(null,player.getX(),player.getY(),player.getZ(),sound,net.minecraft.sounds.SoundSource.PLAYERS,5.0f,1.0f);}
+        }
         private static final java.util.Set<String> OVERRIDE_SOUND_WEAPONS = java.util.Set.of(
             "m40a3", "deagle", "kar98k", "barret", "fg42", "ppsh41", "intervention", "usp45", "m14", "m1garand", "gewehr43"
         );
@@ -24,6 +28,7 @@ class TacZImpl {
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onAmmoHitBlock(com.tacz.guns.api.event.server.AmmoHitBlockEvent event) {
             net.minecraft.world.level.block.state.BlockState hitState = event.getState();
+            if (!event.getAmmo().level().isClientSide) me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(event.getAmmo().level(), event.getHitResult().getBlockPos());
             if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock
                     || me.cryo.zombierool.block.system.DefenseWallSystem.bulletsPass(hitState)) {
                 event.setCanceled(true);
@@ -82,6 +87,7 @@ class TacZImpl {
             if (event.getLogicalSide().isClient()) return; 
 
             net.minecraft.world.entity.Entity target = event.getHurtEntity();
+            if (target instanceof me.cryo.zombierool.entity.CrawlerCorpse || (target instanceof me.cryo.zombierool.entity.CrawlerEntity crawler && !crawler.isAlive())) { if (event.isCancelable()) event.setCanceled(true); return; }
             net.minecraft.world.entity.LivingEntity attacker = event.getAttacker();
 
             if (target instanceof net.minecraft.world.entity.player.Player && attacker instanceof net.minecraft.world.entity.player.Player && target != attacker) {
@@ -238,13 +244,13 @@ class TacZImpl {
             }
 
             boolean willDie = living.getHealth() - totalDamage <= 0;
-            if (willDie) {
+            if (willDie && me.cryo.zombierool.core.manager.GoreManager.canDismember(def)) {
                 if (headshot && canExplodeHead && living.getRandom().nextFloat() <= headshotExplosionChance) {
                     me.cryo.zombierool.core.manager.GoreManager.triggerHeadExplosion(living);
-                } else if (!headshot) {
+                } else if (!headshot && me.cryo.zombierool.core.manager.GoreManager.canDismember(def)) {
                     me.cryo.zombierool.core.manager.GoreManager.tryDismemberLimb(living, totalDamage);
                 }
-            } else if (!headshot) {
+            } else if (!headshot && me.cryo.zombierool.core.manager.GoreManager.canDismember(def)) {
                 me.cryo.zombierool.core.manager.GoreManager.tryDismemberLimb(living, totalDamage);
             }
 
@@ -307,13 +313,7 @@ class TacZImpl {
                             }
                         }
 
-                        String soundId = isPap ? def.sounds.fire_pap : def.sounds.fire;
-                        if (soundId != null && !soundId.isEmpty()) {
-                            net.minecraft.sounds.SoundEvent sound = net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(soundId));
-                            if (sound != null) {
-                                sp.level().playSound(null, sp.getX(), sp.getY(), sp.getZ(), sound, net.minecraft.sounds.SoundSource.PLAYERS, 5.0f, 1.0f);
-                            }
-                        }
+                        playLayeredFire(sp, def, isPap);
 
                         float pitchRecoil = def.recoil.pitch;
                         float yawRecoil = def.recoil.yaw;
@@ -375,13 +375,7 @@ class TacZImpl {
                     } 
                     else {
                         if (OVERRIDE_SOUND_WEAPONS.contains(def.id.replace("zombierool:", ""))) {
-                            String soundId = isPap ? def.sounds.fire_pap : def.sounds.fire;
-                            if (soundId != null && !soundId.isEmpty()) {
-                                net.minecraft.sounds.SoundEvent sound = net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(soundId));
-                                if (sound != null) {
-                                    sp.level().playSound(null, sp.getX(), sp.getY(), sp.getZ(), sound, net.minecraft.sounds.SoundSource.PLAYERS, 5.0f, 1.0f);
-                                }
-                            }
+                            playLayeredFire(sp, def, isPap);
                         }
                     }
                 }
@@ -461,6 +455,20 @@ class TacZImpl {
         }
     }
 
+    public static boolean equipWallAttachment(Player player, net.minecraft.world.item.ItemStack purchase) {
+        var held=player.getMainHandItem();
+        var gun=com.tacz.guns.api.item.IGun.getIGunOrNull(held);
+        var attachment=com.tacz.guns.api.item.IAttachment.getIAttachmentOrNull(purchase);
+        if(gun==null || attachment==null || purchase.isEmpty() || gun.hasAttachmentLock(held) || !gun.allowAttachment(held,purchase))return false;
+        var type=attachment.getType(purchase);
+        if(!gun.allowAttachmentType(held,type))return false;
+        var previous=gun.getAttachment(held,type).copy();
+        var installed=purchase.copy();installed.setCount(1);gun.installAttachment(held,installed);purchase.shrink(1);
+        if(!previous.isEmpty() && !player.getInventory().add(previous))player.drop(previous,false);
+        if(!purchase.isEmpty() && !player.getInventory().add(purchase))player.drop(purchase,false);
+        player.getInventory().setChanged();player.inventoryMenu.broadcastChanges();
+        return true;
+    }
     public static void applyDefaultAttachments(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
         if (def != null && def.tacz != null && def.tacz.attachments != null) {
             net.minecraft.nbt.CompoundTag tag = stack.getOrCreateTag();

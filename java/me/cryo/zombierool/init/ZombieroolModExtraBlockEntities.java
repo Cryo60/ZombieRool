@@ -22,7 +22,7 @@ public class ZombieroolModExtraBlockEntities {
 	        // Seul le bloc valide est DEFENSE_DOOR. L'autre (OPENED) est un bloc de migration qui ne doit pas avoir de TileEntity
 	        BlockEntityType<DefenseDoorSystem.DefenseDoorBlockEntity> type = BlockEntityType.Builder.of(
 	                DefenseDoorSystem.DefenseDoorBlockEntity::new,
-	                ZRBlocks.DEFENSE_DOOR.get()
+	                ZRBlocks.DEFENSE_DOOR.get(), ZRBlocks.GLASS_DEFENSE_DOOR.get()
 	        ).build(null);
 	        
 	        event.register(ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, 

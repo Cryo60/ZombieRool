@@ -56,7 +56,7 @@ import java.util.function.Supplier;
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public final class MapTextures {
     public static final int SLOTS = 32;
-    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane"};
+    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane", "door"};
     public static final String[] SOUND_IDS = {
             "stone", "wood", "gravel", "grass", "metal", "glass", "wool", "sand",
             "snow", "mud", "deepslate", "netherrack", "amethyst", "slime", "honey",
@@ -88,15 +88,17 @@ public final class MapTextures {
         public final RegistryObject<Block> fence;
         public final RegistryObject<Block> wall;
         public final RegistryObject<Block> pane;
+        public final RegistryObject<Block> door;
 
         SlotBlocks(RegistryObject<Block> cube, RegistryObject<Block> stairs, RegistryObject<Block> slab,
-                   RegistryObject<Block> fence, RegistryObject<Block> wall, RegistryObject<Block> pane) {
+                   RegistryObject<Block> fence, RegistryObject<Block> wall, RegistryObject<Block> pane, RegistryObject<Block> door) {
             this.cube = cube;
             this.stairs = stairs;
             this.slab = slab;
             this.fence = fence;
             this.wall = wall;
             this.pane = pane;
+            this.door = door;
         }
 
         public RegistryObject<Block> get(int shape) {
@@ -106,6 +108,7 @@ public final class MapTextures {
                 case 3 -> fence;
                 case 4 -> wall;
                 case 5 -> pane;
+                case 6 -> door;
                 default -> cube;
             };
         }
@@ -121,7 +124,9 @@ public final class MapTextures {
             RegistryObject<Block> fence = register(name + "_fence", () -> new TexFence(slot));
             RegistryObject<Block> wall = register(name + "_wall", () -> new TexWall(slot));
             RegistryObject<Block> pane = register(name + "_pane", () -> new TexPane(slot));
-            BLOCKS[i] = new SlotBlocks(cube, stairs, slab, fence, wall, pane);
+            RegistryObject<Block> door = register(name + "_door", () -> new net.minecraft.world.level.block.DoorBlock(props(true).sound(SoundType.METAL), net.minecraft.world.level.block.state.properties.BlockSetType.IRON));
+            BLOCKS[i] = new SlotBlocks(cube, stairs, slab, fence, wall, pane, door);
+            ZRBlocks.CUTOUT_BLOCKS.add(door);
             ZRBlocks.CUTOUT_BLOCKS.add(pane);
             ZRBlocks.CUTOUT_BLOCKS.add(fence);
         }
@@ -226,13 +231,17 @@ public final class MapTextures {
         Path dir = worldRoot.resolve("zombierool").resolve("custom_blocks");
         try {
             Files.createDirectories(dir);
+            Files.createDirectories(dir.resolve("import"));
             Path readme = dir.resolve("readme.txt");
             if (!Files.exists(readme)) {
                 Files.writeString(readme, """
                         Drop PNG files here.
                         Name: lowercase letters, digits and _. Example: bricks.png
                         Optional faces: bricks_top.png, bricks_side.png, bricks_bottom.png
-                        Open the Texture Kit (deco tab, creative) to get the block, stairs, slab, fence, wall and pane.
+                        Open the Texture Kit (deco tab, creative) to get the block, stairs, slab, fence, wall, pane and iron door.
+                        Import PNG atlases from custom_blocks/import in the pixel editor.
+                        Formats: square face, 4x3 cube net, or 1x2 door (upper then lower).
+                        Textures update directly in the atlas, without reloading resource packs.
                         Pick a vanilla sound in that screen. It applies to every shape of that texture.
                         This folder ships with the map. Players who download it see the textures.
                         32 textures maximum.
@@ -316,7 +325,7 @@ public final class MapTextures {
     }
 
     private static boolean faceOfExisting(String id, Path dir, Set<String> used) {
-        for (String suffix : new String[]{"_top", "_side", "_bottom"}) {
+        for (String suffix : new String[]{"_top", "_side", "_bottom", "_upper", "_lower", "_north", "_south", "_east", "_west"}) {
             if (!id.endsWith(suffix)) continue;
             String base = id.substring(0, id.length() - suffix.length());
             if (used.contains(base) || Files.exists(dir.resolve(base + ".png"))) return true;
@@ -390,6 +399,7 @@ public final class MapTextures {
                     case "fence" -> 3;
                     case "wall" -> 4;
                     case "pane" -> 5;
+                    case "door" -> 6;
                     default -> 0;
                 };
             }
