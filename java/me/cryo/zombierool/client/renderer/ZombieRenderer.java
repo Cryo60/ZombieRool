@@ -157,6 +157,7 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
         @Override
         public void render(PoseStack pose, MultiBufferSource buffer, int light, ZombieEntity entity,
                            float limbSwing, float limbSwingAmount, float partial, float age, float netHeadYaw, float headPitch) {
+            if(me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod())return;
             ModelZombieArmsFront<ZombieEntity> model = this.getParentModel();
             var consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(FLESH));
             int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;

@@ -544,6 +544,8 @@ public class ServerEventHandler {
     }
 
     private static boolean shouldDespawn(Entity entity) {
+        // Internal encounters are not ordinary map mobs. Their own join guard rejects /summon.
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity chief && chief.isSpawnAuthorized()) return false;
         if (entity == null || !entity.isAlive() || entity.isRemoved()) {
             return false;
         }

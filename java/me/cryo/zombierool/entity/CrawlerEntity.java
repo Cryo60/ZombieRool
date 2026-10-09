@@ -57,6 +57,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
 
     public boolean willExplodeClient = false;
     private boolean gasReleased;
+    private int gasFuseTicks;
 
     public CrawlerEntity(PlayMessages.SpawnEntity packet, Level world) {
         this(ZombieroolModEntities.CRAWLER.get(), world);
@@ -95,7 +96,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             this.entityData.set(WILL_EXPLODE, true);
             this.level().broadcastEntityEvent(this, (byte) 61);
             this.headshotDeath = false;
-            this.deathTime = Math.max(this.deathTime, 44);
+            this.gasFuseTicks=44;
         } else {
             this.discard();
         }
@@ -119,6 +120,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("HalloweenSkin", this.entityData.get(HALLOWEEN_SKIN));
         compound.putBoolean("GasReleased",gasReleased);
+        compound.putInt("GasFuseTicks",gasFuseTicks);
         compound.putBoolean("GasPending",this.entityData.get(WILL_EXPLODE));
     }
 
@@ -127,6 +129,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
         super.readAdditionalSaveData(compound);
         this.entityData.set(HALLOWEEN_SKIN, compound.getBoolean("HalloweenSkin"));
         gasReleased=compound.getBoolean("GasReleased");
+        gasFuseTicks=Math.max(0,Math.min(45,compound.getInt("GasFuseTicks")));
         this.entityData.set(WILL_EXPLODE,!gasReleased && compound.getBoolean("GasPending"));
     }
 
@@ -206,6 +209,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+        if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
         if (this.isDeadOrDying() || this.deathTime > 0) return;
 
         if (!this.level().isClientSide) {
@@ -225,6 +229,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
 
     @Override
     public void die(DamageSource cause) {
+        if(this.dead)return;
         if (!this.level().isClientSide && this.level() instanceof ServerLevel sl) {
             boolean isGun = this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
             boolean isExplosive = this.getPersistentData().getBoolean("zombierool:explosive_damage") || cause.is(DamageTypes.EXPLOSION);
@@ -233,7 +238,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             boolean actualHeadshot = this.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
 
             // Body/environmental deaths may release gas; headshots and melee preserve a quiet corpse.
-            boolean shouldExplode = isExplosive || (!isMelee && !actualHeadshot && this.random.nextFloat() < 0.25f);
+            boolean shouldExplode = me.cryo.zombierool.gameplay.CrawlerGasPolicy.shouldExplode(isExplosive,isMelee,actualHeadshot,this.random.nextFloat());
 
             if (shouldExplode && WorldConfig.get(sl).isCrawlerGasExplosion()) {
                 this.entityData.set(WILL_EXPLODE, true);
@@ -271,7 +276,8 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
                 this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getRandomX(0.5), this.getY() + 0.2, this.getRandomZ(0.5), 0, 0.05, 0);
             }
             
-            if (this.deathTime >= 45) {
+            // Vanilla/gore corpse animation may clamp deathTime; the gas fuse is independent.
+            if (++gasFuseTicks >= 45 && !gasReleased) {
                 if (!this.level().isClientSide) {
                     ServerLevel serverLevel = (ServerLevel) this.level();
                     CrawlerGasManager.addGasCloud(serverLevel, this.position(), 240);

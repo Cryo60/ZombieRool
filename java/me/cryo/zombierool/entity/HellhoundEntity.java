@@ -138,6 +138,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
             @Override
             public void tick() {
+                if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(HellhoundEntity.this))return;
                 super.tick();
                 if (this.pathRecalcDelay-- <= 0) {
                     this.pathRecalcDelay = 10;
@@ -183,7 +184,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity target) {
-        if (!this.isRevealedClient()) return false;
+        if (!this.isRevealedClient() && !me.cryo.zombierool.block.system.MapDeviceSystem.isTrapDamage()) return false;
         
         boolean flag = target.hurt(this.damageSources().mobAttack(this), 1.0f);
         if (flag) {
@@ -289,6 +290,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+        if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
 
         if (!spawnInitialized && !this.level().isClientSide()) {
             spawnInitialized = true;

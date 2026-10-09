@@ -10,6 +10,7 @@ public class ZRClientConfig {
     public static final ForgeConfigSpec.BooleanValue ANIMATE_WEAPON_PREVIEW;
     public static final ForgeConfigSpec.BooleanValue HIDE_XP_NOTIFICATIONS;
     public static final ForgeConfigSpec.BooleanValue REDUCED_GORE;
+    public static final ForgeConfigSpec.BooleanValue SHOW_ENEMIES_REMAINING;
     public static final ForgeConfigSpec.BooleanValue ALLOW_NETWORK_REQUESTS;
     public static final ForgeConfigSpec.BooleanValue HAS_ANSWERED_NETWORK_PROMPT;
     public static final ForgeConfigSpec.BooleanValue DISCORD_PRESENCE;
@@ -22,7 +23,7 @@ public class ZRClientConfig {
     static {
         BUILDER.push("ZombieRool Client Settings");
         HALLOWEEN_MODE = BUILDER
-            .comment("Halloween mode control (Server Operators only):",
+            .comment("Halloween visual mode (client only):",
                      "AUTO - Active only during Halloween period (Oct 20 - Nov 5)",
                      "FORCE_ON - Always active regardless of date",
                      "FORCE_OFF - Always disabled, even during Halloween period")
@@ -40,6 +41,7 @@ public class ZRClientConfig {
             .comment("Hide XP gain notifications in Career Screen / HUD.")
             .translation("zombierool.config.hide_xp")
             .define("hideXpNotifications", false);
+        SHOW_ENEMIES_REMAINING = BUILDER.comment("Show remaining wave enemies beside the hotbar.").define("showEnemiesRemaining",false);
         REDUCED_GORE = BUILDER
             .comment("Drastically reduces blood, dismemberment and corpses.")
             .translation("zombierool.config.gore")
@@ -99,6 +101,8 @@ public class ZRClientConfig {
             SPEC.save();
         }
     }
+    public static boolean showEnemiesRemaining(){return SPEC.isLoaded()&&SHOW_ENEMIES_REMAINING.get();}
+    public static void setShowEnemiesRemaining(boolean show){SHOW_ENEMIES_REMAINING.set(show);SPEC.save();}
     public static boolean isGoreReduced() {
         return SPEC.isLoaded() && REDUCED_GORE.get();
     }

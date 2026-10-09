@@ -117,6 +117,7 @@ public class WaveManager {
         clientGameRunning = running;
     }
 
+    public static int remainingEnemies(){return !gameRunning?0:Math.max(0,isSpecialWave?specialWaveTotal.get()-specialWaveKilled.get():zombiesToKill);}
     public static boolean isSpecialWave() { return isSpecialWave; }
     public static boolean isPausedByPlayer() { return isPausedByPlayer; }
     public static boolean areCheatsUsed() { return cheatsUsed; }
@@ -164,6 +165,7 @@ public class WaveManager {
         if (gameRunning) return;
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
         me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
+        MrChiefEasterEgg.reset(level);
         MatchWorldJournal.restore(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
@@ -522,6 +524,7 @@ public class WaveManager {
         respawnAllSpectatorPlayers(level);
 
         LuaScriptManager.callEvent("OnWaveStart", currentWave);
+        MrChiefEasterEgg.onWaveStart(level,currentWave);
 
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
@@ -683,6 +686,7 @@ public class WaveManager {
         respawnAllSpectatorPlayers(level);
 
         LuaScriptManager.callEvent("OnWaveStart", currentWave);
+        MrChiefEasterEgg.onWaveStart(level,currentWave);
 
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
@@ -882,6 +886,7 @@ public class WaveManager {
         clearAllActiveMobs(level);
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
         me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
+        MrChiefEasterEgg.reset(level);
 
         int wavesSurvived = currentWave;
         if (recap) {

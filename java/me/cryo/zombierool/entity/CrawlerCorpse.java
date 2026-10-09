@@ -180,13 +180,11 @@ public class CrawlerCorpse extends Mob {
 
         @Override
         public ResourceLocation getTextureLocation(CrawlerCorpse entity) {
+            if(me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod())return new ResourceLocation("zombierool:textures/entities/halloween_crawler.png");
             String customSkin = entity.getCustomSkin();
             if (customSkin != null && !customSkin.isEmpty()) {
                 ResourceLocation dyn = DynamicResourceManager.getClientSkin("crawler", customSkin);
                 if (dyn != null) return dyn;
-            }
-            if (entity.hasHalloweenSkin()) {
-                return new ResourceLocation("zombierool:textures/entities/halloween_crawler.png");
             }
             return new ResourceLocation("zombierool:textures/entities/crawler.png");
         }

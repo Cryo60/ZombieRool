@@ -29,6 +29,8 @@ public class GlassDefenseDoorBlock extends DefenseDoorSystem.DefenseDoorBlock {
     @Override public boolean canRepair(BlockState state) { return state.getValue(BREACHED) && super.canRepair(state); }
     @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
     @Override public VoxelShape getCollisionShape(BlockState state,BlockGetter world,BlockPos pos,CollisionContext context) {
+        if (context instanceof net.minecraft.world.phys.shapes.EntityCollisionContext entityContext
+                && entityContext.getEntity() instanceof Player player && player.isCreative()) return Shapes.empty();
         if(state.getValue(STAGE)==0) return Shapes.empty();
         if(state.getValue(CENTERED))return state.getValue(FACING).getAxis()==net.minecraft.core.Direction.Axis.X?Block.box(6.5,0,0,9.5,16,16):Block.box(0,0,6.5,16,16,9.5);
         return switch(state.getValue(FACING)){case NORTH->Block.box(0,0,0,16,16,3);case SOUTH->Block.box(0,0,13,16,16,16);case EAST->Block.box(13,0,0,16,16,16);default->Block.box(0,0,0,3,16,16);};

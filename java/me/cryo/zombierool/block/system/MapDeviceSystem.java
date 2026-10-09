@@ -58,8 +58,9 @@ public final class MapDeviceSystem {
             () -> BlockEntityType.Builder.of(Device::new, TYPES.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
     private static final Map<Level, Set<Device>> LOADED = new WeakHashMap<>();
     private static final ThreadLocal<ServerPlayer> DAMAGE_OWNER = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> TRAP_DAMAGE = new ThreadLocal<>();
     public static ServerPlayer damageOwner() { return DAMAGE_OWNER.get(); }
-    public static boolean isTrapDamage() { return DAMAGE_OWNER.get() != null; }
+    public static boolean isTrapDamage() { return Boolean.TRUE.equals(TRAP_DAMAGE.get()); }
     private static void add(String id, Kind kind) {
         RegistryObject<Block> block = BLOCKS.register(id, () -> new DeviceBlock(kind));
         TYPES.put(kind, block);
@@ -117,7 +118,9 @@ public final class MapDeviceSystem {
         @Override public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.entity.Mob mob) { return kind == Kind.CONTROL || isEmitter(kind) ? net.minecraft.world.level.pathfinder.BlockPathTypes.OPEN : null; }
         @Override public BlockEntity newBlockEntity(BlockPos p, BlockState s) { return new Device(p,s); }
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l, BlockState s, BlockEntityType<T> t) {
-            return !l.isClientSide && t == DEVICE.get() ? (world,p,state,be) -> ((Device)be).tick() : null;
+            if(t!=DEVICE.get())return null;
+            return l.isClientSide ? (world,p,state,be) -> me.cryo.zombierool.client.ElectricTrapSounds.tickDevice((Device)be)
+                    : (world,p,state,be) -> ((Device)be).tick();
         }
         @Override public InteractionResult use(BlockState s, Level l, BlockPos p, Player player, InteractionHand hand, BlockHitResult hit) {
             if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
@@ -187,6 +190,12 @@ public final class MapDeviceSystem {
         @Override public void load(CompoundTag n) { super.load(n); if (n.contains("Device")) configure(n.getCompound("Device")); aimYaw=n.getFloat("AimYaw"); aimPitch=n.getFloat("AimPitch"); remaining=n.getInt("ActiveTicks"); cooldown=n.getInt("CooldownTicks"); linkedActive=n.getInt("LinkedActive"); linkedCooldown=n.getInt("LinkedCooldown"); linkedTrapKinds=n.getInt("LinkedTrapKinds"); powerAvailable=!n.contains("HasPower") || n.getBoolean("HasPower"); }
         @Override public CompoundTag getUpdateTag() { var n=saveWithoutMetadata(); n.putFloat("AimYaw",aimYaw); n.putFloat("AimPitch",aimPitch); n.putInt("ActiveTicks",remaining); n.putInt("CooldownTicks",cooldown); n.putInt("LinkedActive",linkedActive); n.putInt("LinkedCooldown",linkedCooldown); n.putInt("LinkedTrapKinds",linkedTrapKinds); n.putBoolean("HasPower",powerAvailable); return n; }
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
+        @Override public AABB getRenderBoundingBox() {
+            if(kind()==Kind.ELECTRIC && level!=null && getBlockState().getValue(DeviceBlock.ACTIVE))
+                return me.cryo.zombierool.gameplay.TrapContact.area(Vec3.atCenterOf(worldPosition),
+                        me.cryo.zombierool.gameplay.TrapContact.beamEnd(level,worldPosition,getBlockState().getValue(DeviceBlock.FACING),range)).inflate(.25);
+            return super.getRenderBoundingBox();
+        }
         public void syncRuntime() {
             if (!(level instanceof ServerLevel) || kind()!=Kind.CONTROL && kind()!=Kind.TURRET) return;
             linkedActive=linkedCooldown=linkedTrapKinds=0;
@@ -257,22 +266,24 @@ public final class MapDeviceSystem {
             Vec3 origin = Vec3.atCenterOf(worldPosition);
             Direction facing = getBlockState().getValue(DeviceBlock.FACING);
             Vec3 end = origin.add(Vec3.atLowerCornerOf(facing.getNormal()).scale(Math.min(range,16)));
-            AABB area = kind() == Kind.TURRET ? new AABB(worldPosition).inflate(range) : new AABB(origin,end).inflate(.65);
+            if(kind()!=Kind.TURRET)end=me.cryo.zombierool.gameplay.TrapContact.beamEnd(level,worldPosition,facing,range);
+            AABB area = kind() == Kind.TURRET ? new AABB(worldPosition).inflate(range) : me.cryo.zombierool.gameplay.TrapContact.area(origin,end);
             var targets = server.getEntitiesOfClass(AbstractZombieRoolEntity.class,area,e -> e.isAlive() && !e.isRemoved());
             targets.sort(Comparator.comparingDouble(e -> e.distanceToSqr(origin)));
             ServerPlayer purchaser = controller.owner == null ? null : server.getServer().getPlayerList().getPlayer(controller.owner);
             for (var target : targets) {
                 Vec3 aim = target.getBoundingBox().getCenter();
                 Vec3 start = origin.add(kind() == Kind.TURRET ? new Vec3(0,.28,0) : Vec3.atLowerCornerOf(facing.getNormal()).scale(.05));
-                if (!lineClear(start,aim,target) || target.distanceToSqr(origin)>range*range+1) continue;
+                if (kind()==Kind.TURRET && (!lineClear(start,aim,target) || target.distanceToSqr(origin)>range*range+1))continue;
+                if (kind()!=Kind.TURRET)me.cryo.zombierool.gameplay.TrapContact.slow(target);
                 if (kind() != Kind.TURRET && targetHits.containsKey(target.getUUID()) && server.getGameTime()-targetHits.get(target.getUUID())<10) continue;
                 if (kind() != Kind.TURRET) targetHits.put(target.getUUID(),server.getGameTime());
-                if (kind() != Kind.TURRET) target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN,20,5,false,false));
                 var old = DAMAGE_OWNER.get();
-                try { if (purchaser != null) DAMAGE_OWNER.set(purchaser); else DAMAGE_OWNER.remove();
+                var oldTrap=TRAP_DAMAGE.get();
+                try { TRAP_DAMAGE.set(true);if (purchaser != null) DAMAGE_OWNER.set(purchaser); else DAMAGE_OWNER.remove();
                     boolean hit = DamageManager.applyDamage(target,server.damageSources().generic(),damage);
                     if (hit) LuaScriptManager.callEvent("OnTrapHit",worldPosition.getX(),worldPosition.getY(),worldPosition.getZ(),target.getUUID().toString(),purchaser == null ? "" : purchaser.getUUID().toString(),damage,!target.isAlive());
-                } finally { if (old == null) DAMAGE_OWNER.remove(); else DAMAGE_OWNER.set(old); }
+                } finally { if (old == null) DAMAGE_OWNER.remove(); else DAMAGE_OWNER.set(old);if(oldTrap==null)TRAP_DAMAGE.remove();else TRAP_DAMAGE.set(oldTrap); }
                 if (kind() == Kind.TURRET) {
                     Vec3 direction=aim.subtract(start);
                     aimYaw=(float)Math.toDegrees(Math.atan2(-direction.x,-direction.z));
@@ -285,16 +296,15 @@ public final class MapDeviceSystem {
             if (kind() != Kind.TURRET) {
                 long now=server.getGameTime();
                 if (purchaser != null && purchaser.level() == server && area.intersects(purchaser.getBoundingBox())
-                        && lineClear(origin,purchaser.getBoundingBox().getCenter(),purchaser)) {
+                        && lineClear(origin,me.cryo.zombierool.gameplay.TrapContact.closest(origin,purchaser.getBoundingBox()),purchaser)) {
                     me.cryo.zombierool.gameplay.FixedPlayerDamage.trapContact(purchaser);
                 }
                 targetHits.entrySet().removeIf(e -> now-e.getValue()>20);
                 if(counter%2 != 0)return;
-                for (int i=1;i<=20;i++) { Vec3 v=origin.lerp(end,i/20.0);
-                    if(kind()==Kind.ELECTRIC) { double jitter=(i%2==0?.16:-.16); server.sendParticles(ParticleTypes.ELECTRIC_SPARK,v.x+jitter,v.y,v.z-jitter,4,.03,.03,.03,.01); }
-                    else { server.sendParticles(ParticleTypes.FLAME,v.x,v.y,v.z,5,.3,.18,.3,.035); if(i%4==0)server.sendParticles(ParticleTypes.SMOKE,v.x,v.y,v.z,2,.2,.2,.2,.02); }
+                if(kind()==Kind.FIRE)for (int i=1;i<=20;i++) { Vec3 v=origin.lerp(end,i/20.0);
+                    { server.sendParticles(ParticleTypes.FLAME,v.x,v.y,v.z,5,.3,.18,.3,.035); if(i%4==0)server.sendParticles(ParticleTypes.SMOKE,v.x,v.y,v.z,2,.2,.2,.2,.02); }
                 }
-                if (counter % 40 == 0) server.playSound(null,worldPosition,kind() == Kind.FIRE ? SoundEvents.FIRE_AMBIENT : SoundEvents.BEACON_AMBIENT,SoundSource.BLOCKS,.5f,1.5f);
+                if (kind()==Kind.FIRE && counter % 40 == 0) server.playSound(null,worldPosition,SoundEvents.FIRE_AMBIENT,SoundSource.BLOCKS,.5f,1.5f);
             }
         }
         public boolean emit() {

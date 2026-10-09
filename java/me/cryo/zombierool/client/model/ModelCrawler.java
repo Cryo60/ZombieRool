@@ -42,19 +42,19 @@ public class ModelCrawler<T extends LivingEntity> extends SpiderModel<T> {
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 
-        if (GoreManager.hasLostLimb(entity, GoreManager.Limb.HEAD)) {
+        if (!me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() && GoreManager.hasLostLimb(entity, GoreManager.Limb.HEAD)) {
             this.head.visible = false;
         } else {
             this.head.visible = true;
         }
 
-        if (GoreManager.hasLostLimb(entity, GoreManager.Limb.LEFT_ARM)) {
+        if (!me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() && GoreManager.hasLostLimb(entity, GoreManager.Limb.LEFT_ARM)) {
             this.leftFrontLeg.visible = false;
         } else {
             this.leftFrontLeg.visible = true;
         }
 
-        if (GoreManager.hasLostLimb(entity, GoreManager.Limb.RIGHT_ARM)) {
+        if (!me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() && GoreManager.hasLostLimb(entity, GoreManager.Limb.RIGHT_ARM)) {
             this.rightFrontLeg.visible = false;
         } else {
             this.rightFrontLeg.visible = true;

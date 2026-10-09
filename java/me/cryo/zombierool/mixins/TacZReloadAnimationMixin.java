@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(value = ObjectAnimationRunner.class, remap = false)
 public class TacZReloadAnimationMixin {
-    // TacZ 1.1.7 passes a delta in nanoseconds, shared by animation and sound keyframes.
+    // TacZ 1.1.7 and 1.1.8 pass a delta in nanoseconds, shared by animation and sound keyframes.
     @ModifyVariable(method = "updateProgress(J)V", at = @At("HEAD"), argsOnly = true, remap = false, require = 1)
     private long zombierool$speedReload(long deltaNs) {
         var player = Minecraft.getInstance().player;

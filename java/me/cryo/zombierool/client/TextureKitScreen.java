@@ -13,7 +13,10 @@ import java.util.List;
 public class TextureKitScreen extends AbstractContainerScreen<MapTextures.TextureKitMenu> {
     private final List<Integer> shown = new ArrayList<>();
     private int selected = -1;
-    private int scroll;
+    private static final int PAGE_SIZE=6;
+    private int page;
+    private boolean restored;
+    private String selectionWorld;
 
     public TextureKitScreen(MapTextures.TextureKitMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -30,22 +33,31 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
             String name = menu.names.get(i);
             if (name != null && !name.isEmpty()) shown.add(i);
         }
+        if(!restored){
+            selectionWorld=TextureKitSelection.worldKey();
+            selected=menu.names.indexOf(TextureKitSelection.texture(selectionWorld));
+            page=TextureKitSelection.page(selectionWorld);
+            restored=true;
+        }
         if (!shown.isEmpty() && (selected < 0 || !shown.contains(selected))) selected = shown.get(0);
+        page=Math.max(0,Math.min(page,pageCount()-1));
         addRenderableWidget(Button.builder(Component.translatable("message.zombierool.maptex.apply"), button -> MapTextureClient.requestRefresh())
                 .bounds(leftPos + imageWidth - 158, topPos + 6, 150, 16).build());
         if (MapTextureClient.worldRoot() != null) addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.texture_editor"), button -> minecraft.setScreen(new TexturePixelEditor(this, selected >= 0 ? menu.names.get(selected) : "new_texture"))).bounds(leftPos + 196, topPos + 158, 246, 20).build());
         if (shown.isEmpty()) return;
 
         int y = topPos + 58;
-        int first = Math.max(0, Math.min(scroll, Math.max(0, shown.size() - 6)));
-        scroll = first;
-        for (int row = 0; row < 6 && first + row < shown.size(); row++) {
+        int first=page*PAGE_SIZE;
+        for (int row = 0; row < PAGE_SIZE && first + row < shown.size(); row++) {
             int slot = shown.get(first + row);
             String name = menu.names.get(slot);
             Component label = Component.literal(slot == selected ? "> " + name : "  " + name);
             addRenderableWidget(Button.builder(label, button -> select(slot))
-                    .bounds(leftPos + 10, y + row * 20, 168, 18).build());
+                    .bounds(leftPos + 10, topPos+52+row*18, 168, 16).build());
         }
+        var previous=addRenderableWidget(Button.builder(Component.literal("<"),button->changePage(-1)).bounds(leftPos+10,topPos+164,24,16).build());
+        var next=addRenderableWidget(Button.builder(Component.literal(">"),button->changePage(1)).bounds(leftPos+154,topPos+164,24,16).build());
+        previous.active=page>0;next.active=page+1<pageCount();
         for (int shape = 0; shape < MapTextures.SHAPES.length; shape++) {
             int id = shape;
             int col = shape % 2;
@@ -77,8 +89,15 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
     private void select(int slot) {
         if (selected == slot) return;
         selected = slot;
+        remember();
         clearWidgets();
         init();
+    }
+    private int pageCount(){return Math.max(1,(shown.size()+PAGE_SIZE-1)/PAGE_SIZE);}
+    private void remember(){if(selectionWorld!=null && selected>=0 && selected<menu.names.size())TextureKitSelection.save(selectionWorld,menu.names.get(selected),page);}
+    private void changePage(int delta){
+        int next=Math.max(0,Math.min(pageCount()-1,page+delta));
+        if(next==page)return;page=next;remember();clearWidgets();init();
     }
 
     private void pickSound(int soundIndex) {
@@ -98,10 +117,8 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (shown.size() > 6 && mouseX < leftPos + 186) {
-            scroll = Math.max(0, Math.min(shown.size() - 6, scroll - (int) Math.signum(delta)));
-            clearWidgets();
-            init();
+        if (shown.size() > PAGE_SIZE && mouseX>=leftPos+8 && mouseX<leftPos+186 && mouseY>=topPos+48 && mouseY<topPos+182) {
+            changePage(-(int)Math.signum(delta));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, delta);
@@ -131,12 +148,14 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
         String texture = selected >= 0 && selected < menu.names.size() ? menu.names.get(selected) : "";
         graphics.drawString(font, Component.translatable("message.zombierool.maptex.status", texture, Component.translatable("sound.zombierool." + currentSound())), leftPos + 8, topPos + 24, 0xFFFFFF, false);
         graphics.drawString(font, Component.translatable("message.zombierool.maptex.texture"), leftPos + 12, topPos + 38, 0xE0B080, false);
+        graphics.drawCenteredString(font,Component.translatable("message.zombierool.maptex.page",page+1,pageCount()),leftPos+94,topPos+168,0xFFFFFF);
         graphics.drawString(font, Component.translatable("message.zombierool.maptex.shape"), leftPos + 196, topPos + 38, 0xE0B080, false);
         graphics.drawString(font, Component.translatable("message.zombierool.maptex.sound_for"), leftPos + 12, topPos + 196, 0xE0B080, false);
     }
 
     @Override
     public void removed() {
+        remember();
         super.removed();
         MapTextureClient.requestRefresh();
     }

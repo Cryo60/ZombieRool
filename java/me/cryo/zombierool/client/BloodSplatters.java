@@ -31,13 +31,18 @@ public final class BloodSplatters {
     private BloodSplatters() {}
 
     public static void add(Vec3 pos, Direction face, float speed, float red, float green, float blue) {
-        if (ZRClientConfig.isGoreReduced() || face == null || pos == null) return;
+        if (HalloweenManager.isHalloweenPeriod() || ZRClientConfig.isGoreReduced() || face == null || pos == null) return;
         float half = Mth.clamp(0.16F + speed * 1.6F, 0.14F, 1.25F);
         float yaw = (float) (Math.random() * Math.PI * 2.0);
         int layer = nextLayer++ & 7;
         int light = sampleLight(pos, face);
         SPLATS.add(new Splat(pos, face, half, yaw, layer, light, red, green, blue));
         while (SPLATS.size() > MAX) SPLATS.remove(0);
+    }
+
+    public static void clear() {
+        SPLATS.clear();
+        me.cryo.zombierool.client.particle.BloodStainParticle.expireAll();
     }
 
     public static void clientTick(boolean inWorld, boolean gameRunning) {
@@ -63,7 +68,7 @@ public final class BloodSplatters {
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || SPLATS.isEmpty()) return;
-        if (ZRClientConfig.isGoreReduced()) return;
+        if (HalloweenManager.isHalloweenPeriod() || ZRClientConfig.isGoreReduced()) return;
         PoseStack pose = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
         var buffers = Minecraft.getInstance().renderBuffers().bufferSource();

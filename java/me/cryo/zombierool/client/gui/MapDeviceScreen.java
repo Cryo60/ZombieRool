@@ -85,7 +85,7 @@ public final class MapDeviceScreen extends Screen {
     }
     private void save(boolean preview) { if(capture()) { NetworkHandler.INSTANCE.sendToServer(new MapDevicePackets.Save(packet.pos(),values.copy(),preview)); if(!preview)onClose(); } }
     @Override public void render(GuiGraphics g,int mx,int my,float partial) {
-        renderBackground(g);g.fill(left,top-4,left+panelWidth,height-2,0xED101821);g.drawString(font,title,left+8,top+4,0x77DDDD);
+        renderBackground(g);g.fill(left,top-4,left+panelWidth,height-2,0xED151515);g.drawString(font,title,left+8,top+4,0xF4F1E9);
         if(emitter())g.drawString(font,tr("effect"),left+8,top+20,0xA8B9C6);
         int i=0;for(var e:fields.entrySet()){String label=specs.stream().filter(s -> s[0].equals(e.getKey())).findFirst().get()[1];g.drawString(font,Component.translatable(label),left+8,top+66+(i++)*38,0xD4DFE8);}
         if(!emitter())g.drawString(font,tr("hint"),left+8,top+30,0xA8B9C6);

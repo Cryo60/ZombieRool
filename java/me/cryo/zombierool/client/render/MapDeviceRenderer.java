@@ -28,7 +28,12 @@ public final class MapDeviceRenderer implements BlockEntityRenderer<MapDeviceSys
         head=LayerDefinition.create(mesh,32,32).bakeRoot();
     }
     @SubscribeEvent public static void register(EntityRenderersEvent.RegisterRenderers e) {e.registerBlockEntityRenderer(MapDeviceSystem.DEVICE.get(),MapDeviceRenderer::new);}
+    @Override public boolean shouldRenderOffScreen(MapDeviceSystem.Device d){return d.kind()==MapDeviceSystem.Kind.ELECTRIC&&d.getBlockState().getValue(MapDeviceSystem.DeviceBlock.ACTIVE);}
     @Override public void render(MapDeviceSystem.Device d,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay) {
+        if(d.kind()==MapDeviceSystem.Kind.ELECTRIC){
+            if(d.getBlockState().getValue(MapDeviceSystem.DeviceBlock.ACTIVE))ElectricTrapLightning.render(d,pose,buffers);
+            return;
+        }
         if(d.kind()!=MapDeviceSystem.Kind.TURRET)return;
         pose.pushPose();pose.translate(.5,.78,.5);
         pose.mulPose(Axis.YP.rotationDegrees(d.aimYaw));pose.mulPose(Axis.XP.rotationDegrees(d.aimPitch));

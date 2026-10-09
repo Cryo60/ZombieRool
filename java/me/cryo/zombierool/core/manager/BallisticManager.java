@@ -262,7 +262,7 @@ public class BallisticManager {
                         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), new S2CDisplayHitmarkerPacket());
 
                         float kb = (def != null && isPap) ? def.pap.knockback_bonus : 0.0f;
-                        if (kb > 0.0f) {
+                        if (kb > 0.0f && !(livingTarget instanceof me.cryo.zombierool.entity.MrChiefEntity)) {
                             long now = level.getGameTime();
                             long lastKb = livingTarget.getPersistentData().getLong("zr_kb_cooldown");
                             if (now - lastKb > 20) {

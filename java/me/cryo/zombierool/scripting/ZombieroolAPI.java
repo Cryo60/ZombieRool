@@ -876,6 +876,8 @@ public class ZombieroolAPI {
         }
     }
 
+    public int getRemainingEnemies(){return WaveManager.remainingEnemies();}
+
     public int getCurrentWave() {
         return WaveManager.getCurrentWave();
     }
@@ -1204,5 +1206,20 @@ public class ZombieroolAPI {
         if("sound".equalsIgnoreCase(kind)){ForgeRegistries.SOUND_EVENTS.getKeys().forEach(id -> ids.add(id.toString()));ids.addAll(me.cryo.zombierool.core.manager.DynamicResourceManager.customAudioIds());}
         else { ForgeRegistries.PARTICLE_TYPES.getKeys().forEach(id -> ids.add(id.toString())); ids.addAll(me.cryo.zombierool.core.manager.DynamicResourceManager.customParticleIds()); }
         LuaTable out=new LuaTable();int i=1;for(String id:ids)out.set(i++,id);return out;
+    }
+    public String spawnMrChief(int x,int y,int z) {
+        var cat=me.cryo.zombierool.gameplay.MrChiefEasterEgg.spawn(level,new BlockPos(x,y,z),true);return cat==null?"":cat.getUUID().toString();
+    }
+    public void queueMrChief(){me.cryo.zombierool.gameplay.MrChiefEasterEgg.queueNextWave(level);}
+    public String spawnZombieCat(int x,int y,int z){return spawnMrChief(x,y,z);}
+    public LuaTable getZombieCatConfig(){return getMrChiefConfig();}
+    public void configureZombieCat(LuaTable settings){configureMrChief(settings);}
+    public LuaTable getMrChiefConfig() {
+        var n=me.cryo.zombierool.config.MrChiefConfig.get(level).save(new net.minecraft.nbt.CompoundTag());var out=new LuaTable();
+        out.set("enabled",LuaValue.valueOf(n.getBoolean("enabled")));out.set("chance",n.getInt("chance"));out.set("flee_seconds",n.getInt("flee_seconds"));out.set("reward",n.getInt("reward"));out.set("party_seconds",n.getInt("party_seconds"));out.set("flee_radius",n.getFloat("flee_radius"));return out;
+    }
+    public void configureMrChief(LuaTable config) {
+        var settings=me.cryo.zombierool.config.MrChiefConfig.get(level);var n=settings.save(new net.minecraft.nbt.CompoundTag());
+        for(String key:n.getAllKeys()){var v=config.get(key);if(v.isnil())continue;if(key.equals("enabled"))n.putBoolean(key,v.checkboolean());else if(key.equals("flee_radius"))n.putFloat(key,(float)v.checkdouble());else n.putInt(key,v.checkint());}settings.configure(n);
     }
 }

@@ -1,7 +1,7 @@
 // [main\java\me\cryo\zombierool\MapEventManager.java]
 package me.cryo.zombierool.gameplay;
 
-import me.cryo.zombierool.client.HalloweenManager;
+
 import me.cryo.zombierool.config.WorldConfig;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -119,12 +119,6 @@ public class MapEventManager {
 
             if (serverTickCounter % 100 == 0) {
                 checkMapMarkerFile(event.getServer());
-            }
-
-            if (serverHalloweenForced && !(me.cryo.zombierool.configuration.ZRClientConfig.getHalloweenMode() == me.cryo.zombierool.configuration.ZRClientConfig.HalloweenMode.FORCE_ON)) {
-                HalloweenManager.setForceHalloweenMode(true);
-            } else if (!serverHalloweenForced && (me.cryo.zombierool.configuration.ZRClientConfig.getHalloweenMode() == me.cryo.zombierool.configuration.ZRClientConfig.HalloweenMode.FORCE_ON)) {
-                HalloweenManager.setForceHalloweenMode(false);
             }
 
             if (serverSpookyActive) {

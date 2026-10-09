@@ -58,6 +58,11 @@ public class C2SSecretConsoleCommandPacket {
                     String result = LuaScriptManager.executeString(code);
                     sendLog(player, result);
                 } 
+                else if ((cmd.equals("cat") || cmd.equals("mrchief"))) {
+                    WaveManager.setCheatsUsed(true);
+                    me.cryo.zombierool.gameplay.MrChiefEasterEgg.queueNextWave(player);
+                    sendLog(player, net.minecraft.network.chat.Component.translatable("gui.zombierool.console.mr_chief_queued").getString());
+                }
                 else if (cmd.startsWith("points ")) {
                     WaveManager.setCheatsUsed(true); 
                     int amount = Integer.parseInt(cmd.substring(7).trim());

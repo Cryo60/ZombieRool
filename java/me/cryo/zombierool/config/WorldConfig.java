@@ -112,7 +112,7 @@ public class WorldConfig extends SavedData {
 
     private int meteoriteFragmentsFound = 0;
 
-    private Set<String> allowedMobs = new HashSet<>(Arrays.asList("zombierool:zombie", "zombierool:crawler", "zombierool:hellhound", "zombierool:white_knight", "zombierool:dummy"));
+    private Set<String> allowedMobs = new HashSet<>(Arrays.asList("zombierool:zombie", "zombierool:crawler", "zombierool:hellhound", "zombierool:white_knight", "zombierool:dummy", "zombierool:mr_chief"));
     private Set<String> allowedItems = new HashSet<>(Arrays.asList("minecraft:diamond"));
 
     public WorldConfig() {}
@@ -656,7 +656,7 @@ public class WorldConfig extends SavedData {
     }
 
     public void resetWhitelist() {
-        allowedMobs = new HashSet<>(Arrays.asList("zombierool:zombie", "zombierool:crawler", "zombierool:hellhound", "zombierool:white_knight", "zombierool:dummy"));
+        allowedMobs = new HashSet<>(Arrays.asList("zombierool:zombie", "zombierool:crawler", "zombierool:hellhound", "zombierool:white_knight", "zombierool:dummy", "zombierool:mr_chief"));
         allowedItems = new HashSet<>(Arrays.asList("minecraft:diamond"));
         setDirty();
     }
@@ -759,8 +759,8 @@ public class WorldConfig extends SavedData {
     public Set<String> getMysteryBoxTags() { return mysteryBoxTags; }
     public void setMysteryBoxTags(Set<String> set) { mysteryBoxTags = new HashSet<>(set); setDirty(); }
 
-    public Set<String> getAllowedMobs() { return allowedMobs; }
-    public void setAllowedMobs(Set<String> set) { allowedMobs = new HashSet<>(set); setDirty(); }
+    public Set<String> getAllowedMobs() { allowedMobs.add("zombierool:mr_chief"); return allowedMobs; }
+    public void setAllowedMobs(Set<String> set) { allowedMobs = new HashSet<>(set); allowedMobs.add("zombierool:mr_chief"); setDirty(); }
 
     public Set<String> getAllowedItems() { return allowedItems; }
     public void setAllowedItems(Set<String> set) { allowedItems = new HashSet<>(set); setDirty(); }

@@ -169,37 +169,6 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         this.baseSpeed = speed;
     }
 
-    private void updateHalloweenLight() {
-        if (!hasHalloweenLight()) return;
-        if (this.level().isClientSide) return;
-        lightUpdateTimer++;
-        if (lightUpdateTimer < 10) return;
-        lightUpdateTimer = 0;
-        
-        if (this.level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(
-                net.minecraft.core.particles.ParticleTypes.FLAME,
-                this.getX(),
-                this.getY() + this.getBbHeight() * 0.95,
-                this.getZ(),
-                1,
-                0.15, 0.1, 0.15,
-                0.001
-            );
-            if (this.random.nextFloat() < 0.3f) {
-                serverLevel.sendParticles(
-                    net.minecraft.core.particles.ParticleTypes.LAVA,
-                    this.getX(),
-                    this.getY() + this.getBbHeight() * 0.95,
-                    this.getZ(),
-                    1,
-                    0.1, 0.05, 0.1,
-                    0.0
-                );
-            }
-        }
-    }
-
     @Override
     protected void registerGoals() {
         super.registerGoals();
@@ -327,6 +296,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     @Override
     public void tick() {
         super.tick();
+        if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
         if (this.isDeadOrDying() || this.deathTime > 0) return;
 
         if (!this.level().isClientSide) {
@@ -378,7 +348,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 }
             }
 
-            updateHalloweenLight();
+
         }
     }
 }

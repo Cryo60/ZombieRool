@@ -349,6 +349,8 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public void tick() {
         super.tick();
+        if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
+        if(!this.level().isClientSide)me.cryo.zombierool.gameplay.TrapContact.tick(this);
         if (!this.level().isClientSide() && this.isAlive()) {
             List<Entity> nearby = this.level().getEntities(this, this.getBoundingBox().inflate(0.3D), 
                 e -> e instanceof AbstractZombieRoolEntity && e.isAlive());

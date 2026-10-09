@@ -38,7 +38,7 @@ public class EmissivePumpkinHeadLayer<T extends LivingEntity, M extends Humanoid
                       float ageInTicks, float netHeadYaw, float headPitch) {
         
         // Vérifier si l'entité porte un casque
-        ItemStack headItem = entity.getItemBySlot(EquipmentSlot.HEAD);
+        ItemStack headItem = me.cryo.zombierool.client.HalloweenManager.visualEquipment(entity,EquipmentSlot.HEAD);
         if (headItem.isEmpty()) {
             return;
         }

@@ -48,6 +48,7 @@ public class GoreManager {
         LEFT_FOREARM, RIGHT_FOREARM, LEFT_HAND, RIGHT_HAND, TORSO, SKULL
     }
     public static void onHit(LivingEntity entity, boolean dismember) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity.level().isClientSide) return;
         if (entity instanceof me.cryo.zombierool.entity.HellhoundEntity) {
             ((ServerLevel)entity.level()).sendParticles(ZombieroolModParticleTypes.BLOOD_STAIN.get(),entity.getX(),entity.getY()+entity.getBbHeight()*.5,entity.getZ(),3,.1,.1,.1,.1);
@@ -59,6 +60,7 @@ public class GoreManager {
         }
     }
     public static void onChar(LivingEntity entity) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (!(entity.level() instanceof ServerLevel server)) return;
         server.sendParticles(ParticleTypes.LARGE_SMOKE, entity.getX(), entity.getY() + entity.getBbHeight() * 0.5, entity.getZ(),
                 12, 0.25, 0.2, 0.25, 0.01);
@@ -66,6 +68,7 @@ public class GoreManager {
                 8, 0.2, 0.15, 0.2, 0.01);
     }
     public static void onDeath(LivingEntity entity, boolean dismember) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity.level().isClientSide) return;
         if (dismember && entity.level() instanceof ServerLevel server) {
             int skin = Math.floorMod(entity.getId(), 5);
@@ -82,6 +85,7 @@ public class GoreManager {
         }
     }
     public static void triggerHeadExplosion(LivingEntity entity) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity instanceof me.cryo.zombierool.entity.HellhoundEntity || entity.level().isClientSide || hasLostLimb(entity, Limb.HEAD)) return;
         setLimbLost(entity, Limb.HEAD, true);
         entity.level().playSound(null, entity.getX(), entity.getEyeY(), entity.getZ(),
@@ -100,6 +104,7 @@ public class GoreManager {
         syncGoreToClient(entity);
     }
     public static void triggerArmExplosion(LivingEntity entity, Limb arm) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity.level().isClientSide || hasLostLimb(entity, arm)) return;
         setLimbLost(entity, arm, true);
         entity.level().playSound(null, entity.getX(), entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
@@ -113,6 +118,7 @@ public class GoreManager {
         syncGoreToClient(entity);
     }
     public static void triggerLegsExplosion(LivingEntity entity) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity instanceof me.cryo.zombierool.entity.HellhoundEntity || entity.level().isClientSide || (hasLostLimb(entity, Limb.LEFT_LEG) && hasLostLimb(entity, Limb.RIGHT_LEG))) return;
         setLimbLost(entity, Limb.LEFT_LEG, true);
         setLimbLost(entity, Limb.RIGHT_LEG, true);
@@ -133,6 +139,7 @@ public class GoreManager {
         syncGoreToClient(entity);
     }
     public static void tryDismemberLimb(LivingEntity entity, float damageAmount) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (entity.level().isClientSide) return;
         if (entity instanceof me.cryo.zombierool.entity.HellhoundEntity || damageAmount < MIN_DAMAGE_FOR_DISMEMBERMENT) return;
         if (RANDOM.nextFloat() < CHANCE_TO_DISMEMBER) {
@@ -255,6 +262,7 @@ public class GoreManager {
         return !java.util.Set.of("m1911", "mauserc96", "mauser_c96", "c96").contains(id) && !"MELEE".equalsIgnoreCase(def.type);
     }
     private static void spray(LivingEntity entity, int mist, double y) {
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity) return;
         if (!(entity.level() instanceof ServerLevel server)) return;
         BloodDecalEntity.pool(server, entity.getX(), entity.getY(), entity.getZ(), 1);
         server.sendParticles(ZombieroolModParticleTypes.BLOOD_STAIN.get(),

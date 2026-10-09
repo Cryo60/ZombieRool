@@ -462,15 +462,16 @@ public class DefenseWallSystem {
         }
         @Override
         public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-            return DefenseWallSystem.occludesLight(state) ? 15 : 0;
+            // The visible wall is a thin sheet, not an opaque cube occupying this whole cell.
+            return 0;
         }
         @Override
         public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-            return !DefenseWallSystem.occludesLight(state);
+            return true;
         }
         @Override
         public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
-            return DefenseWallSystem.occludesLight(state) ? 0.2F : 1.0F;
+            return 1.0F;
         }
         @Override
         public BlockPathTypes getBlockPathType(BlockState state, BlockGetter world, BlockPos pos, @Nullable Mob mob) {
@@ -606,15 +607,16 @@ public class DefenseWallSystem {
         }
         @Override
         public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-            return DefenseWallSystem.occludesLight(state) ? 15 : 0;
+            // The visible wall is a thin sheet, not an opaque cube occupying this whole cell.
+            return 0;
         }
         @Override
         public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-            return !DefenseWallSystem.occludesLight(state);
+            return true;
         }
         @Override
         public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
-            return DefenseWallSystem.occludesLight(state) ? 0.2F : 1.0F;
+            return 1.0F;
         }
         @Override
         public BlockPathTypes getBlockPathType(BlockState state, BlockGetter world, BlockPos pos, @Nullable Mob mob) {

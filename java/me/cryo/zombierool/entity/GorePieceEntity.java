@@ -152,6 +152,10 @@ public class GorePieceEntity extends Entity {
         @Override
         public void render(GorePieceEntity entity, float yaw, float partial, PoseStack pose, MultiBufferSource buffer, int light) {
             if (ZRClientConfig.isGoreReduced()) return;
+            if(me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()){
+                pose.pushPose();pose.translate(0,.10,0);pose.mulPose(Axis.YP.rotationDegrees((entity.tickCount+partial)*17));
+                me.cryo.zombierool.client.CandyModel.render(pose,buffer,entity.getId());pose.popPose();return;
+            }
             ModelPart part = this.root.getChild(partName(entity.getKind()));
             pose.pushPose();
             float spin = (entity.tickCount + partial) * (entity.isStuck() ? 0.0F : 17.0F);

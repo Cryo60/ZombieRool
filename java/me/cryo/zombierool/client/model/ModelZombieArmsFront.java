@@ -52,7 +52,7 @@ public class ModelZombieArmsFront<T extends Mob> extends HumanoidModel<T> {
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 
         boolean isHalloween = HalloweenManager.isHalloweenPeriod();
-        boolean gore = !ZRClientConfig.isGoreReduced();
+        boolean gore = !ZRClientConfig.isGoreReduced() && !isHalloween;
         boolean corpse = gore && (entity.deathTime > 0 || !entity.isAlive());
 
         if (!isHalloween && !corpse) {

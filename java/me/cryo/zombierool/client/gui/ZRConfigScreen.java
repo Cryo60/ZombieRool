@@ -43,11 +43,9 @@ public class ZRConfigScreen extends Screen {
                 cycleHalloweenMode();
                 button.setMessage(getModeButtonText());
             })
-            .bounds(this.width / 2 - 155, this.height / 6 + 24, 310, 20)
+            .bounds(this.width / 2 - 155, Math.max(8, this.height / 2 - 118) + 24, 310, 20)
             .build();
-        if (this.minecraft.player != null && !this.minecraft.player.hasPermissions(2)) {
-            this.halloweenModeButton.active = false;
-        }
+
         this.addRenderableWidget(this.halloweenModeButton);
 
         this.preferZrButton = Button.builder(
@@ -57,7 +55,7 @@ public class ZRConfigScreen extends Screen {
                 button.setMessage(getPreferZrButtonText());
                 syncPrefs();
             })
-            .bounds(this.width / 2 - 155, this.height / 6 + 48, 310, 20)
+            .bounds(this.width / 2 - 155, Math.max(8, this.height / 2 - 118) + 48, 310, 20)
             .build();
         this.addRenderableWidget(this.preferZrButton);
 
@@ -68,7 +66,7 @@ public class ZRConfigScreen extends Screen {
                 button.setMessage(getAnimatePreviewButtonText());
                 syncPrefs();
             })
-            .bounds(this.width / 2 - 155, this.height / 6 + 72, 310, 20)
+            .bounds(this.width / 2 - 155, Math.max(8, this.height / 2 - 118) + 72, 310, 20)
             .build();
         this.addRenderableWidget(this.animatePreviewButton);
 
@@ -79,7 +77,7 @@ public class ZRConfigScreen extends Screen {
                 button.setMessage(getHideXpButtonText());
                 syncPrefs();
             })
-            .bounds(this.width / 2 - 155, this.height / 6 + 96, 310, 20)
+            .bounds(this.width / 2 - 155, Math.max(8, this.height / 2 - 118) + 96, 310, 20)
             .build();
         this.addRenderableWidget(this.hideXpButton);
 
@@ -90,17 +88,19 @@ public class ZRConfigScreen extends Screen {
                 button.setMessage(getGoreButtonText());
                 syncPrefs();
             })
-            .bounds(this.width / 2 - 155, this.height / 6 + 120, 310, 20)
+            .bounds(this.width / 2 - 155, Math.max(8, this.height / 2 - 118) + 120, 310, 20)
             .build();
         this.addRenderableWidget(this.goreButton);
 
+        this.addRenderableWidget(Button.builder(counterText(),button->{ZRClientConfig.setShowEnemiesRemaining(!ZRClientConfig.showEnemiesRemaining());button.setMessage(counterText());}).bounds(this.width/2-155,Math.max(8,this.height/2-118)+144,310,20).build());
         this.addRenderableWidget(Button.builder(
             Component.translatable("gui.done"),
             button -> this.minecraft.setScreen(parentScreen))
-            .bounds(this.width / 2 - 100, this.height / 6 + 192, 200, 20)
+            .bounds(this.width / 2 - 100, this.height - 26, 200, 20)
             .build());
     }
 
+    private Component counterText(){return Component.translatable("zombierool.config.enemies_remaining",Component.translatable(ZRClientConfig.showEnemiesRemaining()?"options.on":"options.off"));}
     private void cycleHalloweenMode() {
         switch (currentMode) {
             case AUTO -> currentMode = HalloweenMode.FORCE_ON;
@@ -112,6 +112,7 @@ public class ZRConfigScreen extends Screen {
 
     private void syncPrefs() {
         ZRClientConfig.setHalloweenMode(currentMode);
+        HalloweenManager.updateFromConfig();
         ZRClientConfig.setPreferZrWeapons(currentPreferZr);
         ZRClientConfig.setAnimateWeaponPreview(currentAnimatePreview);
         ZRClientConfig.setHideXpNotifications(currentHideXp);
@@ -124,37 +125,17 @@ public class ZRConfigScreen extends Screen {
     }
 
     private Component getModeButtonText() {
-        String modeText = switch (currentMode) {
-            case FORCE_ON -> "FORCE ON";
-            case FORCE_OFF -> "FORCE OFF";
-            default -> "AUTO";
-        };
-        String emoji = switch (currentMode) {
-            case FORCE_ON -> "🎃";
-            case FORCE_OFF -> "❌";
-            default -> "🔄";
-        };
-        return Component.literal("Halloween Mode: " + emoji + " " + modeText);
+        return Component.translatable("zombierool.config.halloween_mode",Component.translatable("zombierool.config.halloween."+currentMode.name().toLowerCase(java.util.Locale.ROOT)));
     }
-
     private Component getPreferZrButtonText() {
-        if (currentPreferZr) {
-            return Component.literal("Weapon Models: Classic ZR");
-        } else {
-            return Component.literal("Weapon Models: TacZ (If installed)");
-        }
+        return Component.translatable("zombierool.config.weapon_models",Component.translatable(currentPreferZr?"zombierool.config.weapon_models.classic":"zombierool.config.weapon_models.tacz"));
     }
-
     private Component getAnimatePreviewButtonText() {
-        String text = Component.translatable("gui.zombierool.config.animate_preview").getString() + (currentAnimatePreview ? "ON" : "OFF");
-        return Component.literal(text);
+        return Component.translatable("gui.zombierool.config.animate_preview").append(Component.translatable(currentAnimatePreview?"options.on":"options.off"));
     }
-
     private Component getHideXpButtonText() {
-        String text = Component.translatable("zombierool.config.hide_xp").getString() + ": " + (currentHideXp ? "ON" : "OFF");
-        return Component.literal(text);
+        return Component.translatable("zombierool.config.hide_xp").append(": ").append(Component.translatable(currentHideXp?"options.on":"options.off"));
     }
-
     private Component getGoreButtonText() {
         return Component.translatable("zombierool.config.gore",
                 Component.translatable(currentReducedGore ? "zombierool.config.gore.reduced" : "zombierool.config.gore.full"));
@@ -166,12 +147,12 @@ public class ZRConfigScreen extends Screen {
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
 
         boolean isNaturalPeriod = HalloweenManager.isNaturalHalloweenPeriod();
-        String periodStatus = "Natural Period: " + (isNaturalPeriod ? "ACTIVE (Oct 20 - Nov 5)" : "INACTIVE");
-        guiGraphics.drawCenteredString(this.font, periodStatus, this.width / 2, this.height / 6 + 148, isNaturalPeriod ? 0x55FF55 : 0xFF5555);
+        Component periodStatus = Component.translatable("zombierool.config.halloween.natural",Component.translatable(isNaturalPeriod?"zombierool.config.halloween.active":"zombierool.config.halloween.inactive"));
+        guiGraphics.drawCenteredString(this.font, periodStatus, this.width / 2, Math.max(8, this.height / 2 - 118) + 172, isNaturalPeriod ? 0x55FF55 : 0xFF5555);
 
         boolean isEffective = HalloweenManager.isHalloweenPeriod();
-        String effectiveStatus = "Effective Status: " + (isEffective ? "ACTIVE" : "DISABLED");
-        guiGraphics.drawCenteredString(this.font, effectiveStatus, this.width / 2, this.height / 6 + 164, isEffective ? 0x55FF55 : 0xFF5555);
+        Component effectiveStatus = Component.translatable("zombierool.config.halloween.effective",Component.translatable(isEffective?"zombierool.config.halloween.active":"zombierool.config.halloween.inactive"));
+        guiGraphics.drawCenteredString(this.font, effectiveStatus, this.width / 2, Math.max(8, this.height / 2 - 118) + 188, isEffective ? 0x55FF55 : 0xFF5555);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }

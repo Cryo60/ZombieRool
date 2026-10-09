@@ -116,7 +116,7 @@ public class BloodDecalEntity extends Entity {
 
         @Override
         public void render(BloodDecalEntity entity, float yaw, float partial, PoseStack pose, MultiBufferSource buffer, int light) {
-            if (ZRClientConfig.isGoreReduced()) return;
+            if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() || ZRClientConfig.isGoreReduced()) return;
             pose.pushPose();
             pose.translate(0.0, 0.008 + (entity.getId() & 5) * 0.0012, 0.0);
             pose.mulPose(Axis.YP.rotationDegrees(entity.getYRot()));

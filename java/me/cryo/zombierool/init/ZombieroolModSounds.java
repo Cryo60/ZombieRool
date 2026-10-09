@@ -15,7 +15,9 @@ import me.cryo.zombierool.ZombieroolMod;
 
 public class ZombieroolModSounds {
 	public static final DeferredRegister<SoundEvent> REGISTRY = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, ZombieroolMod.MODID);
+	public static final RegistryObject<SoundEvent> MR_CHIEF_PARTY = REGISTRY.register("mr_chief_party", () -> SoundEvent.createFixedRangeEvent(new ResourceLocation("zombierool", "mr_chief_party"),32));
 	public static final RegistryObject<SoundEvent> ZOMBIE_STEP = REGISTRY.register("zombie_step", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_step")));
+	public static final RegistryObject<SoundEvent> ELECTRIC_TRAP_LOOP = REGISTRY.register("electric_trap_loop", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "electric_trap_loop")));
 	public static final RegistryObject<SoundEvent> ZOMBIE_SOUNDTRACK = REGISTRY.register("zombie_soundtrack", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "zombie_soundtrack")));
 	public static final RegistryObject<SoundEvent> MENU_MUSIC = REGISTRY.register("menu_music", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "menu_music")));
 	public static final RegistryObject<SoundEvent> AMBIANT1 = REGISTRY.register("ambiant1", () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", "ambiant1")));

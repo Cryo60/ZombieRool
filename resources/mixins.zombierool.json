@@ -44,7 +44,14 @@
     "TacZReloadSoundMixin",
     "TacZPapSoundMixin",
     "TacZPapGlintMixin",
-    "TacZPapAccelerationMixin"
+    "TacZPapAccelerationMixin",
+    "MenuScreenMixin",
+    "MenuButtonMixin",
+    "MenuListMixin",
+    "MenuSliderMixin",
+    "HalloweenArmorMixin",
+    "HalloweenHeadMixin",
+    "FiestaEntityMixin"
   ],
   "minVersion": "0.8"
 }
