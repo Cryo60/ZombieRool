@@ -413,7 +413,12 @@ public final class MapTextures {
 
     public static class TexBlock extends Block {
         private final int slot;
-        TexBlock(int slot, boolean open) { super(props(open)); this.slot = slot; }
+        public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+        TexBlock(int slot, boolean open) { super(props(open)); this.slot = slot; registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH)); }
+        @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block,BlockState> builder) { builder.add(FACING); }
+        @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) { return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite()); }
+        @Override public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) { return state.setValue(FACING, rotation.rotate(state.getValue(FACING))); }
+        @Override public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) { return rotate(state, mirror.getRotation(state.getValue(FACING))); }
         @Override public SoundType getSoundType(BlockState state) { return soundOf(slot); }
     }
 

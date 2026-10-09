@@ -12,7 +12,7 @@
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-The latest **published** jar is **1.6.5**.
+The latest **published** jar is **1.6.5-hotfix1**.
 
 </div>
 

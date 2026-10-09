@@ -14,6 +14,7 @@
     "zombierool:zombie_pass",
     "zombierool:defense_wall",
     "zombierool:defense_wall_dummy",
-    "zombierool:glass_defense_door"
+    "zombierool:glass_defense_door",
+    "zombierool:trap_controller"
   ]
 }

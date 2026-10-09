@@ -111,8 +111,10 @@ public final class MapDeviceSystem {
             };
         }
         @Override public VoxelShape getCollisionShape(BlockState s, BlockGetter l, BlockPos p, CollisionContext c) {
-            return isEmitter(kind) ? Shapes.empty() : getShape(s,l,p,c);
+            return isEmitter(kind) || kind == Kind.CONTROL ? Shapes.empty() : getShape(s,l,p,c);
         }
+        @Override public boolean isPathfindable(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.level.pathfinder.PathComputationType type) { return kind == Kind.CONTROL || isEmitter(kind); }
+        @Override public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.entity.Mob mob) { return kind == Kind.CONTROL || isEmitter(kind) ? net.minecraft.world.level.pathfinder.BlockPathTypes.OPEN : null; }
         @Override public BlockEntity newBlockEntity(BlockPos p, BlockState s) { return new Device(p,s); }
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l, BlockState s, BlockEntityType<T> t) {
             return !l.isClientSide && t == DEVICE.get() ? (world,p,state,be) -> ((Device)be).tick() : null;
@@ -135,6 +137,18 @@ public final class MapDeviceSystem {
         public String lastError = "";
         public float aimYaw, aimPitch;
         public int linkedActive, linkedCooldown;
+        public int linkedTrapKinds;
+        public Component trapName() {
+            if (kind() != Kind.CONTROL) return getBlockState().getBlock().getName();
+            Component name = Component.empty();
+            for (Kind kind : new Kind[]{Kind.ELECTRIC, Kind.FIRE, Kind.TURRET}) {
+                if ((linkedTrapKinds & (1 << kind.ordinal())) != 0) {
+                    if (!name.getString().isEmpty()) name = name.copy().append(" / ");
+                    name = name.copy().append(TYPES.get(kind).get().getName());
+                }
+            }
+            return linkedTrapKinds == 0 ? getBlockState().getBlock().getName() : name;
+        }
         public boolean powerAvailable = true;
         private String lastRuntimeState = "";
         private final Map<UUID,Long> targetHits = new HashMap<>();
@@ -170,17 +184,18 @@ public final class MapDeviceSystem {
         private static int clamp(int v,int lo,int hi) { return Math.max(lo,Math.min(hi,v)); }
         private static float finite(float v,float lo,float hi) { return Float.isFinite(v) ? Math.max(lo,Math.min(hi,v)) : lo; }
         @Override protected void saveAdditional(CompoundTag n) { super.saveAdditional(n); n.put("Device",config()); }
-        @Override public void load(CompoundTag n) { super.load(n); if (n.contains("Device")) configure(n.getCompound("Device")); aimYaw=n.getFloat("AimYaw"); aimPitch=n.getFloat("AimPitch"); remaining=n.getInt("ActiveTicks"); cooldown=n.getInt("CooldownTicks"); linkedActive=n.getInt("LinkedActive"); linkedCooldown=n.getInt("LinkedCooldown"); powerAvailable=!n.contains("HasPower") || n.getBoolean("HasPower"); }
-        @Override public CompoundTag getUpdateTag() { var n=saveWithoutMetadata(); n.putFloat("AimYaw",aimYaw); n.putFloat("AimPitch",aimPitch); n.putInt("ActiveTicks",remaining); n.putInt("CooldownTicks",cooldown); n.putInt("LinkedActive",linkedActive); n.putInt("LinkedCooldown",linkedCooldown); n.putBoolean("HasPower",powerAvailable); return n; }
+        @Override public void load(CompoundTag n) { super.load(n); if (n.contains("Device")) configure(n.getCompound("Device")); aimYaw=n.getFloat("AimYaw"); aimPitch=n.getFloat("AimPitch"); remaining=n.getInt("ActiveTicks"); cooldown=n.getInt("CooldownTicks"); linkedActive=n.getInt("LinkedActive"); linkedCooldown=n.getInt("LinkedCooldown"); linkedTrapKinds=n.getInt("LinkedTrapKinds"); powerAvailable=!n.contains("HasPower") || n.getBoolean("HasPower"); }
+        @Override public CompoundTag getUpdateTag() { var n=saveWithoutMetadata(); n.putFloat("AimYaw",aimYaw); n.putFloat("AimPitch",aimPitch); n.putInt("ActiveTicks",remaining); n.putInt("CooldownTicks",cooldown); n.putInt("LinkedActive",linkedActive); n.putInt("LinkedCooldown",linkedCooldown); n.putInt("LinkedTrapKinds",linkedTrapKinds); n.putBoolean("HasPower",powerAvailable); return n; }
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
         public void syncRuntime() {
             if (!(level instanceof ServerLevel) || kind()!=Kind.CONTROL && kind()!=Kind.TURRET) return;
-            linkedActive=linkedCooldown=0;
+            linkedActive=linkedCooldown=linkedTrapKinds=0;
             if (!channel.isBlank()) for (Device d:devices(level)) if(d!=this && d.channel.equals(channel)) {
+                if (d.enabled && (d.kind()==Kind.ELECTRIC || d.kind()==Kind.FIRE || d.kind()==Kind.TURRET)) linkedTrapKinds |= 1 << d.kind().ordinal();
                 linkedActive=Math.max(linkedActive,d.remaining);linkedCooldown=Math.max(linkedCooldown,d.cooldown);
             }
             powerAvailable=hasPower();
-            String state=((remaining+19)/20)+":"+((cooldown+19)/20)+":"+((linkedActive+19)/20)+":"+((linkedCooldown+19)/20)+":"+powerAvailable;
+            String state=((remaining+19)/20)+":"+((cooldown+19)/20)+":"+((linkedActive+19)/20)+":"+((linkedCooldown+19)/20)+":"+powerAvailable+":"+linkedTrapKinds;
             if(!state.equals(lastRuntimeState)) {lastRuntimeState=state;level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         }
         public void setActive(boolean active) {

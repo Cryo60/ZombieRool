@@ -338,7 +338,7 @@ public class KeyInputHandler {
             else if(device.cooldown>0 || device.linkedCooldown>0) label=Component.translatable("message.zombierool.trap.cooldown_seconds",(Math.max(device.cooldown,device.linkedCooldown)+19)/20);
             else if(!device.enabled) label=Component.translatable("message.zombierool.trap.unavailable");
             else if(!device.powerAvailable) label=Component.translatable("message.zombierool.trap.no_power");
-            else label=Component.translatable("message.zombierool.trap.activate",actionKey,state.getBlock().getName(),device.cost);
+            else label=Component.translatable("message.zombierool.trap.activate",actionKey,device.trapName(),device.cost);
             return new InteractionCandidate(pos, InteractionType.TRAP, label.copy().withStyle(ChatFormatting.WHITE));
         }
         if (block instanceof me.cryo.zombierool.block.PowerSwitchBlock) {
