@@ -28,6 +28,7 @@ public class ZRClientSetup {
 	            ItemBlockRenderTypes.setRenderLayer(blockRegistryObject.get(), RenderType.cutout());
 	        }
 	        ItemBlockRenderTypes.setRenderLayer(ZRBlocks.DEFENSE_DOOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ZRBlocks.GLASS_DEFENSE_DOOR.get(), RenderType.translucent());
 
 	        for (Item item : ZRRegistry.GUN_ITEMS) {
 	            ItemProperties.register(item, new ResourceLocation("zombierool:empty"), (stack, level, entity, seed) -> {

@@ -15,7 +15,7 @@ import java.util.Optional;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NetworkHandler {
     private static boolean alreadyRegistered = false;
-    private static final String PROTOCOL_VERSION = "2";
+    private static final String PROTOCOL_VERSION = "3";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation("zombierool", "main"),
             () -> PROTOCOL_VERSION,
@@ -114,6 +114,8 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CBarrierStaticPacket.class, S2CBarrierStaticPacket::encode, S2CBarrierStaticPacket::decode, S2CBarrierStaticPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, C2SSyncAimPacket.class, C2SSyncAimPacket::encode, C2SSyncAimPacket::decode, C2SSyncAimPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
             INSTANCE.registerMessage(id++, C2SRestartLevelPacket.class, C2SRestartLevelPacket::encode, C2SRestartLevelPacket::decode, C2SRestartLevelPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, S2CMapTextureSlotPacket.class, S2CMapTextureSlotPacket::encode, S2CMapTextureSlotPacket::decode, S2CMapTextureSlotPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, C2SRefreshMapTexturesPacket.class, C2SRefreshMapTexturesPacket::encode, C2SRefreshMapTexturesPacket::decode, C2SRefreshMapTexturesPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
             me.cryo.zombierool.block.system.MapDevicePackets.register(INSTANCE, id);
         });
     }

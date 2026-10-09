@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 public final class MapTextureAtlasEvents {
     @SubscribeEvent public static void stitched(TextureStitchEvent.Post event){
         if(event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)){
+            GlassDoorTransparency.apply(event.getAtlas());
             Minecraft.getInstance().tell(()->{MapTextureClient.invalidate();MapTextureClient.rebuildIfChanged();});
         }
     }

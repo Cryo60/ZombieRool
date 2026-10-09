@@ -31,7 +31,7 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
             if (name != null && !name.isEmpty()) shown.add(i);
         }
         if (!shown.isEmpty() && (selected < 0 || !shown.contains(selected))) selected = shown.get(0);
-        addRenderableWidget(Button.builder(Component.translatable("message.zombierool.maptex.apply"), button -> MapTextureClient.rebuildIfChanged())
+        addRenderableWidget(Button.builder(Component.translatable("message.zombierool.maptex.apply"), button -> MapTextureClient.requestRefresh())
                 .bounds(leftPos + imageWidth - 158, topPos + 6, 150, 16).build());
         if (MapTextureClient.worldRoot() != null) addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.texture_editor"), button -> minecraft.setScreen(new TexturePixelEditor(this, selected >= 0 ? menu.names.get(selected) : "new_texture"))).bounds(leftPos + 196, topPos + 158, 246, 20).build());
         if (shown.isEmpty()) return;
@@ -138,7 +138,7 @@ public class TextureKitScreen extends AbstractContainerScreen<MapTextures.Textur
     @Override
     public void removed() {
         super.removed();
-        MapTextureClient.rebuildIfChanged();
+        MapTextureClient.requestRefresh();
     }
 
     @Override

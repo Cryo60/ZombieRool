@@ -112,7 +112,13 @@ public class MeleeAttackHandler {
 	    Vec3 lookVec = player.getLookAngle();
 	    Vec3 startVec = player.getEyePosition(1.0F);
 	    Vec3 endVec = startVec.add(lookVec.scale(ATTACK_RANGE));
-	    LivingEntity targetEntity = null;
+	    BlockHitResult glassHit=level.clip(new ClipContext(startVec,endVec,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
+        if(glassHit.getType()==HitResult.Type.BLOCK && level.getBlockState(glassHit.getBlockPos()).getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock){
+            me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(level,glassHit.getBlockPos());
+            playLocalSound(player,KNIFE_HIT_MISC_MATERIAL_SOUND,1.0f,1.0f);
+            PlayerVoiceManager.playMeleeAttackSound(player,level);COOLDOWN_MAP.put(player.getUUID(),currentTime);return;
+        }
+        LivingEntity targetEntity = null;
 
         AABB searchBox = player.getBoundingBox().expandTowards(lookVec.scale(ATTACK_RANGE)).inflate(1.0);
         List<LivingEntity> entitiesInArea = level.getEntitiesOfClass(LivingEntity.class, searchBox,

@@ -155,6 +155,8 @@ public final class MapTextures {
         return cached[slot] == null ? "" : cached[slot];
     }
 
+    public static void applyClientSlot(int slot,String name,String sound){if(slot<0||slot>=SLOTS)return;cached[slot]=sanitize(name);cachedSounds[slot]=isSound(sound)?sound:"stone";}
+
     public static String soundId(int slot) {
         if (slot < 0 || slot >= SLOTS || cachedSounds[slot] == null || cachedSounds[slot].isEmpty()) return "stone";
         return cachedSounds[slot];

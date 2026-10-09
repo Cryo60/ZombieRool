@@ -12,7 +12,8 @@
     "zombierool:universal_spawner",
     "zombierool:traitor",
     "zombierool:zombie_pass",
-	"zombierool:defense_wall",
-    "zombierool:defense_wall_dummy"
+    "zombierool:defense_wall",
+    "zombierool:defense_wall_dummy",
+    "zombierool:glass_defense_door"
   ]
 }

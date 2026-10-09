@@ -30,7 +30,8 @@ public class GlassDefenseDoorBlock extends DefenseDoorSystem.DefenseDoorBlock {
     @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
     @Override public VoxelShape getCollisionShape(BlockState state,BlockGetter world,BlockPos pos,CollisionContext context) {
         if(state.getValue(STAGE)==0) return Shapes.empty();
-        return super.getCollisionShape(state,world,pos,context);
+        if(state.getValue(CENTERED))return state.getValue(FACING).getAxis()==net.minecraft.core.Direction.Axis.X?Block.box(6.5,0,0,9.5,16,16):Block.box(0,0,6.5,16,16,9.5);
+        return switch(state.getValue(FACING)){case NORTH->Block.box(0,0,0,16,16,3);case SOUTH->Block.box(0,0,13,16,16,16);case EAST->Block.box(13,0,0,16,16,16);default->Block.box(0,0,0,3,16,16);};
     }
     @Override public void updateStage(Level world,BlockPos pos,int requested) {
         BlockState state=world.getBlockState(pos);
@@ -42,6 +43,7 @@ public class GlassDefenseDoorBlock extends DefenseDoorSystem.DefenseDoorBlock {
         int stage=Math.max(0,Math.min(breached?5:7,requested));
         if(stage==current)return;
         if(breached){
+            if(stage<current){var id=new net.minecraft.resources.ResourceLocation("zombierool","wood_snap_"+String.format(java.util.Locale.ROOT,"%02d",world.random.nextInt(6)));world.playSound(null,pos,net.minecraft.sounds.SoundEvent.createVariableRangeEvent(id),SoundSource.BLOCKS,1.0f,1.0f);}
             if(stage>current){Player player=world.getNearestPlayer(pos.getX(),pos.getY(),pos.getZ(),3,false);if(player!=null&&DefenseDoorSystem.RepairTracker.tryAddRepair(player))me.cryo.zombierool.gameplay.PointManager.modifyScore(player,10);}
             world.setBlock(pos,state.setValue(STAGE,stage),3);
             BlockState top=world.getBlockState(pos.above());if(top.is(this))world.setBlock(pos.above(),top.setValue(STAGE,stage).setValue(BREACHED,true),3);
