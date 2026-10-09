@@ -22,10 +22,16 @@ public final class FixedPlayerDamage {
         finally {if(previous==null)FORCED.remove();else FORCED.set(previous);}
     }
     public static void trapContact(Player player) {
+        if(player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get()))return;
         long now=player.level().getGameTime();var data=player.getPersistentData();
         if(data.contains("zr_last_trap_hit") && now-data.getLong("zr_last_trap_hit")<20)return;
         // One pulse across overlapping emitters, including armor-absorbed hits.
         data.putLong("zr_last_trap_hit",now);apply(player,1);
+    }
+    /** A grenade whose fuse expires while held must defeat armor and absorption. */
+    public static void heldGrenadeExplosion(Player player) {
+        if(player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get()))return;
+        apply(player,player.getMaxHealth()+player.getAbsorptionAmount(),player.damageSources().genericKill());
     }
     public static void selfExplosion(Player player) {
         if(player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get()))return;

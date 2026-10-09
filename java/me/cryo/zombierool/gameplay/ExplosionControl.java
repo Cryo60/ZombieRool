@@ -27,6 +27,10 @@ import java.util.List;
 public class ExplosionControl {
 
     public static void doCustomExplosion(Level level, Entity source, Vec3 pos, float baseDamage, float radius, float dmgMult, float selfDmgMult, float selfDmgCap, float kbStrength, String vfxType, String soundId, boolean isPap) {
+        doCustomExplosion(level,source,pos,baseDamage,radius,dmgMult,selfDmgMult,selfDmgCap,kbStrength,vfxType,soundId,isPap,false);
+    }
+
+    public static void doCustomExplosion(Level level, Entity source, Vec3 pos, float baseDamage, float radius, float dmgMult, float selfDmgMult, float selfDmgCap, float kbStrength, String vfxType, String soundId, boolean isPap, boolean heldInHand) {
         if (level.isClientSide) return;
 
         if (soundId != null && !soundId.isEmpty() && !soundId.equals("NONE")) {
@@ -51,7 +55,10 @@ public class ExplosionControl {
         String ownerUuid = source instanceof Player p ? p.getUUID().toString() : "";
         LuaScriptManager.callEvent("OnExplosion", ownerUuid, pos.x, pos.y, pos.z, (double)radius);
 
-        if (source instanceof Player owner && owner.level() == level && owner.distanceToSqr(pos) <= radius * radius) FixedPlayerDamage.selfExplosion(owner);
+        if (source instanceof Player owner && owner.level() == level && owner.distanceToSqr(pos) <= radius * radius) {
+            if (heldInHand) FixedPlayerDamage.heldGrenadeExplosion(owner);
+            else FixedPlayerDamage.selfExplosion(owner);
+        }
 
         for (Entity entity : entities) {
             if (entity instanceof Painting || entity instanceof ItemFrame) continue;

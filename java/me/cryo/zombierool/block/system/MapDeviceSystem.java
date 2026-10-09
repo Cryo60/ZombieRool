@@ -284,9 +284,9 @@ public final class MapDeviceSystem {
             }
             if (kind() != Kind.TURRET) {
                 long now=server.getGameTime();
-                for (Player p:server.getEntitiesOfClass(Player.class,area,p -> p.isAlive() && !p.isCreative() && !p.isSpectator())) {
-                    if(!lineClear(origin,p.getBoundingBox().getCenter(),p))continue;
-                    me.cryo.zombierool.gameplay.FixedPlayerDamage.trapContact(p);
+                if (purchaser != null && purchaser.level() == server && area.intersects(purchaser.getBoundingBox())
+                        && lineClear(origin,purchaser.getBoundingBox().getCenter(),purchaser)) {
+                    me.cryo.zombierool.gameplay.FixedPlayerDamage.trapContact(purchaser);
                 }
                 targetHits.entrySet().removeIf(e -> now-e.getValue()>20);
                 if(counter%2 != 0)return;
