@@ -98,7 +98,7 @@ public abstract class CustomMobMixin {
                 chosenTarget = nearestKnight;
             }
 
-            mob.setTarget(chosenTarget);
+            me.cryo.zombierool.hotfix.ReachablePlayerTargetGoal.chooseAndSet(mob, chosenTarget);
 
             // Sécurité additionnelle
             if (this.getTarget() instanceof Player currentTargetPlayer) {

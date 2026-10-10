@@ -445,6 +445,14 @@ public class ZombieroolAPI {
         } catch (NumberFormatException ignored) {}
     }
 
+    public void playGlobalSound(String id) { playGlobalSound(id,1,1); }
+    public void playGlobalSound(String id,float volume) { playGlobalSound(id,volume,1); }
+    public void playSoundForPlayer(String uuid,String id) { playSoundForPlayer(uuid,id,1,1); }
+    public void playSoundForPlayer(String uuid,String id,float volume) { playSoundForPlayer(uuid,id,volume,1); }
+    public void playDynamicSoundForPlayer(String uuid,String id) { playDynamicSoundForPlayer(uuid,id,1,1); }
+    public void playDynamicSoundForPlayer(String uuid,String id,float volume) { playDynamicSoundForPlayer(uuid,id,volume,1); }
+    public void playSound(double x,double y,double z,String id) { playSound(x,y,z,id,1,1); }
+    public void playSound(double x,double y,double z,String id,float volume) { playSound(x,y,z,id,volume,1); }
     public void playGlobalSound(String soundId, float volume, float pitch) {
         ResourceLocation rl = new ResourceLocation(soundId.contains(":") ? soundId : "zombierool:" + soundId);
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayGlobalSoundPacket(rl, volume, pitch));

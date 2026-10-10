@@ -167,6 +167,7 @@ public class WaveManager {
         me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
         MrChiefEasterEgg.reset(level);
         MatchWorldJournal.restore(level);
+        me.cryo.zombierool.hotfix.HotfixMatchConfig.begin(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
         gameRunning = true;
@@ -221,7 +222,7 @@ public class WaveManager {
         for (BlockPos pos : worldConfig.getPlayerSpawnerPositions()) {
             level.getChunkSource().getChunk(pos.getX() >> 4, pos.getZ() >> 4, true);
             if (level.getBlockEntity(pos) instanceof UniversalSpawnerSystem.UniversalSpawnerBlockEntity ube && 
-                ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER) {
+                ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER && ube.isActive(level)) {
                 playerSpawners.add(ube); 
             }
         }
@@ -265,6 +266,7 @@ public class WaveManager {
         }
 
         PlayerStatsManager.syncAll(level);
+        LuaScriptManager.loadScripts(level);
         LuaScriptManager.callEvent("OnGameStart");
 
         Set<BlockPos> mysteryBoxPositions = worldConfig.getMysteryBoxPositions();
@@ -481,7 +483,7 @@ public class WaveManager {
         if (pos == null) {
             for (BlockPos candidate : WorldConfig.get(level).getPlayerSpawnerPositions()) {
                 if (level.getBlockEntity(candidate) instanceof UniversalSpawnerSystem.UniversalSpawnerBlockEntity ube
-                        && ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER) {
+                        && ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER && ube.isActive(level)) {
                     pos = candidate.immutable();
                     PLAYER_RESPAWN_POINTS.put(player.getUUID(), pos);
                     break;
@@ -859,6 +861,7 @@ public class WaveManager {
     }
 
     private static void endMatch(ServerLevel level, Component message, boolean recap) {
+        me.cryo.zombierool.hotfix.HotfixMatchConfig.restore(level);
         if (!gameRunning) return;
         
         currentState = WaveState.OFF;
@@ -917,6 +920,7 @@ public class WaveManager {
         }
 
         MatchWorldJournal.restore(level);
+        me.cryo.zombierool.hotfix.HotfixMatchConfig.begin(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
         
@@ -940,6 +944,7 @@ public class WaveManager {
         if (overworld != null) {
             me.cryo.zombierool.block.system.BlindBuySystem.resetAllCabinets(overworld);
             MatchWorldJournal.restore(overworld);
+            me.cryo.zombierool.hotfix.HotfixMatchConfig.restore(overworld);
             if (matchWasRunning) {
                 MapPower.refresh(overworld);
                 resetPerkEgg(overworld);

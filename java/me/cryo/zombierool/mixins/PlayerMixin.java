@@ -50,7 +50,7 @@ public abstract class PlayerMixin {
 
         if (!player.level().isClientSide && player.level().getGameTime() - player.getPersistentData().getLong("zr_last_hurt_game_time") > ZombiePlayerHandler.REGEN_DELAY &&
             player.getHealth() < player.getMaxHealth()) {
-            player.heal(0.01F);
+            player.heal(0.015F);
         }
     }
 

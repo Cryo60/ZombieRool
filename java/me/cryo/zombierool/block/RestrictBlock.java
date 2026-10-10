@@ -46,14 +46,7 @@ public class RestrictBlock extends AbstractTechnicalBlock {
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-        Entity entity = null;
-        if (context instanceof EntityCollisionContext ec) {
-            entity = ec.getEntity();
-        }
-        if (entity == null || entity instanceof Projectile || (entity instanceof Player player && player.isCreative())) {
-            return Shapes.empty();
-        }
-        return Shapes.block();
+        return me.cryo.zombierool.hotfix.HotfixGameplay.restrictCollision(context);
     }
 
     @Override

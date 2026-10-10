@@ -163,4 +163,7 @@ public class ZRSandbagBlock extends HorizontalDirectionalBlock {
             super.onRemove(state, level, pos, newState, isMoving);
         }
     }
+    @Override public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos, net.minecraft.world.entity.Mob mob) {
+        return net.minecraft.world.level.pathfinder.BlockPathTypes.BLOCKED;
+    }
 }

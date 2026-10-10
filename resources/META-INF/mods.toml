@@ -4,7 +4,7 @@ license="MIT License"
 
 [[mods]]
 modId="zombierool"
-version="${mod_version}"
+version="1.6.6-hotfix1"
 displayName="ZombieRool"
 credits="Created using mod maker MCreator - https://mcreator.net/about"
 displayURL="https://mcreator.net"

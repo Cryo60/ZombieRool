@@ -170,8 +170,22 @@ public class UniversalSpawnerSystem {
         @Override
         public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
             super.setPlacedBy(level, pos, state, placer, stack);
-            if (!level.isClientSide && level.getBlockEntity(pos) instanceof UniversalSpawnerBlockEntity ube) ube.syncWithWorldConfig(false);
+            if (!level.isClientSide && level.getBlockEntity(pos) instanceof UniversalSpawnerBlockEntity ube) {
+                ube.syncWithWorldConfig(false); SpawnerRegistry.registerSpawner(level,ube);ube.tick();
+            }
         }
+
+        @Override
+        public ItemStack getCloneItemStack(BlockGetter level,BlockPos pos,BlockState state) {
+            ItemStack stack=new ItemStack(this);
+            if(level.getBlockEntity(pos) instanceof UniversalSpawnerBlockEntity be){
+                stack.getOrCreateTag().put("BlockEntityTag",be.saveWithoutMetadata());
+                CompoundTag blockState=new CompoundTag();blockState.putString("mob_type",be.getMobType().getSerializedName());
+                stack.getOrCreateTag().put("BlockStateTag",blockState);
+            }
+            return stack;
+        }
+        @Override public ItemStack getCloneItemStack(BlockState state,net.minecraft.world.phys.HitResult target,net.minecraft.world.level.BlockGetter level,BlockPos pos,Player player){return getCloneItemStack(level,pos,state);}
 
         @Override
         public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean isMoving) {
@@ -324,6 +338,7 @@ public class UniversalSpawnerSystem {
             this.startChannels = tag.contains("StartChannels") ? tag.getString("StartChannels") : String.valueOf(tag.getInt("StartChannel"));
             this.stopChannels = tag.contains("StopChannels") ? tag.getString("StopChannels") : String.valueOf(tag.getInt("StopChannel"));
             this.requirePower = tag.getBoolean("RequirePower"); this.spawnWeight = tag.contains("SpawnWeight") ? tag.getInt("SpawnWeight") : 1;
+            if(level!=null&&!level.isClientSide){SpawnerRegistry.registerSpawner(level,this);syncWithWorldConfig(false);setChanged();}
         }
 
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }

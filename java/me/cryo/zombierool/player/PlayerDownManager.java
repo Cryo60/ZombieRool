@@ -73,6 +73,7 @@ public class PlayerDownManager {
         scheduledVineBooms.clear();
         savedPlayerInventories.clear();
         lastKnownHandgun.clear();
+        me.cryo.zombierool.hotfix.HotfixDownReset.resetAll();
     }
 
     @SubscribeEvent
@@ -183,6 +184,9 @@ public class PlayerDownManager {
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        var uuid=event.getEntity().getUUID();
+        playersDown.remove(uuid);soloQuickRevivePlayers.remove(uuid);savedPlayerInventories.remove(uuid);lastKnownHandgun.remove(uuid);
+        me.cryo.zombierool.hotfix.HotfixDownReset.resetPlayer(event.getEntity());
         if (event.getEntity() instanceof ServerPlayer player) {
             ServerLevel level = player.serverLevel();
             
@@ -492,7 +496,7 @@ public class PlayerDownManager {
                 int slownessLevel = WorldConfig.get((ServerLevel) player.level()).isAllowDownMovement() ? 3 : 250;
                 player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 2, slownessLevel, false, false, false));
                 player.setPose(Pose.SWIMMING);
-                // Le paquet réseau a été retiré d'ici pour éviter le flood du serveur
+                // Le paquet rÃ©seau a Ã©tÃ© retirÃ© d'ici pour Ã©viter le flood du serveur
             }
         }
     }

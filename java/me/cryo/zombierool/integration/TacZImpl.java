@@ -27,6 +27,7 @@ class TacZImpl {
 
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onAmmoHitBlock(com.tacz.guns.api.event.server.AmmoHitBlockEvent event) {
+            if (event.getState().getBlock() instanceof me.cryo.zombierool.block.RestrictBlock) {event.setCanceled(true);return;}
             net.minecraft.world.level.block.state.BlockState hitState = event.getState();
             if (!event.getAmmo().level().isClientSide) me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(event.getAmmo().level(), event.getHitResult().getBlockPos());
             if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock

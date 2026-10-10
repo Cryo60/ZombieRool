@@ -15,15 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class HopperBlockEntityMixin {
     @Inject(method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/entity/item/ItemEntity;)Z", at = @At("HEAD"), cancellable = true)
     private static void zombierool$blockPrivateDrops(Container container, ItemEntity item, CallbackInfoReturnable<Boolean> cir) {
-        if (item.getPersistentData().hasUUID("zr_drop_owner")) {
-            cir.setReturnValue(false);
-        }
     }
 
     @Inject(method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/Container;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Direction;)Lnet/minecraft/world/item/ItemStack;", at = @At("HEAD"), cancellable = true)
     private static void zombierool$blockMapWeapons(Container source, Container destination, ItemStack stack, Direction direction, CallbackInfoReturnable<ItemStack> cir) {
-        if (ContainerWeaponGuard.blocks(destination, stack)) {
-            cir.setReturnValue(stack);
-        }
     }
 }

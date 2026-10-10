@@ -224,7 +224,7 @@ public class ServerEventHandler {
     }
 
     private static boolean isMatchInteractionLocked(Player player) {
-        return WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator();
+        return false;
     }
 
     private static boolean blockVanillaInteraction(Player player, Block block) {

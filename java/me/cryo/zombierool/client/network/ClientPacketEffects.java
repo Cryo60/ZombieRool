@@ -76,6 +76,7 @@ public final class ClientPacketEffects {
             return;
         }
 
+        soundLocation = me.cryo.zombierool.hotfix.HotfixGameplay.resolveLegacySound(soundLocation);
         SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(soundLocation);
         if (sound == null) {
             sound = SoundEvent.createVariableRangeEvent(soundLocation);
@@ -97,6 +98,7 @@ public final class ClientPacketEffects {
     }
 
     public static void playPositionalSound(ResourceLocation soundLocation, BlockPos pos, float volume, float pitch) {
+        soundLocation = me.cryo.zombierool.hotfix.HotfixGameplay.resolveLegacySound(soundLocation);
         SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(soundLocation);
         if (sound == null) {
             sound = SoundEvent.createVariableRangeEvent(soundLocation);

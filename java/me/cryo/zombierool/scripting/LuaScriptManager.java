@@ -46,7 +46,7 @@ public class LuaScriptManager {
 
         try {
             globals = JsePlatform.standardGlobals();
-            globals.set("ZombieroolAPI", CoerceJavaToLua.coerce(new ZombieroolAPI(level)));
+            globals.set("ZombieroolAPI", LegacySoundBindings.wrap(new ZombieroolAPI(level)));
 
             File scriptDir = new File(level.getServer().getWorldPath(LevelResource.ROOT).toFile(), "zr_scripts");
             if (!scriptDir.exists()) {
@@ -164,11 +164,11 @@ public class LuaScriptManager {
                 fw.close();
             }
 
-            File[] scriptFiles = scriptDir.listFiles((dir, name) -> name.endsWith(".lua"));
+            File[] scriptFiles = me.cryo.zombierool.hotfix.HotfixGameplay.sortScripts(scriptDir.listFiles((dir, name) -> name.endsWith(".lua")));
             if (scriptFiles != null) {
                 for (File script : scriptFiles) {
                     try {
-                        globals.loadfile(script.getAbsolutePath()).call();
+                        me.cryo.zombierool.hotfix.HotfixGameplay.loadScript(globals,script.getAbsolutePath()).call();
                         System.out.println("[ZombieRool Lua] Successfully loaded script: " + script.getName());
                     } catch (Throwable t) {
                         System.err.println("[ZombieRool Lua] Error loading " + script.getName() + ": " + t.getMessage());

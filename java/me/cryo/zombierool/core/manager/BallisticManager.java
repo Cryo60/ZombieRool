@@ -136,7 +136,7 @@ public class BallisticManager {
             safetyLoop++;
             Vec3 segmentEnd = currentTraceStart.add(currentDir.scale(remainingRange));
             
-            BlockHitResult blockHit = level.clip(new ClipContext(currentTraceStart, segmentEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+            BlockHitResult blockHit = me.cryo.zombierool.hotfix.HotfixGameplay.clip(level, new ClipContext(currentTraceStart, segmentEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
             if (blockHit.getType() == HitResult.Type.MISS) {
                 break;
             }
@@ -409,7 +409,7 @@ public class BallisticManager {
         Vec3 lookVec = shooter.getViewVector(1.0F);
         Vec3 endPos = eyePos.add(lookVec.scale(range));
 
-        BlockHitResult blockHit = shooter.level().clip(new ClipContext(eyePos, endPos, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
+        BlockHitResult blockHit = me.cryo.zombierool.hotfix.HotfixGameplay.clip(shooter.level(), new ClipContext(eyePos, endPos, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
         if (blockHit.getType() == HitResult.Type.BLOCK) {
             endPos = blockHit.getLocation();
         }

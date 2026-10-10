@@ -92,6 +92,15 @@ public class MimicSystem {
             }
         } catch (Exception ignored) {}
 
+        if(blockToCopy instanceof DoorBlock&&player.level().getBlockEntity(hit.getBlockPos()) instanceof IMimicContainer container){
+            BlockPos clicked=hit.getBlockPos();BlockPos pair=player.level().getBlockEntity(clicked.below()) instanceof IMimicContainer?clicked.below():clicked.above();
+            if(player.level().getBlockEntity(pair) instanceof IMimicContainer partner){
+                boolean upper=pair.getY()<clicked.getY();
+                BlockState lower=placementState.setValue(DoorBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+                partner.setMimic(lower.setValue(DoorBlock.HALF,upper?net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER:net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+                placementState=lower.setValue(DoorBlock.HALF,upper?net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER:net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+            }
+        }
         return placementState;
     }
 
@@ -317,6 +326,13 @@ public class MimicSystem {
 
 	public static BlockState getConnectedState(BlockState state, BlockGetter level, BlockPos pos) {
 	    Block block = state.getBlock();
+        if(block instanceof DoorBlock){
+            BlockState neighbor=getMimicAt(level,pos.below());
+            boolean upper=neighbor!=null&&neighbor.getBlock()==block&&neighbor.hasProperty(DoorBlock.HALF)&&neighbor.getValue(DoorBlock.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER;
+            if(upper){state=state.setValue(DoorBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER).setValue(DoorBlock.FACING,neighbor.getValue(DoorBlock.FACING)).setValue(DoorBlock.HINGE,neighbor.getValue(DoorBlock.HINGE)).setValue(DoorBlock.OPEN,neighbor.getValue(DoorBlock.OPEN));}
+            else state=state.setValue(DoorBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+            return state;
+        }
 	    if (block instanceof WallBlock) {
 	        boolean n = connectsTo(state, level, pos, Direction.NORTH);
 	        boolean e = connectsTo(state, level, pos, Direction.EAST);
@@ -375,6 +391,11 @@ public class MimicSystem {
 
 	    return state;
 	}
+
+    private static BlockState getMimicAt(BlockGetter level,BlockPos pos){
+        if(level.getBlockEntity(pos) instanceof IMimicContainer c)return c.getMimic();
+        return level.getBlockState(pos);
+    }
 
 	private static boolean connectsToSandbag(BlockGetter level, BlockPos pos) {
 	    BlockState state = level.getBlockState(pos);
