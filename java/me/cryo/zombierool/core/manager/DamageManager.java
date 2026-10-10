@@ -182,7 +182,8 @@ public class DamageManager {
         }
 
         if (!isValidTarget(target)) return;
-        Entity attackerEntity = source.getEntity();
+        Entity attackerEntity = me.cryo.zombierool.block.system.MapDeviceSystem.damageOwner() != null
+                ? me.cryo.zombierool.block.system.MapDeviceSystem.damageOwner() : source.getEntity();
         if (!(attackerEntity instanceof ServerPlayer player)) return;
 
         if (target.getPersistentData().getBoolean("SkipFlamePoints")) return;
@@ -202,7 +203,8 @@ public class DamageManager {
 
         if (!isValidTarget(target)) return;
 
-        Entity attackerEntity = source.getEntity();
+        Entity attackerEntity = me.cryo.zombierool.block.system.MapDeviceSystem.damageOwner() != null
+                ? me.cryo.zombierool.block.system.MapDeviceSystem.damageOwner() : source.getEntity();
 
         if (attackerEntity instanceof ServerPlayer player) {
             boolean isGunDamage = target.getPersistentData().getBoolean(GUN_DAMAGE_TAG);
@@ -237,7 +239,7 @@ public class DamageManager {
                 }
             }
 
-            if (isGunDamage) {
+            if (isGunDamage && GoreManager.canDismember(event.getSource())) {
                 if (!target.getPersistentData().getBoolean("zombierool:no_gore")) {
                     if (!wasHeadshotHit) {
                         String zone = target.getPersistentData().getString(HIT_ZONE_TAG);

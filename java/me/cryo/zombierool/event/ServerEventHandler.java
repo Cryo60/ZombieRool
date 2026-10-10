@@ -224,7 +224,7 @@ public class ServerEventHandler {
     }
 
     private static boolean isMatchInteractionLocked(Player player) {
-        return WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator();
+        return false;
     }
 
     private static boolean blockVanillaInteraction(Player player, Block block) {
@@ -233,7 +233,7 @@ public class ServerEventHandler {
         if (id == null || !"minecraft".equals(id.getNamespace())) return false;
         String path = id.getPath();
         return path.contains("door") || path.contains("fence_gate")
-                || path.contains("chest") || path.contains("shulker") || path.contains("barrel")
+
                 || path.contains("hopper") || path.contains("furnace") || path.contains("smoker")
                 || path.contains("dispenser") || path.contains("dropper")
                 || path.contains("note_block") || path.contains("jukebox")
@@ -544,6 +544,8 @@ public class ServerEventHandler {
     }
 
     private static boolean shouldDespawn(Entity entity) {
+        // Internal encounters are not ordinary map mobs. Their own join guard rejects /summon.
+        if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity chief && chief.isSpawnAuthorized()) return false;
         if (entity == null || !entity.isAlive() || entity.isRemoved()) {
             return false;
         }

@@ -48,7 +48,7 @@ public abstract class PlayerMixin {
             player.experienceProgress = 0;
         }
 
-        if (player.tickCount - ZombiePlayerHandler.getLastHurtTimestamp() > ZombiePlayerHandler.REGEN_DELAY &&
+        if (!player.level().isClientSide && player.level().getGameTime() - player.getPersistentData().getLong("zr_last_hurt_game_time") > ZombiePlayerHandler.REGEN_DELAY &&
             player.getHealth() < player.getMaxHealth()) {
             player.heal(0.01F);
         }

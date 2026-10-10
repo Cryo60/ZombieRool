@@ -164,11 +164,11 @@ public class LuaScriptManager {
                 fw.close();
             }
 
-            File[] scriptFiles = scriptDir.listFiles((dir, name) -> name.endsWith(".lua"));
+            File[] scriptFiles = me.cryo.zombierool.gameplay.CompatibilityFixes.sortScripts(scriptDir.listFiles((dir, name) -> name.endsWith(".lua")));
             if (scriptFiles != null) {
                 for (File script : scriptFiles) {
                     try {
-                        globals.loadfile(script.getAbsolutePath()).call();
+                        me.cryo.zombierool.gameplay.CompatibilityFixes.loadScript(globals,script.getAbsolutePath()).call();
                         System.out.println("[ZombieRool Lua] Successfully loaded script: " + script.getName());
                     } catch (Throwable t) {
                         System.err.println("[ZombieRool Lua] Error loading " + script.getName() + ": " + t.getMessage());

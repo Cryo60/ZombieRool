@@ -76,6 +76,7 @@ public final class ClientPacketEffects {
             return;
         }
 
+        soundLocation = me.cryo.zombierool.gameplay.CompatibilityFixes.resolveLegacySound(soundLocation);
         SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(soundLocation);
         if (sound == null) {
             sound = SoundEvent.createVariableRangeEvent(soundLocation);

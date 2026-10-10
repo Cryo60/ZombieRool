@@ -1,5 +1,4 @@
 package me.cryo.zombierool.gameplay;
-
 import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem.PlayerStatsManager;
 import me.cryo.zombierool.core.capability.ZombieCapabilitySystem.PickableManager;
@@ -54,74 +53,58 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class WaveManager {
     public static final Set<Integer> UNLOCKED_CHANNELS = ConcurrentHashMap.newKeySet();
     public static final Set<Integer> LOCKED_CHANNELS = ConcurrentHashMap.newKeySet();
     public static final Set<String> UNLOCKED_ZONES = ConcurrentHashMap.newKeySet();
-
     private static int currentWave = 0;
     private static boolean gameRunning = false;
     private static boolean isSpecialWave = false;
     private static volatile boolean isPausedByPlayer = false;
     private static boolean cheatsUsed = false;
-
     private static final Set<UUID> activeMobs = ConcurrentHashMap.newKeySet();
     private static final Set<UUID> processedDeaths = ConcurrentHashMap.newKeySet();
-
     private static int clientCurrentWave = 0;
     private static boolean clientIsSpecialWave = false;
     private static boolean clientGameRunning = false;
-
     public static final Map<UUID, BlockPos> PLAYER_RESPAWN_POINTS = new ConcurrentHashMap<>();
-
     private static final ResourceLocation START_SOUND = new ResourceLocation("zombierool", "start_zombie");
     private static final ResourceLocation NEXT_WAVE_SOUND = new ResourceLocation("zombierool", "next_wave_zombie");
     private static final WaveBackgroundAudio BACKGROUND_AUDIO = new WaveBackgroundAudio();
-
     private static final AtomicInteger specialWaveTotal = new AtomicInteger(0);
     private static final AtomicInteger specialWaveKilled = new AtomicInteger(0);
     private static final AtomicInteger specialSpawnedCount = new AtomicInteger(0);
     private static final AtomicInteger hellhoundsCurrentlyActive = new AtomicInteger(0);
-
     private static int zombiesToKill = 0;
     private static int zombiesKilledSinceLastBonus = 0;
-
     private enum WaveState { OFF, DELAY_FIRST, DELAY_NEXT, DELAY_SPECIAL_SOUND, DELAY_SPECIAL_SPAWN, SPAWNING_NORMAL, SPAWNING_SPECIAL, WAITING_CLEAR }
     private static WaveState currentState = WaveState.OFF;
     private static int stateTimer = 0;
     private static int spawnTimer = 0;
     private static int currentSpawnInterval = 0;
-    
-
     private static List<Boolean> currentWaveSpawnOrder = new ArrayList<>();
     private static int mobsToSpawnInThisWave = 0;
-
     public static String currentSessionMusic = "default";
     public static int perkCoinEpoch;
-
     public static void resetPerkEgg(ServerLevel level) {
         perkCoinEpoch++;
         MapPower.resetPerkCoins(level);
     }
-
     public static boolean isGameRunning() {
         if (FMLLoader.getDist() == Dist.CLIENT) {
             if (Minecraft.getInstance().level != null && Minecraft.getInstance().level.isClientSide) return clientGameRunning;
         }
         return gameRunning;
     }
-
     public static void setClientGameRunning(boolean running) {
         clientGameRunning = running;
     }
-
+    public static int remainingEnemies(){return !gameRunning?0:Math.max(0,isSpecialWave?specialWaveTotal.get()-specialWaveKilled.get():zombiesToKill);}
     public static boolean isSpecialWave() { return isSpecialWave; }
     public static boolean isPausedByPlayer() { return isPausedByPlayer; }
     public static boolean areCheatsUsed() { return cheatsUsed; }
     public static void setCheatsUsed(boolean used) { cheatsUsed = used; }
-
     public static int getCurrentWave() {
         if (FMLLoader.getDist() == Dist.CLIENT) {
             if (Minecraft.getInstance().level != null && Minecraft.getInstance().level.isClientSide) return clientCurrentWave;
@@ -131,24 +114,20 @@ public class WaveManager {
     public static void setClientWave(int wave) { clientCurrentWave = wave; }
     public static boolean isClientSpecialWave() { return clientIsSpecialWave; }
     public static void setClientSpecialWave(boolean special) { clientIsSpecialWave = special; }
-
     public static void unlockChannel(int channel) {
         if (channel > 0) {
             UNLOCKED_CHANNELS.add(channel);
             LOCKED_CHANNELS.remove(channel);
         }
     }
-
     public static void lockChannel(int channel) {
         UNLOCKED_CHANNELS.remove(channel);
         LOCKED_CHANNELS.add(channel);
     }
-
     private static void triggerWaveChange(ServerLevel level, int prevWave, int nextWave) {
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CWaveChangeAnimationPacket(prevWave, nextWave));
         ZrNetwork.playGlobalSound(NEXT_WAVE_SOUND);
     }
-
     public static void setGamePaused(boolean paused) {
         if (isPausedByPlayer == paused) return;
         isPausedByPlayer = paused;
@@ -158,12 +137,15 @@ public class WaveManager {
             }
         }
     }
-
     public static void startGame(ServerLevel level) {
         processedDeaths.clear();
         if (gameRunning) return;
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
+        me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
+        me.cryo.zombierool.block.system.TeleporterSystem.reset(level);
+        MrChiefEasterEgg.reset(level);
         MatchWorldJournal.restore(level);
+        MatchConfigSnapshot.begin(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
         gameRunning = true;
@@ -171,13 +153,11 @@ public class WaveManager {
         cheatsUsed = false;
         activeMobs.clear();
         zombiesKilledSinceLastBonus = 0;
-
         PlayerStatsManager.reset(level);
         PickableManager.initGame(level);
         PlayerDownManager.resetAll();
         me.cryo.zombierool.gameplay.AmmoCrateManager.get(level).resetAllData();
         me.cryo.zombierool.handlers.ServerInteractionHandler.resetAll();
-
         net.minecraft.world.scores.Scoreboard scoreboard = level.getScoreboard();
         net.minecraft.world.scores.Objective obj = scoreboard.getObjective(me.cryo.zombierool.event.ServerEventHandler.OBJECTIVE_ID);
         if (obj != null) {
@@ -189,15 +169,12 @@ public class WaveManager {
             net.minecraft.network.chat.Component.literal("Points"),
             net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER
         );
-
         WorldConfig worldConfig = WorldConfig.get(level);
         worldConfig.setMeteoriteFragmentsFound(0); 
-
         currentSessionMusic = worldConfig.getMusicPreset();
         if (currentSessionMusic == null || currentSessionMusic.isEmpty()) {
             currentSessionMusic = "default";
         }
-
         for (BlockPos pos : worldConfig.getMeteoritePositions()) {
             if (level.isLoaded(pos)) {
                 BlockState state = level.getBlockState(pos);
@@ -206,23 +183,20 @@ public class WaveManager {
                 }
             }
         }
-
         List<ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
         UNLOCKED_CHANNELS.clear();
         LOCKED_CHANNELS.clear();
         UNLOCKED_ZONES.clear();
         UNLOCKED_CHANNELS.add(0); 
-
         PLAYER_RESPAWN_POINTS.clear();
         List<UniversalSpawnerSystem.UniversalSpawnerBlockEntity> playerSpawners = new ArrayList<>();
         for (BlockPos pos : worldConfig.getPlayerSpawnerPositions()) {
             level.getChunkSource().getChunk(pos.getX() >> 4, pos.getZ() >> 4, true);
             if (level.getBlockEntity(pos) instanceof UniversalSpawnerSystem.UniversalSpawnerBlockEntity ube && 
-                ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER) {
+                ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER && ube.isActive(level)) {
                 playerSpawners.add(ube); 
             }
         }
-
         if (!playerSpawners.isEmpty()) {
             Map<String, List<UniversalSpawnerSystem.UniversalSpawnerBlockEntity>> zones = new HashMap<>();
             for (UniversalSpawnerSystem.UniversalSpawnerBlockEntity spawner : playerSpawners) {
@@ -233,21 +207,18 @@ public class WaveManager {
             }
             List<String> zoneKeys = new ArrayList<>(zones.keySet());
             Collections.shuffle(zoneKeys);
-
             int zoneIndex = 0;
             int charId = 1;
             for (ServerPlayer player : players) {
                 String currentZoneKey = zoneKeys.get(zoneIndex % zoneKeys.size());
                 List<UniversalSpawnerSystem.UniversalSpawnerBlockEntity> currentZoneSpawners = zones.get(currentZoneKey);
                 UniversalSpawnerSystem.UniversalSpawnerBlockEntity chosenSpawner = currentZoneSpawners.get(ThreadLocalRandom.current().nextInt(currentZoneSpawners.size()));
-
                 BlockPos spawnPos = chosenSpawner.getBlockPos();
                 PLAYER_RESPAWN_POINTS.put(player.getUUID(), spawnPos.immutable());
                 placeOnAssignedSpawner(player);
                 MatchPlayerReset.applyStartLoadout(player, worldConfig, charId);
                 giveStarterIfMissing(player, worldConfig);
                 charId = MatchPlayerReset.nextCharacterId(charId);
-
                 UNLOCKED_ZONES.add(currentZoneKey);
                 zoneIndex++;
             }
@@ -260,16 +231,14 @@ public class WaveManager {
                 charId = MatchPlayerReset.nextCharacterId(charId);
             }
         }
-
         PlayerStatsManager.syncAll(level);
+        LuaScriptManager.loadScripts(level);
         LuaScriptManager.callEvent("OnGameStart");
-
         Set<BlockPos> mysteryBoxPositions = worldConfig.getMysteryBoxPositions();
         if (!mysteryBoxPositions.isEmpty()) { 
             me.cryo.zombierool.gameplay.MysteryBoxManager mysteryBoxManager = me.cryo.zombierool.gameplay.MysteryBoxManager.get(level);
             mysteryBoxManager.setupInitialMysteryBox(level, 0); 
         }
-
         Set<BlockPos> wunderfizzPositions = worldConfig.getWunderfizzPositions();
         if (!wunderfizzPositions.isEmpty()) {
             List<BlockPos> wunderfizzList = new ArrayList<>();
@@ -279,9 +248,7 @@ public class WaveManager {
             if (wunderfizzList.isEmpty()) wunderfizzList.addAll(wunderfizzPositions);
             Collections.shuffle(wunderfizzList);
             BlockPos chosenWunderfizz = wunderfizzList.get(0);
-            
             worldConfig.setActiveWunderfizzPosition(chosenWunderfizz, level);
-
             for (BlockPos wunderfizzPos : wunderfizzPositions) {
                 BlockState wunderfizzState = level.getBlockState(wunderfizzPos);
                 if (wunderfizzState.getBlock() instanceof me.cryo.zombierool.block.DerWunderfizzBlock) {
@@ -293,17 +260,14 @@ public class WaveManager {
             }
             worldConfig.setDirty();
         }
-
         for (ServerPlayer player : players) {
             PlayerVoiceManager.playLevelStart(player, level);
         }
-
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CStartGameAnimationPacket(1, currentSessionMusic));
         ZrNetwork.playGlobalSound(START_SOUND);
         currentState = WaveState.DELAY_FIRST;
         stateTimer = 240;
     }
-
     public static void forceSetWave(ServerLevel level, int targetWave) {
         if (!gameRunning) {
             currentWave = targetWave - 1;
@@ -311,64 +275,49 @@ public class WaveManager {
             ZrNetwork.broadcast(level, Component.translatable("message.zombierool.wave.set", targetWave).withStyle(ChatFormatting.AQUA));
             return;
         }
-
         WorldConfig config = WorldConfig.get(level);
         clearAllActiveMobs(level);
-
         int prevWave = currentWave;
         currentWave = targetWave - 1; 
-
         zombiesToKill = 0;
         specialWaveKilled.set(0);
         specialWaveTotal.set(0);
         specialSpawnedCount.set(0);
         hellhoundsCurrentlyActive.set(0);
         zombiesKilledSinceLastBonus = 0;
-
         respawnAllSpectatorPlayers(level);
-
         boolean nextIsSpecial = config.isSpecialWavesEnabled() && targetWave >= config.getSpecialWaveStart() && (targetWave - config.getSpecialWaveStart()) % config.getSpecialWaveInterval() == 0;
         if (nextIsSpecial && !SpawnerRegistry.hasActiveSpawnerOfType(level, UniversalSpawnerSystem.SpawnerMobType.HELLHOUND)) {
             nextIsSpecial = false;
         }
-
         if (nextIsSpecial) {
             isSpecialWave = true;
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(true));
-
             for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
                 PlayerVoiceManager.playSpecialStart(player, level);
             }
-
             ZrNetwork.playGlobalSound(new ResourceLocation("zombierool", "fetch_me_their_souls"));
             currentState = WaveState.DELAY_SPECIAL_SPAWN;
             stateTimer = 160; 
         } else {
             isSpecialWave = false;
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(false));
-
             triggerWaveChange(level, prevWave, targetWave);
-
             currentState = WaveState.DELAY_NEXT;
             stateTimer = 10;
         }
     }
-
     private static int calculateSpawnInterval(int wave) {
-        if (wave == 1) return 120; // 6 seconds
-        if (wave == 2) return 100; // 5 seconds
-        if (wave == 3) return 80;  // 4 seconds
-        if (wave == 4) return 60;  // 3 seconds
-        
-        // For wave 5 and beyond
+        if (wave == 1) return 120; 
+        if (wave == 2) return 100; 
+        if (wave == 3) return 80;  
+        if (wave == 4) return 60;  
         double delay = 50.0 * Math.pow(0.85, wave - 5);
         return Math.max(10, (int) delay);
     }
-
     public static void recalculateSpawnInterval(ServerLevel level) {
         WorldConfig config = WorldConfig.get(level);
         currentSpawnInterval = calculateSpawnInterval(currentWave);
-        
         if (currentWave >= 5) {
             String intensity = config.getSpawnIntensity();
             if ("flood".equals(intensity)) {
@@ -379,13 +328,10 @@ public class WaveManager {
         }
         spawnTimer = Math.min(spawnTimer, currentSpawnInterval);
     }
-
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !gameRunning || isPausedByPlayer) return;
-
         ServerLevel level = event.getServer().overworld();
-
         switch (currentState) {
             case DELAY_FIRST:
             case DELAY_NEXT:
@@ -395,11 +341,9 @@ public class WaveManager {
                 if (--stateTimer <= 0) {
                     isSpecialWave = true;
                     NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(true));
-
                     for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
                         PlayerVoiceManager.playSpecialStart(player, level);
                     }
-
                     ZrNetwork.playGlobalSound(new ResourceLocation("zombierool", "fetch_me_their_souls"));
                     currentState = WaveState.DELAY_SPECIAL_SPAWN;
                     stateTimer = 160; 
@@ -449,7 +393,6 @@ public class WaveManager {
                         hasActiveEnemies = true;
                     }
                 }
-
                 if (!hasActiveEnemies) {
                     if (isSpecialWave) triggerSpecialWaveEnd(level, null);
                     else {
@@ -461,7 +404,6 @@ public class WaveManager {
                 break;
         }
     }
-
     private static void giveStarterIfMissing(ServerPlayer player, WorldConfig config) {
         if (player.isSpectator()) return;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
@@ -471,14 +413,13 @@ public class WaveManager {
         if (starter.isEmpty()) return;
         if (!player.getInventory().add(starter)) player.drop(starter, false);
     }
-
     public static boolean placeOnAssignedSpawner(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos pos = PLAYER_RESPAWN_POINTS.get(player.getUUID());
         if (pos == null) {
             for (BlockPos candidate : WorldConfig.get(level).getPlayerSpawnerPositions()) {
                 if (level.getBlockEntity(candidate) instanceof UniversalSpawnerSystem.UniversalSpawnerBlockEntity ube
-                        && ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER) {
+                        && ube.getMobType() == UniversalSpawnerSystem.SpawnerMobType.PLAYER && ube.isActive(level)) {
                     pos = candidate.immutable();
                     PLAYER_RESPAWN_POINTS.put(player.getUUID(), pos);
                     break;
@@ -490,38 +431,29 @@ public class WaveManager {
         player.teleportTo(level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, player.getYRot(), player.getXRot());
         return true;
     }
-
     public static void respawnAllSpectatorPlayers(ServerLevel level) {
         String penalty = WorldConfig.get(level).getDeathPenalty();
         if ("spectator".equalsIgnoreCase(penalty) || "kick".equalsIgnoreCase(penalty)) return;
-
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             if (p.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
                 p.setGameMode(GameType.ADVENTURE);
                 p.setHealth(p.getMaxHealth());
                 p.removeAllEffects();
-                
                 if (placeOnAssignedSpawner(p)) {
-                    
                     me.cryo.zombierool.gameplay.PointManager.modifyScore(p, 500);
-
                     ItemStack pistol = me.cryo.zombierool.core.system.WeaponFacade.createStarterStack(p, WorldConfig.get(level));
                     if (!p.getInventory().add(pistol)) p.drop(pistol, false);
-
                     PlayerVoiceManager.playRespawn(p, level);
                 }
             }
         }
     }
-
     private static void spawnNextWave(ServerLevel level) {
         currentWave++;
         sendWaveUpdateToClients(level);
-
         respawnAllSpectatorPlayers(level);
-
         LuaScriptManager.callEvent("OnWaveStart", currentWave);
-
+        MrChiefEasterEgg.onWaveStart(level,currentWave);
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
                 if (cap.getLethalCount() < 5) {
@@ -530,35 +462,27 @@ public class WaveManager {
                 }
             });
         }
-
         setupRegularWave(level);
     }
-
     private static Optional<BlockPos> getRandomSpawnerPosition(ServerLevel level, UniversalSpawnerSystem.SpawnerMobType type) {
         List<UniversalSpawnerSystem.UniversalSpawnerBlockEntity> valid = SpawnerRegistry.getSpawners(level).stream()
                 .filter(be -> be.getMobType() == type && be.isActive(level))
                 .collect(Collectors.toList());
-
         if (valid.isEmpty() && type == UniversalSpawnerSystem.SpawnerMobType.HELLHOUND) {
             valid = SpawnerRegistry.getSpawners(level).stream()
                     .filter(be -> be.getMobType() == UniversalSpawnerSystem.SpawnerMobType.ZOMBIE && be.isActive(level))
                     .collect(Collectors.toList());
         }
-
         if (valid.isEmpty()) return Optional.empty();
-
         int totalWeight = valid.stream().mapToInt(UniversalSpawnerSystem.UniversalSpawnerBlockEntity::getSpawnWeight).sum();
         if (totalWeight <= 0) return Optional.of(valid.get(0).getBlockPos());
-
         int r = ThreadLocalRandom.current().nextInt(totalWeight);
         for (UniversalSpawnerSystem.UniversalSpawnerBlockEntity be : valid) {
             r -= be.getSpawnWeight();
             if (r < 0) return Optional.of(be.getBlockPos());
         }
-
         return Optional.of(valid.get(0).getBlockPos());
     }
-
     private static void setupRegularWave(ServerLevel level) {
         WorldConfig config = WorldConfig.get(level);
         int playerCount = (int) level.getServer().getPlayerList().getPlayers().stream()
@@ -566,11 +490,8 @@ public class WaveManager {
                 .filter(p -> p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
                 .filter(p -> !PlayerDownManager.isPlayerDown(p.getUUID()))
                 .count();
-
         if (playerCount == 0) playerCount = 1;
-
         int count = (int) ((config.getBaseZombies() + (currentWave * 3.5)) * (1.0 + (playerCount - 1) * 0.5));
-        
         if (currentWave >= 5) {
             String intensity = config.getSpawnIntensity();
             if ("flood".equals(intensity)) {
@@ -579,25 +500,19 @@ public class WaveManager {
                 count = (int)(count * 1.6);
             }
         }
-
         zombiesToKill = count;
         mobsToSpawnInThisWave = count;
-
         Random rand = ThreadLocalRandom.current();
         int minC = Math.max(1, (int) (count * 0.15));
         int maxC = Math.max(1, (int) (count * 0.40));
         int numCrawlers = rand.nextInt(maxC - minC + 1) + minC;
-
         if (!SpawnerRegistry.hasActiveSpawnerOfType(level, UniversalSpawnerSystem.SpawnerMobType.CRAWLER)) {
             numCrawlers = 0;
         }
-
         currentWaveSpawnOrder = new ArrayList<>(count);
         for (int j = 0; j < numCrawlers; j++) currentWaveSpawnOrder.add(true);
         for (int j = 0; j < count - numCrawlers; j++) currentWaveSpawnOrder.add(false);
-
         Collections.shuffle(currentWaveSpawnOrder, rand);
-
         currentSpawnInterval = calculateSpawnInterval(currentWave);
         if (currentWave >= 5) {
             String intensity = config.getSpawnIntensity();
@@ -607,18 +522,14 @@ public class WaveManager {
                 currentSpawnInterval = Math.max(2, currentSpawnInterval / 4);
             }
         }
-        
         spawnTimer = currentSpawnInterval;
         currentState = WaveState.SPAWNING_NORMAL;
     }
-
     private static void spawnOneRegularMob(ServerLevel level) {
         final int idx = currentWaveSpawnOrder.size() - 1;
         if (idx < 0) return;
-
         WorldConfig config = WorldConfig.get(level);
         Random rand = ThreadLocalRandom.current();
-
         if (config.isHellhoundsInNormalWaves() && currentWave >= config.getHellhoundsInNormalWavesStart()) {
             if (rand.nextDouble() < 0.05) {
                 Optional<BlockPos> opt = getRandomSpawnerPosition(level, UniversalSpawnerSystem.SpawnerMobType.HELLHOUND);
@@ -631,7 +542,6 @@ public class WaveManager {
                         h.moveTo(v.x, v.y, v.z, rand.nextFloat() * 360F, 0);
                         level.addFreshEntity(h);
                         activeMobs.add(h.getUUID());
-
                         mobsToSpawnInThisWave--;
                         currentWaveSpawnOrder.remove(idx);
                         return;
@@ -639,16 +549,12 @@ public class WaveManager {
                 }
             }
         }
-
         final boolean wantedCrawler = currentWaveSpawnOrder.remove(idx);
         mobsToSpawnInThisWave--;
-
         boolean hasCrawlerSpawners = SpawnerRegistry.hasActiveSpawnerOfType(level, UniversalSpawnerSystem.SpawnerMobType.CRAWLER);
         UniversalSpawnerSystem.SpawnerMobType spawnType = (wantedCrawler && hasCrawlerSpawners) ? UniversalSpawnerSystem.SpawnerMobType.CRAWLER : UniversalSpawnerSystem.SpawnerMobType.ZOMBIE;
-
         Optional<BlockPos> optPos = getRandomSpawnerPosition(level, spawnType);
         if (optPos.isEmpty()) return;
-
         Vec3 v = Vec3.atBottomCenterOf(optPos.get());
         Mob mob;
         if (spawnType == UniversalSpawnerSystem.SpawnerMobType.CRAWLER) {
@@ -663,26 +569,21 @@ public class WaveManager {
             z.assignRolledSkins("zombie");
             mob = z;
         }
-
         mob.moveTo(v.x, v.y, v.z, rand.nextFloat() * 360F, 0);
         level.addFreshEntity(mob);
         activeMobs.add(mob.getUUID());
     }
-
     private static void spawnSpecialWave(ServerLevel level) {
         currentWave++;
         sendWaveUpdateToClients(level);
-
         List<ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
         if (players.isEmpty()) {
             endGame(level, Component.translatable("message.zombierool.game_over.no_players"));
             return;
         }
-
         respawnAllSpectatorPlayers(level);
-
         LuaScriptManager.callEvent("OnWaveStart", currentWave);
-
+        MrChiefEasterEgg.onWaveStart(level,currentWave);
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
                 if (cap.getLethalCount() < 5) {
@@ -691,46 +592,36 @@ public class WaveManager {
                 }
             });
         }
-
         specialWaveTotal.set((4 + 2 * players.size()) * 2);
         specialWaveKilled.set(0);
         hellhoundsCurrentlyActive.set(0);
         specialSpawnedCount.set(0);
-
         currentState = WaveState.SPAWNING_SPECIAL;
         spawnTimer = 100;
     }
-
     private static void spawnOneHellhound(ServerLevel level) {
         Optional<BlockPos> opt = getRandomSpawnerPosition(level, UniversalSpawnerSystem.SpawnerMobType.HELLHOUND);
         if (opt.isEmpty()) {
             specialSpawnedCount.incrementAndGet();
             return;
         }
-
         HellhoundEntity h = ZombieroolModEntities.HELLHOUND.get().create(level);
         if (h == null) return;
-
         WaveMobScaling.applyHealth(h, currentWave, level);
         h.assignRolledSkins("hellhound");
-        
         Vec3 v = Vec3.atBottomCenterOf(opt.get());
         h.moveTo(v.x, v.y, v.z, level.getRandom().nextFloat() * 360f, 0);
-
         level.addFreshEntity(h);
         activeMobs.add(h.getUUID());
-
         specialSpawnedCount.incrementAndGet();
         hellhoundsCurrentlyActive.incrementAndGet();
     }
-
     public static void recycleMob(Mob mob, ServerLevel level) {
         UUID id = mob.getUUID();
         if (activeMobs.contains(id)) {
             activeMobs.remove(id);
             PlayerStatsManager.cleanupEntity(mob.getId()); 
             mob.discard();
-
             if (mob instanceof HellhoundEntity) {
                 hellhoundsCurrentlyActive.decrementAndGet();
                 if (isSpecialWave) specialSpawnedCount.decrementAndGet();
@@ -740,7 +631,6 @@ public class WaveManager {
             }
         }
     }
-
     private static void clearAllActiveMobs(ServerLevel level) {
         for (UUID mobId : new HashSet<>(activeMobs)) {
             Entity mob = level.getEntity(mobId);
@@ -752,7 +642,6 @@ public class WaveManager {
         activeMobs.clear();
         processedDeaths.clear();
     }
-
     @SubscribeEvent
     public static void onEntityDeath(LivingDeathEvent event) {
         if (!gameRunning || isPausedByPlayer || event.getEntity().level().isClientSide()) return;
@@ -760,14 +649,11 @@ public class WaveManager {
             onMobDeath(mob, (ServerLevel) mob.level());
         }
     }
-
     public static void onMobDeath(Mob mob, ServerLevel level) {
         if (!gameRunning || isPausedByPlayer) return;
-
         UUID id = mob.getUUID();
         if (!activeMobs.contains(id) || !processedDeaths.add(id)) return;
         activeMobs.remove(id);
-
         if (mob instanceof HellhoundEntity) {
             hellhoundsCurrentlyActive.decrementAndGet();
             if (isSpecialWave) {
@@ -784,10 +670,8 @@ public class WaveManager {
             checkEndNormalWave(level);
         }
     }
-
     private static void triggerSpecialWaveEnd(ServerLevel level, Vec3 lastMobPos) {
         if (currentState == WaveState.DELAY_NEXT || currentState == WaveState.DELAY_SPECIAL_SOUND) return;
-
         if (!BonusManager.bonusSpawnDisabledByNuke && WorldConfig.get(level).isBonusDropsEnabled()) {
             BonusManager.Bonus maxAmmo = BonusManager.getBonus("max_ammo");
             if (maxAmmo != null && !WorldConfig.get(level).isBonusDisabled("max_ammo")) {
@@ -795,36 +679,29 @@ public class WaveManager {
                 if (spawnPos != null) BonusManager.spawnBonus(maxAmmo, level, spawnPos);
             }
         }
-
         LuaScriptManager.callEvent("OnWaveEnd", currentWave);
         transitionToNextWave(level);
     }
-
     private static void triggerNormalWaveEnd(ServerLevel level) {
         if (currentState == WaveState.DELAY_NEXT || currentState == WaveState.DELAY_SPECIAL_SOUND) return;
         LuaScriptManager.callEvent("OnWaveEnd", currentWave);
         transitionToNextWave(level);
     }
-
     private static void transitionToNextWave(ServerLevel level) {
         int nextWave = currentWave + 1;
         WorldConfig config = WorldConfig.get(level);
         boolean isNextWaveSpecial = config.isSpecialWavesEnabled() && nextWave >= config.getSpecialWaveStart() && (nextWave - config.getSpecialWaveStart()) % config.getSpecialWaveInterval() == 0;
-
         if (isNextWaveSpecial && !SpawnerRegistry.hasActiveSpawnerOfType(level, UniversalSpawnerSystem.SpawnerMobType.HELLHOUND)) {
             isNextWaveSpecial = false;
         }
-
         triggerWaveChange(level, currentWave, nextWave);
         isSpecialWave = false;
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(false));
-
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             if (isGameRunning() && !p.isCreative() && !p.isSpectator() && !areCheatsUsed()) {
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), new me.cryo.zombierool.network.packet.S2CProgressChallengePacket("WAVES", 1));
             }
         }
-
         if (isNextWaveSpecial) {
             currentState = WaveState.DELAY_SPECIAL_SOUND;
             stateTimer = 240; 
@@ -833,18 +710,15 @@ public class WaveManager {
             stateTimer = 240;
         }
     }
-
     private static void checkEndNormalWave(ServerLevel level) {
         if (zombiesToKill <= 0 && activeMobs.stream().noneMatch(uuid -> level.getEntity(uuid) instanceof Mob)) {
             LuaScriptManager.callEvent("OnAllZombiesDead");
             triggerNormalWaveEnd(level);
         }
     }
-
     public static synchronized void endGame(ServerLevel level, Component message) {
         endMatch(level, message, true);
     }
-
     public static synchronized void restartLevel(ServerLevel level) {
         if (gameRunning) {
             endMatch(level, null, false);
@@ -852,10 +726,8 @@ public class WaveManager {
         level.getServer().getWorldData().setDifficulty(Difficulty.NORMAL);
         startGame(level);
     }
-
     private static void endMatch(ServerLevel level, Component message, boolean recap) {
         if (!gameRunning) return;
-        
         currentState = WaveState.OFF;
         gameRunning = false;
         isSpecialWave = false;
@@ -865,22 +737,22 @@ public class WaveManager {
         PickableManager.reset(level); 
         me.cryo.zombierool.block.system.BlindBuySystem.resetAllCabinets(level);
         me.cryo.zombierool.handlers.ServerInteractionHandler.resetAll();
-
+        MatchConfigSnapshot.restore(level);
         currentSessionMusic = WorldConfig.get(level).getMusicPreset();
         if (currentSessionMusic == null || currentSessionMusic.isEmpty()) {
             currentSessionMusic = "default";
         }
-
         me.cryo.zombierool.ZombieroolMod.queueServerWork(30, () -> {
             level.getServer().getPlayerList().getPlayers().forEach(p -> {
                 p.sendSystemMessage(Component.literal("ZOMBIEROOL_MUSIC_PRESET:" + currentSessionMusic));
             });
         });
-
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSpecialWavePacket(false));
         clearAllActiveMobs(level);
         me.cryo.zombierool.core.manager.GoreManager.clearWorld(level);
-
+        me.cryo.zombierool.block.system.MapDeviceSystem.reset(level);
+        me.cryo.zombierool.block.system.TeleporterSystem.reset(level);
+        MrChiefEasterEgg.reset(level);
         int wavesSurvived = currentWave;
         if (recap) {
             for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
@@ -894,12 +766,9 @@ public class WaveManager {
                 });
             }
         }
-
         currentWave = 0;
         sendWaveUpdateToClients(level);
-
         level.getServer().getWorldData().setDifficulty(Difficulty.PEACEFUL);
-
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             MatchPlayerReset.applyEndLoadout(p, level);
             if (!p.isCreative()) {
@@ -908,43 +777,36 @@ public class WaveManager {
                 placeOnAssignedSpawner(p);
             }
         }
-
         MatchWorldJournal.restore(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
-        
         PlayerStatsManager.syncAll(level);
-
         if (message != null) {
             ZrNetwork.broadcast(level, message);
         }
     }
-
     public static int getZombiesKilledSinceLastBonus(ServerLevel level) { return zombiesKilledSinceLastBonus; }
     public static void resetZombiesKilledSinceLastBonus(ServerLevel level) { zombiesKilledSinceLastBonus = 0; }
     public static void sendWaveUpdateToClients(ServerLevel level) { ZrNetwork.toAll(new S2CWaveUpdatePacket(currentWave)); }
-
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) { 
         if (event.getServer().isSingleplayer()) setGamePaused(true); 
-
         boolean matchWasRunning = gameRunning;
         ServerLevel overworld = event.getServer().overworld();
         if (overworld != null) {
             me.cryo.zombierool.block.system.BlindBuySystem.resetAllCabinets(overworld);
             MatchWorldJournal.restore(overworld);
+            MatchConfigSnapshot.restore(overworld);
             if (matchWasRunning) {
                 MapPower.refresh(overworld);
                 resetPerkEgg(overworld);
             }
         }
-
         gameRunning = false;
         currentState = WaveState.OFF;
         isSpecialWave = false;
         cheatsUsed = false;
         currentWave = 0;
-        
         List<Entity> toRemove = new ArrayList<>();
         for (ServerLevel sl : event.getServer().getAllLevels()) {
             for (Entity e : sl.getAllEntities()) {
@@ -960,14 +822,12 @@ public class WaveManager {
             }
         }
         toRemove.forEach(Entity::discard);
-
         activeMobs.clear();
         processedDeaths.clear();
         UNLOCKED_CHANNELS.clear();
         LOCKED_CHANNELS.clear();
         UNLOCKED_ZONES.clear();
         PLAYER_RESPAWN_POINTS.clear();
-
         zombiesToKill = 0;
         zombiesKilledSinceLastBonus = 0;
         specialWaveTotal.set(0);
@@ -977,16 +837,12 @@ public class WaveManager {
         PlayerDownManager.resetAll();
         me.cryo.zombierool.handlers.ServerInteractionHandler.resetAll();
     }
-
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) { if (event.getServer().isSingleplayer()) setGamePaused(false); }
-    
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) { if (event.getEntity() instanceof ServerPlayer && event.getEntity().getServer().isSingleplayer()) setGamePaused(false); }
-
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) { if (event.getEntity() instanceof ServerPlayer && event.getEntity().getServer().isSingleplayer()) setGamePaused(true); }
-
     @Mod.EventBusSubscriber(modid = "zombierool", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ClientForgeEvents {
         @SubscribeEvent

@@ -33,7 +33,7 @@ public abstract class CustomMobMixin {
     private void onAiUpdate(CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
 
-        if (mob instanceof WhiteKnightEntity) {
+        if (me.cryo.zombierool.gameplay.FiestaFreeze.frozen(mob) || mob instanceof me.cryo.zombierool.entity.MrChiefEntity || mob instanceof WhiteKnightEntity) {
             return;
         }
 
@@ -112,6 +112,7 @@ public abstract class CustomMobMixin {
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void onSetTarget(LivingEntity target, CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
+        if (mob instanceof me.cryo.zombierool.entity.MrChiefEntity || target!=null && me.cryo.zombierool.gameplay.FiestaFreeze.frozen(mob)) { ci.cancel(); return; }
         if (mob instanceof WhiteKnightEntity || target instanceof WhiteKnightEntity) return;
 
         if (target instanceof Player player && (BonusManager.isZombieBloodActive(player) || PlayerDownManager.isPlayerDown(player.getUUID()))) { 

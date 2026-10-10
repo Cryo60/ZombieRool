@@ -39,6 +39,9 @@ public class TacZIntegration {
         }
     }
 
+    public static boolean equipWallAttachment(Player player, ItemStack attachment) {
+        return ModList.get().isLoaded("tacz") && TacZImpl.equipWallAttachment(player, attachment);
+    }
     public static void init() {
         if (ModList.get().isLoaded("tacz")) {
             TacZImpl.init();

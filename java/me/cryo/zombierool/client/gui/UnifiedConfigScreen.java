@@ -26,7 +26,7 @@ public abstract class UnifiedConfigScreen<T extends AbstractContainerMenu> exten
         int startY = (this.height - this.imageHeight) / 2;
 
         g.fillGradient(startX, startY, startX + this.imageWidth, startY + this.imageHeight, 0xEE000000, 0xEE222222);
-        g.renderOutline(startX, startY, this.imageWidth, this.imageHeight, 0xFFAA00);
+        g.renderOutline(startX, startY, this.imageWidth, this.imageHeight, 0x9A1C14);
 
         if (!this.menu.slots.isEmpty()) {
             for (net.minecraft.world.inventory.Slot slot : this.menu.slots) {
@@ -42,6 +42,6 @@ public abstract class UnifiedConfigScreen<T extends AbstractContainerMenu> exten
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawCenteredString(this.font, "§l" + this.title.getString(), this.imageWidth / 2, 10, 0xFFAA00);
+        g.drawCenteredString(this.font, "§l" + this.title.getString(), this.imageWidth / 2, 10, 0x9A1C14);
     }
 }

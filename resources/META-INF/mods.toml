@@ -1,14 +1,20 @@
 modLoader="javafml"
 loaderVersion="[47,)"
-license="MIT License"
+license="${mod_license}"
 
 [[mods]]
 modId="zombierool"
 version="${mod_version}"
 displayName="ZombieRool"
-credits="Created using mod maker MCreator - https://mcreator.net/about"
-displayURL="https://mcreator.net"
-logoFile="logo.png"
+credits="Developed by Cryo. Thanks to the ZombieRool community and map creators."
+displayURL="https://discord.gg/HGv2r44hXM"
+logoFile="assets/zombierool/icons/icon_32x32.png"
+logoBlur=false
+description='''
+Round-based zombie survival with weapons, perks, Pack-a-Punch, custom maps and Lua scripting.
+Includes optional Timeless and Classics Guns (TacZ) integration.
+Configure your client from the Config button. Map settings are available in-game to operators.
+'''
 authors="Cryo"
 
 [[dependencies.zombierool]]

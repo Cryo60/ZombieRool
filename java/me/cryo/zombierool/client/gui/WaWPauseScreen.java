@@ -40,6 +40,8 @@ public class WaWPauseScreen extends Screen {
         this.entries.add(new Entry("gui.zombierool.pause.resume", this::resume));
         this.entries.add(new Entry("gui.zombierool.pause.options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
         this.entries.add(new Entry("gui.zombierool.pause.restart", this::restart));
+        if (this.minecraft.hasSingleplayerServer() && this.minecraft.getSingleplayerServer() != null && !this.minecraft.getSingleplayerServer().isPublished())
+            this.entries.add(new Entry("menu.shareToLan", () -> this.minecraft.setScreen(new net.minecraft.client.gui.screens.ShareToLanScreen(this))));
         this.entries.add(new Entry("gui.zombierool.pause.quit", this::quit));
         this.selected = Math.min(remembered, this.entries.size() - 1);
         this.rowY = new int[this.entries.size()];

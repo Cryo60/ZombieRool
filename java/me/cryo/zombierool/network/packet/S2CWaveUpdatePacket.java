@@ -34,6 +34,8 @@ public class S2CWaveUpdatePacket {
             WaveManager.setClientWave(msg.wave);
             WaveManager.setClientGameRunning(msg.wave > 0);
             if (msg.wave == 0) {
+                me.cryo.zombierool.client.BloodSplatters.clear();
+                me.cryo.zombierool.client.BloodJets.clientTick(null);
                 me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponRenderer.clearAllPurchases();
                 me.cryo.zombierool.client.DrinkPerkAnimationHandler.reset();
             }

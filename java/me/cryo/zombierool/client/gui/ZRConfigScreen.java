@@ -1,183 +1,138 @@
 package me.cryo.zombierool.client.gui;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import me.cryo.zombierool.client.HalloweenManager;
+import me.cryo.zombierool.configuration.ZRClientConfig;
+import me.cryo.zombierool.network.NetworkHandler;
+import me.cryo.zombierool.network.packet.C2SRequestConfigMenuPacket;
+import me.cryo.zombierool.network.packet.C2SSyncClientPrefsPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import me.cryo.zombierool.configuration.ZRClientConfig;
-import me.cryo.zombierool.configuration.ZRClientConfig.HalloweenMode;
-import me.cryo.zombierool.client.HalloweenManager;
-import me.cryo.zombierool.network.NetworkHandler;
-import me.cryo.zombierool.network.packet.C2SSyncClientPrefsPacket;
+import net.minecraftforge.common.ForgeConfigSpec;
 
+/** Edits a draft; only Save writes the client TOML and synchronizes preferences. */
 public class ZRConfigScreen extends Screen {
     private final Screen parentScreen;
-    private Button halloweenModeButton;
-    private Button preferZrButton;
-    private Button animatePreviewButton;
-    private Button hideXpButton;
-    private Button goreButton;
-    
-    private HalloweenMode currentMode;
-    private boolean currentPreferZr;
-    private boolean currentAnimatePreview;
-    private boolean currentHideXp;
-    private boolean currentReducedGore;
+    private final List<Setting> settings = new ArrayList<>();
+    private int page;
+
+    private static class Setting {
+        final int page;
+        final String key;
+        final ForgeConfigSpec.ConfigValue<?> value;
+        Object draft;
+        Setting(int page, String key, ForgeConfigSpec.ConfigValue<?> value) {
+            this.page = page;
+            this.key = key;
+            this.value = value;
+            this.draft = value.get();
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        void apply() { ((ForgeConfigSpec.ConfigValue) value).set(draft); }
+        Component label() {
+            Component state = draft instanceof Boolean enabled
+                    ? Component.translatable(enabled ? "options.on" : "options.off")
+                    : Component.translatable("zombierool.config.halloween." + ((Enum<?>) draft).name().toLowerCase(Locale.ROOT));
+            return Component.translatable(key).append(": ").append(state);
+        }
+    }
 
     public ZRConfigScreen(Screen parentScreen) {
         super(Component.translatable("zombierool.config.client.title"));
         this.parentScreen = parentScreen;
-        this.currentMode = ZRClientConfig.getHalloweenMode();
-        this.currentPreferZr = ZRClientConfig.prefersZrWeapons();
-        this.currentAnimatePreview = ZRClientConfig.animateWeaponPreview();
-        this.currentHideXp = ZRClientConfig.hideXpNotifications();
-        this.currentReducedGore = ZRClientConfig.isGoreReduced();
+        settings.add(new Setting(0, "zombierool.config.setting.halloween", ZRClientConfig.HALLOWEEN_MODE));
+        settings.add(new Setting(0, "zombierool.config.setting.classic", ZRClientConfig.PREFER_ZR_WEAPONS));
+        settings.add(new Setting(0, "zombierool.config.setting.preview", ZRClientConfig.ANIMATE_WEAPON_PREVIEW));
+        settings.add(new Setting(0, "zombierool.config.setting.gore", ZRClientConfig.REDUCED_GORE));
+        settings.add(new Setting(1, "zombierool.config.setting.xp", ZRClientConfig.HIDE_XP_NOTIFICATIONS));
+        settings.add(new Setting(1, "zombierool.config.setting.counter", ZRClientConfig.SHOW_ENEMIES_REMAINING));
+        settings.add(new Setting(2, "zombierool.config.setting.network", ZRClientConfig.ALLOW_NETWORK_REQUESTS));
+        settings.add(new Setting(2, "zombierool.config.setting.discord", ZRClientConfig.DISCORD_PRESENCE));
+        settings.add(new Setting(2, "zombierool.config.setting.discord_id", ZRClientConfig.DISCORD_APPLICATION_ID));
     }
 
     @Override
     protected void init() {
-        super.init();
-
-        this.halloweenModeButton = Button.builder(
-            getModeButtonText(),
-            button -> {
-                cycleHalloweenMode();
-                button.setMessage(getModeButtonText());
-            })
-            .bounds(this.width / 2 - 155, this.height / 6 + 24, 310, 20)
-            .build();
-        if (this.minecraft.player != null && !this.minecraft.player.hasPermissions(2)) {
-            this.halloweenModeButton.active = false;
+        int w = Math.min(310, width - 20);
+        int x = (width - w) / 2;
+        String[] tabs = {"visual", "hud", "online"};
+        for (int i = 0; i < tabs.length; i++) {
+            final int selectedPage = i;
+            Button tab = Button.builder(Component.translatable("zombierool.config.tab." + tabs[i]), b -> {
+                page = selectedPage;
+                rebuildWidgets();
+            }).bounds(x + i * (w / 3), 38, w / 3 - 2, 20).build();
+            tab.active = page != i;
+            addRenderableWidget(tab);
         }
-        this.addRenderableWidget(this.halloweenModeButton);
-
-        this.preferZrButton = Button.builder(
-            getPreferZrButtonText(),
-            button -> {
-                currentPreferZr = !currentPreferZr;
-                button.setMessage(getPreferZrButtonText());
-                syncPrefs();
-            })
-            .bounds(this.width / 2 - 155, this.height / 6 + 48, 310, 20)
-            .build();
-        this.addRenderableWidget(this.preferZrButton);
-
-        this.animatePreviewButton = Button.builder(
-            getAnimatePreviewButtonText(),
-            button -> {
-                currentAnimatePreview = !currentAnimatePreview;
-                button.setMessage(getAnimatePreviewButtonText());
-                syncPrefs();
-            })
-            .bounds(this.width / 2 - 155, this.height / 6 + 72, 310, 20)
-            .build();
-        this.addRenderableWidget(this.animatePreviewButton);
-
-        this.hideXpButton = Button.builder(
-            getHideXpButtonText(),
-            button -> {
-                currentHideXp = !currentHideXp;
-                button.setMessage(getHideXpButtonText());
-                syncPrefs();
-            })
-            .bounds(this.width / 2 - 155, this.height / 6 + 96, 310, 20)
-            .build();
-        this.addRenderableWidget(this.hideXpButton);
-
-        this.goreButton = Button.builder(
-            getGoreButtonText(),
-            button -> {
-                currentReducedGore = !currentReducedGore;
-                button.setMessage(getGoreButtonText());
-                syncPrefs();
-            })
-            .bounds(this.width / 2 - 155, this.height / 6 + 120, 310, 20)
-            .build();
-        this.addRenderableWidget(this.goreButton);
-
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("gui.done"),
-            button -> this.minecraft.setScreen(parentScreen))
-            .bounds(this.width / 2 - 100, this.height / 6 + 192, 200, 20)
-            .build());
-    }
-
-    private void cycleHalloweenMode() {
-        switch (currentMode) {
-            case AUTO -> currentMode = HalloweenMode.FORCE_ON;
-            case FORCE_ON -> currentMode = HalloweenMode.FORCE_OFF;
-            case FORCE_OFF -> currentMode = HalloweenMode.AUTO;
+        int y = 70;
+        for (Setting setting : settings) {
+            if (setting.page != page) continue;
+            if (setting.draft instanceof String text) {
+                EditBox id = new EditBox(font, x, y + 12, w, 20, Component.translatable(setting.key));
+                id.setMaxLength(25);
+                id.setFilter(s -> s.isEmpty() || s.matches("[0-9]+"));
+                id.setValue(text);
+                id.setResponder(s -> { setting.draft = s; });
+                id.setTooltip(Tooltip.create(Component.translatable(setting.key + ".help")));
+                addRenderableWidget(id);
+            } else {
+                Button option = Button.builder(setting.label(), b -> {
+                    if (setting.draft instanceof Boolean enabled) setting.draft = !enabled;
+                    else {
+                        ZRClientConfig.HalloweenMode mode = (ZRClientConfig.HalloweenMode) setting.draft;
+                        var modes = ZRClientConfig.HalloweenMode.values();
+                        setting.draft = modes[(mode.ordinal() + 1) % modes.length];
+                    }
+                    b.setMessage(setting.label());
+                }).bounds(x, y, w, 20).tooltip(Tooltip.create(Component.translatable(setting.key + ".help"))).build();
+                addRenderableWidget(option);
+            }
+            y += 24;
         }
-        syncPrefs();
+        Button map = Button.builder(Component.translatable("zombierool.config.map"), b -> {
+            NetworkHandler.INSTANCE.sendToServer(new C2SRequestConfigMenuPacket());
+        }).bounds(x, height - 50, w / 2 - 2, 20)
+                .tooltip(Tooltip.create(Component.translatable("zombierool.config.map.help"))).build();
+        map.active = minecraft.player != null && minecraft.player.hasPermissions(2) && minecraft.getConnection() != null;
+        addRenderableWidget(map);
+        addRenderableWidget(Button.builder(Component.translatable("zombierool.config.reset"), b -> {
+            for (Setting setting : settings) setting.draft = setting.value.getDefault();
+            rebuildWidgets();
+        }).bounds(x + w / 2 + 2, height - 50, w / 2 - 2, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("zombierool.config.save"), b -> save())
+                .bounds(x, height - 26, w / 2 - 2, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
+                .bounds(x + w / 2 + 2, height - 26, w / 2 - 2, 20).build());
     }
 
-    private void syncPrefs() {
-        ZRClientConfig.setHalloweenMode(currentMode);
-        ZRClientConfig.setPreferZrWeapons(currentPreferZr);
-        ZRClientConfig.setAnimateWeaponPreview(currentAnimatePreview);
-        ZRClientConfig.setHideXpNotifications(currentHideXp);
-        ZRClientConfig.setGoreReduced(currentReducedGore);
-        if (this.minecraft.getConnection() != null) {
-            NetworkHandler.INSTANCE.sendToServer(
-                new C2SSyncClientPrefsPacket(currentMode.name(), currentPreferZr)
-            );
+    private void save() {
+        for (Setting setting : settings) setting.apply();
+        ZRClientConfig.HAS_ANSWERED_NETWORK_PROMPT.set(true);
+        ZRClientConfig.SPEC.save();
+        HalloweenManager.updateFromConfig();
+        if (minecraft.getConnection() != null && minecraft.player != null) {
+            NetworkHandler.INSTANCE.sendToServer(new C2SSyncClientPrefsPacket(
+                    ZRClientConfig.getHalloweenMode().name(), ZRClientConfig.prefersZrWeapons()));
         }
-    }
-
-    private Component getModeButtonText() {
-        String modeText = switch (currentMode) {
-            case FORCE_ON -> "FORCE ON";
-            case FORCE_OFF -> "FORCE OFF";
-            default -> "AUTO";
-        };
-        String emoji = switch (currentMode) {
-            case FORCE_ON -> "🎃";
-            case FORCE_OFF -> "❌";
-            default -> "🔄";
-        };
-        return Component.literal("Halloween Mode: " + emoji + " " + modeText);
-    }
-
-    private Component getPreferZrButtonText() {
-        if (currentPreferZr) {
-            return Component.literal("Weapon Models: Classic ZR");
-        } else {
-            return Component.literal("Weapon Models: TacZ (If installed)");
-        }
-    }
-
-    private Component getAnimatePreviewButtonText() {
-        String text = Component.translatable("gui.zombierool.config.animate_preview").getString() + (currentAnimatePreview ? "ON" : "OFF");
-        return Component.literal(text);
-    }
-
-    private Component getHideXpButtonText() {
-        String text = Component.translatable("zombierool.config.hide_xp").getString() + ": " + (currentHideXp ? "ON" : "OFF");
-        return Component.literal(text);
-    }
-
-    private Component getGoreButtonText() {
-        return Component.translatable("zombierool.config.gore",
-                Component.translatable(currentReducedGore ? "zombierool.config.gore.reduced" : "zombierool.config.gore.full"));
+        onClose();
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics);
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
-
-        boolean isNaturalPeriod = HalloweenManager.isNaturalHalloweenPeriod();
-        String periodStatus = "Natural Period: " + (isNaturalPeriod ? "ACTIVE (Oct 20 - Nov 5)" : "INACTIVE");
-        guiGraphics.drawCenteredString(this.font, periodStatus, this.width / 2, this.height / 6 + 148, isNaturalPeriod ? 0x55FF55 : 0xFF5555);
-
-        boolean isEffective = HalloweenManager.isHalloweenPeriod();
-        String effectiveStatus = "Effective Status: " + (isEffective ? "ACTIVE" : "DISABLED");
-        guiGraphics.drawCenteredString(this.font, effectiveStatus, this.width / 2, this.height / 6 + 164, isEffective ? 0x55FF55 : 0xFF5555);
-
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        renderBackground(graphics);
+        graphics.drawCenteredString(font, title, width / 2, 18, 0xFFFFFF);
+        if (page == 2) graphics.drawString(font, Component.translatable("zombierool.config.setting.discord_id"),
+                (width - Math.min(310, width - 20)) / 2, 118, 0xAAAAAA);
+        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public void onClose() {
-        this.minecraft.setScreen(this.parentScreen);
-    }
+    public void onClose() { minecraft.setScreen(parentScreen); }
 }

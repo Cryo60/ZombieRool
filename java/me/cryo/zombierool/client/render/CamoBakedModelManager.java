@@ -40,14 +40,33 @@ public class CamoBakedModelManager {
     }
 
     @SubscribeEvent
+    public static void registerAmmoModels(ModelEvent.RegisterAdditional event) {
+        event.register(new ResourceLocation(ZombieroolMod.MODID, "item/rpg_empty"));
+        for (int stage = 1; stage <= 4; stage++) {
+            event.register(new ResourceLocation(ZombieroolMod.MODID, "item/needler_empty_" + stage));
+        }
+    }
+
+    @SubscribeEvent
     public static void onModelBake(ModelEvent.ModifyBakingResult event) {
+        OPAQUE_CACHE.clear();
         for (Item weapon : ZRRegistry.GUN_ITEMS) {
             ResourceLocation reg = ForgeRegistries.ITEMS.getKey(weapon);
             if (reg != null) {
                 ModelResourceLocation mrl = new ModelResourceLocation(reg, "inventory");
                 BakedModel originalModel = event.getModels().get(mrl);
                 if (originalModel != null) {
-                    event.getModels().put(mrl, new CamoWrapperModel(originalModel));
+                    Map<Integer, BakedModel> ammoModels = new HashMap<>();
+                    if (reg.getPath().equals("rpg")) {
+                        BakedModel empty = event.getModels().get(new ResourceLocation(reg.getNamespace(), "item/rpg_empty"));
+                        if (empty != null) ammoModels.put(4, empty);
+                    } else if (reg.getPath().equals("needler")) {
+                        for (int stage = 1; stage <= 4; stage++) {
+                            BakedModel depleted = event.getModels().get(new ResourceLocation(reg.getNamespace(), "item/needler_empty_" + stage));
+                            if (depleted != null) ammoModels.put(stage, depleted);
+                        }
+                    }
+                    event.getModels().put(mrl, new CamoWrapperModel(originalModel, ammoModels));
                 }
             }
         }
@@ -91,13 +110,21 @@ public class CamoBakedModelManager {
         private final BakedModel original;
         private final ItemOverrides overrides;
 
-        public CamoWrapperModel(BakedModel original) {
+        public CamoWrapperModel(BakedModel original, Map<Integer, BakedModel> ammoModels) {
             this.original = original;
             this.overrides = new ItemOverrides() {
                 @Override
                 public BakedModel resolve(BakedModel model, ItemStack stack, ClientLevel level, LivingEntity entity, int seed) {
                     BakedModel resolved = original.getOverrides().resolve(original, stack, level, entity, seed);
                     if (resolved == null) resolved = original;
+                    // Preserve resource-pack overrides; resolve the built-in ammo variants
+                    // directly if the baked predicate table did not select one.
+                    if (resolved == original && !ammoModels.isEmpty()
+                            && stack.getItem() instanceof me.cryo.zombierool.api.IReloadable reloadable) {
+                        int stage = me.cryo.zombierool.client.WeaponTextureState.depletedStage(
+                                reloadable.getAmmo(stack), reloadable.getMaxAmmo(stack));
+                        resolved = ammoModels.getOrDefault(stage, original);
+                    }
 
                     if (stack.hasTag()) {
                         String skinId = stack.getTag().getString("zr_skin");

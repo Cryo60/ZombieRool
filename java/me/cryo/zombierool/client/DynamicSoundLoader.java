@@ -76,6 +76,7 @@ public class DynamicSoundLoader {
         }
     }
 
+    public static File getDynamicSoundFile(String id) { return loadedSounds.get(id); }
     public static boolean hasDynamicSound(String soundEventName) {
         return loadedSounds.containsKey(soundEventName);
     }

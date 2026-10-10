@@ -81,15 +81,9 @@ public class CrawlerCorpse extends Mob {
     }
 
     @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.level().isClientSide()) return false;
-        if (source.getEntity() instanceof net.minecraft.world.entity.player.Player
-                || source.getDirectEntity() instanceof net.minecraft.world.entity.player.Player) {
-            this.deathTimer = MAX_DEATH_TIMER;
-            return true;
-        }
-        return false;
-    }
+    public boolean hurt(DamageSource source, float amount) { return false; }
+
+    @Override public boolean isPickable() { return false; }
 
     @Override
     public boolean isPushable() {
@@ -182,32 +176,15 @@ public class CrawlerCorpse extends Mob {
     public static class CrawlerCorpseRenderer extends MobRenderer<CrawlerCorpse, ModelCrawler<CrawlerCorpse>> {
         public CrawlerCorpseRenderer(EntityRendererProvider.Context context) {
             super(context, new ModelCrawler<>(context.bakeLayer(ModelLayers.SPIDER)), 0.5f);
-            this.addLayer(new EyesLayer<CrawlerCorpse, ModelCrawler<CrawlerCorpse>>(this) {
-                @Override
-                public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, CrawlerCorpse pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    ResourceLocation customEye = DynamicResourceManager.getClientSkin("crawler_eyes", pLivingEntity.getCustomSkin());
-                    if (customEye != null) {
-                        RenderType renderType = RenderType.eyes(customEye);
-                        com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);
-                        this.getParentModel().renderToBuffer(pMatrixStack, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-                    }
-                }
-                @Override
-                public RenderType renderType() {
-                    return RenderType.eyes(new ResourceLocation("minecraft:textures/entity/spider_eyes.png"));
-                }
-            });
         }
 
         @Override
         public ResourceLocation getTextureLocation(CrawlerCorpse entity) {
+            if(me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod())return new ResourceLocation("zombierool:textures/entities/halloween_crawler.png");
             String customSkin = entity.getCustomSkin();
             if (customSkin != null && !customSkin.isEmpty()) {
                 ResourceLocation dyn = DynamicResourceManager.getClientSkin("crawler", customSkin);
                 if (dyn != null) return dyn;
-            }
-            if (entity.hasHalloweenSkin()) {
-                return new ResourceLocation("zombierool:textures/entities/halloween_crawler.png");
             }
             return new ResourceLocation("zombierool:textures/entities/crawler.png");
         }
@@ -224,7 +201,8 @@ public class CrawlerCorpse extends Mob {
 
         @Override
         protected void setupRotations(CrawlerCorpse entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTicks) {
-            super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTicks);
+            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw));
+            if (Math.floorMod(entity.getUUID().hashCode(), 5) == 0) poseStack.mulPose(Axis.ZP.rotationDegrees(75.0F));
             
             float progress = (entity.tickCount + partialTicks) / 45.0f;
             if (progress > 1.0f) progress = 1.0f;

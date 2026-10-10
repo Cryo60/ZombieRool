@@ -121,6 +121,13 @@ public class ZRSandbagBlock extends HorizontalDirectionalBlock {
         return false;
     }
 
+    // The slightly shortened collision box is still an obstacle, not a walk-through node.
+    @Override
+    public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(
+            BlockState state, BlockGetter level, BlockPos pos, net.minecraft.world.entity.Mob mob) {
+        return net.minecraft.world.level.pathfinder.BlockPathTypes.BLOCKED;
+    }
+
     @Override
     public boolean useShapeForLightOcclusion(BlockState state) { return true; }
 

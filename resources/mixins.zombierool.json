@@ -25,7 +25,11 @@
     "ShulkerBoxWeaponSlotMixin",
     "ContainerClickMixin",
     "MobPickupMixin",
-    "InventoryDropSlotMixin"
+    "InventoryDropSlotMixin",
+    "FoodDataMixin",
+    "PackAPunchFoilMixin",
+    "TraversalWalkNodeMixin",
+    "TraversalMovementMixin"
   ],
   "client": [
     "EntityTurnMixin",
@@ -38,7 +42,18 @@
     "ItemInHandLayerMixin",
     "SoundManagerMixin",
     "SoundBufferLibraryMixin",
-    "DisconnectedScreenMixin"
+    "DisconnectedScreenMixin",
+    "TacZReloadSoundMixin",
+    "TacZPapSoundMixin",
+    "TacZPapGlintMixin",
+    "TacZPapAccelerationMixin",
+    "MenuScreenMixin",
+    "MenuButtonMixin",
+    "MenuListMixin",
+    "MenuSliderMixin",
+    "HalloweenArmorMixin",
+    "HalloweenHeadMixin",
+    "FiestaEntityMixin"
   ],
   "minVersion": "0.8"
 }

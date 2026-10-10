@@ -208,6 +208,7 @@ public class SecretConsoleScreen extends Screen {
                 || cmd.startsWith("points ")
                 || cmd.startsWith("wave ")
                 || cmd.startsWith("weapon ")
+                || cmd.equals("cat") || cmd.equals("mrchief")
                 || cmd.equals("killall")
                 || cmd.equals("god")
                 || cmd.equals("noclip")

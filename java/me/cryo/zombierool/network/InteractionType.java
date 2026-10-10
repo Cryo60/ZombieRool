@@ -13,5 +13,7 @@ public enum InteractionType {
     METEORITE,
     BLIND_BUY_CABINET,
     ACTION_KEY,
+    TRAP,
+    TELEPORTER,
     POWER_SWITCH
 }

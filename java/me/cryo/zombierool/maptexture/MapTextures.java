@@ -56,7 +56,7 @@ import java.util.function.Supplier;
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public final class MapTextures {
     public static final int SLOTS = 32;
-    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane"};
+    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane", "door", "head"};
     public static final String[] SOUND_IDS = {
             "stone", "wood", "gravel", "grass", "metal", "glass", "wool", "sand",
             "snow", "mud", "deepslate", "netherrack", "amethyst", "slime", "honey",
@@ -88,15 +88,18 @@ public final class MapTextures {
         public final RegistryObject<Block> fence;
         public final RegistryObject<Block> wall;
         public final RegistryObject<Block> pane;
+        public final RegistryObject<Block> door;
+        public final RegistryObject<Block> head;
 
         SlotBlocks(RegistryObject<Block> cube, RegistryObject<Block> stairs, RegistryObject<Block> slab,
-                   RegistryObject<Block> fence, RegistryObject<Block> wall, RegistryObject<Block> pane) {
+                   RegistryObject<Block> fence, RegistryObject<Block> wall, RegistryObject<Block> pane, RegistryObject<Block> door, RegistryObject<Block> head) {
             this.cube = cube;
             this.stairs = stairs;
             this.slab = slab;
             this.fence = fence;
             this.wall = wall;
             this.pane = pane;
+            this.door = door;this.head=head;
         }
 
         public RegistryObject<Block> get(int shape) {
@@ -106,6 +109,8 @@ public final class MapTextures {
                 case 3 -> fence;
                 case 4 -> wall;
                 case 5 -> pane;
+                case 6 -> door;
+                case 7 -> head;
                 default -> cube;
             };
         }
@@ -121,7 +126,11 @@ public final class MapTextures {
             RegistryObject<Block> fence = register(name + "_fence", () -> new TexFence(slot));
             RegistryObject<Block> wall = register(name + "_wall", () -> new TexWall(slot));
             RegistryObject<Block> pane = register(name + "_pane", () -> new TexPane(slot));
-            BLOCKS[i] = new SlotBlocks(cube, stairs, slab, fence, wall, pane);
+            RegistryObject<Block> door = register(name + "_door", () -> new net.minecraft.world.level.block.DoorBlock(props(true).sound(SoundType.METAL), net.minecraft.world.level.block.state.properties.BlockSetType.IRON));
+            RegistryObject<Block> head=register(name+"_head",()->new TexHead(slot));
+            BLOCKS[i] = new SlotBlocks(cube, stairs, slab, fence, wall, pane, door,head);
+            ZRBlocks.CUTOUT_BLOCKS.add(cube);ZRBlocks.CUTOUT_BLOCKS.add(stairs);ZRBlocks.CUTOUT_BLOCKS.add(slab);ZRBlocks.CUTOUT_BLOCKS.add(wall);ZRBlocks.CUTOUT_BLOCKS.add(head);
+            ZRBlocks.CUTOUT_BLOCKS.add(door);
             ZRBlocks.CUTOUT_BLOCKS.add(pane);
             ZRBlocks.CUTOUT_BLOCKS.add(fence);
         }
@@ -131,7 +140,7 @@ public final class MapTextures {
 
     private static BlockBehaviour.Properties props(boolean open) {
         BlockBehaviour.Properties properties = BlockBehaviour.Properties.of().sound(SoundType.STONE).strength(2.0f, 3600000.0f);
-        if (open) properties = properties.noOcclusion().isViewBlocking((state, level, pos) -> false);
+        properties = properties.noOcclusion().isViewBlocking((state, level, pos) -> false);
         return properties;
     }
 
@@ -149,6 +158,8 @@ public final class MapTextures {
         if (slot < 0 || slot >= SLOTS) return "";
         return cached[slot] == null ? "" : cached[slot];
     }
+
+    public static void applyClientSlot(int slot,String name,String sound){if(slot<0||slot>=SLOTS)return;cached[slot]=sanitize(name);cachedSounds[slot]=isSound(sound)?sound:"stone";}
 
     public static String soundId(int slot) {
         if (slot < 0 || slot >= SLOTS || cachedSounds[slot] == null || cachedSounds[slot].isEmpty()) return "stone";
@@ -226,13 +237,17 @@ public final class MapTextures {
         Path dir = worldRoot.resolve("zombierool").resolve("custom_blocks");
         try {
             Files.createDirectories(dir);
+            Files.createDirectories(dir.resolve("import"));
             Path readme = dir.resolve("readme.txt");
             if (!Files.exists(readme)) {
                 Files.writeString(readme, """
                         Drop PNG files here.
-                        Name: lowercase letters, digits and _. Example: bricks.png
+                        Name: lowercase letters, digits, _ and -. Subfolders are supported. Example: walls/red_bricks.png
                         Optional faces: bricks_top.png, bricks_side.png, bricks_bottom.png
-                        Open the Texture Kit (deco tab, creative) to get the block, stairs, slab, fence, wall and pane.
+                        Open the Texture Kit (deco tab, creative) to get the block, stairs, slab, fence, wall, pane, iron door and head.
+                        Import PNG atlases from custom_blocks/import in the pixel editor.
+                        Formats: square face, 4x3 cube net, or 1x2 door (upper then lower).
+                        Textures update directly in the atlas, without reloading resource packs.
                         Pick a vanilla sound in that screen. It applies to every shape of that texture.
                         This folder ships with the map. Players who download it see the textures.
                         32 textures maximum.
@@ -249,21 +264,22 @@ public final class MapTextures {
             Set<String> used = new HashSet<>();
             for (String name : cached) if (!name.isEmpty()) used.add(name);
             List<Path> pngs = new ArrayList<>();
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.png")) {
-                for (Path png : stream) pngs.add(png);
+            try (var stream = Files.walk(dir)) {
+                stream.filter(Files::isRegularFile).filter(p->p.toString().toLowerCase().endsWith(".png")).filter(p->!dir.relativize(p).getName(0).toString().equals("import")).forEach(pngs::add);
             }
             pngs.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
             for (Path png : pngs) {
-                String stem = png.getFileName().toString();
+                String stem = dir.relativize(png).toString().replace('\\','/');
                 stem = stem.substring(0, stem.length() - 4);
                 String id = sanitize(stem);
-                if (id.isEmpty() || used.contains(id) || faceOfExisting(id, dir, used)) continue;
-                int free = freeSlot(cached);
-                if (free < 0) break;
+                if (id.isEmpty()) continue;
                 if (!id.equals(stem)) {
                     Path target = dir.resolve(id + ".png");
-                    if (!Files.exists(target)) Files.copy(png, target);
+                    if (!Files.exists(target)) {Files.createDirectories(target.getParent());Files.copy(png, target);}
                 }
+                if (used.contains(id) || faceOfExisting(id, dir, used)) continue;
+                int free = freeSlot(cached);
+                if (free < 0) break;
                 cached[free] = id;
                 if (cachedSounds[free] == null || cachedSounds[free].isEmpty()) cachedSounds[free] = "stone";
                 used.add(id);
@@ -274,6 +290,26 @@ public final class MapTextures {
         }
         return Arrays.asList(cached.clone());
     }
+
+    public static void moveTexture(int slot,String folder)throws IOException {
+        if(slot<0||slot>=SLOTS||cached[slot].isEmpty()||!folder.equals(sanitize(folder)))throw new IOException("Invalid texture folder");
+        Path root=customDir().toAbsolutePath().normalize();String old=cached[slot];String leaf=old.substring(old.lastIndexOf('/')+1);String next=folder.isEmpty()?leaf:folder+"/"+leaf;
+        if(!sanitize(next).equals(next))throw new IOException("Texture path is too long");
+        Path source=root.resolve(old+".png").normalize();Path target=root.resolve(next+".png").normalize();
+        if(!source.startsWith(root)||!target.startsWith(root)||source.equals(target))return;
+        if(!Files.isRegularFile(source))throw new IOException("Source texture is missing");
+        Files.createDirectories(target.getParent());
+        var sources=new ArrayList<Path>();var targets=new ArrayList<Path>();
+        var faceNames=new HashSet<String>();faceNames.add(leaf+".png");for(String suffix:new String[]{"_top","_side","_bottom","_upper","_lower","_north","_south","_east","_west"})faceNames.add(leaf+suffix+".png");
+        try(var files=Files.list(source.getParent())){for(Path file:files.toList()){String name=file.getFileName().toString();if(faceNames.contains(name)){Path dest=target.getParent().resolve(name);if(Files.exists(dest))throw new IOException("Texture exists");sources.add(file);targets.add(dest);}}}
+        int moved=0;try{for(;moved<sources.size();moved++)Files.move(sources.get(moved),targets.get(moved));cached[slot]=next;writeManifest(root.resolve("manifest.txt"),cached,cachedSounds);}
+        catch(IOException e){cached[slot]=old;for(int n=moved-1;n>=0;n--)Files.move(targets.get(n),sources.get(n));throw e;}
+    }
+    public static List<String> folderList(){
+        Path root=customDir();if(root==null)return List.of();
+        try(var paths=Files.walk(root)){return paths.filter(Files::isDirectory).filter(p->!p.equals(root)).map(p->root.relativize(p).toString().replace('\\','/')).filter(p->!p.equals("import")&&!p.startsWith("import/")).sorted().toList();}catch(IOException e){return List.of();}
+    }
+    public static void writeFolders(net.minecraft.network.FriendlyByteBuf buf){var folders=folderList();buf.writeVarInt(folders.size());for(String folder:folders)buf.writeUtf(folder);}
 
     public static String[] readSlots(Path root) {
         String[] slots = new String[SLOTS];
@@ -316,7 +352,7 @@ public final class MapTextures {
     }
 
     private static boolean faceOfExisting(String id, Path dir, Set<String> used) {
-        for (String suffix : new String[]{"_top", "_side", "_bottom"}) {
+        for (String suffix : new String[]{"_top", "_side", "_bottom", "_upper", "_lower", "_north", "_south", "_east", "_west"}) {
             if (!id.endsWith(suffix)) continue;
             String base = id.substring(0, id.length() - suffix.length());
             if (used.contains(base) || Files.exists(dir.resolve(base + ".png"))) return true;
@@ -325,9 +361,15 @@ public final class MapTextures {
     }
 
     public static String sanitize(String raw) {
-        String cleaned = raw.toLowerCase().replace(' ', '_').replaceAll("[^a-z0-9_]", "");
-        if (cleaned.length() > 32) cleaned = cleaned.substring(0, 32);
-        return cleaned;
+        StringBuilder out=new StringBuilder();
+        for(String part:raw.replace('\\','/').split("/")){
+            if(part.isBlank()||part.equals(".")||part.equals(".."))return "";
+            String cleaned=part.toLowerCase(java.util.Locale.ROOT).replace(' ','_').replaceAll("[^a-z0-9_-]","");
+            if(cleaned.isEmpty())return "";
+            if(cleaned.length()>64)cleaned=cleaned.substring(0,64);
+            if(out.length()>0)out.append('/');out.append(cleaned);
+        }
+        return out.length()>128?"":out.toString();
     }
 
     @SubscribeEvent
@@ -360,6 +402,7 @@ public final class MapTextures {
                     for (String name : names) buf.writeUtf(name == null ? "" : name);
                     buf.writeVarInt(sounds.size());
                     for (String sound : sounds) buf.writeUtf(sound == null ? "stone" : sound);
+                    writeFolders(buf);
                 });
             }
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
@@ -390,18 +433,34 @@ public final class MapTextures {
                     case "fence" -> 3;
                     case "wall" -> 4;
                     case "pane" -> 5;
+                    case "door" -> 6;
+                    case "head" -> 7;
                     default -> 0;
                 };
             }
             String texture = textureName(slot);
             if (texture.isEmpty()) return Component.translatable("block.zombierool.maptex");
-            return Component.literal(texture + " (" + Component.translatable("shape.zombierool." + SHAPES[shape]).getString() + ")");
+            return Component.literal(humanize(texture) + " (" + Component.translatable("shape.zombierool." + SHAPES[shape]).getString() + ")");
         }
+    }
+
+    public static String humanize(String name){
+        String leaf=name.substring(name.lastIndexOf('/')+1).replaceAll("([a-z])([A-Z])","$1 $2").replace('_',' ').replace('-',' ').trim();
+        var result=new StringBuilder();for(String word:leaf.split("\\s+")){if(word.isEmpty())continue;if(result.length()>0)result.append(' ');result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));}return result.toString();
+    }
+    public static class TexHead extends TexBlock {
+        TexHead(int slot){super(slot,true);}
+        @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,net.minecraft.world.level.BlockGetter level,net.minecraft.core.BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){return Block.box(4,0,4,12,8,12);}
     }
 
     public static class TexBlock extends Block {
         private final int slot;
-        TexBlock(int slot, boolean open) { super(props(open)); this.slot = slot; }
+        public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+        TexBlock(int slot, boolean open) { super(props(open)); this.slot = slot; registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH)); }
+        @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block,BlockState> builder) { builder.add(FACING); }
+        @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) { return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite()); }
+        @Override public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) { return state.setValue(FACING, rotation.rotate(state.getValue(FACING))); }
+        @Override public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) { return rotate(state, mirror.getRotation(state.getValue(FACING))); }
         @Override public SoundType getSoundType(BlockState state) { return soundOf(slot); }
     }
 
@@ -438,11 +497,18 @@ public final class MapTextures {
     public static class TextureKitMenu extends AbstractContainerMenu {
         public final List<String> names;
         public final List<String> sounds;
+        public final List<String> folders=new ArrayList<>();
+        public int preferredSlot=-1;
+        public String preferredFolder;
 
+        private void addInventory(Inventory inventory){
+            for(int row=0;row<3;row++)for(int col=0;col<9;col++)addSlot(new net.minecraft.world.inventory.Slot(inventory,col+row*9+9,220+col*18,280+row*18));
+            for(int col=0;col<9;col++)addSlot(new net.minecraft.world.inventory.Slot(inventory,col,220+col*18,338));
+        }
         public TextureKitMenu(int id, Inventory inventory, List<String> names, List<String> sounds) {
             super(MENU.get(), id);
             this.names = names;
-            this.sounds = sounds;
+            this.sounds = sounds;folders.addAll(folderList());addInventory(inventory);
         }
 
         public TextureKitMenu(int id, Inventory inventory, net.minecraft.network.FriendlyByteBuf buf) {
@@ -450,11 +516,14 @@ public final class MapTextures {
             int count = buf.readVarInt();
             this.names = new ArrayList<>();
             for (int i = 0; i < count; i++) names.add(buf.readUtf());
-            this.sounds = new ArrayList<>();
+            this.sounds = new ArrayList<>();addInventory(inventory);
             if (buf.isReadable()) {
                 int soundCount = buf.readVarInt();
                 for (int i = 0; i < soundCount; i++) sounds.add(buf.readUtf());
             }
+            if(buf.isReadable()){int folderCount=buf.readVarInt();for(int i=0;i<folderCount;i++)folders.add(buf.readUtf());}
+            if(buf.isReadable())preferredSlot=buf.readVarInt();
+            if(buf.isReadable())preferredFolder=buf.readUtf(128);
         }
 
         @Override
@@ -475,6 +544,7 @@ public final class MapTextures {
             if (names.get(slot) == null || names.get(slot).isEmpty()) return false;
             ItemStack stack = new ItemStack(BLOCKS[slot].get(shape).get(), 64);
             if (!player.getInventory().add(stack)) player.drop(stack, false);
+            player.inventoryMenu.broadcastChanges();broadcastChanges();
             return true;
         }
 

@@ -126,7 +126,7 @@ public class LethalWeaponManager {
                             player.setSecondsOnFire(10);
                             player.hurt(player.damageSources().onFire(), 1000.0f);
                         } else {
-                            ExplosionControl.doCustomExplosion(player.level(), player, player.position(), 150.0f, 3.5f, 1.0f, 1000.0f, 1000.0f, 1.5f, "EXPLOSION", "zombierool:explosion_old", false);
+                            ExplosionControl.doCustomExplosion(player.level(), player, player.position(), 150.0f, 3.5f, 1.0f, 1000.0f, 1000.0f, 1.5f, "EXPLOSION", "zombierool:explosion_old", false, true);
                         }
                     });
                 }

@@ -144,35 +144,7 @@ public class WeaponImplementations {
 
         @Override
         protected void triggerCherryEffect(Player player) {
-            if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_CHERRY.get())) {
-                AABB box = player.getBoundingBox().inflate(3.0);
-                player.level().getEntitiesOfClass(LivingEntity.class, box, e -> e instanceof net.minecraft.world.entity.monster.Monster && e != player)
-                    .forEach(e -> {
-                        me.cryo.zombierool.core.manager.DamageManager.applyDamage(e, player.level().damageSources().playerAttack(player), 5.0f);
-                        e.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
-                        if (e instanceof me.cryo.zombierool.entity.ZombieEntity
-                                || e instanceof me.cryo.zombierool.entity.CrawlerEntity
-                                || e instanceof me.cryo.zombierool.entity.HellhoundEntity) {
-                            e.level().playSound(null, e.getX(), e.getY(), e.getZ(), ZombieroolModSounds.ZOMBIE_ELEC.get(), net.minecraft.sounds.SoundSource.HOSTILE, 0.4f, 1.0f);
-                        }
-                    });
-
-                if (!player.level().isClientSide() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                    serverLevel.sendParticles(
-                        net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, 
-                        player.getX(), player.getY() + 1, player.getZ(), 
-                        30, 1.5, 1.0, 1.5, 0.1
-                    );
-
-                    player.level().playSound(
-                        null, 
-                        player.blockPosition(), 
-                        ZombieroolModSounds.RELOADING_WITH_CHERRY.get(), 
-                        SoundSource.PLAYERS, 
-                        0.35f, 1.0f
-                    );
-                }
-            }
+            me.cryo.zombierool.gameplay.CherryDischarge.trigger(player);
         }
     }
 

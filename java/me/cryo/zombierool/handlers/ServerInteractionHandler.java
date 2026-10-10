@@ -46,6 +46,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
 import java.util.*;
 public class ServerInteractionHandler {
     private static final long REPAIR_COOLDOWN = 1250;
@@ -56,8 +58,12 @@ public class ServerInteractionHandler {
         lastRepairTimes.clear();
         activeDrinkAnimations.clear();
     }
-
     private static boolean sameMachine(ServerLevel level, BlockPos target, BlockPos hit) {
+        if (level.getBlockState(target).getBlock() instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform
+                && level.getBlockState(hit).getBlock() instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform) {
+            return me.cryo.zombierool.block.system.TeleporterSystem.center(level.getBlockState(target),target)
+                    .equals(me.cryo.zombierool.block.system.TeleporterSystem.center(level.getBlockState(hit),hit));
+        }
         return level.getBlockState(target).getBlock() instanceof MysteryBoxBlock
                 && level.getBlockState(hit).getBlock() instanceof MysteryBoxBlock;
     }
@@ -88,6 +94,13 @@ public class ServerInteractionHandler {
             }
         }
         switch (type) {
+            case TELEPORTER -> me.cryo.zombierool.block.system.TeleporterSystem.interact(player,pos);
+            case TRAP -> {
+                if(level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.system.MapDeviceSystem.Device d) {
+                    String error=d.activate(player,true);
+                    if(!error.isEmpty())player.displayClientMessage(Component.translatable(error),true);
+                }
+            }
             case WALL_WEAPON -> handleWallWeapon(player, level, pos);
             case OBSTACLE -> handleObstacle(player, level, pos);
             case MYSTERY_BOX -> handleMysteryBox(player, level, pos);
@@ -299,7 +312,7 @@ public class ServerInteractionHandler {
                 }
             } else {
                 ItemStack copy = weaponToSell.copy();
-                if (!player.getInventory().add(copy)) {
+                if (!me.cryo.zombierool.integration.TacZIntegration.equipWallAttachment(player,copy) && !player.getInventory().add(copy)) {
                     player.drop(copy, false);
                 }
             }
@@ -580,7 +593,7 @@ public class ServerInteractionHandler {
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof DefenseDoorSystem.DefenseDoorBlock door) { 
             int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
-            if (stage < DefenseDoorSystem.DefenseDoorBlock.MAX_STAGE) {
+            if (door.canRepair(state)) {
                 door.updateStage(level, pos, stage + 1);
                 Random rand = new Random();
                 int soundIndex = rand.nextInt(3); 
@@ -619,5 +632,23 @@ public class ServerInteractionHandler {
                 break;
             }
         }
+    }
+    private static boolean blockVanillaInteraction(Player player, Block block) {
+        if (!isMatchInteractionLocked(player)) return false;
+        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
+        if (id == null || !"minecraft".equals(id.getNamespace())) return false;
+        String path = id.getPath();
+        return path.contains("door") || path.contains("fence_gate")
+                || path.contains("note_block") || path.contains("jukebox")
+                || path.contains("crafting_table") || path.contains("anvil") || path.contains("enchanting")
+                || path.contains("brewing") || path.contains("beacon") || path.contains("lectern")
+                || path.contains("bed") || path.contains("respawn_anchor") || path.contains("sign")
+                || path.contains("campfire") || path.contains("composter") || path.contains("bookshelf")
+                || path.contains("decorated_pot") || path.contains("flower_pot")
+                || path.contains("grindstone") || path.contains("stonecutter") || path.contains("loom")
+                || path.contains("smithing") || path.contains("cartography");
+    }
+    private static boolean isMatchInteractionLocked(Player player) {
+        return WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator();
     }
 }

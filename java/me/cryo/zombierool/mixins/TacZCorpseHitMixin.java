@@ -16,7 +16,8 @@ public class TacZCorpseHitMixin {
             remap = true
     )
     private static boolean zombierool_hitLingeringCorpse(Entity entity) {
-        if (entity instanceof AbstractZombieRoolEntity zombie && zombie.isLingeringCorpse()) {
+        if (entity instanceof me.cryo.zombierool.entity.CrawlerCorpse) return false;
+        if (entity instanceof AbstractZombieRoolEntity zombie && zombie.isLingeringCorpse() && !(zombie instanceof me.cryo.zombierool.entity.CrawlerEntity)) {
             return true;
         }
         return entity.isAlive();

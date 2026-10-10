@@ -15,6 +15,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin {
+    @org.spongepowered.asm.mixin.injection.ModifyArg(index=3, method="render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at=@At(value="INVOKE",target="Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;setupRotations(Lnet/minecraft/world/entity/LivingEntity;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V"))
+    private float zombierool_fiesta(LivingEntity entity, com.mojang.blaze3d.vertex.PoseStack pose, float age, float yaw, float partial){
+        return me.cryo.zombierool.client.MatchAtmosphere.yaw(entity,yaw,partial);
+    }
     @Inject(method = "getOverlayCoords", at = @At("HEAD"), cancellable = true)
     private static void zombierool_noDeathTint(LivingEntity entity, float partial, CallbackInfoReturnable<Integer> cir) {
         if (entity instanceof AbstractZombieRoolEntity && entity.deathTime > 0) {

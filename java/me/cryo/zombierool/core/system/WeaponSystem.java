@@ -693,8 +693,10 @@ public class WeaponSystem {
                 }
             }
 
-            String soundId = isPackAPunched(stack) ? currentDef.sounds.fire_pap : currentDef.sounds.fire;
-            playSound(player.level(), player, soundId);
+            playSound(player.level(), player, currentDef.sounds.fire);
+            if (isPackAPunched(stack) && !java.util.Objects.equals(currentDef.sounds.fire, currentDef.sounds.fire_pap)) {
+                playSound(player.level(), player, currentDef.sounds.fire_pap);
+            }
 
             if (currentDef.id != null && currentDef.id.contains("raygunmarkii")) {
                 Vec3 look = player.getViewVector(1.0f);
@@ -754,36 +756,7 @@ public class WeaponSystem {
         }
 
         protected void triggerCherryEffect(Player player) {
-            if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_CHERRY.get())) {
-                AABB box = player.getBoundingBox().inflate(3.0);
-                java.util.List<LivingEntity> victims = player.level().getEntitiesOfClass(LivingEntity.class, box, e -> e instanceof Monster && e != player);
-                for (LivingEntity e : victims) {
-                    me.cryo.zombierool.core.manager.DamageManager.applyDamage(e, player.level().damageSources().playerAttack(player), 5.0f);
-                    e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
-                    if (e instanceof me.cryo.zombierool.entity.ZombieEntity
-                            || e instanceof me.cryo.zombierool.entity.CrawlerEntity
-                            || e instanceof me.cryo.zombierool.entity.HellhoundEntity) {
-                        e.level().playSound(null, e.getX(), e.getY(), e.getZ(),
-                                me.cryo.zombierool.init.ZombieroolModSounds.ZOMBIE_ELEC.get(),
-                                net.minecraft.sounds.SoundSource.HOSTILE, 0.4f, 1.0f);
-                    }
-                }
-
-                if (!player.level().isClientSide() && player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                    serverLevel.sendParticles(
-                        net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
-                        player.getX(), player.getY() + 1, player.getZ(),
-                        30, 1.5, 1.0, 1.5, 0.1
-                    );
-                    player.level().playSound(
-                        null,
-                        player.blockPosition(),
-                        me.cryo.zombierool.init.ZombieroolModSounds.RELOADING_WITH_CHERRY.get(),
-                        net.minecraft.sounds.SoundSource.PLAYERS,
-                        0.35f, 1.0f
-                    );
-                }
-            }
+            me.cryo.zombierool.gameplay.CherryDischarge.trigger(player);
         }
 
         @Override

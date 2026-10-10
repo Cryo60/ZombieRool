@@ -19,6 +19,7 @@ import me.cryo.zombierool.client.renderer.CrawlerRenderer;
 public class ZombieroolModEntityRenderers {
 	@SubscribeEvent
 	public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
+		event.registerEntityRenderer(ZombieroolModEntities.MR_CHIEF.get(), me.cryo.zombierool.client.renderer.MrChiefRenderer::new);
 		event.registerEntityRenderer(ZombieroolModEntities.ZOMBIE.get(), ZombieRenderer::new);
 		event.registerEntityRenderer(ZombieroolModEntities.HELLHOUND.get(), HellhoundRenderer::new);
 		event.registerEntityRenderer(ZombieroolModEntities.CRAWLER.get(), CrawlerRenderer::new);

@@ -30,7 +30,7 @@ public final class ContainerWeaponGuard {
     }
 
     public static boolean isStorage(Container container) {
-        return container instanceof BaseContainerBlockEntity
+        return container instanceof net.minecraft.world.CompoundContainer || container instanceof BaseContainerBlockEntity
                 || container instanceof PlayerEnderChestContainer
                 || container instanceof ChestBoat
                 || container instanceof AbstractMinecartContainer;

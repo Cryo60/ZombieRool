@@ -69,6 +69,7 @@ public abstract class BulletVestTier1Item extends ArmorItem {
 
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent event) {
+        if (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.GENERIC_KILL)) return;
         if (event.getEntity() instanceof LivingEntity) {
             LivingEntity player = (LivingEntity) event.getEntity();
             ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);

@@ -69,7 +69,7 @@ public class MeleeAttackHandler {
 	}
 
     private static boolean isBlockedByWall(Level level, Vec3 start, Vec3 end) {
-        BlockHitResult result = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
+        BlockHitResult result = me.cryo.zombierool.gameplay.CompatibilityFixes.clip(level, new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
         if (result.getType() == HitResult.Type.BLOCK) {
             BlockState state = level.getBlockState(result.getBlockPos());
             boolean passThrough = false;
@@ -112,7 +112,13 @@ public class MeleeAttackHandler {
 	    Vec3 lookVec = player.getLookAngle();
 	    Vec3 startVec = player.getEyePosition(1.0F);
 	    Vec3 endVec = startVec.add(lookVec.scale(ATTACK_RANGE));
-	    LivingEntity targetEntity = null;
+	    BlockHitResult glassHit=me.cryo.zombierool.gameplay.CompatibilityFixes.clip(level, new ClipContext(startVec,endVec,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
+        if(glassHit.getType()==HitResult.Type.BLOCK && level.getBlockState(glassHit.getBlockPos()).getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock){
+            me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(level,glassHit.getBlockPos());
+            playLocalSound(player,KNIFE_HIT_MISC_MATERIAL_SOUND,1.0f,1.0f);
+            PlayerVoiceManager.playMeleeAttackSound(player,level);COOLDOWN_MAP.put(player.getUUID(),currentTime);return;
+        }
+        LivingEntity targetEntity = null;
 
         AABB searchBox = player.getBoundingBox().expandTowards(lookVec.scale(ATTACK_RANGE)).inflate(1.0);
         List<LivingEntity> entitiesInArea = level.getEntitiesOfClass(LivingEntity.class, searchBox,
@@ -150,7 +156,9 @@ public class MeleeAttackHandler {
                 finalDamage = 100000f;
             }
 
-	        DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage);
+	        if (DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage)) {
+                me.cryo.zombierool.core.manager.GoreManager.onHit(targetEntity, false);
+            }
             if (targetEntity.isAlive()) {
                 targetEntity.getPersistentData().remove("zombierool:no_gore");
             }
@@ -165,7 +173,7 @@ public class MeleeAttackHandler {
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
 
 	    } else {
-            BlockHitResult blockHit = level.clip(new ClipContext(startVec, endVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+            BlockHitResult blockHit = me.cryo.zombierool.gameplay.CompatibilityFixes.clip(level, new ClipContext(startVec, endVec, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             boolean shared = false;
             if (blockHit.getType() == HitResult.Type.BLOCK) {
                 BlockState state = level.getBlockState(blockHit.getBlockPos());

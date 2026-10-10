@@ -123,6 +123,11 @@ public class PackAPunchSystem {
                 return;
             }
 
+            if (be.getState() == 0 && level instanceof net.minecraft.server.level.ServerLevel server
+                    && !me.cryo.zombierool.block.system.TeleporterRegistry.get(server).packUnlocked()) {
+                player.displayClientMessage(Component.translatable("message.zombierool.teleporter.pap_locked"), true);
+                return;
+            }
             if (be.getState() == 0) {
                 ItemStack held = player.getMainHandItem();
                 if (held.isEmpty() || !WeaponFacade.isWeapon(held)) {

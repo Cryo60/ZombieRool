@@ -15,7 +15,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 @OnlyIn(Dist.CLIENT)
 public class ZombieBloodParticle extends TextureSheetParticle {
 	public static ZombieBloodParticleProvider provider(SpriteSet spriteSet) {
-		return new ZombieBloodParticleProvider(spriteSet);
+            return new ZombieBloodParticleProvider(spriteSet);
 	}
 
 	public static class ZombieBloodParticleProvider implements ParticleProvider<SimpleParticleType> {
@@ -26,7 +26,8 @@ public class ZombieBloodParticle extends TextureSheetParticle {
 		}
 
 		public Particle createParticle(SimpleParticleType typeIn, ClientLevel worldIn, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-			return new ZombieBloodParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, this.spriteSet);
+			if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()) return new CandyParticle(worldIn,x,y,z,xSpeed,ySpeed,zSpeed);
+            return new ZombieBloodParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, this.spriteSet);
 		}
 	}
 

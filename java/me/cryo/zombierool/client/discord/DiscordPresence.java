@@ -25,6 +25,7 @@ public final class DiscordPresence {
     private static long matchStartedAt;
     private static boolean warned;
     private static DiscordIpc ipc;
+    private static String activeApplicationId = "";
 
     private DiscordPresence() {}
 
@@ -35,10 +36,13 @@ public final class DiscordPresence {
         Minecraft minecraft = Minecraft.getInstance();
         if (!ZRClientConfig.discordPresence()) {
             current = Snapshot.HIDDEN;
+            stop();
             return;
         }
         String applicationId = ZRClientConfig.discordApplicationId();
         if (!applicationId.matches("\\d{5,25}")) {
+            current = Snapshot.HIDDEN;
+            stop();
             if (!warned) {
                 warned = true;
                 LOGGER.info("Rich Presence en attente : colle l'Application ID Discord dans config/zombierool-client.toml (discordApplicationId).");
@@ -58,8 +62,18 @@ public final class DiscordPresence {
         current = Snapshot.menus();
     }
 
+    private static void stop() {
+        if (ipc != null) {
+            ipc.close();
+            ipc = null;
+        }
+        activeApplicationId = "";
+    }
+
     private static void start(String applicationId) {
-        if (ipc != null) return;
+        if (ipc != null && applicationId.equals(activeApplicationId)) return;
+        stop();
+        activeApplicationId = applicationId;
         ipc = new DiscordIpc(applicationId);
         Thread thread = new Thread(ipc, "ZombieRool-Discord");
         thread.setDaemon(true);

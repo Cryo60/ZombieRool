@@ -239,6 +239,7 @@ public class WhiteKnightEntity extends TamableAnimal {
     @Override
     public void tick() {
         super.tick();
+        if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
         if (this.sweepAttackCooldown > 0) {
             this.sweepAttackCooldown--;
         }

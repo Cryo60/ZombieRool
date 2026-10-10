@@ -116,7 +116,7 @@ public class BloodDecalEntity extends Entity {
 
         @Override
         public void render(BloodDecalEntity entity, float yaw, float partial, PoseStack pose, MultiBufferSource buffer, int light) {
-            if (ZRClientConfig.isGoreReduced()) return;
+            if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() || ZRClientConfig.isGoreReduced()) return;
             pose.pushPose();
             pose.translate(0.0, 0.008 + (entity.getId() & 5) * 0.0012, 0.0);
             pose.mulPose(Axis.YP.rotationDegrees(entity.getYRot()));
@@ -125,10 +125,10 @@ public class BloodDecalEntity extends Entity {
             VertexConsumer vc = buffer.getBuffer(ZrBloodRenderType.DECAL);
             Matrix4f matrix = pose.last().pose();
             int overlay = OverlayTexture.NO_OVERLAY;
-            vc.vertex(matrix, -0.5F, 0.0F, -0.5F).color(255, 255, 255, 230).uv(0.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, -0.5F, 0.0F, 0.5F).color(255, 255, 255, 230).uv(0.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, 0.5F).color(255, 255, 255, 230).uv(1.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, -0.5F).color(255, 255, 255, 230).uv(1.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, -0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(0.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, -0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(0.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, 0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(1.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+            vc.vertex(matrix, 0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(1.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
             pose.popPose();
         }
 

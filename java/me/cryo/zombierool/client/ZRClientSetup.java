@@ -23,21 +23,33 @@ public class ZRClientSetup {
 	@SubscribeEvent
 	public static void onClientSetup(FMLClientSetupEvent event) {
 	    ThirdPersonAnimHandler.registerFactory(event);
+        net.minecraftforge.fml.ModLoadingContext.get().registerExtensionPoint(
+                net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory(
+                        (minecraft, parent) -> new me.cryo.zombierool.client.gui.ZRConfigScreen(parent)));
 	    event.enqueueWork(() -> {
 	        for (RegistryObject<Block> blockRegistryObject : ZRBlocks.CUTOUT_BLOCKS) {
 	            ItemBlockRenderTypes.setRenderLayer(blockRegistryObject.get(), RenderType.cutout());
 	        }
 	        ItemBlockRenderTypes.setRenderLayer(ZRBlocks.DEFENSE_DOOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ZRBlocks.GLASS_DEFENSE_DOOR.get(), RenderType.translucent());
 
 	        for (Item item : ZRRegistry.GUN_ITEMS) {
 	            ItemProperties.register(item, new ResourceLocation("zombierool:empty"), (stack, level, entity, seed) -> {
 	                if (stack.getItem() instanceof me.cryo.zombierool.api.IReloadable reloadable) {
-	                    return reloadable.getAmmo(stack) == 0 ? 1.0F : 0.0F;
+	                    return reloadable.getAmmo(stack) <= 0 ? 1.0F : 0.0F;
 	                }
 	                return 0.0F;
 	            });
 
-	            ItemProperties.register(item, new ResourceLocation("zombierool:is_pap"), (stack, level, entity, seed) -> {
+	            ItemProperties.register(item, new ResourceLocation("zombierool:ammo_stage"), (stack, level, entity, seed) -> {
+                if (stack.getItem() instanceof me.cryo.zombierool.api.IReloadable reloadable) {
+                    return WeaponTextureState.depletedStage(reloadable.getAmmo(stack), reloadable.getMaxAmmo(stack)) / 4.0F;
+                }
+                return 0.0F;
+            });
+
+            ItemProperties.register(item, new ResourceLocation("zombierool:is_pap"), (stack, level, entity, seed) -> {
 	                if (stack.getItem() instanceof me.cryo.zombierool.api.IPackAPunchable pap) {
 	                    return pap.isPackAPunched(stack) ? 1.0F : 0.0F;
 	                }

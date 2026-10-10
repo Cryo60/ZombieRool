@@ -55,6 +55,8 @@ public class ZombieroolModEntities {
 			EntityType.Builder.<BloodDecalEntity>of(BloodDecalEntity::new, MobCategory.MISC).setShouldReceiveVelocityUpdates(false).setTrackingRange(48).setUpdateInterval(20).setCustomClientFactory(BloodDecalEntity::new)
 					.sized(0.8f, 0.05f));
 
+	public static final RegistryObject<EntityType<me.cryo.zombierool.entity.MrChiefEntity>> MR_CHIEF = register("mr_chief", EntityType.Builder.<me.cryo.zombierool.entity.MrChiefEntity>of(me.cryo.zombierool.entity.MrChiefEntity::new, MobCategory.CREATURE).sized(.6f,.7f).clientTrackingRange(48).updateInterval(2).noSummon().noSave());
+
 	private static <T extends Entity> RegistryObject<EntityType<T>> register(String registryname, EntityType.Builder<T> entityTypeBuilder) {
 		return REGISTRY.register(registryname, () -> (EntityType<T>) entityTypeBuilder.build(registryname));
 	}
@@ -72,6 +74,7 @@ public class ZombieroolModEntities {
 
 	@SubscribeEvent
 	public static void registerAttributes(EntityAttributeCreationEvent event) {
+		event.put(MR_CHIEF.get(), me.cryo.zombierool.entity.MrChiefEntity.attributes().build());
 		event.put(ZOMBIE.get(), ZombieEntity.createAttributes().build());
 		event.put(HELLHOUND.get(), HellhoundEntity.createAttributes().build());
 		event.put(CRAWLER.get(), CrawlerEntity.createAttributes().build());

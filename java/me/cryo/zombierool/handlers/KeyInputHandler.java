@@ -331,6 +331,34 @@ public class KeyInputHandler {
 
     private static InteractionCandidate evaluateBlock(BlockState state, BlockPos pos, LocalPlayer player, Level level, String actionKey) {
         Block block = state.getBlock();
+        if (block instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform
+                || block instanceof me.cryo.zombierool.block.system.TeleporterSystem.ConditionSwitch) {
+            var pad=me.cryo.zombierool.block.system.TeleporterSystem.pad(level,pos);
+            if(pad!=null){
+                if(pad.config.getBoolean("invisible")&&!player.isCreative()||pad.role().equals("RECEIVER")&&!pad.canConfirm)return null;
+                Component label;
+                if(!pad.config.getBoolean("enabled"))label=Component.translatable("message.zombierool.teleporter.disabled");
+                else if(!pad.powered && pad.config.getBoolean("requiresPower"))label=Component.translatable("message.zombierool.power_required");
+                else if(pad.busy)label=Component.translatable("message.zombierool.teleporter.busy");
+                else if(pad.cooldownSeconds>0)label=Component.translatable("message.zombierool.teleporter.cooldown_seconds",pad.cooldownSeconds);
+                else if(pad.role().equals("RECEIVER"))label=Component.translatable("message.zombierool.teleporter.confirm",actionKey);
+                else if(pad.role().equals("SWITCH"))label=Component.translatable("message.zombierool.teleporter.switch",actionKey);
+                else if(pad.pendingSeconds>0)label=Component.translatable("message.zombierool.teleporter.countdown",pad.config.getString("id"),pad.pendingSeconds);
+                else if(pad.config.getBoolean("requiresLink")&&!pad.linked)label=Component.translatable("message.zombierool.teleporter.link",actionKey);
+                else label=Component.translatable("message.zombierool.teleporter.use",actionKey,pad.config.getInt("cost"));
+                return new InteractionCandidate(pos,InteractionType.TELEPORTER,label.copy().withStyle(ChatFormatting.AQUA));
+            }
+        }
+        if (level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.system.MapDeviceSystem.Device device &&
+                (device.kind() == me.cryo.zombierool.block.system.MapDeviceSystem.Kind.CONTROL || device.kind() == me.cryo.zombierool.block.system.MapDeviceSystem.Kind.TURRET)) {
+            Component label;
+            if(device.remaining>0 || device.linkedActive>0 || state.getValue(me.cryo.zombierool.block.system.MapDeviceSystem.DeviceBlock.ACTIVE)) label=Component.translatable("message.zombierool.trap.active");
+            else if(device.cooldown>0 || device.linkedCooldown>0) label=Component.translatable("message.zombierool.trap.cooldown_seconds",(Math.max(device.cooldown,device.linkedCooldown)+19)/20);
+            else if(!device.enabled) label=Component.translatable("message.zombierool.trap.unavailable");
+            else if(!device.powerAvailable) label=Component.translatable("message.zombierool.trap.no_power");
+            else label=Component.translatable("message.zombierool.trap.activate",actionKey,device.trapName(),device.cost);
+            return new InteractionCandidate(pos, InteractionType.TRAP, label.copy().withStyle(ChatFormatting.WHITE));
+        }
         if (block instanceof me.cryo.zombierool.block.PowerSwitchBlock) {
             if (!state.getValue(me.cryo.zombierool.block.PowerSwitchBlock.POWERED)) {
                 return new InteractionCandidate(pos, InteractionType.POWER_SWITCH, Component.translatable("message.zombierool.power_switch.turn_on", actionKey).withStyle(ChatFormatting.YELLOW));
@@ -614,7 +642,7 @@ public class KeyInputHandler {
             if (player.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > 7.5) return null;
             int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
             boolean isPermOpen = state.getValue(DefenseDoorSystem.DefenseDoorBlock.PERMANENTLY_OPEN);
-            if (!isPermOpen && stage < 5) {
+            if (((DefenseDoorSystem.DefenseDoorBlock)block).canRepair(state)) {
                 Component text = Component.translatable("gui.zombierool.overlay.repair", actionKey, (5 - stage)).withStyle(ChatFormatting.YELLOW);
                 return new InteractionCandidate(pos, InteractionType.REPAIR_BARRICADE, text);
             }

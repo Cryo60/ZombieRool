@@ -20,6 +20,7 @@ public class ZombieroolMixinPlugin implements IMixinConfigPlugin {
         // le dossier "mods" sur le disque dur. 
         // Résultat : Zéro interaction avec Kotlin, zéro chance de freeze.
         try {
+            hasTacz = Thread.currentThread().getContextClassLoader().getResource("com/tacz/guns/api/entity/IGunOperator.class") != null;
             File modsDir = new File("mods");
             if (modsDir.exists() && modsDir.isDirectory()) {
                 File[] files = modsDir.listFiles();

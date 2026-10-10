@@ -449,6 +449,7 @@ public class WorldConfigMenuScreen extends Screen {
                     listWidget.addEntry(new CustomStringAddEntry("allowedMobs", "Add Mob ID (e.g. minecraft:pig)"));
                     Set<String> set = getSet("allowedMobs");
                     for (String s : set) {
+                        if(s.equals("zombierool:mr_chief"))continue;
                         listWidget.addEntry(new RemovableStringEntry(s, () -> {
                             Set<String> ns = getSet("allowedMobs");
                             ns.remove(s);

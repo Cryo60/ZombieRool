@@ -26,11 +26,16 @@ import java.util.Random;
 public class GameplayEventHandler {
     private static final Random RANDOM = new Random();
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
     public static void onItemTossed(ItemTossEvent event) {
         Player player = event.getPlayer();
+        if (player.level().isClientSide() || event.isCanceled()) return;
         PrivateDrops.tagToss(player, event.getEntity());
-        if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_VULTURE.get())) {
+        if (!player.isCreative() && me.cryo.zombierool.core.system.WeaponFacade.isWeapon(event.getEntity().getItem())
+                && player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_VULTURE.get())) {
+            // Forge has already removed this stack from the inventory. Prevent its spawn.
+            event.setCanceled(true);
+            event.getEntity().discard();
             int randomMultiplier = RANDOM.nextInt(21) + 10;
             int pointsToAward = randomMultiplier * 10;
             PointManager.modifyScore(player, pointsToAward);

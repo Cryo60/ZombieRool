@@ -7,14 +7,22 @@ import net.minecraft.client.gui.Font;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
 import java.util.List;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class GuiOverlay {
 
     @SubscribeEvent
-    public static void onRenderOverlay(RenderGuiOverlayEvent.Post event) {
+    public static void onRenderOverlay(RenderGuiEvent.Post event) {
+        Minecraft mc=Minecraft.getInstance();
+        if(mc.level==null||mc.player==null||mc.options.hideGui||!me.cryo.zombierool.configuration.ZRClientConfig.showEnemiesRemaining()||!me.cryo.zombierool.gameplay.WaveManager.isGameRunning())return;
+        var text=net.minecraft.network.chat.Component.translatable("hud.zombierool.enemies_left",me.cryo.zombierool.client.MatchAtmosphere.remaining());
+        int w=mc.getWindow().getGuiScaledWidth(),h=mc.getWindow().getGuiScaledHeight(),textWidth=mc.font.width(text);
+        int x=me.cryo.zombierool.client.ClientHUDHandler.hotbarRight()+7,y=h-20;
+        if(x+textWidth>w-4){x=Math.max(4,w-textWidth-4);y=h-43;}
+        event.getGuiGraphics().drawString(mc.font,text,x,y,0xFF4444,true);
+
     }
 
     public static void renderNotifications(GuiGraphics graphics, int screenWidth, int screenHeight, Font font) {

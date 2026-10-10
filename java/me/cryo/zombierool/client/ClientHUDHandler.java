@@ -28,6 +28,13 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientHUDHandler {
 
+    private static int lastHotbarRight=-1;
+    public static int hotbarRight(){
+        Minecraft mc=Minecraft.getInstance();
+        boolean custom=mc.player!=null&&WaveManager.isGameRunning()&&!mc.player.isCreative()&&!mc.player.isSpectator()&&!ClientSniperHandler.isScoping();
+        return custom&&lastHotbarRight>=0?lastHotbarRight:mc.getWindow().getGuiScaledWidth()/2+91;
+    }
+
     private static long startGameAnimationStartTime = -1;
     private static int startGameAnimationWave = 0;
     private static final long START_ANIM_FADE_DURATION_TICKS = 40;
@@ -44,6 +51,7 @@ public class ClientHUDHandler {
 
     @SubscribeEvent
     public static void onClientLogout(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) {
+        lastHotbarRight=-1;
         startGameAnimationStartTime = -1;
         waveChangeAnimationStartTime = -1;
         startGameAnimationWave = 0;
@@ -113,6 +121,7 @@ public class ClientHUDHandler {
         if (utilityCount > 0) hotbarWidth += gap + (utilityCount * 20 + 2); 
 
         int startX = (screenWidth - hotbarWidth) / 2;
+        lastHotbarRight=startX+hotbarWidth;
         int y = screenHeight - 22;
 
         guiGraphics.blit(WIDGETS_LOCATION, startX, y, 0, 0, 22, 22);

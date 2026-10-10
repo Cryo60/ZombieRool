@@ -36,7 +36,7 @@ public class MatchRecapScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(g);
         
-        g.fillGradient(0, 0, this.width, this.height, 0xEE000000, 0xEE222222);
+        g.fillGradient(0, 0, this.width, this.height, 0x44000000, 0x66222222);
         
         g.drawCenteredString(this.font, this.title.getString(), this.width / 2, 20, 0xFFAA00);
 
