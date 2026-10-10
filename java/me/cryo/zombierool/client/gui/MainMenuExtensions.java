@@ -21,6 +21,7 @@ public class MainMenuExtensions {
 
     @SubscribeEvent
     public static void onOpening(ScreenEvent.Opening event) {
+        if (ModList.get().isLoaded("essential")) return;
         if (event.getNewScreen() instanceof TitleScreen) {
             event.setNewScreen(new WaWMainMenuScreen());
         } else if (event.getNewScreen() instanceof PauseScreen) {

@@ -73,6 +73,8 @@ public class PlayerDownManager {
         scheduledVineBooms.clear();
         savedPlayerInventories.clear();
         lastKnownHandgun.clear();
+
+        me.cryo.zombierool.hotfix.HotfixDownReset.resetAll();
     }
 
     @SubscribeEvent
@@ -183,6 +185,9 @@ public class PlayerDownManager {
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        var uuid=event.getEntity().getUUID();
+        playersDown.remove(uuid);soloQuickRevivePlayers.remove(uuid);savedPlayerInventories.remove(uuid);lastKnownHandgun.remove(uuid);
+        me.cryo.zombierool.hotfix.HotfixDownReset.resetPlayer(event.getEntity());
         if (event.getEntity() instanceof ServerPlayer player) {
             ServerLevel level = player.serverLevel();
             

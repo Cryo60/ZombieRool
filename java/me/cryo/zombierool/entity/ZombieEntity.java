@@ -172,7 +172,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     @Override
     protected void registerGoals() {
         super.registerGoals();
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, false, false));
+        this.targetSelector.addGoal(1, new me.cryo.zombierool.hotfix.ReachablePlayerTargetGoal(this, Player.class, false, false));
         this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2, true) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {

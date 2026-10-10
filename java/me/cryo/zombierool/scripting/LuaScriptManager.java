@@ -46,7 +46,7 @@ public class LuaScriptManager {
 
         try {
             globals = JsePlatform.standardGlobals();
-            globals.set("ZombieroolAPI", CoerceJavaToLua.coerce(new ZombieroolAPI(level)));
+            globals.set("ZombieroolAPI", LegacySoundBindings.wrap(new ZombieroolAPI(level)));
 
             File scriptDir = new File(level.getServer().getWorldPath(LevelResource.ROOT).toFile(), "zr_scripts");
             if (!scriptDir.exists()) {

@@ -8,7 +8,19 @@ for(const root of ['src/main/resources/assets/zombierool','assets/zombierool']){
  let elements=[{from:[0,0,0],to:[16,16,3],faces}];let textures={glass,particle:glass};
  if(breached&&stage>0&&half==='upper'){textures.boards=`zombierool:block/barricade${Math.min(stage,5)}`;elements.push({from:[0,0,-.02],to:[16,16,3.02],faces:{north:{texture:'#boards',uv:[0,0,16,16]},south:{texture:'#boards',uv:[16,0,0,16]}}});}
  fs.writeFileSync(path.join(root,`models/block/${id}.json`),JSON.stringify({ambientocclusion:false,textures,elements}));
- for(const facing of ['north','east','south','west'])variants[`breached=${breached},stage=${stage},half=${half},facing=${facing}`]={model:'zombierool:block/'+id,y:{north:0,east:90,south:180,west:270}[facing]};
+ for(const centered of [false,true])for(const mirrored of [false,true]){
+  const suffix=(mirrored?'_right':'')+(centered?'_centered':'');if(!suffix)continue;
+  const model=JSON.parse(JSON.stringify({ambientocclusion:false,textures,elements}));
+  for(const element of model.elements){
+   if(centered){element.from[2]+=6.5;element.to[2]+=6.5;}
+   if(mirrored){const x=element.from[0];element.from[0]=16-element.to[0];element.to[0]=16-x;const east=element.faces.east,west=element.faces.west;delete element.faces.east;delete element.faces.west;if(west)element.faces.east=west;if(east)element.faces.west=east;for(const face of Object.values(element.faces))if(face.uv)[face.uv[0],face.uv[2]]=[face.uv[2],face.uv[0]];}
+  }
+  fs.writeFileSync(path.join(root,`models/block/${id}${suffix}.json`),JSON.stringify(model));
+ }
+ for(const facing of ['north','east','south','west'])for(const centered of [false,true])for(const hinge of ['left','right'])for(const open of [false,true]){
+  const mirrored=(hinge==='right')!==open,suffix=(mirrored?'_right':'')+(centered?'_centered':'');
+  variants[`breached=${breached},stage=${stage},half=${half},facing=${facing},hinge=${hinge},open=${open},centered=${centered}`]={model:'zombierool:block/'+id+suffix,y:({north:180,east:270,south:0,west:90}[facing]+(open?(hinge==='left'?90:270):0))%360};
+ }
  }
  fs.writeFileSync(path.join(root,'blockstates/glass_defense_door.json'),JSON.stringify({variants}));fs.writeFileSync(path.join(root,'models/item/glass_defense_door.json'),JSON.stringify({parent:'minecraft:item/generated',textures:{layer0:'zombierool:block/glass_door_7'}}));
  for(const lang of ['en_us','fr_fr']){let file=path.join(root,'lang',lang+'.json'),data=JSON.parse(fs.readFileSync(file));const en=lang==='en_us';Object.assign(data,{

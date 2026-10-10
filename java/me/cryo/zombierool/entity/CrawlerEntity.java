@@ -137,7 +137,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
     protected void registerGoals() {
         super.registerGoals();
         this.goalSelector.addGoal(1, new RandomLookAroundGoal(this));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, false, false));
+        this.targetSelector.addGoal(2, new me.cryo.zombierool.hotfix.ReachablePlayerTargetGoal(this, Player.class, false, false));
         this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, true) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
