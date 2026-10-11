@@ -14,8 +14,6 @@ Play a map, or build one. Map makers get a creative tab, an in-game config menu,
 
 The latest **published** jar is **1.6.6-hotfix1**.
 
-See [the hotfix changes and validation](hotfixes/1.6.6-hotfix1/README.md).
-
 </div>
 
 ---
