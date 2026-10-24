@@ -62,3 +62,10 @@ mcreator.gradle
 /libs/
 /dev-libs/
 /forge-installer.jar.log
+
+# Local authoring tools, map examples and internal notes
+/tools/
+/examples/
+/hotfixes/
+/docs/*
+!/docs/guides/

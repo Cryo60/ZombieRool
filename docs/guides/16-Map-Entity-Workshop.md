@@ -8,7 +8,7 @@ Use the workshop to create enemies for your map and configure their spawners, pa
 2. Select an existing native enemy or a map-owned profile. Ordinary forms handle common settings; Advanced JSON handles custom cuboid models, bones, textures and animation clips.
 3. Use **Import JSON** after adding profile files under `<world>/zombierool/gameplay/entities/`.
 4. Use **Get egg** to obtain the selected profile. Named eggs appear under **Spawn and spawners**; the generic selector opens the catalogue.
-5. Save the profile and include its textures and scripts when sharing the map. Map profiles travel with the world; installing the mod alone does not install Stratholme's characters.
+5. Save the profile and include its textures and scripts when sharing the map. Map profiles travel with the world; include those files when sharing your map.
 
 ## Place and configure an Enemy Spawner
 
@@ -28,9 +28,9 @@ Changing the enemy preserves shared spawner settings. Saving behavior settings a
 
 ## Factions, appearances and combat
 
-Profiles can assign hostile factions. In Stratholme, Scourge and Risen fight one another as well as eligible players. Creative, spectator, downed and Zombie Blood-protected players are excluded from targeting. Spawner enemies resist knockback; ordinary enemies have no name tags.
+Profiles can assign hostile factions. Enemies in opposing factions can fight one another as well as eligible players. Creative, spectator, downed and Zombie Blood-protected players are excluded from targeting. Spawner enemies resist knockback; ordinary enemies have no name tags.
 
-A profile supports a default appearance plus up to four alternatives. Each spawn selects one uniformly and retains it after saving/reloading. Appearance can change model, texture, animation and voices while sharing combat logic. Stratholme's six Risen roles choose male/female appearances this way.
+A profile supports a default appearance plus up to four alternatives. Each spawn selects one uniformly and retains it after saving/reloading. Appearance can change model, texture, animation and voices while sharing combat logic.
 
 Use native enemy references to keep their existing models and animations. For custom models, standard clips include idle, walk, run, attack, cast and death. An attack animation alone does not apply damage.
 

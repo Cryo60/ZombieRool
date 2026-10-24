@@ -1,6 +1,6 @@
 # Map weapon packs and armor
 
-A themed arsenal belongs to the map that enables it. Stratholme supplies the example medieval arsenal; these weapons are not automatically offered in every world.
+A themed arsenal belongs to the map that enables it. The map must provide and enable its pack.
 
 ## Package an arsenal
 
@@ -10,9 +10,9 @@ The server synchronizes map assets. Clients decode them directly, without a full
 
 For balance changes to an existing weapon, use individual JSON overrides in `zombierool/gameplay/weapons/` instead. Unknown weapon IDs in that override folder do not create a new weapon.
 
-## Play with Stratholme's arsenal
+## Weapon behavior
 
-The pack provides 24 ordinary weapons: bows, crossbows, powder firearms, daggers, swords, an axe, a halberd, sword-and-shield, and Fire/Shadow Wands. They use normal weapon slots, Pack-a-Punch and applicable perks.
+Map packs can provide bows, crossbows, powder firearms, melee weapons and wands. These use normal weapon slots, Pack-a-Punch and applicable perks.
 
 - Hold use to draw a bow and release to fire. Very short taps do not consume arrows.
 - Crossbows and powder firearms use the ordinary fire/reload controls. The blunderbuss fires pellets; powder guns produce smoke and deliberate reloads.
@@ -26,7 +26,7 @@ Heat and durability weapons show the corresponding HUD status instead of convent
 
 With the pack enabled, place a Gambeson, Lordaeron Chainmail or Lordaeron Plate station from Machines. Armor pieces are in Map Weapons. Press the purchase key (F by default), or right-click during a match, to buy/equip a set; use the same station with a matching damaged set to repair it. Intact armor is not charged again.
 
-The Stratholme defaults are:
+Example armor settings (the enabled map pack defines the actual values):
 
 - **Gambeson:** 20% protection; 500 points to buy, 150 to repair.
 - **Lordaeron Chainmail:** 35%; 1,500 to buy, 300 to repair.

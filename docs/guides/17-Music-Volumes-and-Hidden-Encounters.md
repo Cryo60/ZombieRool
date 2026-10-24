@@ -49,6 +49,6 @@ The engine searches loaded path-block columns with solid support, enough space, 
 
 Gameplay spawning requires an active, unpaused match and eligible participants. Player-context timers wait while that player is downed or in Creative/Spectator. Chained timers inherit that context. Reset notifications are silent; cancel your encounter roster and timers in lifecycle handlers too.
 
-For repeated appearances, cap living enemies, use unique per-player timer IDs, retry failed placements after a delay and preserve existing callbacks. Test two players, repeated entries, pause, death, disconnect and restart. Stratholme encounter pools and timing are map scripts, not global defaults.
+For repeated appearances, cap living enemies, use unique per-player timer IDs, retry failed placements after a delay and preserve existing callbacks. Test two players, repeated entries, pause, death, disconnect and restart. Choose encounter pools and timing in your map scripts.
 
 [Enemy Spawners](16-Map-Entity-Workshop.md) · [Atmosphere](04-Skies-Sounds-and-Presets.md) · [Lua reference](12-Lua-and-Addons.md) · [All guides](INDEX.md)

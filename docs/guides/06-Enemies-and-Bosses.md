@@ -33,7 +33,7 @@ Add Crawler Wall Links for wall descents. Test special-round completion, boss lo
 
 ## Map-owned enemies and factions
 
-Use the [Map Entity Workshop](16-Map-Entity-Workshop.md) for custom profiles, Enemy Spawners, patrols, independent pursuit leashes and faction combat. These placed residents are separate from ordinary wave enemies unless wave quota is enabled. Stratholme's Risen, Rivendare, Balnazzar and Crypt Fiend are map content, not characters automatically present in every world.
+Use the [Map Entity Workshop](16-Map-Entity-Workshop.md) for custom profiles, Enemy Spawners, patrols, independent pursuit leashes and faction combat. These placed residents are separate from ordinary wave enemies unless wave quota is enabled.
 
 The Nuke kills tracked wave enemies. Map-owned residents, hidden encounter enemies and bosses remain alive; the team still receives 400 points per player. Test your objectives with this distinction.
 

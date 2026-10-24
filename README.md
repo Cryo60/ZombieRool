@@ -42,13 +42,13 @@ Download **26.7 Beta 1** from [GitHub Releases](https://github.com/Cryo60/Zombie
 
 ### Map-owned enemies and encounters
 
-Create enemy profiles in **Map Entity Workshop**, then configure Enemy Spawners with triggers, patrols, aggro radius, pursuit leash, health scaling, knife resistance and wave quota. Factions can fight each other, and a profile can choose persistent appearance variants. Stratholme supplies its own Risen, Rivendare, Balnazzar and Crypt Fiend definitions. [Workshop guide](docs/guides/16-Map-Entity-Workshop.md).
+Create enemy profiles in **Map Entity Workshop**, then configure Enemy Spawners with triggers, patrols, aggro radius, pursuit leash, health scaling, knife resistance and wave quota. Factions can fight each other, and a profile can choose persistent appearance variants. [Workshop guide](docs/guides/16-Map-Entity-Workshop.md).
 
 **Music Volumes** switch each player's playlist on entry and restore the previous selection on the next entry. Their Lua hooks can start hidden encounters using loaded, reachable path-block positions out of sight. Creative traversal previews music without starting gameplay encounters. [Music and encounter guide](docs/guides/17-Music-Volumes-and-Hidden-Encounters.md).
 
 ### Map arsenals and armor
 
-Map weapon packs bundle balance, 3D models, animation, textures and sounds with the save. Stratholme provides 24 medieval weapons, including bows, crossbows, powder firearms, melee weapons and wands. Melee uses repairable durability, combos and heavy attacks; Sword and Shield occupies one weapon slot. Gambeson, chainmail and plate stations sell and repair map-configured armor. [Weapon pack guide](docs/guides/18-Map-Weapon-Packs-and-Armor.md).
+Map weapon packs bundle balance, 3D models, animation, textures and sounds with the save. Maps can supply their own bows, crossbows, powder firearms, melee weapons and wands. Melee uses repairable durability, combos and heavy attacks; Sword and Shield occupies one weapon slot. Gambeson, chainmail and plate stations sell and repair map-configured armor. [Weapon pack guide](docs/guides/18-Map-Weapon-Packs-and-Armor.md).
 
 ### World files and large maps
 

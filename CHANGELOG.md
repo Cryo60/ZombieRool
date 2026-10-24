@@ -17,15 +17,13 @@ Minecraft 1.20.1 | Forge 47.1.3 | Java 17
   on the next entry, priority and fades. Creative traversal previews audio only.
 - Hidden-spawn APIs find loaded, supported, reachable path-block positions out of
   sight and return failure if none exists. Lua hooks connect music and encounters.
-- Stratholme supplies its own Risen roles, Rivendare, Balnazzar, Crypt Fiend and
-  encounter scripts. These are map content, not global enemies in every world.
 
 ## Weapons, armor and combat
 
 
 - World-owned weapon packs carry balance, models, textures, animations and sounds.
   Assets synchronize to clients without a full resource-pack reload and are cleared
-  when leaving the map. Stratholme includes 24 ordinary medieval/spell weapons.
+  when leaving the map. Maps can enable their own themed arsenals.
 - Bows draw/release; crossbows and powder guns use normal fire/reload controls.
   Melee supports repairable durability, light combos and charged heavy attacks.
   Scarlet Sword and Shield shares one slot, PAP upgrade and durability pool.
