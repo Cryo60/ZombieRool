@@ -39,13 +39,13 @@ public class S2CStartGameAnimationPacket {
 
     private static final class ClientHandler {
         private static void apply(S2CStartGameAnimationPacket msg) {
-            net.minecraft.client.Minecraft.getInstance().tell(() -> {
+            // enqueueWork already runs on the client thread; preserve packet order.
+            if(net.minecraft.client.Minecraft.getInstance().level==null)return;
                 WaveManager.setClientGameRunning(true);
                 ClientHUDHandler.triggerStartGameAnimation(msg.waveNumber);
                 WaveManager.setClientWave(msg.waveNumber);
                 me.cryo.zombierool.client.ZombieSoundHandler.applyMusicPreset(msg.musicPreset);
                 LocalCareerManager.sessionZrfEarned = 0;
-            });
         }
     }
 }

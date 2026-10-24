@@ -6,12 +6,13 @@
 ![Modloader](https://img.shields.io/badge/Modloader-Forge%2047.1.3-orange?style=for-the-badge)
 [![License](https://img.shields.io/badge/License-MIT-red?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/badge/Discord-Join_Us!-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HGv2r44hXM)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support_me!-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/cryyoons)
 
 **ZombieRool** turns a Minecraft world into a round-based zombies match. Survive the waves, earn points, buy weapons off the walls, open the map, turn on the power, and Pack-a-Punch before the rounds outscale you.
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-The latest **published** jar is **1.6.6-hotfix1**. This checkout continues **1.7.0-dev**, with the hotfix integrated.
+**ZombieRool 26.7 Beta 1**
 
 </div>
 
@@ -19,6 +20,9 @@ The latest **published** jar is **1.6.6-hotfix1**. This checkout continues **1.7
 
 ## 📖 Table of Contents
 
+- [What's new](#whats-new)
+- [Tools for map makers](#tools-for-map-makers)
+- [English setup guides](docs/guides/INDEX.md)
 - [Requirements](#-requirements)
 - [How to Play](#-how-to-play)
 - [Perks](#-perks)
@@ -27,7 +31,86 @@ The latest **published** jar is **1.6.6-hotfix1**. This checkout continues **1.7
 - [Map Creation](#️-map-creation)
 - [Lua Scripting](#-lua-scripting)
 - [Data-Driven Customization](#-data-driven-customization)
+- [Support](#-support)
 - [Links](#-links)
+
+---
+
+Download **26.7 Beta 1** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.1). This beta is available for testing; report problems on Discord.
+
+## What's new
+
+### Map-owned enemies and encounters
+
+Create enemy profiles in **Map Entity Workshop**, then configure Enemy Spawners with triggers, patrols, aggro radius, pursuit leash, health scaling, knife resistance and wave quota. Factions can fight each other, and a profile can choose persistent appearance variants. Stratholme supplies its own Risen, Rivendare, Balnazzar and Crypt Fiend definitions. [Workshop guide](docs/guides/16-Map-Entity-Workshop.md).
+
+**Music Volumes** switch each player's playlist on entry and restore the previous selection on the next entry. Their Lua hooks can start hidden encounters using loaded, reachable path-block positions out of sight. Creative traversal previews music without starting gameplay encounters. [Music and encounter guide](docs/guides/17-Music-Volumes-and-Hidden-Encounters.md).
+
+### Map arsenals and armor
+
+Map weapon packs bundle balance, 3D models, animation, textures and sounds with the save. Stratholme provides 24 medieval weapons, including bows, crossbows, powder firearms, melee weapons and wands. Melee uses repairable durability, combos and heavy attacks; Sword and Shield occupies one weapon slot. Gambeson, chainmail and plate stations sell and repair map-configured armor. [Weapon pack guide](docs/guides/18-Map-Weapon-Packs-and-Armor.md).
+
+### World files and large maps
+
+Authoring files now use `zombierool/config/`, `gameplay/`, `assets/`, `scripts/` and `docs/`. Legacy files remain readable; migration makes hash-verified backups before removing old copies. [Folder and sharing guide](docs/guides/19-Map-Files-and-Migration.md).
+
+Spawner appearances and patrols share fair budgets, and corpse, blood and gore cleanup fades old visuals under load. Nuke kills tracked wave enemies while leaving map residents, hidden encounters and bosses alive; every player still receives 400 points. Necropolis flying scenery and a decorative Dwarven Bombard extend the scenery catalogue.
+
+### Browse maps and share feedback
+
+The catalogue opens on **Official**, with thumbnail cards, search, filters and automatic featured selections. Map details group descriptions, versions, dependencies and reviews in framed panels. Outdated maps are identified before you follow **Get a link** to copy their download address.
+
+In-game reviews use a verified Minecraft account, with one editable rating and an optional comment per map. Posting requires a compatible community service; an update-required message means reading remains available but submission is unavailable. Map publication continues through Discord on the community website. [Catalogue and account guide](docs/guides/14-Map-Catalogue-and-Reviews.md).
+
+### Combat, sound and smoother hordes
+
+Ray Gun and Mark II firing have revised recoil, projectile and impact effects. The TaCZ Wunderwaffe chains electricity and stuns enemies instead of producing explosions. Whisper's final shot releases crows. [Wonder weapon guide](docs/guides/15-Wonder-Weapons-and-Combat.md).
+
+Ordinary crawlers can damage Defense Walls and use stairs. Horde navigation shares its work across enemies to reduce movement stalls. Gore pieces settle and recover from blocked positions. Whisper and Wunderfizz sounds are positional, power-up loops are quieter, and `zombie_ambient` can continue in the pause menu. The Resprune camo has been removed from the selection.
+
+English, French, German, Spanish, Brazilian Portuguese and Russian include all current menu and message keys. Map Lua scripts use the supported game API in a restricted runtime; direct Java, operating-system and arbitrary file access are unavailable. [Scripting guide](docs/guides/12-Lua-and-Addons.md).
+
+### Build, deploy and defend
+
+Collect parts and assemble custom recipes on workbenches. The preset library includes **Zombie Shield**, **Turbine**, **Sentry Turret** and **Pack-a-Punch**; map makers choose which recipes to add.
+
+The shield protects your back or can be held in front. Turbines temporarily power compatible nearby devices. Sentry turrets can be placed and recovered, take enemy damage and use fixed damage. Environmental suits have their own slot, so a suit and portable equipment can be carried together.
+
+**Warden Locks** secure doors until the team finds a shared key. Map makers choose which bosses drop it; Brutus has it enabled by default.
+
+### More enemies
+
+Face Panzer, Brutus, George Romero, the Astronaut, the Pentagon Thief and the Abomination, with distinct attacks and encounter rules.
+
+Scourge hordes mix Ghouls, Zombies and Skeletons with multiple skins. Nova Crawlers and Geist can use ground/gas or leaping behavior independently of their appearance. Map makers choose Hellhounds or the Pentagon Thief for special rounds.
+
+### Machines that arrive during a match
+
+**Landing Sites** support a floating perk roulette triggered by a door channel, or a randomly selected perk/Pack-a-Punch machine descending from the sky at configured round intervals. Match reset restores the original sites.
+
+### Create your map's atmosphere
+
+Import skies and ambient sounds, adjust colors, fog and screen effects, and save custom presets. Positional sounds support range, fades, random intervals and thunder flashes.
+
+Included presets: **Nuketown Zombies, Moon, Nacht der Untoten, Die Rise, Origins, Revelations, The Giant, Shangri-La, Blizzard and Zenith**. Depending on the preset, sky scenes include the nuclear cloud, a cubic Earth, aerial combat, an eclipse, floating rocks and meteors. Teleporters can change travelers' atmosphere during play.
+
+Astronaut, diving and hazmat appearances share environmental protection mechanics. Configure vacuum, gravity, underwater routes and local atmosphere zones separately from the visual sky.
+
+### Build richer scenery
+
+Use decorative anti-aircraft guns, aircraft, airships and tornado generators. Add furniture for homes, offices, factories, hospitals, restaurants, bunkers and military areas. Cars, buses, trucks, armored vehicles, aircraft and helicopters include damaged/burnt/burning variants where supported.
+
+Static vehicles have physical collision. Flying ambient aircraft and sky objects are decorative. Furniture and vehicle models can also dress Buyable Obstacle groups.
+
+## Tools for map makers
+
+Open **Map Config** in Creative with the configuration key. Configure waves, loadouts, bosses and loot, power, environments, atmosphere and scripts. Creative categories group spawners, navigation, logic, machines, buildables, components, equipment and decorations.
+
+Teleporters support direct travel, linking, temporary rooms, conditions, spawner-channel changes and arrival presets. Navigation links provide jumps, wall traversal and ziplines. Outnumbered adds a continuous survival phase before or between normal rounds.
+
+Create linked traps, stationary turrets, Soul Chests and Cerberus objectives. Add workbench presets through datapacks. Connect systems through guided rules, the Lua code editor, live console and integrated API help.
+
+[Read the English setup guides](docs/guides/INDEX.md). These provide step-by-step setup for buildables, portable equipment, sky/sound presets, suits, enemies, deliveries, scenery, transport, Outnumbered, traps, objectives, Lua, map-owned enemies, music triggers, weapon packs, armor and map migration.
 
 ---
 
@@ -44,7 +127,7 @@ The latest **published** jar is **1.6.6-hotfix1**. This checkout continues **1.7
 
 ZombieRool has its own guns. TacZ is not required. If TacZ is installed, its guns can be balanced, Pack-a-Punched, and rolled from the Mystery Box.
 
-Lua and Discord Rich Presence are already inside the mod. LuaJ is packed into the jar under another package, so it does not clash with TacZ. Do not install a separate LuaJ mod. Rich Presence does not need an extra mod either.
+Lua scripting and Discord Rich Presence are included in the mod; neither needs an additional mod.
 
 The easiest way to launch a community map is the [ZombieRool launcher](https://github.com/Cryo60/ZR-Launcher). **Play** builds a separate Forge instance for that map, so its mods do not replace your normal `mods` folder. **Install** only copies the world into the folder shown at the bottom of the launcher. In the launcher, **TaCZ and gun packs** is off unless you turn it on. Downloads are HTTPS only, and only from Modrinth, CurseForge, this GitHub account, or the official Minecraft and Forge servers.
 
@@ -65,7 +148,7 @@ The easiest way to launch a community map is the [ZombieRool launcher](https://g
 | **Death mid-round** | If you actually die during a round, you spectate until the next wave. You are not sent back to your spawner yet. |
 | **End of the game** | When the match ends, you return to your player spawner with full health and a fresh loadout. Creative players who are building the map are left where they are. |
 | **Leave and come back** | Rejoin a match that is still running and you come back as a spectator with an empty inventory. Rejoin after the match is over and your inventory, effects, and points are reset to 500. |
-| **Dropped guns** | A gun you throw stays on the ground, and only you can pick it up. It disappears when the inventory slot it came from is filled by a new weapon. Hoppers and mobs cannot take it. |
+| **Dropped guns** | A gun you throw stays on the ground, and only you can pick it up. It disappears when the inventory slot it came from is filled by a new weapon. Hoppers can collect dropped items; weapon ownership rules still apply to players. |
 | **Prone** | You can go prone and crawl through low gaps. |
 
 ### Sharing a roll
@@ -80,7 +163,7 @@ Knife the weapon sitting in a Mystery Box, or the drink showing on a Wunderfizz,
 
 Levers, buttons, pressure plates, tripwire, repeaters, comparators, and daylight detectors still work.
 
-Containers stay locked. So do doors, trapdoors, and fence gates, so a match cannot be used to stash guns or to open decorative gates. Redstone can still power those blocks.
+Vanilla containers, doors, trapdoors, fence gates, item frames and hoppers are usable during matches. Redstone controls continue to work.
 
 Bullets and blood pass through invisible map-maker blocks such as Restrict. Players are still stopped by Restrict.
 
@@ -225,32 +308,34 @@ The hidden 100-point crawl under a perk machine is forgotten when the match ends
 
 ### Files that travel with the map
 
-Everything below lives in the world save and is sent to clients who join.
+Map-owned authoring content lives in the save. The server executes Lua and synchronizes the required presentation assets to joining clients.
 
-```
-saves/<YourWorld>/
-├── zr_scripts/
-│   └── main.lua                 Lua. /zombierool reload applies it.
-└── zombierool/
-    ├── config.json              Written by the in-game menu.
-    ├── weapons/                 JSON overrides for guns that already exist. Same file name as the weapon id.
-    ├── custom_blocks/           Up to 32 PNGs. Each one becomes a block, stairs, a slab, a fence, a wall, and a pane.
-    ├── placements/              Optional .txt files that place addon machines. See below.
-    ├── skins/
-    │   ├── zombie/  crawler/  hellhound/
-    │   └── zombie_eyes/  crawler_eyes/  hellhound_eyes/
-    ├── assets/chalks/           PNG overlays for the Chalk item. 128×128 recommended.
-    └── audio/
-        ├── music/               default/  damned/  secret/  menu/
-        ├── voices/              player voice lines, .ogg
-        └── sfx/                 start/  round_change/  special_change/  special_start/  ambient/  misc/
+```text
+saves/<YourWorld>/zombierool/
+  config/settings.json
+  gameplay/entities/
+  gameplay/weapons/
+  gameplay/weapon_packs/<id>/
+  assets/audio/                 music/, voices/, sfx/, custom/
+  assets/textures/              entity skins, chalks/, skyboxes/
+  assets/blocks/
+  assets/particles/
+  scripts/                     main.lua and other Lua files
+  docs/
+  placements/                  optional addon machine placement files
 ```
 
 Audio must be `.ogg` and under 15 MB. Skins, chalks, and custom-block textures must be `.png` and under 2 MB.
 
 Each custom-block texture can use a vanilla sound (stone, wood, metal, glass, and the other presets in the texture kit). The kit is in the decoration tab of the creative menu. The folder travels with the map, so someone who downloads the world sees your textures.
 
-A first launch of the world writes `zombierool/README.md` next to these folders, with the same layout.
+See the [map files guide](docs/guides/19-Map-Files-and-Migration.md) for migration, backups and sharing.
+
+### Additional world resources in 26.7
+
+Imported skies use `zombierool/assets/textures/skyboxes/`, imported sounds use `zombierool/assets/audio/custom/`, and Lua uses `zombierool/scripts/`. Legacy `zr_scripts/` remains readable; a matching canonical filename takes precedence. Include the whole `zombierool/` folder and required datapacks when sharing a world.
+
+Use the in-game import buttons for supported PNG sky layouts and Ogg Vorbis audio. Imported resources become available dynamically; an embedded `resources.zip` is not needed for these imports. See the [atmosphere guide](docs/guides/04-Skies-Sounds-and-Presets.md) for formats, limits and placement.
 
 ### Addon placements
 
@@ -275,7 +360,7 @@ The addon registers the type in Java with `AddonPlacements.register`. A line tha
 
 ## 📜 Lua Scripting
 
-Scripts live in `saves/<YourWorld>/zr_scripts/`. Run the world once, edit `main.lua`, then `/zombierool reload`.
+Scripts live in `saves/<YourWorld>/zombierool/scripts/`. Run the world once, edit `main.lua`, then `/zombierool reload`.
 
 UUIDs are strings. Coordinates are numbers. Tick delays are 20 ticks per second.
 
@@ -466,6 +551,16 @@ end
 
 ---
 
+### Additional API systems in 26.7
+
+The API reference above remains available. New systems add buildable events, portable equipment, environmental suits, encounter configuration, machine delivery, atmosphere presets, sky objects and decorative scenery. The in-game **Map Config → Scripting → API help** documents signatures and examples for the installed build.
+
+- [Lua and addon guide](docs/guides/12-Lua-and-Addons.md): script location, examples and datapack recipes.
+- [Teleporter guide](docs/guides/09-Teleporters-and-Traversal.md): arrival atmospheres, channels and traversal.
+- [Objectives guide](docs/guides/11-Traps-and-Soul-Objectives.md): completion events and scripted rewards.
+
+---
+
 ## 📂 Data-Driven Customization
 
 Weapons, perks, and power-ups are JSON.
@@ -474,11 +569,19 @@ Weapons, perks, and power-ups are JSON.
 |---|---|
 | Inside the mod, `data/zombierool/gameplay/weapons/` | The built-in guns |
 | `.minecraft/data/zombierool/gameplay/weapons/` | Extra definitions for that whole instance |
-| `saves/<YourWorld>/zombierool/weapons/` | Overrides a gun that already exists, for that map only. The file name is the weapon id. An unknown id is skipped. |
+| `saves/<YourWorld>/zombierool/gameplay/weapons/` | Overrides a gun that already exists, for that map only. The file name is the weapon id. An unknown id is skipped. |
 
 Perks and bonuses follow the same idea under `data/zombierool/gameplay/perks/` and `data/zombierool/gameplay/bonuses/`.
 
 A map override can change damage, fire rate, ammo, Pack-a-Punch behavior, and sounds without shipping a new mod. A TacZ gun can be pointed at from JSON when TacZ is installed.
+
+---
+
+## ☕ Support
+
+ZombieRool is free and made in my spare time. If you enjoy it and want to help keep it going, you can buy me a coffee on Ko-fi. It is never required, and every bit is appreciated.
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy_me_a_coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/cryyoons)
 
 ---
 
@@ -487,6 +590,7 @@ A map override can change damage, fire rate, ammo, Pack-a-Punch behavior, and so
 | | |
 |---|---|
 | Discord | [Join the community](https://discord.gg/HGv2r44hXM) |
+| Ko-fi | [Support the project](https://ko-fi.com/cryyoons) |
 | CurseForge | [ZombieRool](https://www.curseforge.com/minecraft/mc-mods/zombierool) |
 | Modrinth | [ZombieRool](https://modrinth.com/mod/zombierool) |
 | Launcher | [ZR-Launcher](https://github.com/Cryo60/ZR-Launcher) |

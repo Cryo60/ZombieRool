@@ -27,7 +27,7 @@ public final class MapTexturePack {
     }
 
     public static String sourceStamp(Path worldRoot) throws IOException {
-        Path dir = worldRoot.resolve("zombierool").resolve("custom_blocks");
+        Path dir = me.cryo.zombierool.util.WorldZombieroolPaths.path(worldRoot,"custom_blocks");
         StringBuilder builder = new StringBuilder("pane2crc;");
         if (Files.isDirectory(dir)) {
             try (var stream = Files.list(dir)) {
@@ -57,7 +57,7 @@ public final class MapTexturePack {
                 {"pack":{"pack_format":15,"description":"ZombieRool map block textures"}}
                 """, StandardCharsets.UTF_8);
         String[] slots = MapTextures.readSlots(worldRoot);
-        Path custom = worldRoot.resolve("zombierool").resolve("custom_blocks");
+        Path custom = me.cryo.zombierool.util.WorldZombieroolPaths.path(worldRoot,"custom_blocks");
         for (int i = 0; i < MapTextures.SLOTS; i++) {
             String name = slots[i] == null ? "" : slots[i];
             copyFace(custom, name, "", assets.resolve("textures/block/maptex/" + i + "_side.png"));

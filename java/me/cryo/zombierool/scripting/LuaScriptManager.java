@@ -7,8 +7,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.jse.CoerceJavaToLua;
-import org.luaj.vm2.lib.jse.JsePlatform;
+
+
 
 import java.io.File;
 import java.io.FileWriter;
@@ -21,7 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class LuaScriptManager {
     private static Globals globals;
+    private static LuaSandbox.Budget budget;
+    private static final ThreadLocal<java.util.Set<String>> callbacks=ThreadLocal.withInitial(java.util.HashSet::new);
     private static ServerLevel currentLevel;
+    private static final ThreadLocal<java.util.UUID> eventPlayer=new ThreadLocal<>();
 
     private static final Map<String, String> dataStore = new ConcurrentHashMap<>();
 
@@ -29,11 +32,13 @@ public class LuaScriptManager {
         String id;
         int remainingTicks;
         LuaValue callback;
+        java.util.UUID player;
 
         LuaTimer(String id, int remainingTicks, LuaValue callback) {
             this.id = id;
             this.remainingTicks = remainingTicks;
             this.callback = callback;
+            this.player = eventPlayer.get();
         }
     }
 
@@ -45,11 +50,12 @@ public class LuaScriptManager {
         activeTimers.clear();
 
         try {
-            globals = JsePlatform.standardGlobals();
-            globals.set("ZombieroolAPI", LegacySoundBindings.wrap(new ZombieroolAPI(level)));
+            globals = LuaSandbox.create();budget=(LuaSandbox.Budget)globals.debuglib;budget.reset();
+            globals.set("print",new org.luaj.vm2.lib.VarArgFunction(){public org.luaj.vm2.Varargs invoke(org.luaj.vm2.Varargs args){StringBuilder line=new StringBuilder();for(int i=1;i<=args.narg();i++){if(i>1)line.append("  ");line.append(args.arg(i).tojstring());}log(line.toString());return LuaValue.NONE;}});
+            globals.set("ZombieroolAPI", SafeLuaBindings.wrap(new ZombieroolAPI(level)));
 
-            File scriptDir = new File(level.getServer().getWorldPath(LevelResource.ROOT).toFile(), "zr_scripts");
-            if (!scriptDir.exists()) {
+            File scriptDir = me.cryo.zombierool.util.WorldZombieroolPaths.getScriptsDir(level);
+            if (!scriptDir.exists()&&me.cryo.zombierool.util.WorldZombieroolPaths.scripts(level).length==0) {
                 scriptDir.mkdirs();
                 FileWriter fw = new FileWriter(new File(scriptDir, "main.lua"));
                 fw.write("-- ZombieRool Main Lua Script\n");
@@ -73,6 +79,7 @@ public class LuaScriptManager {
                 fw.write("--   OnPerkBought(playerUUID, perkId)\n");
                 fw.write("--   OnMysteryBoxUsed(playerUUID, weaponId)\n");
                 fw.write("--   OnLookTriggerActivated(playerUUID, triggerId)\n");
+                fw.write("--   OnMachineDeliveryStarted/Landed/Failed/Cancelled(cx, cy, cz, x, y, z, machine, mode, error)\n");
                 fw.write("--   OnMeleeStrike(playerUUID, x, y, z)\n");
                 fw.write("--   OnExplosion(playerUUID, x, y, z, radius)\n");
                 fw.write("--   OnProjectileHit(playerUUID, x, y, z)\n");
@@ -143,6 +150,10 @@ public class LuaScriptManager {
                 fw.write("--   ZombieroolAPI:hasBowieKnife(uuid) --> boolean\n");
                 fw.write("--   ZombieroolAPI:performMeleeAttack(uuid)\n");
                 fw.write("--   ZombieroolAPI:triggerAmmoCrate(uuid)\n");
+                fw.write("--   ZombieroolAPI:listMachineDeliveries(), listDeliveryMachines(), getMachineDelivery(x,y,z)\n");
+                fw.write("--   ZombieroolAPI:configureMachineDelivery(x,y,z,settings), triggerMachineDelivery(x,y,z)\n");
+                fw.write("--   ZombieroolAPI:deliverMachineAt(x,y,z,machine,tx,ty,tz), cancelMachineDelivery(x,y,z)\n");
+                fw.write("--   ZombieroolAPI:resetMachineDelivery(x,y,z,wholeGroup), setMachineDeliveryEnabled(x,y,z,enabled)\n");
                 fw.write("--   ZombieroolAPI:placePerkMachine(x, y, z, facing, perkId)\n");
                 fw.write("--   ZombieroolAPI:placeMysteryBox(x, y, z, facing, active)\n");
                 fw.write("--   ZombieroolAPI:placeWunderfizz(x, y, z, facing)\n");
@@ -164,14 +175,14 @@ public class LuaScriptManager {
                 fw.close();
             }
 
-            File[] scriptFiles = me.cryo.zombierool.gameplay.CompatibilityFixes.sortScripts(scriptDir.listFiles((dir, name) -> name.endsWith(".lua")));
+            File[] scriptFiles = me.cryo.zombierool.util.WorldZombieroolPaths.scripts(level);
             if (scriptFiles != null) {
                 for (File script : scriptFiles) {
                     try {
-                        me.cryo.zombierool.gameplay.CompatibilityFixes.loadScript(globals,script.getAbsolutePath()).call();
-                        System.out.println("[ZombieRool Lua] Successfully loaded script: " + script.getName());
+                        budget.reset();me.cryo.zombierool.gameplay.CompatibilityFixes.loadScript(globals,script.getAbsolutePath()).call();
+                        log("Loaded: "+script.getName());System.out.println("[ZombieRool Lua] Successfully loaded script: " + script.getName());
                     } catch (Throwable t) {
-                        System.err.println("[ZombieRool Lua] Error loading " + script.getName() + ": " + t.getMessage());
+                        log(script.getName()+": "+t.getMessage());System.err.println("[ZombieRool Lua] Error loading " + script.getName() + ": " + t.getMessage());
                     }
                 }
             }
@@ -180,32 +191,46 @@ public class LuaScriptManager {
         }
     }
 
+    private static final java.util.ArrayDeque<String> CONSOLE=new java.util.ArrayDeque<>();
+    public static synchronized void log(String text){while(CONSOLE.size()>=120)CONSOLE.removeFirst();CONSOLE.addLast(text.length()>1000?text.substring(0,1000):text);}
+    public static synchronized java.util.List<String> console(){return java.util.List.copyOf(CONSOLE);}
+    public static String validate(String code){try{LuaSandbox.create().load(code,"editor");return "OK";}catch(Throwable e){return e.getMessage();}}
+    private static LuaValue eventValue(Object value){
+        if(value==null)return LuaValue.NIL;
+        if(value instanceof Boolean b)return LuaValue.valueOf(b);
+        if(value instanceof Number n)return LuaValue.valueOf(n.doubleValue());
+        if(value instanceof String s)return LuaValue.valueOf(s);
+        throw new IllegalArgumentException("Unsupported Lua event value: "+value.getClass().getSimpleName());
+    }
+    private static java.util.UUID eventParticipant(Object... args){if(currentLevel==null)return null;for(var arg:args)if(arg instanceof String id){try{var uuid=java.util.UUID.fromString(id);if(currentLevel.getServer().getPlayerList().getPlayer(uuid)!=null)return uuid;}catch(IllegalArgumentException ignored){}}return null;}
+    private static boolean playerEventAllowed(String event,Object... args){if(currentLevel==null||event.equals("OnPlayerDeath")||event.equals("OnPlayerRespawn"))return true;for(var arg:args)if(arg instanceof String id){try{var p=currentLevel.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(id));if(p!=null&&(p.isCreative()||p.isSpectator()))return false;}catch(IllegalArgumentException ignored){}}return true;}
+    public static org.luaj.vm2.LuaValue eventResult(String eventName,Object... args){
+        if(globals==null||!playerEventAllowed(eventName,args))return org.luaj.vm2.LuaValue.NIL;
+        if(!callbacks.get().add(eventName))return LuaValue.NIL;
+        var previousPlayer=eventPlayer.get();var participant=eventParticipant(args);if(participant!=null)eventPlayer.set(participant);
+        try{if(callbacks.get().size()==1)budget.reset();var f=globals.get(eventName);if(!f.isfunction())return org.luaj.vm2.LuaValue.NIL;var values=new org.luaj.vm2.LuaValue[args.length];for(int i=0;i<args.length;i++)values[i]=eventValue(args[i]);return f.invoke(values).arg1();}catch(Throwable e){log(eventName+": "+e.getMessage());return org.luaj.vm2.LuaValue.NIL;}finally{callbacks.get().remove(eventName);if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);}
+    }
+    public static boolean gameplayCallAllowed(ServerLevel level){if(!me.cryo.zombierool.gameplay.WaveManager.isGameRunning()||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())return false;var owner=eventPlayer.get();if(owner!=null){var p=level.getServer().getPlayerList().getPlayer(owner);return p!=null&&p.level()==level&&me.cryo.zombierool.gameplay.MapActorBehavior.eligible(p);}return level.players().stream().anyMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible);}
+    public static boolean ready(ServerLevel level){return globals!=null&&currentLevel==level;}
     public static String executeString(String code) {
         if (globals == null) return "§cLua engine not initialized.";
         try {
-            LuaValue chunk = globals.load(code);
+            budget.reset();LuaValue chunk = globals.load(code);
             LuaValue result = chunk.call();
             return result.isnil() ? "§aExecution successful." : "§eResult: " + result.toString();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return "§cError: " + e.getMessage();
         }
     }
 
-    public static void callEvent(String eventName, Object... args) {
-        if (globals == null) return;
-        try {
-            LuaValue func = globals.get(eventName);
-            if (func.isfunction()) {
-                LuaValue[] luaArgs = new LuaValue[args.length];
-                for (int i = 0; i < args.length; i++) {
-                    luaArgs[i] = CoerceJavaToLua.coerce(args[i]);
-                }
-                func.invoke(luaArgs);
-            }
-        } catch (Throwable t) {
-            System.err.println("[ZombieRool Lua] Error executing event " + eventName + ": " + t.getMessage());
-        }
+    public static boolean actorCallback(String name,String uuid) {
+        if(globals==null)return true;
+        if(!callbacks.get().add(name))return true;
+        try {if(callbacks.get().size()==1)budget.reset();var function=globals.get(name);if(function.isfunction())function.call(LuaValue.valueOf(uuid));return true;}
+        catch(Throwable error){log(name+": "+error.getMessage());return false;}
+        finally{callbacks.get().remove(name);}
     }
+    public static void callEvent(String eventName, Object... args) {eventResult(eventName,args);}
 
     public static void registerTimer(String id, int ticks, LuaValue callback) {
         activeTimers.put(id, new LuaTimer(id, ticks, callback));
@@ -232,6 +257,8 @@ public class LuaScriptManager {
             Iterator<Map.Entry<String, LuaTimer>> iterator = activeTimers.entrySet().iterator();
             while (iterator.hasNext()) {
                 LuaTimer timer = iterator.next().getValue();
+                if(timer.player!=null){var player=currentLevel==null?null:currentLevel.getServer().getPlayerList().getPlayer(timer.player);if(player==null||!me.cryo.zombierool.gameplay.WaveManager.isGameRunning()){iterator.remove();continue;}if(!me.cryo.zombierool.gameplay.MapActorBehavior.eligible(player)||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())continue;}
+                if(currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible)))continue;
                 timer.remainingTicks--;
                 if (timer.remainingTicks <= 0) {
                     iterator.remove();
@@ -240,13 +267,18 @@ public class LuaScriptManager {
             }
 
             for (LuaTimer timer : toExecute) {
+                // An earlier due callback can end the match or change a player's mode.
+                // Validate again at invocation time, not just while building the due queue.
+                if(timer.player!=null){var owner=currentLevel==null?null:currentLevel.getServer().getPlayerList().getPlayer(timer.player);if(owner==null||!me.cryo.zombierool.gameplay.WaveManager.isGameRunning())continue;if(!me.cryo.zombierool.gameplay.MapActorBehavior.eligible(owner)){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);continue;}}
+                if(currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible))){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);continue;}
+                var previousPlayer=eventPlayer.get();if(timer.player!=null)eventPlayer.set(timer.player);
                 try {
                     if (timer.callback.isfunction()) {
-                        timer.callback.call();
+                        budget.reset();timer.callback.call();
                     }
                 } catch (Throwable t) {
                     System.err.println("[ZombieRool Lua] Error executing timer " + timer.id + ": " + t.getMessage());
-                }
+                } finally {if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);}
             }
         }
     }

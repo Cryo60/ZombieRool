@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class SoundManagerMixin {
     @Inject(method = "getSoundEvent", at = @At("HEAD"), cancellable = true)
     private void zombierool_getDynamicSoundEvent(ResourceLocation location, CallbackInfoReturnable<WeighedSoundEvents> cir) {
+        var mapped=me.cryo.zombierool.client.MapWeaponPackClient.soundEvent(location);if(mapped!=null){cir.setReturnValue(mapped);return;}
         if (location.getNamespace().equals("zombierool") && location.getPath().startsWith("dynamic_")) {
             WeighedSoundEvents wse = new WeighedSoundEvents(location, null);
             Sound sound = new Sound(location.toString(), ConstantFloat.of(1.0f), ConstantFloat.of(1.0f), 1, Sound.Type.FILE, true, false, 16);

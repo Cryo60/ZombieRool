@@ -21,6 +21,7 @@ public final class ClientPacketEffects {
     private ClientPacketEffects() {}
 
     public static void applyRecoil(float pitchRecoil, float yawRecoil) {
+        if(me.cryo.zombierool.client.RayGunFeel.kick(pitchRecoil,yawRecoil))return;
         Player player = Minecraft.getInstance().player;
         if (player != null) {
             player.setXRot(player.getXRot() - pitchRecoil);
@@ -98,6 +99,8 @@ public final class ClientPacketEffects {
     }
 
     public static void playPositionalSound(ResourceLocation soundLocation, BlockPos pos, float volume, float pitch) {
+        var dynamic=DynamicSoundLoader.getPositionalSound(soundLocation.toString(),SoundSource.HOSTILE,volume,pitch,pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5);
+        if(dynamic!=null){Minecraft.getInstance().getSoundManager().play(dynamic);return;}
         SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(soundLocation);
         if (sound == null) {
             sound = SoundEvent.createVariableRangeEvent(soundLocation);

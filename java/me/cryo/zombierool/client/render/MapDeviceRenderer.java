@@ -28,8 +28,11 @@ public final class MapDeviceRenderer implements BlockEntityRenderer<MapDeviceSys
         head=LayerDefinition.create(mesh,32,32).bakeRoot();
     }
     @SubscribeEvent public static void register(EntityRenderersEvent.RegisterRenderers e) {e.registerBlockEntityRenderer(MapDeviceSystem.DEVICE.get(),MapDeviceRenderer::new);}
-    @Override public boolean shouldRenderOffScreen(MapDeviceSystem.Device d){return d.kind()==MapDeviceSystem.Kind.ELECTRIC&&d.getBlockState().getValue(MapDeviceSystem.DeviceBlock.ACTIVE);}
+    @Override public boolean shouldRenderOffScreen(MapDeviceSystem.Device d){return me.cryo.zombierool.gameplay.AmbientScenery.kind(d.kind())||d.kind()==MapDeviceSystem.Kind.ELECTRIC&&d.getBlockState().getValue(MapDeviceSystem.DeviceBlock.ACTIVE);}
+    @Override public int getViewDistance(){return 256;}
+    @Override public boolean shouldRender(MapDeviceSystem.Device d,net.minecraft.world.phys.Vec3 camera){if(d.kind()==MapDeviceSystem.Kind.AIRCRAFT&&d.scenery.getString("variant").equals("airship"))return net.minecraft.world.phys.Vec3.atCenterOf(d.getBlockPos()).closerThan(camera,me.cryo.zombierool.gameplay.AmbientScenery.airshipLength(d.scenery)*.5+256);return BlockEntityRenderer.super.shouldRender(d,camera);}
     @Override public void render(MapDeviceSystem.Device d,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay) {
+        if(me.cryo.zombierool.gameplay.AmbientScenery.kind(d.kind())){AmbientSceneryRenderer.render(d,partial,pose,buffers,light);return;}
         if(d.kind()==MapDeviceSystem.Kind.ELECTRIC){
             if(d.getBlockState().getValue(MapDeviceSystem.DeviceBlock.ACTIVE))ElectricTrapLightning.render(d,pose,buffers);
             return;

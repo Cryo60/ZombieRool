@@ -19,15 +19,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.WeakHashMap;
+import net.minecraftforge.eventbus.api.EventPriority;
 
 @Mod.EventBusSubscriber(modid = "zombierool")
 public class PerkEventHandler {
 
     // --- Blood Rage Constants ---
-    private static final Random RANDOM = new Random();
-    private static final Map<Player, Long> LAST_BLOOD_RAGE_TRIGGER = new ConcurrentHashMap<>();
+    private static final Map<Player, Long> LAST_BLOOD_RAGE_TRIGGER = new WeakHashMap<>();
     private static final int BR_COOLDOWN = 20;
     private static final int BR_CHANCE = 20;
     private static final float BR_HEAL_PCT = 0.15F;
@@ -36,11 +35,11 @@ public class PerkEventHandler {
     private static final float PHD_MIN_FALL = 3.0F;
     private static final float PHD_EXPLOSION_POWER = 2.0F;
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDamage(LivingDamageEvent event) {
-        // CORRECTION ICI : Pas de instanceof car getEntity() renvoie déjà LivingEntity
+        if (event.getEntity().level().isClientSide || event.getAmount() <= 0 || event.isCanceled()) return;
         LivingEntity entity = event.getEntity();
-        
+
         // PHD Flopper Immunity
         if (entity.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
             DamageSource src = event.getSource();
@@ -52,15 +51,17 @@ public class PerkEventHandler {
         }
 
         // Blood Rage Trigger
-        if (event.getSource().getEntity() instanceof Player attacker) {
+        Entity owner = event.getSource().getEntity();
+        if (!(owner instanceof Player) && event.getSource().getDirectEntity() instanceof net.minecraft.world.entity.projectile.Projectile projectile) owner = projectile.getOwner();
+        if (owner instanceof Player attacker && attacker != entity && attacker.isAlive()) {
             if (attacker.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_BLOOD_RAGE.get())) {
                 long now = attacker.level().getGameTime();
-                long last = LAST_BLOOD_RAGE_TRIGGER.getOrDefault(attacker, 0L);
-                
-                if (now - last >= BR_COOLDOWN) {
+                long last = LAST_BLOOD_RAGE_TRIGGER.getOrDefault(attacker, Long.MIN_VALUE / 2);
+
+                if (now < last || now - last >= BR_COOLDOWN) {
                     float hpPct = attacker.getHealth() / attacker.getMaxHealth();
-                    int chance = (int) (BR_CHANCE * hpPct);
-                    if (RANDOM.nextInt(Math.max(1, chance)) == 0) {
+                    float chance = BR_CHANCE / 100.0F + 0.60F * (1.0F - hpPct);
+                    if (attacker.getRandom().nextFloat() < chance) {
                         triggerBloodRage(attacker, event.getAmount());
                         LAST_BLOOD_RAGE_TRIGGER.put(attacker, now);
                     }
@@ -81,7 +82,7 @@ public class PerkEventHandler {
                     if (entity.getEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get()) != null) {
                         amplifier = entity.getEffect(ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get()).getAmplifier();
                     }
-                    
+
                     ExplosionDamageCalculator calc = new ExplosionDamageCalculator() {
                         public float getEntityDamageAmount(Explosion explosion, Entity targetEntity) {
                             return targetEntity instanceof Player ? 0.0F : 1.0F;
@@ -91,7 +92,7 @@ public class PerkEventHandler {
                     entity.level().explode(entity, entity.damageSources().generic(), calc,
                             entity.getX(), entity.getY(), entity.getZ(),
                             PHD_EXPLOSION_POWER + amplifier, false, Level.ExplosionInteraction.NONE);
-                            
+
                     entity.setDeltaMovement(0, 0, 0);
                     entity.hurtMarked = true;
                 }
@@ -104,9 +105,9 @@ public class PerkEventHandler {
         float heal = damage * BR_HEAL_PCT;
         float cur = player.getHealth();
         float max = player.getMaxHealth();
-        
+
         player.setHealth(Math.min(cur + heal, max));
-        
+
         float overflow = Math.max(0, (cur + heal) - max);
         if (overflow > 0) {
             float abs = player.getAbsorptionAmount();
@@ -114,7 +115,8 @@ public class PerkEventHandler {
         }
 
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 100, 0));
-        if (!world.isClientSide) {
+        if (world instanceof net.minecraft.server.level.ServerLevel server) {
+            server.sendParticles(net.minecraft.core.particles.ParticleTypes.HEART, player.getX(), player.getY()+1.2, player.getZ(), 3, .25, .25, .25, 0);
             world.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ZOMBIE_VILLAGER_CURE, SoundSource.PLAYERS, 1.0F,
                 world.random.nextFloat() * 0.1F + 0.9F);

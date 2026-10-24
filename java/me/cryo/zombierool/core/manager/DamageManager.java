@@ -40,13 +40,13 @@ public class DamageManager {
     public static final String HIT_ZONE_TAG = "zombierool:hit_zone";
 
     public static boolean applyDamage(LivingEntity target, DamageSource source, float damage) {
-        target.invulnerableTime = 0; 
+        target.invulnerableTime = 0;
         return target.hurt(source, damage);
     }
 
     @SubscribeEvent
     public static void onKnockback(LivingKnockBackEvent event) {
-        if (event.getEntity().getPersistentData().getBoolean("zr_prevent_knockback")) {
+        if (event.getEntity().getPersistentData().getBoolean("zr_prevent_knockback") || (me.cryo.zombierool.gameplay.MapActors.owns(event.getEntity()) && event.getEntity().getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)>=1)) {
             event.setCanceled(true);
         }
     }
@@ -70,18 +70,23 @@ public class DamageManager {
 
     public static String computeHitZone(LivingEntity entity, Vec3 hitPos) {
         boolean isCrawler = entity instanceof CrawlerEntity || entity instanceof CrawlerCorpse;
-        Vec3 entityCenter = entity.position().add(0, entity.getBbHeight() / 2.0, 0);
+        var flight=me.cryo.zombierool.gameplay.TraversalMotion.flight(entity);
+        boolean wallCrawler=isCrawler&&flight!=null&&flight.style==2;
+        Vec3 entityCenter = wallCrawler?entity.getBoundingBox().getCenter():entity.position().add(0, entity.getBbHeight() / 2.0, 0);
         Vec3 toHit = hitPos.subtract(entityCenter);
 
         Vec3 forward = Vec3.directionFromRotation(0, entity.getYRot()).normalize();
         Vec3 up;
         double lengthReference;
 
-        if (isCrawler) {
+        if(wallCrawler){
+            up=new Vec3(0,-1,0);
+            lengthReference=entity.getBbHeight();
+        } else if (isCrawler) {
             up = forward;
-            lengthReference = entity.getBbWidth(); 
+            lengthReference = entity.getBbWidth();
         } else {
-            up = new Vec3(0, 1, 0); 
+            up = new Vec3(0, 1, 0);
             lengthReference = entity.getBbHeight();
         }
 
@@ -94,20 +99,20 @@ public class DamageManager {
 
         double armThreshold = entity.getBbWidth() * 0.22;
 
-        if (ratio > 0.70) return "head"; 
+        if (ratio > 0.70) return "head";
         if (ratio > 0.35 && Math.abs(lateral) > armThreshold)
             return lateral > 0 ? "right_arm" : "left_arm";
         if (ratio > 0.35) return "torso";
-        
+
         return "legs";
     }
 
     public static float calculateDamage(ServerPlayer attacker, LivingEntity target, float baseGunDamage, boolean isHeadshot, ItemStack weapon) {
         float damage = baseGunDamage;
 
-        if (isHeadshot) {
-            float globalMultiplier = 2.0f; 
-            float flatBonus = 0.0f; 
+        if (isHeadshot && !(target instanceof me.cryo.zombierool.entity.SpecialEnemyEntity special && special.isBoss())) {
+            float globalMultiplier = 2.0f;
+            float flatBonus = 0.0f;
 
             if (weapon != null) {
                 WeaponSystem.Definition def = WeaponFacade.getDefinition(weapon);
@@ -116,9 +121,9 @@ public class DamageManager {
                 }
 
                 if (weapon.getItem() instanceof IHeadshotWeapon headshotWeapon) {
-                    flatBonus += headshotWeapon.getHeadshotBaseDamage(weapon); 
+                    flatBonus += headshotWeapon.getHeadshotBaseDamage(weapon);
                     if (WeaponFacade.isPackAPunched(weapon)) {
-                        flatBonus += headshotWeapon.getHeadshotPapBonusDamage(weapon); 
+                        flatBonus += headshotWeapon.getHeadshotPapBonusDamage(weapon);
                     }
                 } else if (WeaponFacade.isTaczWeapon(weapon) && def != null) {
                     flatBonus += def.headshot.base_bonus_damage;
@@ -130,7 +135,8 @@ public class DamageManager {
             damage = (baseGunDamage + flatBonus) * globalMultiplier;
         }
 
-        if (BonusManager.isInstaKillActive(attacker)) {
+        damage *= me.cryo.zombierool.gameplay.ShotgunBalance.multiplier(weapon==null?null:WeaponFacade.getDefinition(weapon),attacker.distanceTo(target));
+        if (BonusManager.isInstaKillActive(attacker) && !me.cryo.zombierool.gameplay.EquipmentEffects.instantKillImmune(target)) {
             damage = 100000f;
         }
 
@@ -156,7 +162,7 @@ public class DamageManager {
                     boolean lethal = (target.getHealth() - event.getAmount()) <= 0;
                     zombie.makeCrawler();
                     if (lethal) {
-                        event.setAmount(Math.max(0, target.getHealth() - 1.0f)); 
+                        event.setAmount(Math.max(0, target.getHealth() - 1.0f));
                     }
                 }
             }
@@ -188,14 +194,14 @@ public class DamageManager {
 
         if (target.getPersistentData().getBoolean("SkipFlamePoints")) return;
 
-        PointManager.modifyScore(player, 10);
+        if (!target.getPersistentData().getBoolean("zr_shield_damage")) PointManager.awardEnemyPoints(player, target, 10);
     }
 
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide) return;
         LivingEntity target = event.getEntity();
-        
+
         if (target.getPersistentData().getBoolean("zr_death_processed")) return;
         target.getPersistentData().putBoolean("zr_death_processed", true);
 
@@ -214,7 +220,7 @@ public class DamageManager {
 
             if (me.cryo.zombierool.gameplay.WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
                 PlayerStatsManager.recordKill(target, player);
-                
+
                 if (!me.cryo.zombierool.gameplay.WaveManager.areCheatsUsed()) {
                     CareerManager.progressChallenge(player, CareerManager.ChallengeType.KILLS, 1);
                 }
@@ -231,10 +237,12 @@ public class DamageManager {
                 }
 
                 if (isGunDamage && !me.cryo.zombierool.gameplay.WaveManager.areCheatsUsed()) {
-                    String wId = WeaponFacade.getWeaponId(player.getMainHandItem());
+                    String wId = WeaponFacade.getCareerWeaponId(player.getMainHandItem());
                     if (wId != null && !wId.isEmpty()) {
                         wId = wId.replace("zombierool:", "");
                         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new me.cryo.zombierool.network.packet.S2CProgressWeaponStatPacket(wId, 1, wasHeadshotHit ? 1 : 0, 0));
+                        CareerManager.progressChallenge(player,CareerManager.ChallengeType.WEAPON_KILLS,1,wId);
+                        if(wasHeadshotHit)CareerManager.progressChallenge(player,CareerManager.ChallengeType.WEAPON_HEADSHOTS,1,wId);
                     }
                 }
             }
@@ -265,16 +273,16 @@ public class DamageManager {
                 PlayerVoiceManager.playKillCrawler(player, player.level());
             }
 
-            int points = 40; 
+            int points = 40;
             if (isGunDamage) {
-                points = wasHeadshotHit ? 90 : 40; 
+                points = wasHeadshotHit ? 90 : 40;
             } else if (isExplosive) {
-                points = 40; 
+                points = 40;
             } else if (source.getDirectEntity() instanceof Player) {
-                points = 120; 
+                points = 120;
             }
 
-            PointManager.modifyScore(player, points);
+            if (!target.getPersistentData().getBoolean("zr_shield_damage")) PointManager.awardEnemyPoints(player, target, points);
 
         } else {
             PlayerStatsManager.cleanupEntity(target.getId());
@@ -284,13 +292,13 @@ public class DamageManager {
         target.getPersistentData().remove(GUN_DAMAGE_TAG);
         target.getPersistentData().remove(HIT_ZONE_TAG);
         target.getPersistentData().remove("zombierool:explosive_damage");
-        target.getPersistentData().remove("zombierool:no_gore");
+        if(!(target instanceof me.cryo.zombierool.entity.SpecialEnemyEntity))target.getPersistentData().remove("zombierool:no_gore");
     }
 
     private static boolean isValidTarget(LivingEntity entity) {
-        return entity instanceof ZombieEntity || 
-               entity instanceof CrawlerEntity || 
-               entity instanceof HellhoundEntity || 
+        return entity instanceof me.cryo.zombierool.entity.MapActorEntity || entity instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || entity instanceof ZombieEntity ||
+               entity instanceof CrawlerEntity ||
+               entity instanceof HellhoundEntity ||
                entity instanceof DummyEntity;
     }
 }

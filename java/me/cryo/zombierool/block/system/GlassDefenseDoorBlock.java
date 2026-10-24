@@ -51,8 +51,11 @@ public class GlassDefenseDoorBlock extends DefenseDoorSystem.DefenseDoorBlock {
         return updated;
     }
     @Override public VoxelShape getCollisionShape(BlockState state,BlockGetter world,BlockPos pos,CollisionContext context) {
+        if(DefenseDoorSystem.mapperPasses(context))return Shapes.empty();
+        if(context instanceof net.minecraft.world.phys.shapes.EntityCollisionContext hit
+                && hit.getEntity() instanceof net.minecraft.world.entity.projectile.Projectile&&state.getValue(BREACHED))return Shapes.empty();
         if (context instanceof net.minecraft.world.phys.shapes.EntityCollisionContext entityContext
-                && entityContext.getEntity() instanceof Player player && player.isCreative()) return Shapes.empty();
+                && entityContext.getEntity() instanceof Player)return createDoorShape(state);
         if(state.getValue(STAGE)==0) return Shapes.empty();
         if(state.getValue(CENTERED)){boolean x=state.getValue(FACING).getAxis()==net.minecraft.core.Direction.Axis.X;if(state.getValue(OPEN))x=!x;return x?Block.box(6.5,0,0,9.5,16,16):Block.box(0,0,6.5,16,16,9.5);}
         return net.minecraft.world.level.block.Blocks.IRON_DOOR.defaultBlockState().setValue(FACING,state.getValue(FACING)).setValue(HINGE,state.getValue(HINGE)).setValue(OPEN,state.getValue(OPEN)).getCollisionShape(world,pos,context);
@@ -85,6 +88,6 @@ public class GlassDefenseDoorBlock extends DefenseDoorSystem.DefenseDoorBlock {
     }
     public static void damage(Level level,BlockPos pos) {
         BlockState state=level.getBlockState(pos);
-        if(state.getBlock() instanceof GlassDefenseDoorBlock door && state.getValue(STAGE)>0)door.updateStage(level,pos,state.getValue(STAGE)-1);
+        if(state.getBlock() instanceof GlassDefenseDoorBlock door && !state.getValue(BREACHED) && state.getValue(STAGE)>0)door.updateStage(level,pos,state.getValue(STAGE)-1);
     }
 }

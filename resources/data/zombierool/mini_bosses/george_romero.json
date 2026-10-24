@@ -1,0 +1,8 @@
+{
+  "template": "george_romero",
+  "name": "entity.zombierool.george_romero",
+  "texture": "zombierool:textures/entities/encounters/george_romero.png",
+  "health": 12000,
+  "speed": 0.14,
+  "damage": 3
+}

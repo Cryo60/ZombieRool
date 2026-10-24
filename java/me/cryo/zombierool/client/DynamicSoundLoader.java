@@ -25,8 +25,20 @@ public class DynamicSoundLoader {
     private static final String CACHE_DIR_NAME = "zombierool_sounds_cache";
     private static final Map<String, File> loadedSounds = new ConcurrentHashMap<>();
     private static final Map<String, TransferState> pendingTransfers = new ConcurrentHashMap<>();
-    
+
     private static boolean isSyncing = false;
+    private static final MusicPlaylist musicPlaylist = new MusicPlaylist();
+    public static java.util.Set<String> musicPresets(){return loadedSounds.keySet().stream().filter(id->id.startsWith("zombierool:music/")).map(id->id.substring("zombierool:music/".length())).filter(id->id.contains("/")).map(id->id.substring(0,id.indexOf('/'))).collect(java.util.stream.Collectors.toSet());}
+
+    public static SoundInstance nextMusic(String preset, float volume) {
+        String prefix = "zombierool:music/" + preset + "/";
+        var choices = loadedSounds.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(prefix) && e.getValue().isFile())
+                .map(Map.Entry::getKey).toList();
+        String id = musicPlaylist.next(preset, choices);
+        if(id!=null)System.out.println("[ZombieRool Music] "+preset+": "+id+" ("+choices.size()+" tracks)");
+        return id == null ? null : getSoundByExactName(id, SoundSource.MUSIC, volume, 1, false, null);
+    }
 
     @SubscribeEvent
     public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
@@ -72,10 +84,11 @@ public class DynamicSoundLoader {
         File cacheFile = getCacheFile(mc, soundEventName);
         if (cacheFile != null && writeCacheFile(cacheFile, assembled)) {
             loadedSounds.put(soundEventName, cacheFile);
-            System.out.println("ZombieRool DynamicSoundLoader: sound ready → " + soundEventName);
+            System.out.println("ZombieRool DynamicSoundLoader: sound ready â†’ " + soundEventName);
         }
     }
 
+    public static java.util.Set<String> customAudioIds(){return loadedSounds.keySet().stream().filter(id->id.startsWith("zombierool:custom/")).collect(java.util.stream.Collectors.toSet());}
     public static File getDynamicSoundFile(String id) { return loadedSounds.get(id); }
     public static boolean hasDynamicSound(String soundEventName) {
         return loadedSounds.containsKey(soundEventName);
@@ -87,7 +100,7 @@ public class DynamicSoundLoader {
                 return file;
             }
         }
-        return null;
+        return MapWeaponPackClient.audioFile(dynamicName);
     }
 
     public static SoundInstance getSoundByPrefix(String prefix, SoundSource source, float volume, float pitch, boolean looping, double x, double y, double z) {
@@ -116,7 +129,9 @@ public class DynamicSoundLoader {
         return null;
     }
 
+    public static SoundInstance getPositionalSound(String name,SoundSource source,float volume,float pitch,double x,double y,double z){File file=loadedSounds.get(name);if(file==null||!file.exists())return null;var sound=new FileSoundInstance(file,source,volume,pitch,false,x,y,z,null);sound.positional();return sound;}
     public static void clearLoadedSounds() {
+        musicPlaylist.clear();
         loadedSounds.clear();
         pendingTransfers.clear();
         Minecraft mc = Minecraft.getInstance();
@@ -167,14 +182,16 @@ public class DynamicSoundLoader {
             this.y         = entity != null ? entity.getY() : y;
             this.z         = entity != null ? entity.getZ() : z;
             this.entity    = entity;
-            
+
             this.attenuation = (this.x == 0 && this.y == 0 && this.z == 0 && entity == null)
                     ? SoundInstance.Attenuation.NONE
                     : SoundInstance.Attenuation.LINEAR;
-            
+
             this.relative  = (this.x == 0 && this.y == 0 && this.z == 0 && entity == null);
         }
 
+        public void positional(){attenuation=SoundInstance.Attenuation.LINEAR;relative=false;}
+        public void setVolume(float value){volume=Math.max(0,value);}
         @Override
         public void tick() {
             if (this.entity != null) {

@@ -51,7 +51,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                 Vec3 lookVec = player.getViewVector(1.0f);
                 Vec3 visualStart = getVisualMuzzlePos(player);
                 Vec3 endPos = eyePos.add(lookVec.scale(def.stats.range));
-                
+
                 sendLightningVfx((ServerPlayer) player, visualStart, endPos, false);
                 return;
             }
@@ -66,7 +66,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                     hitTargets.add(currentTarget);
 
                     Vec3 targetCenter = currentTarget.position().add(0, currentTarget.getBbHeight() / 2.0, 0);
-                    
+
                     sendLightningVfx((ServerPlayer) player, lastPos, targetCenter, false);
 
                     lastPos = targetCenter;
@@ -77,7 +77,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                         Vec3 lookVec = player.getViewVector(1.0f);
                         Vec3 start = eyePos;
                         Vec3 end = start.add(lookVec.scale(def.stats.range));
-                        
+
                         var hitResult = currentTarget.getBoundingBox().clip(start, end);
                         if (hitResult.isPresent()) {
                             if (hitResult.get().y >= currentTarget.getY() + currentTarget.getBbHeight() * 0.85) {
@@ -87,7 +87,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                     }
 
                     float finalDamage = DamageManager.calculateDamage((ServerPlayer) player, currentTarget, damage, isHeadshot, stack);
-                    
+
                     currentTarget.getPersistentData().putBoolean(DamageManager.GUN_DAMAGE_TAG, true);
                     if (isHeadshot) {
                         currentTarget.getPersistentData().putBoolean(DamageManager.HEADSHOT_TAG, true);
@@ -106,7 +106,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
                     AABB searchBox = currentTarget.getBoundingBox().inflate(chainRange);
                     List<LivingEntity> potentialNext = player.level().getEntitiesOfClass(LivingEntity.class, searchBox, e ->
                         e != player && e.isAlive() && !hitTargets.contains(e) &&
-                        (e instanceof ZombieEntity || e instanceof CrawlerEntity || e instanceof HellhoundEntity || e instanceof DummyEntity)
+                        (e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || e instanceof ZombieEntity || e instanceof CrawlerEntity || e instanceof HellhoundEntity || e instanceof DummyEntity)
                     );
 
                     if (potentialNext.isEmpty()) break;
@@ -123,7 +123,7 @@ public class ScarHItem extends WeaponImplementations.HitscanGunItem {
 	}
 
 	private void sendLightningVfx(ServerPlayer player, Vec3 start, Vec3 end, boolean isPap) {
-	    S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
+	    S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("SCAR_CHAIN", start, end, isPap, false);
 	    NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> player.level().getChunkAt(player.blockPosition())), packet);
 	    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
 	}

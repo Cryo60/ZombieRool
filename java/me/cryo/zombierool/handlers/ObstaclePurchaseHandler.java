@@ -42,9 +42,10 @@ public class ObstaclePurchaseHandler {
 
         BlockEntity te = player.level().getBlockEntity(pos);
         if (!(te instanceof ObstacleDoorBlockEntity be)) return;
+        if (me.cryo.zombierool.gameplay.WardenLocks.intercept(serverPlayer,pos)) return;
 
         int prix = be.getPrix();
-        int finalCanal = be.getCanalAsInt(); 
+        int finalCanal = be.getCanalAsInt();
 
         if (prix <= 0) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.not_for_sale"));
@@ -78,6 +79,7 @@ public class ObstaclePurchaseHandler {
         transformBlocks(player.level(), connected);
 
         WaveManager.unlockChannel(finalCanal);
+        if(player.level() instanceof ServerLevel deliveryLevel)me.cryo.zombierool.block.system.MachineDeliverySystem.onDoorOpened(deliveryLevel,finalCanal);
 
         serverPlayer.playNotifySound(
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")),
@@ -92,13 +94,15 @@ public class ObstaclePurchaseHandler {
     }
 
     private static void findAllConnectedBlocks(Level world, BlockPos startPos, Set<BlockPos> result) {
-        if (result.contains(startPos)) return;
-
-        if (isValidBlock(world, startPos)) {
-            result.add(startPos);
-            for (Direction dir : Direction.values()) {
-                findAllConnectedBlocks(world, startPos.relative(dir), result);
-            }
+        var pending = new java.util.ArrayDeque<BlockPos>();
+        pending.add(startPos);
+        while (!pending.isEmpty() && result.size() < 65536) {
+            BlockPos pos=pending.removeFirst();
+            if(result.contains(pos) || !isValidBlock(world,pos))continue;
+            result.add(pos.immutable());
+            for(Direction dir:Direction.values())pending.add(pos.relative(dir));
+            if(world.getBlockEntity(pos) instanceof ObstacleDoorBlockEntity member)
+                for(long cell:member.decorGroup.getLongArray("cells"))pending.add(BlockPos.of(cell));
         }
     }
 

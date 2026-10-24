@@ -14,11 +14,19 @@ public abstract class CameraMixin {
     @Shadow private float eyeHeight;
     @Shadow private float eyeHeightOld;
 
+    @Shadow protected abstract void setPosition(double x,double y,double z);
+    @Inject(method="setup",at=@At("RETURN"))
+    private void zr$traversalCamera(BlockGetter level,Entity entity,boolean detached,boolean reverse,float partialTick,CallbackInfo ci){
+        if(entity!=null&&!detached&&me.cryo.zombierool.gameplay.TraversalMotion.active(entity)){
+            var p=me.cryo.zombierool.gameplay.TraversalMotion.renderPosition(entity,partialTick);
+            setPosition(p.x,p.y+currentEyeHeight,p.z);
+        }
+    }
     private float currentEyeHeight;
 
     @Inject(method = "setup", at = @At("HEAD"))
     private void smoothEyeHeight(BlockGetter level, Entity entity, boolean detached, boolean thirdPersonReverse, float partialTick, CallbackInfo ci) {
-        if (entity != null && !detached) { 
+        if (entity != null && !detached) {
             float targetHeight = entity.getEyeHeight();
             if (Math.abs(currentEyeHeight - targetHeight) > 1.5f) {
                 currentEyeHeight = targetHeight;

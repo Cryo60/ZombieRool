@@ -75,15 +75,12 @@ public class KeyInputHandler {
     private static int ammoCrateInfoRequestCooldown = 0;
     private static boolean keyWasDown = false;
     private static boolean wasLethalDown = false;
+    private static boolean wasEquipmentDown, wasTacticalDown;
     public static int clientGrenadeCookTimer = 0;
+    public static void clearTeleportInput(){wasLethalDown=wasEquipmentDown=wasTacticalDown=keyWasDown=false;clientGrenadeCookTimer=0;revivingTargetUUID=null;reviveBarStartTime=0;}
     private static final List<Component> activeHUDMessages = new ArrayList<>();
     public static BlockPos clientActiveWunderfizzPosition = null;
-    private static long clientReviveDuration = 120; 
-    private static final int BASE_REPAIR_COOLDOWN = 1250;
-    private static final double SPEED_COLA_REPAIR_MULTIPLIER = 0.5;
-    private static long lastRepairTime = 0;
-    private static final int REPAIR_SOUND_INTERVAL = 500;
-    private static long lastRepairSoundTime = 0;
+    private static long clientReviveDuration = 120;
     private static BlockPos targetInteractPos = null;
     private static InteractionType targetInteractType = null;
     private static String targetInteractCustomId = null;
@@ -125,6 +122,7 @@ public class KeyInputHandler {
         ClientPlayerDownSoundManager.stopLastStandSound();
         clientGrenadeCookTimer = 0;
         wasLethalDown = false;
+        wasEquipmentDown = wasTacticalDown = false;
         keyWasDown = false;
     }
     @SubscribeEvent
@@ -132,7 +130,15 @@ public class KeyInputHandler {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
+        if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(mc.player)||me.cryo.zombierool.gameplay.LunarEquipment.busy(mc.player)))return;
+        if (mc.isPaused()) return;
         if (mc.screen != null) {
+            me.cryo.zombierool.client.BrutusUnlockClient.cancel();
+            me.cryo.zombierool.client.BuildableClient.cancelHold();
+            if(wasEquipmentDown || wasTacticalDown) {
+                NetworkHandler.INSTANCE.sendToServer(new me.cryo.zombierool.network.packet.C2SEquipmentStatePacket(0,0));
+                wasEquipmentDown=wasTacticalDown=false;
+            }
             if (wasLethalDown) {
                 NetworkHandler.INSTANCE.sendToServer(new C2SUpdateLethalStatePacket(2));
                 wasLethalDown = false;
@@ -142,6 +148,10 @@ public class KeyInputHandler {
             return;
         }
         LocalPlayer player = mc.player;
+        boolean equipmentDown=KeyBindings.EQUIPMENT_KEY.isDown(), tacticalDown=KeyBindings.TACTICAL_GRENADE_KEY.isDown();
+        if(equipmentDown!=wasEquipmentDown) NetworkHandler.INSTANCE.sendToServer(new me.cryo.zombierool.network.packet.C2SEquipmentStatePacket(1,equipmentDown?1:2));
+        if(tacticalDown!=wasTacticalDown) NetworkHandler.INSTANCE.sendToServer(new me.cryo.zombierool.network.packet.C2SEquipmentStatePacket(2,tacticalDown?1:2));
+        wasEquipmentDown=equipmentDown;wasTacticalDown=tacticalDown;
         boolean isLethalDown = KeyBindings.LETHAL_GRENADE_KEY.isDown();
         if (isLethalDown) {
             if (!wasLethalDown) {
@@ -184,6 +194,8 @@ public class KeyInputHandler {
         }
         wasLethalDown = isLethalDown;
         if (isLocalPlayerDown) {
+            me.cryo.zombierool.client.BrutusUnlockClient.cancel();
+            me.cryo.zombierool.client.BuildableClient.cancelHold();
             keyWasDown = KeyBindings.REPAIR_AND_PURCHASE_KEY.isDown();
             reviveBarStartTime = 0;
             revivingTargetUUID = null;
@@ -209,32 +221,23 @@ public class KeyInputHandler {
             }
         }
         scanForInteractions(player, mc);
+        var heldRepair=me.cryo.zombierool.client.RepairLoopClient.selectTarget(isFDown&&detectedReviveTarget==null&&!player.isSpectator(),targetInteractType==InteractionType.REPAIR_BARRICADE?targetInteractPos:null);
+        if(heldRepair!=null){targetInteractType=InteractionType.REPAIR_BARRICADE;targetInteractPos=heldRepair;}
+        me.cryo.zombierool.client.RepairLoopClient.update(heldRepair);
+        me.cryo.zombierool.client.BrutusUnlockClient.update(isFDown&&detectedReviveTarget==null,targetInteractType==InteractionType.BRUTUS_UNLOCK?targetInteractPos:null);
+        me.cryo.zombierool.client.BuildableClient.updateHold(isFDown&&detectedReviveTarget==null&&!player.isSpectator(),targetInteractType==InteractionType.BUILDABLE?targetInteractPos:null);
         if (isFDown && !KeyInputHandler.isLocalPlayerDown && !player.isSpectator()) {
             if (targetInteractType == InteractionType.REPAIR_BARRICADE && targetInteractPos != null) {
-                long now = System.currentTimeMillis();
-                boolean hasSpeedCola = player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_SPEED_COLA.get());
-                long effectiveCooldown = (long) (BASE_REPAIR_COOLDOWN * (hasSpeedCola ? SPEED_COLA_REPAIR_MULTIPLIER : 1.0));
-                if (lastRepairTime == 0 || now - lastRepairTime >= effectiveCooldown) {
-                    lastRepairTime = now;
-                    NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(targetInteractPos, InteractionType.REPAIR_BARRICADE));
-                }
-                if (now - lastRepairSoundTime >= REPAIR_SOUND_INTERVAL) {
-                    BlockState targetState = mc.level.getBlockState(targetInteractPos);
-                    boolean isWall = targetState.getBlock() instanceof me.cryo.zombierool.block.system.DefenseWallSystem.DefenseWallBlock || targetState.getBlock() instanceof me.cryo.zombierool.block.system.DefenseWallSystem.DefenseWallDummyBlock;
-                    if (isWall) {
-                        player.level().playSound(player, targetInteractPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "rock_slam")), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                        player.level().playSound(player, targetInteractPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_rock")), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                    } else {
-                        player.level().playSound(player, targetInteractPos, ZombieroolModSounds.BOARDS_FLOAT.get(), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                        player.level().playSound(player, targetInteractPos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "repairing_plank")), net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, 1.0f);
-                    }
-                    lastRepairSoundTime = now;
-                }
+                // The server owns repair cadence. Retrying while held prevents a slightly early
+                // packet from costing another complete plank interval.
+                NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(targetInteractPos, InteractionType.REPAIR_BARRICADE));
             }
         }
         if (isFDown && !keyWasDown && !player.isSpectator()) {
-            if (revivingTargetUUID == null && detectedReviveTarget == null) {
-                if (targetInteractType != null && targetInteractType != InteractionType.REPAIR_BARRICADE && targetInteractPos != null) {
+            if (revivingTargetUUID == null && detectedReviveTarget == null && me.cryo.zombierool.client.PortableEquipmentClient.contextHint()!=null) {
+                me.cryo.zombierool.client.PortableEquipmentClient.contextAction();
+            } else if (revivingTargetUUID == null && detectedReviveTarget == null) {
+                if (targetInteractType != null && targetInteractType != InteractionType.REPAIR_BARRICADE && targetInteractType != InteractionType.BRUTUS_UNLOCK && targetInteractPos != null && !(targetInteractType==InteractionType.BUILDABLE&&me.cryo.zombierool.client.BuildableClient.requiresHold(targetInteractPos))) {
                     NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(targetInteractPos, targetInteractType));
                 } else if (targetInteractCustomId != null) {
                     NetworkHandler.INSTANCE.sendToServer(new C2SUnifiedInteractPacket(player.blockPosition(), InteractionType.ACTION_KEY));
@@ -250,18 +253,19 @@ public class KeyInputHandler {
     }
     private static boolean isBlockedByWall(Level level, Vec3 start, Vec3 end, BlockPos targetPos) {
         net.minecraft.world.level.ClipContext context = new net.minecraft.world.level.ClipContext(
-                start, end, 
-                net.minecraft.world.level.ClipContext.Block.COLLIDER, 
-                net.minecraft.world.level.ClipContext.Fluid.NONE, 
+                start, end,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
                 Minecraft.getInstance().player
         );
         net.minecraft.world.phys.BlockHitResult result = level.clip(context);
         if (result.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
             BlockPos hitPos = result.getBlockPos();
-            if (targetPos != null && hitPos.equals(targetPos)) {
-                return false; 
+            if(targetPos!=null&&level.getBlockState(targetPos).getBlock() instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform&&level.getBlockState(hitPos).getBlock() instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform&&me.cryo.zombierool.block.system.TeleporterSystem.center(level.getBlockState(targetPos),targetPos).equals(me.cryo.zombierool.block.system.TeleporterSystem.center(level.getBlockState(hitPos),hitPos)))return false;
+            if (targetPos != null && (hitPos.equals(targetPos)||DefenseDoorSystem.sameRepairDoor(level,targetPos,hitPos)||me.cryo.zombierool.gameplay.BrutusMachineLocks.machineRoot(level,hitPos).equals(me.cryo.zombierool.gameplay.BrutusMachineLocks.machineRoot(level,targetPos)))) {
+                return false;
             }
-            return true; 
+            return true;
         }
         return false;
     }
@@ -270,19 +274,21 @@ public class KeyInputHandler {
         targetInteractPos = null;
         targetInteractType = null;
         targetInteractCustomId = null;
-        if (player.isCreative() || player.isSpectator()) return;
+        if (player.isSpectator()) return;
+        var wardenHint=me.cryo.zombierool.client.PortableEquipmentClient.contextHint();
+        if(wardenHint!=null){activeHUDMessages.add(wardenHint);return;}
         Vec3 eyePos = player.getEyePosition();
         Vec3 lookVec = player.getViewVector(1.0f);
         String actionKey = KeyBindings.REPAIR_AND_PURCHASE_KEY.getTranslatedKeyMessage().getString().toUpperCase();
         double bestScore = Double.MAX_VALUE;
         InteractionCandidate bestCandidate = null;
-        double maxDistSq = 7.5; 
-        for (me.cryo.zombierool.core.manager.InteractableManager.Interactable inter : ClientInteractableManager.getInteractables().values()) {
+        double maxDistSq = 7.5;
+        if(!player.isCreative())for (me.cryo.zombierool.core.manager.InteractableManager.Interactable inter : ClientInteractableManager.getInteractables().values()) {
             double distSq = eyePos.distanceToSqr(inter.pos);
             if (distSq <= inter.radius * inter.radius) {
                 Vec3 dir = inter.pos.subtract(eyePos).normalize();
                 double dot = lookVec.dot(dir);
-                if (distSq < 2.0 || dot > 0.4) { 
+                if (distSq < 2.0 || dot > 0.4) {
                     if (isBlockedByWall(mc.level, eyePos, inter.pos, null)) continue;
                     double score = distSq - (dot * 10.0);
                     if (score < bestScore) {
@@ -298,13 +304,14 @@ public class KeyInputHandler {
         for (BlockPos iterPos : BlockPos.betweenClosed(pPos.offset(-3, -3, -3), pPos.offset(3, 3, 3))) {
             BlockPos pos = iterPos.immutable();
             BlockState state = mc.level.getBlockState(pos);
-            if (state.isAir()) continue;
+            if (state.isAir()&&!me.cryo.zombierool.client.BuildableClient.hasTarget(pos)||player.isCreative()&&!(state.getBlock() instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform)) continue;
+            if(me.cryo.zombierool.client.BuildableClient.isPickup(pos)&&!me.cryo.zombierool.client.BuildableClient.aimedPickup(player,pos))continue;
             Vec3 blockCenter = Vec3.atCenterOf(pos);
             double distSq = eyePos.distanceToSqr(blockCenter);
-            if (distSq > maxDistSq) continue; 
+            if (distSq > maxDistSq) continue;
             Vec3 dirToBlock = blockCenter.subtract(eyePos).normalize();
             double dot = lookVec.dot(dirToBlock);
-            if (distSq >= 2.0 && dot < 0.4) continue; 
+            if (distSq >= 2.0 && dot < 0.4) continue;
             boolean isMeteorite = state.getBlock() instanceof MeteoriteEasterEgg.MeteoriteBlock;
             if (!isMeteorite && isBlockedByWall(mc.level, eyePos, blockCenter, pos)) continue;
             double score = distSq - (dot * 10.0);
@@ -320,7 +327,7 @@ public class KeyInputHandler {
             targetInteractPos = bestCandidate.pos;
             targetInteractType = bestCandidate.type;
             targetInteractCustomId = bestCandidate.customId;
-            if (bestCandidate.message != null) {
+            if (bestCandidate.message != null && !bestCandidate.message.getString().isEmpty()) {
                 activeHUDMessages.add(bestCandidate.message);
             }
         }
@@ -331,21 +338,29 @@ public class KeyInputHandler {
 
     private static InteractionCandidate evaluateBlock(BlockState state, BlockPos pos, LocalPlayer player, Level level, String actionKey) {
         Block block = state.getBlock();
+        if(block instanceof me.cryo.zombierool.gameplay.MapArmor.Station station)return new InteractionCandidate(pos,InteractionType.ARMOR_STATION,me.cryo.zombierool.gameplay.MapArmor.hint(player,station.set,actionKey));
+        var buildablePos=me.cryo.zombierool.block.system.BuildableBlocks.root(level,pos);
+        var buildableHint = me.cryo.zombierool.client.BuildableClient.hint(buildablePos, actionKey);
+        if (buildableHint != null) return new InteractionCandidate(buildablePos, InteractionType.BUILDABLE, buildableHint);
+        if(block instanceof me.cryo.zombierool.block.system.LunarStation.StationBlock station)
+            return new InteractionCandidate(pos,InteractionType.LUNAR_HELMET_STATION,me.cryo.zombierool.block.system.LunarStation.hint(player,station,actionKey));
+        if(block instanceof me.cryo.zombierool.block.system.TraversalSystem.TraversalBlock routeBlock
+                && routeBlock.kind==me.cryo.zombierool.block.system.TraversalSystem.Kind.ZIPLINE){
+            pos=me.cryo.zombierool.block.system.TraversalSystem.lower(level,pos);
+            var be=level.getBlockEntity(pos);
+            if(be instanceof me.cryo.zombierool.block.system.TraversalSystem.Anchor marker){
+                var root=me.cryo.zombierool.block.system.TraversalSystem.entry(level,marker.root);
+                if(root!=null&&root.allowPlayers&&root.ready()&&(pos.equals(root.getBlockPos())||root.bidirectional&&pos.equals(root.exit)))
+                    return new InteractionCandidate(pos,InteractionType.ZIPLINE,Component.translatable("message.zombierool.zipline.use",actionKey,root.cost));
+            }
+            return null;
+        }
         if (block instanceof me.cryo.zombierool.block.system.TeleporterSystem.Platform
                 || block instanceof me.cryo.zombierool.block.system.TeleporterSystem.ConditionSwitch) {
             var pad=me.cryo.zombierool.block.system.TeleporterSystem.pad(level,pos);
             if(pad!=null){
-                if(pad.config.getBoolean("invisible")&&!player.isCreative()||pad.role().equals("RECEIVER")&&!pad.canConfirm)return null;
-                Component label;
-                if(!pad.config.getBoolean("enabled"))label=Component.translatable("message.zombierool.teleporter.disabled");
-                else if(!pad.powered && pad.config.getBoolean("requiresPower"))label=Component.translatable("message.zombierool.power_required");
-                else if(pad.busy)label=Component.translatable("message.zombierool.teleporter.busy");
-                else if(pad.cooldownSeconds>0)label=Component.translatable("message.zombierool.teleporter.cooldown_seconds",pad.cooldownSeconds);
-                else if(pad.role().equals("RECEIVER"))label=Component.translatable("message.zombierool.teleporter.confirm",actionKey);
-                else if(pad.role().equals("SWITCH"))label=Component.translatable("message.zombierool.teleporter.switch",actionKey);
-                else if(pad.pendingSeconds>0)label=Component.translatable("message.zombierool.teleporter.countdown",pad.config.getString("id"),pad.pendingSeconds);
-                else if(pad.config.getBoolean("requiresLink")&&!pad.linked)label=Component.translatable("message.zombierool.teleporter.link",actionKey);
-                else label=Component.translatable("message.zombierool.teleporter.use",actionKey,pad.config.getInt("cost"));
+                if(pad.config.getBoolean("invisible")&&!player.isCreative()||pad.role().equals("RECEIVER")&&!pad.canConfirm&&!player.isCreative())return null;
+                Component label=pad.interactionHint(player.isCreative(),actionKey);
                 return new InteractionCandidate(pos,InteractionType.TELEPORTER,label.copy().withStyle(ChatFormatting.AQUA));
             }
         }
@@ -373,6 +388,7 @@ public class KeyInputHandler {
             }
             return null;
         }
+        if (block instanceof PerksAColaBlock && me.cryo.zombierool.client.BrutusChains.locked(pos))return new InteractionCandidate(pos,InteractionType.BRUTUS_UNLOCK,Component.translatable("message.zombierool.brutus.unlock_prompt",actionKey,me.cryo.zombierool.client.BrutusChains.unlockCost).withStyle(ChatFormatting.GOLD));
         if (block instanceof PerksAColaBlock) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof PerksAColaBlockEntity perksBE) {
@@ -383,8 +399,8 @@ public class KeyInputHandler {
                     net.minecraft.world.effect.MobEffect effect = perk.getAssociatedEffect();
                     if (!powered) {
                         return new InteractionCandidate(pos, InteractionType.PERK, Component.translatable("message.zombierool.power_required").withStyle(ChatFormatting.RED));
-                    } else if (PerksManager.getPerkCount(player) >= PerksManager.MAX_PERKS_LIMIT && (effect == null || !player.hasEffect(effect))) {
-                        return new InteractionCandidate(pos, InteractionType.PERK, Component.translatable("message.zombierool.max_perks", PerksManager.MAX_PERKS_LIMIT).withStyle(ChatFormatting.RED));
+                    } else if (PerksManager.getPerkCount(player) >= PerksManager.getMaxPerks(player) && (effect == null || !player.hasEffect(effect))) {
+                        return new InteractionCandidate(pos, InteractionType.PERK, Component.translatable("message.zombierool.max_perks", PerksManager.getMaxPerks(player)).withStyle(ChatFormatting.RED));
                     } else if (effect != null && player.hasEffect(effect)) {
                         return new InteractionCandidate(pos, InteractionType.PERK, Component.translatable("message.zombierool.already_have_perk", perk.getName()).withStyle(ChatFormatting.GREEN));
                     } else {
@@ -400,6 +416,11 @@ public class KeyInputHandler {
             }
             return null;
         }
+        if(block instanceof MysteryBoxBlock&&state.getValue(MysteryBoxBlock.PART)){
+            var root=me.cryo.zombierool.gameplay.BrutusMachineLocks.machineRoot(level,pos);
+            if(me.cryo.zombierool.client.BrutusChains.locked(root))return evaluateBlock(level.getBlockState(root),root,player,level,actionKey);
+        }
+        if (block instanceof MysteryBoxBlock && !state.getValue(MysteryBoxBlock.PART) && me.cryo.zombierool.client.BrutusChains.locked(pos))return new InteractionCandidate(pos,InteractionType.BRUTUS_UNLOCK,Component.translatable("message.zombierool.brutus.unlock_prompt",actionKey,me.cryo.zombierool.client.BrutusChains.unlockCost).withStyle(ChatFormatting.GOLD));
         if (block instanceof MysteryBoxBlock && !state.getValue(MysteryBoxBlock.PART)) {
             if (!state.getValue(MysteryBoxBlock.ACTIVE)) {
                 return new InteractionCandidate(pos, InteractionType.MYSTERY_BOX, Component.translatable("message.zombierool.mystery_box.not_here").withStyle(ChatFormatting.GRAY));
@@ -540,10 +561,11 @@ public class KeyInputHandler {
             BlockEntity te = level.getBlockEntity(pos);
             if (te instanceof me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlockEntity be) {
                 Direction facing = state.getValue(me.cryo.zombierool.block.system.BuyWallWeaponSystem.BuyWallWeaponBlock.FACING);
-                Vec3 blockCenter = Vec3.atCenterOf(pos);
+
+            Vec3 blockCenter = Vec3.atCenterOf(pos);
                 Vec3 faceNormal = new Vec3(facing.getStepX(), facing.getStepY(), facing.getStepZ());
                 Vec3 dirFromPlayer = blockCenter.subtract(player.getEyePosition()).normalize();
-                if (dirFromPlayer.dot(faceNormal) > -0.2) return null; 
+                if (dirFromPlayer.dot(faceNormal) > -0.2) return null;
                 int basePrice = be.getPrice();
                 if (basePrice <= 0) return null;
                 net.minecraft.world.item.ItemStack weaponOnWall = net.minecraft.world.item.ItemStack.EMPTY;
@@ -631,7 +653,7 @@ public class KeyInputHandler {
             BlockEntity te = level.getBlockEntity(pos);
             if (te instanceof me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlockEntity be) {
                 int prix = be.getPrix();
-                if (prix > 0) { 
+                if (prix > 0) {
                     Component text = Component.translatable("gui.zombierool.overlay.purchase", actionKey, prix).withStyle(ChatFormatting.WHITE);
                     return new InteractionCandidate(pos, InteractionType.OBSTACLE, text);
                 }
@@ -640,7 +662,7 @@ public class KeyInputHandler {
         }
         if (block instanceof DefenseDoorSystem.DefenseDoorBlock) {
             if (player.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > 7.5) return null;
-            int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE); 
+            int stage = state.getValue(DefenseDoorSystem.DefenseDoorBlock.STAGE);
             boolean isPermOpen = state.getValue(DefenseDoorSystem.DefenseDoorBlock.PERMANENTLY_OPEN);
             if (((DefenseDoorSystem.DefenseDoorBlock)block).canRepair(state)) {
                 Component text = Component.translatable("gui.zombierool.overlay.repair", actionKey, (5 - stage)).withStyle(ChatFormatting.YELLOW);
@@ -653,7 +675,7 @@ public class KeyInputHandler {
             BlockPos mainPos = (block instanceof DefenseWallSystem.DefenseWallDummyBlock dummy) ? dummy.getMainPos(pos, state) : pos;
             BlockState mainState = level.getBlockState(mainPos);
             if (mainState.getBlock() instanceof DefenseWallSystem.DefenseWallBlock) {
-                int stage = mainState.getValue(DefenseWallSystem.DefenseWallBlock.STAGE); 
+                int stage = mainState.getValue(DefenseWallSystem.DefenseWallBlock.STAGE);
                 boolean isPermOpen = mainState.getValue(DefenseWallSystem.DefenseWallBlock.PERMANENTLY_OPEN);
                 if (!isPermOpen && stage < 7) {
                     Component text = Component.translatable("gui.zombierool.overlay.repair", actionKey, (7 - stage)).withStyle(ChatFormatting.YELLOW);
@@ -671,7 +693,7 @@ public class KeyInputHandler {
     public static void onRenderUnifiedHints(RenderGuiOverlayEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.level == null || player.isCreative() || player.isSpectator()) return;
+        if (player == null || mc.level == null || player.isSpectator()) return;
         if (!activeHUDMessages.isEmpty()) {
             Font font = mc.font;
             int width = mc.getWindow().getGuiScaledWidth();

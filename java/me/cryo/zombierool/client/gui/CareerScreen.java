@@ -156,7 +156,12 @@ public class CareerScreen extends Screen {
         LocalCareerManager.forceSave();
     }
 
-    public static List<String> getSupportedWeaponsCache() { return supportedWeaponsCache; }
+    public static List<String> getSupportedWeaponsCache() {
+        supportedWeaponsCache.clear();
+        supportedWeaponsCache.addAll(me.cryo.zombierool.client.TacZVisuals.careerWeapons());
+        if(supportedWeaponsCache.isEmpty())supportedWeaponsCache.add("m1911");
+        return List.copyOf(supportedWeaponsCache);
+    }
 
     public void refreshData() {
         this.needsLayoutUpdate = true;
@@ -202,15 +207,7 @@ public class CareerScreen extends Screen {
 
         cellSize = (centerW < 160) ? 40 : (centerW < 220) ? 48 : 56;
 
-        if (supportedWeaponsCache.isEmpty()) {
-            for (Map.Entry<String, WeaponSystem.Definition> entry : WeaponSystem.Loader.LOADED_DEFINITIONS.entrySet()) {
-                WeaponSystem.Definition def = entry.getValue();
-                if (!"MELEE".equalsIgnoreCase(def.type) && !"GRENADE".equalsIgnoreCase(def.type))
-                    supportedWeaponsCache.add(entry.getKey());
-            }
-            Collections.sort(supportedWeaponsCache);
-            if (supportedWeaponsCache.isEmpty()) supportedWeaponsCache.add("m1911");
-        }
+        getSupportedWeaponsCache();
         if (!supportedWeaponsCache.contains(selectedWeapon))
             selectedWeapon = supportedWeaponsCache.get(0);
 
@@ -347,8 +344,9 @@ public class CareerScreen extends Screen {
             this.redeemCodeBox = new EditBox(this.font,
                 bCX + 10 + boxW/2 - 48, rY + 34, 96, 14,
                 Component.translatable("gui.zombierool.career.redeem_code"));
-            this.redeemCodeBox.setMaxLength(32);
+            this.redeemCodeBox.setMaxLength(12000);
             this.addRenderableWidget(redeemCodeBox);
+            addRenderableWidget(Button.builder(Component.literal("Events"),b->minecraft.setScreen(new RewardEventsScreen(this))).bounds(bCX+10+boxW/2+34,rY+54,62,18).build());
 
             this.redeemButton = Button.builder(
                 Component.translatable("gui.zombierool.career.redeem_btn"), btn -> {
@@ -696,7 +694,7 @@ public class CareerScreen extends Screen {
         g.fill(rightX, bodyY, rightX + 1, this.height - H_STATUSBAR, C_BORDER_CYAN_DIM);
 
         int cx  = rightX + rightW / 2;
-        int sY  = bodyY + 4;  
+        int sY  = bodyY + 4;
 
         g.drawCenteredString(font, selectedWeapon.toUpperCase(), cx, sY, C_TEXT_WHITE);
         sY += 11;
@@ -739,7 +737,7 @@ public class CareerScreen extends Screen {
         String renderSkin = selectedSkin.isEmpty()
             ? LocalCareerManager.getData().equippedSkins.getOrDefault(selectedWeapon, "") : selectedSkin;
 
-        ItemStack stack = WeaponFacade.createWeaponStack("zombierool:" + selectedWeapon, false, minecraft.player);
+        ItemStack stack = me.cryo.zombierool.client.TacZVisuals.careerPreview(selectedWeapon, minecraft.player);
         if (!stack.isEmpty()) {
             if (!renderSkin.isEmpty()) {
                 stack.getOrCreateTag().putString("zr_skin", renderSkin);
@@ -758,10 +756,9 @@ public class CareerScreen extends Screen {
                 ? (System.currentTimeMillis() % 4000L) / 4000.0f * 360f : 15f;
             pose.mulPose(Axis.YP.rotationDegrees(angle));
 
-            Minecraft.getInstance().getItemRenderer().renderStatic(
-                stack, ItemDisplayContext.FIXED, 0xF000F0,
-                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
-                pose, g.bufferSource(), minecraft.level, 0);
+            me.cryo.zombierool.client.TacZVisuals.renderCareerPreview(
+                stack, pose, g.bufferSource(), 0xF000F0,
+                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
 
@@ -1302,7 +1299,7 @@ public class CareerScreen extends Screen {
                 }
             } else {
                 String clicked = elem.id;
-                
+
                 if (currentTab == Tab.SHOP && LocalCareerManager.isSkinUnlocked(selectedWeapon, clicked)) {
                     this.minecraft.getSoundManager().play(
                         SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.VILLAGER_NO, 1f));

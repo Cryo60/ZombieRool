@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "me/cryo/zombierool/mixins/VehicleNavigationRegionAccessor": {
+      "level": "f_47162_:Lnet/minecraft/world/level/Level;"
+    }
+  },
+  "data": {
+    "searge": {
+      "me/cryo/zombierool/mixins/VehicleNavigationRegionAccessor": {
+        "level": "f_47162_:Lnet/minecraft/world/level/Level;"
+      }
+    }
+  }
+}

@@ -26,36 +26,50 @@ public final class TransportPackets {
         public static void handle(Save m,Supplier<NetworkEvent.Context> c){
             c.get().enqueueWork(()->{
                 ServerPlayer p=c.get().getSender();
-                if(p==null||!p.isCreative()||m.config==null||!p.serverLevel().hasChunkAt(m.pos)||p.distanceToSqr(Vec3.atCenterOf(m.pos))>64)return;
-                if(p.level().getBlockEntity(m.pos) instanceof TraversalSystem.Anchor a&&a.root.equals(m.pos))a.configure(m.config);
+                if(p==null||!p.isCreative()||m.config==null)return;
+                if(!p.serverLevel().hasChunkAt(m.pos)||p.distanceToSqr(Vec3.atCenterOf(m.pos))>64){p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.zombierool.transport.save_too_far"),false);return;}
+                if(p.level().getBlockEntity(m.pos) instanceof TraversalSystem.Anchor a)a.configure(m.config);
+                else if(p.level().getBlockEntity(m.pos) instanceof SoulChestSystem.Chest chest){chest.configure(m.config);if(!SoulObjectiveRegistry.get(p.serverLevel()).unique(chest.objectiveId))p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.zombierool.soul.duplicate",chest.objectiveId),false);}
+                else if(p.level().getBlockEntity(m.pos) instanceof SoulCompletionSystem.Checker checker)checker.configure(m.config);
+                else if(p.level().getBlockEntity(m.pos) instanceof OneWayGate.Anchor gate)gate.configure(m.config);
                 else if(p.level().getBlockEntity(m.pos) instanceof TeleporterSystem.Pad pad){
                     if(pad.busy){p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.zombierool.teleporter.busy"),true);return;}
                     pad.configure(m.config);
+                    p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.zombierool.transport.saved",pad.config.getString("id")),false);
                 }
             });c.get().setPacketHandled(true);
         }
     }
-    public record Jump(int entityId,UUID uuid,Vec3 start,Vec3 peak,Vec3 end,int duration,int elapsed) {
+    public record Jump(int entityId,UUID uuid,Vec3 start,Vec3 peak,Vec3 end,int duration,int elapsed,int style) {
+        public Jump(int entityId,UUID uuid,Vec3 start,Vec3 peak,Vec3 end,int duration,int elapsed){this(entityId,uuid,start,peak,end,duration,elapsed,0);}
         private static void vec(FriendlyByteBuf b,Vec3 p){b.writeDouble(p.x);b.writeDouble(p.y);b.writeDouble(p.z);}
         private static Vec3 vec(FriendlyByteBuf b){return new Vec3(b.readDouble(),b.readDouble(),b.readDouble());}
-        public static void encode(Jump m,FriendlyByteBuf b){b.writeVarInt(m.entityId);b.writeUUID(m.uuid);vec(b,m.start);vec(b,m.peak);vec(b,m.end);b.writeVarInt(m.duration);b.writeVarInt(m.elapsed);}
-        public static Jump decode(FriendlyByteBuf b){return new Jump(b.readVarInt(),b.readUUID(),vec(b),vec(b),vec(b),b.readVarInt(),b.readVarInt());}
+        public static void encode(Jump m,FriendlyByteBuf b){b.writeVarInt(m.entityId);b.writeUUID(m.uuid);vec(b,m.start);vec(b,m.peak);vec(b,m.end);b.writeVarInt(m.duration);b.writeVarInt(m.elapsed);b.writeVarInt(m.style);}
+        public static Jump decode(FriendlyByteBuf b){return new Jump(b.readVarInt(),b.readUUID(),vec(b),vec(b),vec(b),b.readVarInt(),b.readVarInt(),b.readVarInt());}
         public static void handle(Jump m,Supplier<NetworkEvent.Context> c){c.get().enqueueWork(()->DistExecutor.unsafeRunWhenOn(Dist.CLIENT,()->()->me.cryo.zombierool.client.TransportClient.receive(m)));c.get().setPacketHandled(true);}
+    }
+    public record Soul(BlockPos chest,Vec3 start,int duration,boolean clear){
+        public static void encode(Soul m,FriendlyByteBuf b){b.writeBlockPos(m.chest);b.writeDouble(m.start.x);b.writeDouble(m.start.y);b.writeDouble(m.start.z);b.writeVarInt(m.duration);b.writeBoolean(m.clear);}
+        public static Soul decode(FriendlyByteBuf b){return new Soul(b.readBlockPos(),new Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readVarInt(),b.readBoolean());}
+        // Keep this message ID reserved; SoulOrbEntity now provides tracking and rendering.
+        public static void handle(Soul m,Supplier<NetworkEvent.Context> c){c.get().setPacketHandled(true);}
     }
     public record Charge(int ticks) {
         public static void encode(Charge m,FriendlyByteBuf b){b.writeVarInt(m.ticks);}
         public static Charge decode(FriendlyByteBuf b){return new Charge(b.readVarInt());}
         public static void handle(Charge m,Supplier<NetworkEvent.Context> c){c.get().enqueueWork(()->DistExecutor.unsafeRunWhenOn(Dist.CLIENT,()->()->me.cryo.zombierool.client.screens.TeleporterChargeOverlay.start(m.ticks)));c.get().setPacketHandled(true);}
     }
-    public static void charge(ServerPlayer player,int ticks){NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(()->player),new Charge(ticks));}
+    public static void charge(ServerPlayer player,int ticks){me.cryo.zombierool.gameplay.TeleporterPlayerLock.update(player,ticks);NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(()->player),new Charge(ticks));}
     public static void register(SimpleChannel ch,int id){
         ch.registerMessage(id++,Open.class,Open::encode,Open::decode,Open::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         ch.registerMessage(id++,Save.class,Save::encode,Save::decode,Save::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         ch.registerMessage(id++,Jump.class,Jump::encode,Jump::decode,Jump::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        ch.registerMessage(id,Charge.class,Charge::encode,Charge::decode,Charge::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        ch.registerMessage(id++,Charge.class,Charge::encode,Charge::decode,Charge::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        ch.registerMessage(id,Soul.class,Soul::encode,Soul::decode,Soul::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
     public static void open(ServerPlayer player,BlockPos pos,String kind,CompoundTag config){
         if(kind.equals("teleporter")){
+            var atmosphere=me.cryo.zombierool.gameplay.MapAtmosphere.get(player.serverLevel());var presets=new net.minecraft.nbt.ListTag();for(String id:atmosphere.availablePresets()){var row=new CompoundTag();row.putString("id",id);row.putString("name",atmosphere.displayPresetName(id));presets.add(row);}config.put("_atmospherePresets",presets);
             var registry=TeleporterRegistry.get(player.serverLevel());var platforms=new net.minecraft.nbt.ListTag();var receivers=new net.minecraft.nbt.ListTag();
             registry.pads.entrySet().stream().filter(e->!e.getKey().equals(pos)&&e.getValue().getBoolean("enabled")&&!e.getValue().getString("role").equals("SWITCH")).sorted(java.util.Comparator.comparing(e->e.getValue().getString("id"))).forEach(e->{String id=e.getValue().getString("id");if(registry.named(id).size()==1){platforms.add(net.minecraft.nbt.StringTag.valueOf(id));if(e.getValue().getString("role").equals("RECEIVER"))receivers.add(net.minecraft.nbt.StringTag.valueOf(id));}});config.put("_platformIds",platforms);config.put("_receiverIds",receivers);
         }

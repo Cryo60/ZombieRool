@@ -96,14 +96,11 @@ public class CrawlerCorpse extends Mob {
         this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
 
         if (this.level().isClientSide) {
-            if (this.tickCount % 3 == 0) {
+            if (this.isAlive() && this.tickCount % 3 == 0) {
                 this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getRandomX(0.5), this.getY() + 0.2, this.getRandomZ(0.5), 0, 0.05, 0);
             }
         } else {
-            deathTimer++;
-            if (deathTimer >= MAX_DEATH_TIMER) {
-                explode();
-            }
+            if(deathTimer<MAX_DEATH_TIMER&&++deathTimer>=MAX_DEATH_TIMER)explode();
         }
     }
 
@@ -115,8 +112,10 @@ public class CrawlerCorpse extends Mob {
             serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 1.0f, 1.5f);
             serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.HOSTILE, 2.0f, 0.5f);
         }
-        this.discard();
+        this.setHealth(0);
     }
+
+    @Override protected void tickDeath(){deathTime=Math.min(19,deathTime+1);}
 
     @Override
     public void addAdditionalSaveData(CompoundTag compound) {
@@ -133,7 +132,7 @@ public class CrawlerCorpse extends Mob {
         setCustomSkin(compound.getString("CustomSkin"));
         setHalloweenSkin(compound.getBoolean("HalloweenSkin"));
         if (compound.contains("zr_scale")) setScale(compound.getFloat("zr_scale"));
-        deathTimer = compound.getInt("DeathTimer");
+        deathTimer = compound.getInt("DeathTimer");if(deathTimer>=MAX_DEATH_TIMER)setHealth(0);
     }
 
     @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -192,10 +191,10 @@ public class CrawlerCorpse extends Mob {
         @Override
         protected void scale(CrawlerCorpse entity, PoseStack poseStack, float partialTickTime) {
             float s = entity.getScale();
-            float progress = (entity.tickCount + partialTickTime) / 45.0f;
+            float progress = entity.isAlive()?(entity.tickCount + partialTickTime) / 45.0f:0;
             if (progress > 1.0f) progress = 1.0f;
-            
-            float swell = 1.0f + (progress * 0.35f); 
+
+            float swell = 1.0f + (progress * 0.35f);
             poseStack.scale(s * swell, s * swell, s * swell);
         }
 
@@ -203,14 +202,14 @@ public class CrawlerCorpse extends Mob {
         protected void setupRotations(CrawlerCorpse entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTicks) {
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw));
             if (Math.floorMod(entity.getUUID().hashCode(), 5) == 0) poseStack.mulPose(Axis.ZP.rotationDegrees(75.0F));
-            
-            float progress = (entity.tickCount + partialTicks) / 45.0f;
+
+            float progress = entity.isAlive()?(entity.tickCount + partialTicks) / 45.0f:0;
             if (progress > 1.0f) progress = 1.0f;
-            
-            float shakeIntensity = progress * 5.0f; 
+
+            float shakeIntensity = progress * 5.0f;
             float shakeX = Mth.sin(ageInTicks * 3.0f) * shakeIntensity;
             float shakeZ = Mth.cos(ageInTicks * 3.5f) * shakeIntensity;
-            
+
             poseStack.mulPose(Axis.ZP.rotationDegrees(shakeZ));
             poseStack.mulPose(Axis.XP.rotationDegrees(shakeX));
         }

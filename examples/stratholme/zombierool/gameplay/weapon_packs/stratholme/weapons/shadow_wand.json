@@ -1,0 +1,94 @@
+{
+  "id": "zombierool:shadow_wand",
+  "name": "weapon.zombierool.shadow_wand",
+  "type": "PROJECTILE",
+  "is_wonder_weapon": false,
+  "tags": [
+    "fantasy",
+    "warcraft",
+    "ranged",
+    "ordinary"
+  ],
+  "stats": {
+    "damage": 6,
+    "fire_rate": 14,
+    "range": 64,
+    "damage_falloff_start": 24,
+    "damage_falloff_end": 64,
+    "damage_falloff_min": 0.6
+  },
+  "ammo": {
+    "clip_size": 10,
+    "max_reserve": 70,
+    "reload_time": 44,
+    "reload_type": "MAGAZINE"
+  },
+  "ballistics": {
+    "velocity": 2,
+    "gravity": false,
+    "type": "PROJECTILE",
+    "trail_vfx": "SHADOW",
+    "spread": 0.2
+  },
+  "sounds": {
+    "fire": "minecraft:entity.evoker.cast_spell",
+    "fire_pap": "minecraft:entity.evoker.cast_spell",
+    "reload": "minecraft:item.crossbow.loading_end",
+    "dry": "minecraft:block.dispenser.fail",
+    "equip": "minecraft:item.armor.equip_leather"
+  },
+  "pack_a_punch": {
+    "name": "Shadow Wand +",
+    "damage_bonus": 6,
+    "reserve_bonus": 35,
+    "reload_speed_mult": 0.8
+  },
+  "weapon_kind": "wand",
+  "animation": {
+    "fpRx": [
+      -12,
+      25,
+      -8
+    ],
+    "fpRy": [
+      -12,
+      -30,
+      0
+    ],
+    "fpRz": [
+      0,
+      25,
+      3
+    ],
+    "fpY": [
+      0,
+      -0.12,
+      0
+    ],
+    "fpZ": [
+      0,
+      0.12,
+      0.07
+    ],
+    "fpScale": [
+      0.82,
+      0,
+      0
+    ],
+    "tpX": [
+      -1.1,
+      0.75,
+      -0.1
+    ],
+    "tpY": [
+      -0.1,
+      0,
+      0
+    ],
+    "tpZ": [
+      -0.05,
+      0.3,
+      0
+    ]
+  }
+}

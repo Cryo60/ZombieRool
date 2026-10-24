@@ -37,7 +37,7 @@ public final class MapDeviceScreen extends Screen {
             if(p.kind().equals("TURRET")) specs.add(new String[]{"interval","gui.zombierool.device.interval"});
         }
     }
-    public static void open(MapDevicePackets.Open p) { Minecraft.getInstance().setScreen(new MapDeviceScreen(p)); }
+    public static void open(MapDevicePackets.Open p) { if(java.util.Set.of("DCA","AIRCRAFT","TORNADO","VEHICLE").contains(p.kind()))Minecraft.getInstance().setScreen(new AmbientSceneryScreen(p));else Minecraft.getInstance().setScreen(new MapDeviceScreen(p)); }
     private static Component tr(String key) { return Component.translatable("gui.zombierool.device."+key); }
     private boolean emitter() { return packet.kind().equals("SOUND") || packet.kind().equals("PARTICLE"); }
     @Override protected void init() {
@@ -64,6 +64,7 @@ public final class MapDeviceScreen extends Screen {
         addRenderableWidget(Button.builder(tr(values.getBoolean("enabled") ? "enabled" : "disabled"),b -> {values.putBoolean("enabled",!values.getBoolean("enabled"));b.setMessage(tr(values.getBoolean("enabled") ? "enabled" : "disabled"));}).bounds(left+8,height-49,Math.min(100,fieldWidth),18).build());
         if(!emitter()) addRenderableWidget(Button.builder(tr(values.getBoolean("requires_power") ? "power_on" : "power_off"),b -> {values.putBoolean("requires_power",!values.getBoolean("requires_power"));b.setMessage(tr(values.getBoolean("requires_power") ? "power_on" : "power_off"));}).bounds(left+116,height-49,Math.max(90,panelWidth-124),18).build());
         int bw=(panelWidth-24)/(emitter()?3:2);
+        if(!emitter())addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.block_power.button"),button->{if(capture())BlockPowerScreen.request(packet.pos(),this,null);}).bounds(left+panelWidth-130,top+30,122,20).build());
         addRenderableWidget(Button.builder(tr("save"),b -> save(false)).bounds(left+8,height-26,bw,20).build());
         if(emitter()) addRenderableWidget(Button.builder(tr("preview"),b -> save(true)).bounds(left+12+bw,height-26,bw,20).build());
         addRenderableWidget(Button.builder(tr("close"),b -> onClose()).bounds(left+panelWidth-8-bw,height-26,bw,20).build());

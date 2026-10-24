@@ -16,7 +16,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent; 
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.loading.FMLPaths;
 import java.io.File;
@@ -33,6 +33,12 @@ import java.util.stream.Stream;
 public class PerksManager {
     public static final Map<String, Perk> ALL_PERKS = new TreeMap<>();
     public static final int MAX_PERKS_LIMIT = 4;
+    /** Minus one in map config means unlimited. The constant remains for addon compatibility only. */
+    public static int getMaxPerks(Player player) {
+        int limit = player.level() instanceof net.minecraft.server.level.ServerLevel level
+            ? me.cryo.zombierool.config.WorldConfig.get(level).getMaxPerks() : DebugPlayerControls.clientPerkLimit;
+        return limit == -1 ? Integer.MAX_VALUE : limit;
+    }
     public static final int QUICK_REVIVE_SOLO_LIMIT = 3;
     public static final int ROYAL_BEER_LIMIT = 5;
 
@@ -49,7 +55,7 @@ public class PerksManager {
         public String skin_texture;
         public String sign_texture;
         public String effect_id;
-        public String icon_path; 
+        public String icon_path;
         public int duration = Integer.MAX_VALUE;
         public int amplifier = 0;
     }
@@ -62,37 +68,38 @@ public class PerksManager {
         }
 
         public String getId() { return def.id; }
-        
+
         public Component getNameComponent() {
             return Component.translatable("perk.zombierool." + def.id + ".name");
         }
-        
-        public String getName() { 
-            return getNameComponent().getString(); 
+
+        public String getName() {
+            return getNameComponent().getString();
         }
-        
+
         public String getTexturePath() { return def.texture_path; }
-        
-        public Component getDescription() { 
-            return Component.translatable("perk.zombierool." + def.id + ".desc"); 
+
+        public Component getDescription() {
+            return Component.translatable("perk.zombierool." + def.id + ".desc");
         }
-        
+
         public String getSkinTexture() { return def.skin_texture; }
         public String getSignTexture() { return def.sign_texture; }
-        
+
         public String getIconPath() {
             if (def.icon_path != null && !def.icon_path.isEmpty()) return def.icon_path;
             return "zombierool:textures/mob_effect/perks_effect_" + getId() + ".png";
         }
-        
+
         public MobEffect getAssociatedEffect() {
             if (def.effect_id == null || def.effect_id.isEmpty()) return null;
             return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(def.effect_id));
         }
 
         public void applyEffect(Player player) {
+            if(getMaxPerks(player)==0)return;
             var mobEffect = getAssociatedEffect();
-            if (mobEffect == null) return; 
+            if (mobEffect == null) return;
             if (!player.hasEffect(mobEffect)) {
                 player.addEffect(new MobEffectInstance(mobEffect, def.duration, def.amplifier, false, false, true));
             }
@@ -106,7 +113,7 @@ public class PerksManager {
 
     public static void loadPerks() {
         ALL_PERKS.clear();
-        
+
         try {
             Path basePath = ModList.get().getModFileById(ZombieroolMod.MODID).getFile().findResource("data", ZombieroolMod.MODID, "gameplay", "perks");
             if (Files.exists(basePath)) {

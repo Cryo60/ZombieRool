@@ -17,7 +17,7 @@ import me.cryo.zombierool.ZombieroolMod;
 public class ZombieroolModTabs {
 	public static final DeferredRegister<CreativeModeTab> REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ZombieroolMod.MODID);
 	public static final RegistryObject<CreativeModeTab> ZB_RCT = REGISTRY.register("zb_rct",
-			() -> CreativeModeTab.builder().title(Component.translatable("item_group.zombierool.zb_rct")).icon(() -> new ItemStack(ZombieroolModBlocks.DER_WUNDERFIZZ.get())).displayItems((parameters, tabData) -> {
+			() -> CreativeModeTab.builder().title(Component.translatable("item_group.zombierool.zb_rct")).icon(() -> new ItemStack(ZombieroolModItems.CREATIVE_ICON.get())).displayItems((parameters, tabData) -> {
 				tabData.accept(ZombieroolModBlocks.PATH.get().asItem());
 				tabData.accept(ZombieroolModItems.ZOMBIE_SPAWN_EGG.get());
 				tabData.accept(ZombieroolModBlocks.LIMIT.get().asItem());

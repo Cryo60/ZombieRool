@@ -16,8 +16,8 @@ public class ZombieroolMixinPlugin implements IMixinConfigPlugin {
     public void onLoad(String mixinPackage) {
         // MÉTHODE BARBARE ANTI-DEADLOCK :
         // On contourne totalement le système de Forge et de Java.
-        // Au lieu de demander à Java si TacZ est chargé, on scanne physiquement 
-        // le dossier "mods" sur le disque dur. 
+        // Au lieu de demander à Java si TacZ est chargé, on scanne physiquement
+        // le dossier "mods" sur le disque dur.
         // Résultat : Zéro interaction avec Kotlin, zéro chance de freeze.
         try {
             hasTacz = Thread.currentThread().getContextClassLoader().getResource("com/tacz/guns/api/entity/IGunOperator.class") != null;
@@ -39,12 +39,15 @@ public class ZombieroolMixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public String getRefMapperConfig() { 
-        return null; 
+    public String getRefMapperConfig() {
+        return null;
     }
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if(mixinClassName.endsWith("TacZMeshCamoMixin"))
+            return hasTacz && Thread.currentThread().getContextClassLoader().getResource(
+                "com/example/taczmeshloader/tacz/TaczPolyMeshGunModel.class")!=null;
         if (mixinClassName.contains("TacZ")) {
             return hasTacz;
         }
@@ -55,8 +58,8 @@ public class ZombieroolMixinPlugin implements IMixinConfigPlugin {
     public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
 
     @Override
-    public List<String> getMixins() { 
-        return null; 
+    public List<String> getMixins() {
+        return null;
     }
 
     @Override

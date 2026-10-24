@@ -38,12 +38,22 @@ import java.util.function.Consumer;
  */
 @Mod.EventBusSubscriber(modid = "zombierool")
 public final class MapPower {
-    private static int scheduledTick = Integer.MIN_VALUE;
+    private static final java.util.Map<ServerLevel,Integer> scheduledTicks = new java.util.WeakHashMap<>();
 
     private MapPower() {}
+    /** Drop both global and named outputs before restoring match blocks, delivering a falling edge. */
+    public static void resetSignals(ServerLevel level){
+        GlobalSwitchState.setActivated(level,false);GlobalSwitchState.notifyActivators(level);
+        me.cryo.zombierool.config.MultiReceptorState.reset(level);
+    }
+
+    public static boolean hasMapPower(ServerLevel level){
+        return !WorldConfig.get(level).getPowerSwitchPositions().isEmpty()||BuildableSystem.get(level).hasPlannedPowerSwitch();
+    }
 
     public static boolean receives(Level level, BlockPos pos) {
-        if (level.hasNeighborSignal(pos) || level.hasNeighborSignal(pos.above()) || level.hasNeighborSignal(pos.below())) {
+        if(BlockPowerSettings.mode(level,pos)!=BlockPowerSettings.Mode.DEFAULT)return BlockPowerSettings.required(level,pos,true,false);
+        if (PortableEquipment.localPower(level,pos) || level.hasNeighborSignal(pos) || level.hasNeighborSignal(pos.above()) || level.hasNeighborSignal(pos.below())) {
             return true;
         }
         if (!(level instanceof ServerLevel server) || !GlobalSwitchState.isActivated(server)) return false;
@@ -60,15 +70,17 @@ public final class MapPower {
 
     public static void refreshSoon(ServerLevel level) {
         int now = level.getServer().getTickCount();
-        if (scheduledTick == now) return;
-        scheduledTick = now;
+        if (scheduledTicks.getOrDefault(level,Integer.MIN_VALUE) == now) return;
+        scheduledTicks.put(level,now);
         level.getServer().tell(new TickTask(now + 1, () -> refresh(level)));
         level.getServer().tell(new TickTask(now + 8, () -> refresh(level)));
     }
 
     public static void refresh(ServerLevel level) {
         applySwitchState(level);
+        GlobalSwitchState.notifyActivators(level);
         List<BlockPos> perks = new ArrayList<>();
+        me.cryo.zombierool.config.MultiReceptorState.refreshInputs(level);
         List<BlockPos> punches = new ArrayList<>();
         List<BlockPos> fizz = new ArrayList<>();
         forEachLoadedChunk(level, chunk -> {

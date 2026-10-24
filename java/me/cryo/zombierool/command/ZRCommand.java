@@ -123,10 +123,11 @@ public class ZRCommand {
                                     WorldConfig config = WorldConfig.get(level);
                                     CompoundTag tag = new CompoundTag();
                                     config.saveEditable(tag);
+                                    me.cryo.zombierool.network.packet.S2COpenConfigMenuPacket.addLootTables(tag,level);
                                     NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player),
                                             new S2COpenConfigMenuPacket(
                                                     tag,
-                                                    WaveManager.isGameRunning(), 
+                                                    WaveManager.isGameRunning(),
                                                     WaveManager.getCurrentWave()
                                             )
                                     );
@@ -199,9 +200,9 @@ public class ZRCommand {
                                         for (BlockPos switchPos : powerSwitchPositions) {
                                             if (!switchPos.equals(chosenPowerSwitchPos)) {
                                                 BlockState currentBlockState = level.getBlockState(switchPos);
-                                                if (currentBlockState.getBlock() instanceof me.cryo.zombierool.block.PowerSwitchBlock) { 
-                                                    level.removeBlock(switchPos, false); 
-                                                    worldConfig.removePowerSwitchPosition(switchPos); 
+                                                if (currentBlockState.getBlock() instanceof me.cryo.zombierool.block.PowerSwitchBlock) {
+                                                    level.removeBlock(switchPos, false);
+                                                    worldConfig.removePowerSwitchPosition(switchPos);
                                                 }
                                             } else {
                                                 BlockState chosenState = level.getBlockState(chosenPowerSwitchPos);
@@ -210,7 +211,7 @@ public class ZRCommand {
                                                 }
                                             }
                                         }
-                                        worldConfig.setDirty(); 
+                                        worldConfig.setDirty();
                                     }
                                     Set<BlockPos> wunderfizzPositions = worldConfig.getWunderfizzPositions();
                                     if (!wunderfizzPositions.isEmpty()) {
@@ -229,7 +230,7 @@ public class ZRCommand {
                                         }
                                         worldConfig.setDirty();
                                     }
-                                    WaveManager.startGame(level); 
+                                    WaveManager.startGame(level);
                                     ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.game_started").withStyle(ChatFormatting.GREEN), true);
                                     return 1;
                                 })
@@ -267,17 +268,17 @@ public class ZRCommand {
                                 })
                         )
                         .then(Commands.literal("scan")
-                                .then(Commands.argument("radius", IntegerArgumentType.integer(10, 10000)) 
+                                .then(Commands.argument("radius", IntegerArgumentType.integer(10, 10000))
                                         .executes(ctx -> performScan(ctx, IntegerArgumentType.getInteger(ctx, "radius")))
                                 )
-                                .executes(ctx -> performScan(ctx, 10000)) 
+                                .executes(ctx -> performScan(ctx, 10000))
                         )
                         .then(Commands.literal("points")
                                 .then(Commands.literal("add")
                                         .then(Commands.argument("targets", EntityArgument.players())
                                                 .then(Commands.argument("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> {
-                                                            WaveManager.setCheatsUsed(true); 
+                                                            WaveManager.setCheatsUsed(true);
                                                             Collection<ServerPlayer> players = EntityArgument.getPlayers(ctx, "targets");
                                                             int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                             if (players.isEmpty()) return 0;
@@ -296,7 +297,7 @@ public class ZRCommand {
                                 .then(Commands.literal("reset")
                                         .then(Commands.argument("targets", EntityArgument.players())
                                                 .executes(ctx -> {
-                                                    WaveManager.setCheatsUsed(true); 
+                                                    WaveManager.setCheatsUsed(true);
                                                     Collection<ServerPlayer> players = EntityArgument.getPlayers(ctx, "targets");
                                                     if (players.isEmpty()) return 0;
                                                     int totalReset = 0;
@@ -332,44 +333,16 @@ public class ZRCommand {
                         .then(Commands.literal("setWave")
                                 .then(Commands.argument("waveNumber", IntegerArgumentType.integer(MIN_WAVE_NUMBER))
                                         .executes(ctx -> {
-                                            WaveManager.setCheatsUsed(true); 
+                                            WaveManager.setCheatsUsed(true);
                                             ServerLevel level = ctx.getSource().getLevel();
                                             int waveNumber = IntegerArgumentType.getInteger(ctx, "waveNumber");
-                                            WaveManager.forceSetWave(level, waveNumber);
+                                            if (!WaveManager.forceSetWave(level, waveNumber)) return 0;
                                             ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.wave_set", waveNumber), true);
                                             return 1;
                                         })
                                 )
                         )
-                        .then(Commands.literal("bonus")
-                                .then(Commands.argument("bonus_id", StringArgumentType.word())
-                                        .suggests((ctx, builder) -> {
-                                            List<String> suggestions = new ArrayList<>(BonusManager.ALL_BONUSES.keySet());
-                                            suggestions.add("random");
-                                            return SharedSuggestionProvider.suggest(suggestions, builder);
-                                        })
-                                        .executes(ctx -> {
-                                            WaveManager.setCheatsUsed(true); 
-                                            ServerLevel level = ctx.getSource().getLevel();
-                                            ServerPlayer senderPlayer = ctx.getSource().isPlayer() ? ctx.getSource().getPlayerOrException() : null;
-                                            Vec3 spawnPos = ctx.getSource().getPosition();
-                                            String bonusIdString = StringArgumentType.getString(ctx, "bonus_id").toLowerCase(Locale.ROOT);
-                                            BonusManager.Bonus bonus = null;
-                                            if (bonusIdString.equals("random")) {
-                                                bonus = BonusManager.getRandomBonus(senderPlayer);
-                                            } else {
-                                                bonus = BonusManager.getBonus(bonusIdString);
-                                            }
-                                            if (bonus == null) {
-                                                throw ERROR_INVALID_BONUS_TYPE.create();
-                                            }
-                                            BonusManager.spawnBonus(bonus, level, spawnPos);
-                                            final String finalName = bonus.id;
-                                            ctx.getSource().sendSuccess(() -> Component.translatable("command.zombierool.success.bonus_spawned", finalName), true);
-                                            return 1;
-                                        })
-                                )
-                        )
+                        .then(bonusCommands())
                         .then(Commands.literal("perk")
                                 .then(Commands.argument("perk_id", StringArgumentType.word())
                                         .suggests((ctx, builder) -> {
@@ -378,7 +351,7 @@ public class ZRCommand {
                                             return SharedSuggestionProvider.suggest(suggestions, builder);
                                         })
                                         .executes(ctx -> {
-                                            WaveManager.setCheatsUsed(true); 
+                                            WaveManager.setCheatsUsed(true);
                                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                                             String perkIdString = StringArgumentType.getString(ctx, "perk_id").toLowerCase(Locale.ROOT);
                                             PerksManager.Perk perk = null;
@@ -402,7 +375,7 @@ public class ZRCommand {
                                         })
                                         .then(Commands.argument("targets", EntityArgument.players())
                                                 .executes(ctx -> {
-                                                    WaveManager.setCheatsUsed(true); 
+                                                    WaveManager.setCheatsUsed(true);
                                                     Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "targets");
                                                     String perkIdString = StringArgumentType.getString(ctx, "perk_id").toLowerCase(Locale.ROOT);
                                                     int count = 0;
@@ -451,7 +424,7 @@ public class ZRCommand {
                                                                 .withColor(ChatFormatting.YELLOW)
                                                                 .withClickEvent(new ClickEvent(
                                                                         ClickEvent.Action.RUN_COMMAND,
-                                                                        "/execute at @s run tp @s " + pos.getX() + " " + pos.getY() + " " + pos.getZ() 
+                                                                        "/execute at @s run tp @s " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
                                                                 ))
                                                                 .withHoverEvent(new HoverEvent(
                                                                         HoverEvent.Action.SHOW_TEXT,
@@ -607,7 +580,7 @@ public class ZRCommand {
                                         )
                                 )
                                 .then(Commands.literal("daynight")
-                                        .then(Commands.argument("mode", StringArgumentType.word()) 
+                                        .then(Commands.argument("mode", StringArgumentType.word())
                                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                                         Arrays.asList("day", "night", "cycle"), builder))
                                                 .executes(ctx -> {
@@ -672,7 +645,7 @@ public class ZRCommand {
                                 )
                                 .then(Commands.literal("particles")
                                         .then(Commands.literal("enable")
-                                                .then(Commands.argument("particle_type", ResourceLocationArgument.id()) 
+                                                .then(Commands.argument("particle_type", ResourceLocationArgument.id())
                                                         .suggests((ctx, builder) -> SharedSuggestionProvider.suggestResource(BuiltInRegistries.PARTICLE_TYPE.keySet(), builder))
                                                         .then(Commands.argument("density", StringArgumentType.word())
                                                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
@@ -707,7 +680,7 @@ public class ZRCommand {
                                                                     ServerLevel level = ctx.getSource().getLevel();
                                                                     ResourceLocation particleId = ResourceLocationArgument.getId(ctx, "particle_type");
                                                                     String density = StringArgumentType.getString(ctx, "density").toLowerCase(Locale.ROOT);
-                                                                    String defaultMode = "global"; 
+                                                                    String defaultMode = "global";
 
                                                                     if (!Arrays.asList("sparse", "normal", "dense", "very_dense").contains(density)) {
                                                                         throw ERROR_INVALID_PARTICLE_DENSITY.create();
@@ -724,8 +697,8 @@ public class ZRCommand {
                                                         .executes(ctx -> {
                                                             ServerLevel level = ctx.getSource().getLevel();
                                                             ResourceLocation particleId = ResourceLocationArgument.getId(ctx, "particle_type");
-                                                            String defaultDensity = "normal"; 
-                                                            String defaultMode = "global"; 
+                                                            String defaultDensity = "normal";
+                                                            String defaultMode = "global";
 
                                                             WorldConfig worldConfig = WorldConfig.get(level);
                                                             worldConfig.enableParticles(particleId, defaultDensity, defaultMode);
@@ -866,7 +839,7 @@ public class ZRCommand {
         int maxX = center.getX() + radius;
         int minZ = center.getZ() - radius;
         int maxZ = center.getZ() + radius;
-        int minY = -64; 
+        int minY = -64;
         int maxY = 320;
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
@@ -891,7 +864,7 @@ public class ZRCommand {
                             for (int y = minY; y <= maxY; y++) {
                                 mutablePos.set(x, y, z);
                                 BlockState state = level.getBlockState(mutablePos);
-                                if (state.isAir()) continue; 
+                                if (state.isAir()) continue;
 
                                 Block block = state.getBlock();
                                 totalBlocksChecked++;
@@ -939,12 +912,12 @@ public class ZRCommand {
     private static void findAllConnectedDoors(ServerLevel level, BlockPos startPos, Set<BlockPos> visited) {
         Queue<BlockPos> queue = new ArrayDeque<>();
         queue.add(startPos);
-        visited.add(startPos); 
+        visited.add(startPos);
 
         while (!queue.isEmpty()) {
             BlockPos cur = queue.poll();
             for (Direction dir : Direction.values()) {
-                BlockPos n = cur.relative(dir); 
+                BlockPos n = cur.relative(dir);
                 if (level.isLoaded(n) && !visited.contains(n) && level.getBlockEntity(n) instanceof ObstacleDoorBlockEntity) {
                     visited.add(n);
                     queue.add(n);
@@ -952,4 +925,26 @@ public class ZRCommand {
             }
         }
     }
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> bonusCommands(){
+        var id=Commands.argument("bonus_id",StringArgumentType.word()).suggests((ctx,builder)->{var names=new ArrayList<>(BonusManager.ALL_BONUSES.keySet());names.add("random");return SharedSuggestionProvider.suggest(names,builder);});
+        var nextId=Commands.argument("bonus_id",StringArgumentType.word()).suggests((ctx,builder)->{var names=new ArrayList<>(BonusManager.ALL_BONUSES.keySet());names.add("random");return SharedSuggestionProvider.suggest(names,builder);});
+        return Commands.literal("bonus").then(id.executes(ctx->spawnBonusCommand(ctx,ctx.getSource().getPosition()))
+            .then(Commands.argument("pos",net.minecraft.commands.arguments.coordinates.Vec3Argument.vec3(false)).executes(ctx->spawnBonusCommand(ctx,net.minecraft.commands.arguments.coordinates.Vec3Argument.getVec3(ctx,"pos")))))
+            .then(Commands.literal("next").then(nextId.executes(ctx->queueBonusCommand(ctx,List.of(ctx.getSource().getPlayerOrException())))
+                .then(Commands.argument("targets",EntityArgument.players()).executes(ctx->queueBonusCommand(ctx,EntityArgument.getPlayers(ctx,"targets"))))))
+            .then(Commands.literal("clear_next").executes(ctx->{me.cryo.zombierool.gameplay.QueuedBonusDrops.clear(ctx.getSource().getPlayerOrException());return 1;})
+                .then(Commands.argument("targets",EntityArgument.players()).executes(ctx->{for(var player:EntityArgument.getPlayers(ctx,"targets"))me.cryo.zombierool.gameplay.QueuedBonusDrops.clear(player);return 1;})));
+    }
+    private static int spawnBonusCommand(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,Vec3 at)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var source=ctx.getSource();var player=source.isPlayer()?source.getPlayerOrException():null;
+        var bonus=me.cryo.zombierool.gameplay.QueuedBonusDrops.resolve(player,StringArgumentType.getString(ctx,"bonus_id"));if(bonus==null)throw ERROR_INVALID_BONUS_TYPE.create();
+        WaveManager.setCheatsUsed(true);BonusManager.spawnDebugBonus(bonus,source.getLevel(),at);
+        source.sendSuccess(()->Component.translatable("command.zombierool.success.bonus_spawned",bonus.id),true);return 1;
+    }
+    private static int queueBonusCommand(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,java.util.Collection<ServerPlayer> players)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        String id=StringArgumentType.getString(ctx,"bonus_id");if(!id.equalsIgnoreCase("random")&&BonusManager.getBonus(id)==null)throw ERROR_INVALID_BONUS_TYPE.create();
+        for(var player:players)me.cryo.zombierool.gameplay.QueuedBonusDrops.queue(player,id);
+        WaveManager.setCheatsUsed(true);ctx.getSource().sendSuccess(()->Component.translatable("gui.zombierool.console.debug.bonus_next",id),true);return players.size();
+    }
+
 }

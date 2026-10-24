@@ -1,0 +1,1 @@
+{"type": "minecraft:block", "pools": [{"rolls": 1, "entries": [{"type": "minecraft:item", "name": "zombierool:furniture_wall_standard_cuba"}], "conditions": [{"condition": "minecraft:block_state_property", "block": "zombierool:furniture_wall_standard_cuba", "properties": {"part": "0"}}, {"condition": "minecraft:survives_explosion"}]}]}

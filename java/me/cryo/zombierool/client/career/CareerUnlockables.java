@@ -9,7 +9,7 @@ public class CareerUnlockables {
 
     public static class SkinDef {
         public String langKey;
-        public String unlockType; 
+        public String unlockType;
         public int unlockReq;
         public int price;
         public List<String> exclusiveWeapons;
@@ -29,12 +29,12 @@ public class CareerUnlockables {
         public boolean isPrestige;
         public int prestigeLevelReq;
         public boolean isGlobalUnlock;
-        public String rarity; 
+        public String rarity;
         public List<String> exclusiveWeapons;
 
-        public CamoDef(String langKey, int price, boolean isPrestige, int prestigeLevelReq, boolean isGlobalUnlock, String rarity, String... exclusiveWeapons) { 
-            this.langKey = langKey; 
-            this.price = price; 
+        public CamoDef(String langKey, int price, boolean isPrestige, int prestigeLevelReq, boolean isGlobalUnlock, String rarity, String... exclusiveWeapons) {
+            this.langKey = langKey;
+            this.price = price;
             this.isPrestige = isPrestige;
             this.prestigeLevelReq = prestigeLevelReq;
             this.isGlobalUnlock = isGlobalUnlock;
@@ -100,14 +100,14 @@ public class CareerUnlockables {
         CAMOS.put("camo_forsaken", new CamoDef("camo.zombierool.forsaken", 5000, false, 0, false, "epic"));
         CAMOS.put("camo_silvermoon", new CamoDef("camo.zombierool.silvermoon", 5000, false, 0, false, "epic"));
         CAMOS.put("camo_horde", new CamoDef("camo.zombierool.horde", 5000, false, 0, false, "epic"));
-        CAMOS.put("camo_gold", new CamoDef("camo.zombierool.gold", 7500, false, 0, true, "epic")); 
+        CAMOS.put("camo_gold", new CamoDef("camo.zombierool.gold", 7500, false, 0, true, "epic"));
         CAMOS.put("camo_diamond", new CamoDef("camo.zombierool.diamond", 10000, false, 0, true, "epic"));
         CAMOS.put("camo_damascus", new CamoDef("camo.zombierool.damascus", 12500, false, 0, true, "epic"));
 
         CAMOS.put("camo_dark_matter", new CamoDef("camo.zombierool.dark_matter", 15000, false, 0, false, "legendary"));
         CAMOS.put("camo_magma", new CamoDef("camo.zombierool.magma", 12500, false, 0, true, "legendary"));
         CAMOS.put("camo_matrix", new CamoDef("camo.zombierool.matrix", 15000, false, 0, true, "legendary"));
-        CAMOS.put("camo_plasma", new CamoDef("camo.zombierool.plasma", 15000, false, 0, true, "legendary")); 
+        CAMOS.put("camo_plasma", new CamoDef("camo.zombierool.plasma", 15000, false, 0, true, "legendary"));
         CAMOS.put("camo_retro_8bit", new CamoDef("camo.zombierool.retro_8bit", 15000, false, 0, true, "legendary"));
         CAMOS.put("camo_mojang", new CamoDef("camo.zombierool.mojang", 15000, false, 0, true, "legendary"));
         CAMOS.put("camo_bedrock", new CamoDef("camo.zombierool.bedrock", 15000, false, 0, true, "legendary"));
@@ -115,6 +115,7 @@ public class CareerUnlockables {
         CAMOS.put("camo_merc_red", new CamoDef("camo.zombierool.merc_red", 10000, false, 0, false, "legendary"));
         CAMOS.put("camo_fast_food", new CamoDef("camo.zombierool.fast_food", 10000, false, 0, false, "legendary"));
         CAMOS.put("camo_masterchief", new CamoDef("camo.zombierool.masterchief", 10000, false, 0, false, "legendary"));
+        CAMOS.put("camo_wesker_coat", new CamoDef("camo.zombierool.wesker_coat", 15000, false, 0, false, "legendary"));
         CAMOS.put("camo_asiimov", new CamoDef("camo.zombierool.asiimov", 15000, false, 0, false, "legendary"));
         CAMOS.put("camo_hyper_beast", new CamoDef("camo.zombierool.hyper_beast", 15000, false, 0, false, "legendary"));
         CAMOS.put("camo_rain_storm", new CamoDef("camo.zombierool.rain_storm", 12500, false, 0, true, "legendary"));
@@ -129,6 +130,22 @@ public class CareerUnlockables {
         CAMOS.put("camo_blood", new CamoDef("camo.zombierool.blood", 15000, false, 0, true, "legendary"));
         CAMOS.put("camo_marmot", new CamoDef("camo.zombierool.marmot", 15000, false, 0, true, "legendary"));
 
+        CAMOS.put("camo_chameleon_amethyst_emerald", new CamoDef("camo.zombierool.chameleon_amethyst_emerald", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_chameleon_copper_teal", new CamoDef("camo.zombierool.chameleon_copper_teal", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_chameleon_inferno", new CamoDef("camo.zombierool.chameleon_inferno", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_chameleon_jade_gold", new CamoDef("camo.zombierool.chameleon_jade_gold", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_chameleon_ocean_violet", new CamoDef("camo.zombierool.chameleon_ocean_violet", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_chameleon_sakura_cyan", new CamoDef("camo.zombierool.chameleon_sakura_cyan", 5000, false, 0, false, "epic"));
+        CAMOS.put("camo_cherry_blossom_animated", new CamoDef("camo.zombierool.cherry_blossom_animated", 12500, false, 0, true, "legendary"));
+        CAMOS.put("camo_giraffe", new CamoDef("camo.zombierool.giraffe", 1500, false, 0, false, "rare"));
+        CAMOS.put("camo_grotog", new CamoDef("camo.zombierool.grotog", 0, false, 0, true, "exclusive"));
+        CAMOS.put("camo_halloween_animated", new CamoDef("camo.zombierool.halloween_animated", 0, false, 0, true, "exclusive"));
+        CAMOS.put("camo_horror_eye_animated", new CamoDef("camo.zombierool.horror_eye_animated", 0, false, 0, true, "exclusive"));
+        CAMOS.put("camo_leopard", new CamoDef("camo.zombierool.leopard", 1500, false, 0, false, "rare"));
+        CAMOS.put("camo_panda", new CamoDef("camo.zombierool.panda", 1500, false, 0, false, "rare"));
+        CAMOS.put("camo_sponsor_animated", new CamoDef("camo.zombierool.sponsor_animated", 0, false, 0, true, "exclusive"));
+        CAMOS.put("camo_zebra", new CamoDef("camo.zombierool.zebra", 1500, false, 0, false, "rare"));
+
         CAMOS.put("camo_solid_gold", new CamoDef("camo.zombierool.solid_gold", 0, false, 0, false, "mastery"));
         CAMOS.put("camo_black_ice", new CamoDef("camo.zombierool.black_ice", 0, false, 0, false, "mastery"));
 
@@ -140,7 +157,6 @@ public class CareerUnlockables {
 
         CAMOS.put("camo_contributor", new CamoDef("camo.zombierool.contributor", 0, false, 0, true, "exclusive"));
         CAMOS.put("camo_glitch_cartridge", new CamoDef("camo.zombierool.glitch_cartridge", 0, false, 0, true, "exclusive"));
-        CAMOS.put("camo_resprune", new CamoDef("camo.zombierool.resprune", 0, false, 0, true, "exclusive"));
         CAMOS.put("camo_cryo", new CamoDef("camo.zombierool.cryo", 0, false, 0, true, "exclusive"));
         CAMOS.put("camo_mdxu", new CamoDef("camo.zombierool.mdxu", 0, false, 0, true, "exclusive"));
         CAMOS.put("camo_anniversary", new CamoDef("camo.zombierool.anniversary", 0, false, 0, true, "exclusive"));

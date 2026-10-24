@@ -48,7 +48,7 @@ public final class MatchWorldJournal {
     }
 
     public static void note(ServerLevel level, BlockPos pos) {
-        if (restoring || level.dimension() != Level.OVERWORLD || !WaveManager.isGameRunning()) return;
+        if (level.isOutsideBuildHeight(pos) || restoring || level.dimension() != Level.OVERWORLD || !WaveManager.isGameRunning()) return;
         ensureLoaded(level);
         BlockPos key = pos.immutable();
         if (ORIGINAL.containsKey(key)) return;
@@ -70,12 +70,14 @@ public final class MatchWorldJournal {
             boolean overlaysChanged = false;
             for (Map.Entry<BlockPos, Snapshot> entry : ORIGINAL.entrySet()) {
                 BlockPos pos = entry.getKey();
+                if (level.isOutsideBuildHeight(pos)) continue;
                 Snapshot snap = entry.getValue();
                 level.setBlock(pos, snap.state, 3);
                 if (snap.blockEntity != null) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
                         be.load(snap.blockEntity);
+                        if(be instanceof me.cryo.zombierool.block.system.MachineDeliverySystem.Delivery delivery)delivery.reset();
                         be.setChanged();
                     }
                 }
@@ -146,6 +148,7 @@ public final class MatchWorldJournal {
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag entry = list.getCompound(i);
                 BlockPos pos = new BlockPos(entry.getInt("x"), entry.getInt("y"), entry.getInt("z"));
+                if (level.isOutsideBuildHeight(pos)) continue;
                 BlockState state = readState(entry.getCompound("state"));
                 CompoundTag be = entry.contains("be", Tag.TAG_COMPOUND) ? entry.getCompound("be") : null;
                 CompoundTag overlays = entry.contains("overlays", Tag.TAG_COMPOUND) ? entry.getCompound("overlays") : new CompoundTag();

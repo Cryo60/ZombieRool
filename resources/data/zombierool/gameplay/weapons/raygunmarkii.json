@@ -34,11 +34,11 @@
   },
   "burst": {
     "count": 3,
-    "delay": 1
+    "delay": 2
   },
   "recoil": {
-    "pitch": 0.8,
-    "yaw": 0.2
+    "pitch": 0.65,
+    "yaw": 0.07
   },
   "pack_a_punch": {
     "name": "weapon.zombierool.raygunmarkii.pap",
@@ -47,7 +47,7 @@
     "reserve_bonus": 81,
     "reload_speed_mult": 0.8,
     "spread_mult": 1.0,
-    "recoil_mult": 0.6,
+    "recoil_mult": 0.85,
     "durability_bonus": 0,
     "penetration_bonus": 0,
     "incendiary": false,
@@ -66,7 +66,7 @@
   },
   "sounds": {
     "fire": "zombierool:ray_gun_mk2_fire",
-    "fire_pap": "zombierool:gun_fire_upgraded",
+    "fire_pap": "zombierool:ray_gun_mk2_fire",
     "reload": "zombierool:ray_gun_mk2_reloading",
     "dry": "zombierool:rifle_dry",
     "equip": "zombierool:weapon_in_hand",

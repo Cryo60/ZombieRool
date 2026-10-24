@@ -63,6 +63,7 @@ public class ServerEventHandler {
             if (server == null) return;
 
             if (serverLevel.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+                me.cryo.zombierool.util.WorldLayoutMigration.migrate(server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT));
                 DynamicResourceManager.loadWorldResources(serverLevel);
                 LuaScriptManager.loadScripts(serverLevel);
             }
@@ -98,15 +99,6 @@ public class ServerEventHandler {
         ServerLevel level = player.serverLevel();
         WorldConfig worldConfig = WorldConfig.get(level);
 
-        if (worldConfig.getDataVersion() < 1) {
-            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.1").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.2").withStyle(ChatFormatting.YELLOW));
-            player.sendSystemMessage(Component.translatable("message.zombierool.update_warning.3").withStyle(ChatFormatting.GOLD));
-        } else {
-            player.sendSystemMessage(Component.translatable("message.zombierool.welcome.1").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-            player.sendSystemMessage(Component.translatable("message.zombierool.welcome.2").withStyle(ChatFormatting.AQUA));
-        }
-
         Scoreboard scoreboard = level.getScoreboard();
         var objective = scoreboard.getObjective(OBJECTIVE_ID);
         if (objective == null) {
@@ -127,6 +119,7 @@ public class ServerEventHandler {
             cap.resetPerkPurchases();
             cap.setLethalType(worldConfig.getStartingLethal());
             cap.setLethalCount(5);
+            me.cryo.zombierool.gameplay.EquipmentSystem.resetLoadout(player, cap);
             if (WaveManager.isGameRunning()) {
                 cap.setPoints(0);
                 player.setGameMode(GameType.SPECTATOR);
@@ -188,6 +181,7 @@ public class ServerEventHandler {
             player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
                 cap.setLethalType(WorldConfig.get((ServerLevel) player.level()).getStartingLethal());
                 cap.setLethalCount(5);
+            me.cryo.zombierool.gameplay.EquipmentSystem.resetLoadout(player, cap);
             });
         }
     }
@@ -350,7 +344,7 @@ public class ServerEventHandler {
             if (currentBowie != lastBowie) {
                 player.getPersistentData().putBoolean("zr_last_synced_bowie", currentBowie);
                 NetworkHandler.INSTANCE.send(
-                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), 
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
                     new S2CSyncBowieKnifePacket(player.getId(), currentBowie)
                 );
             }
@@ -386,7 +380,7 @@ public class ServerEventHandler {
                 }
 
                 ItemStack offhand = player.getInventory().getItem(40);
-                if (!offhand.isEmpty()) {
+                if (!offhand.isEmpty() && !(offhand.getItem() instanceof me.cryo.zombierool.item.ScarletWeaponItem.Guard) && !me.cryo.zombierool.item.ScarletWeaponItem.kit(offhand)) {
                     player.getInventory().setItem(40, ItemStack.EMPTY);
                     boolean added = false;
                     if (me.cryo.zombierool.core.system.WeaponFacade.isWeapon(offhand)) {
@@ -434,7 +428,7 @@ public class ServerEventHandler {
                             player.drop(stack.copy(), false);
                             player.getInventory().setItem(i, ItemStack.EMPTY);
                         }
-                    } 
+                    }
                     else if (!isWeapon && isWeaponSlot) {
                         boolean moved = false;
                         for (int u = limit + 1; u < 36; u++) {
@@ -544,8 +538,15 @@ public class ServerEventHandler {
     }
 
     private static boolean shouldDespawn(Entity entity) {
+        if(entity!=null&&me.cryo.zombierool.gameplay.NativeMapActors.owns(entity))return false;
+        if(entity instanceof me.cryo.zombierool.entity.MapActorEntity actor&&!actor.profile().isEmpty())return false;
+        // Explicit operator console spawns are test mobs, independent of the map whitelist.
+        if(entity instanceof net.minecraft.world.entity.Mob && entity.getPersistentData().getBoolean("zr_debug_spawn"))return false;
+        if(entity instanceof me.cryo.zombierool.entity.WhiteKnightEntity knight&&knight.isSpawnedByPlayer()&&knight.isTame()&&knight.getOwner()!=null)return false;
         // Internal encounters are not ordinary map mobs. Their own join guard rejects /summon.
         if (entity instanceof me.cryo.zombierool.entity.MrChiefEntity chief && chief.isSpawnAuthorized()) return false;
+        if (entity instanceof me.cryo.zombierool.entity.VrilHumanEntity human && human.owner!=null) return false;
+        if (entity instanceof me.cryo.zombierool.entity.SpecialEnemyEntity special && special.getPersistentData().getBoolean("zr_special_spawner")) return false;
         if (entity == null || !entity.isAlive() || entity.isRemoved()) {
             return false;
         }
@@ -559,7 +560,10 @@ public class ServerEventHandler {
                 || entity instanceof net.minecraft.world.entity.item.PrimedTnt
                 || entity instanceof net.minecraft.world.entity.projectile.FishingHook
                 || entity instanceof AreaEffectCloud
+                || entity instanceof me.cryo.zombierool.entity.NapalmFireEntity
+                || entity instanceof me.cryo.zombierool.entity.PanzerClawEntity
                 || entity instanceof me.cryo.zombierool.entity.GorePieceEntity
+                || entity instanceof me.cryo.zombierool.entity.SoulOrbEntity
                 || entity instanceof me.cryo.zombierool.entity.BloodDecalEntity) {
             return false;
         }
@@ -569,17 +573,19 @@ public class ServerEventHandler {
 
             if (entity instanceof ItemEntity itemEntity) {
                 if (itemEntity.getPersistentData().getBoolean("zr_gore")
+                        || itemEntity.getPersistentData().getBoolean("zr_boss_loot")
                         || itemEntity.getPersistentData().hasUUID("zr_drop_owner")) {
                     return false;
                 }
-                ResourceLocation rl = ForgeRegistries.ITEMS.getKey(itemEntity.getItem().getItem());
-                if (rl != null && config.getAllowedItems().contains(rl.toString())) {
-                    return false;
-                }
-                return true;
+                return false;
             }
 
             ResourceLocation rl = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+            if(rl==null||!(entity instanceof net.minecraft.world.entity.Mob))return false;
+            // Vanilla wildlife and village residents are never map enemies.
+            // Addons remain independent of ZombieRool's own monster allow-list.
+            if(rl.getNamespace().equals("minecraft"))return true;
+            if(!rl.getNamespace().equals("zombierool"))return false;
             if (rl != null && config.getAllowedMobs().contains(rl.toString())) {
                 return false;
             }
@@ -608,19 +614,22 @@ public class ServerEventHandler {
     public static void onLivingDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide) return;
         net.minecraft.world.entity.LivingEntity target = event.getEntity();
+        // DamageManager owns these deaths, including their career progress.
+        if(target instanceof me.cryo.zombierool.entity.ZombieEntity||target instanceof me.cryo.zombierool.entity.CrawlerEntity
+                ||target instanceof me.cryo.zombierool.entity.HellhoundEntity||target instanceof me.cryo.zombierool.entity.DummyEntity)return;
         if (target.getPersistentData().getBoolean("zr_death_processed")) return;
-        
+
         Entity attackerEntity = event.getSource().getEntity();
         if (attackerEntity instanceof ServerPlayer player) {
             boolean isGunDamage = target.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
             boolean wasHeadshotHit = target.getPersistentData().getBoolean(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
 
             if (isGunDamage && !me.cryo.zombierool.gameplay.WaveManager.areCheatsUsed()) {
-                String wId = WeaponFacade.getWeaponId(player.getMainHandItem());
+                String wId = WeaponFacade.getCareerWeaponId(player.getMainHandItem());
                 if (wId != null && !wId.isEmpty()) {
                     wId = wId.replace("zombierool:", "");
                     NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new me.cryo.zombierool.network.packet.S2CProgressWeaponStatPacket(wId, 1, wasHeadshotHit ? 1 : 0, 0));
-                    
+
                     CareerManager.progressChallenge(player, CareerManager.ChallengeType.WEAPON_KILLS, 1, wId);
                     if (wasHeadshotHit) {
                         CareerManager.progressChallenge(player, CareerManager.ChallengeType.WEAPON_HEADSHOTS, 1, wId);

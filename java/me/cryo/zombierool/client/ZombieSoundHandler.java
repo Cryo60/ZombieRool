@@ -33,6 +33,18 @@ public class ZombieSoundHandler {
     private static final int FADE_TICKS = 160;
 
     private static SoundInstance currentMusic;
+    private static String zonePreset="",pendingZone;
+    private static float zoneGain=1,pendingGain=1,zoneStartVolume;
+    private static int zoneFade=40,zoneRemaining,zoneFadeIn;
+    public static void resetMusicVolume(){zonePreset="";pendingZone=null;zoneGain=1;zoneRemaining=zoneFadeIn=0;}
+    public static void restoreMapMusic(String preset){resetMusicVolume();if(currentMusic!=null)Minecraft.getInstance().getSoundManager().stop(currentMusic);currentMusic=null;musicPlaying=false;currentClientMusicPreset="default";applyMusicPreset(preset);}
+    public static void applyMusicVolume(net.minecraft.nbt.CompoundTag n){String preset=n.isEmpty()?"":n.getString("preset");float gain=n.isEmpty()?1:(float)n.getDouble("volume");if(preset.equals(pendingZone==null?zonePreset:pendingZone)&&gain==(pendingZone==null?zoneGain:pendingGain))return;pendingZone=preset;pendingGain=gain;zoneFade=n.isEmpty()?zoneFade:Math.max(0,n.getInt("fadeTicks"));zoneRemaining=zoneFade;zoneStartVolume=currentMusicVolume;}
+    private static String effectiveMusicPreset(Minecraft mc){return mc.level==null?"menu":"secret".equals(currentClientMusicPreset)?"secret":!zonePreset.isEmpty()?zonePreset:currentClientMusicPreset;}
+    private static void updateMusicVolume(){if(currentMusic instanceof DynamicSoundLoader.FileSoundInstance file)file.setVolume(currentMusicVolume);else if(currentMusic instanceof MutableMusic sound)sound.volume(currentMusicVolume);}
+    private static final class MutableMusic extends SimpleSoundInstance {
+        MutableMusic(ResourceLocation id,float volume,boolean loop){super(id,SoundSource.MUSIC,volume,1,RandomSource.create(),loop,0,SoundInstance.Attenuation.NONE,0,0,0,true);}
+        void volume(float value){volume=Math.max(0,value);}
+    }
     private static boolean musicPlaying = false;
 
     public static String currentClientMusicPreset = "default";
@@ -58,6 +70,9 @@ public class ZombieSoundHandler {
     );
 
     public static void applyMusicPreset(String newPreset) {
+        if(currentClientMusicPreset.equals("secret")&&!newPreset.equals("secret")){previousClientMusicPreset=newPreset;return;}
+        if(!newPreset.equals("secret")&&(!zonePreset.isEmpty()||pendingZone!=null)){if(!currentClientMusicPreset.equals("secret")){currentClientMusicPreset=newPreset;previousClientMusicPreset=newPreset;return;}}
+        if(newPreset.equals(currentClientMusicPreset)&&currentMusic!=null&&musicPlaying)return;
         if (!newPreset.equals("secret")) {
             previousClientMusicPreset = newPreset;
         }
@@ -143,7 +158,7 @@ public class ZombieSoundHandler {
         }
 
         if (source == SoundSource.MUSIC) {
-            if (!soundLoc.getNamespace().equals("zombierool")) {
+            if (!soundLoc.getNamespace().equals("zombierool")&&event.getSound()!=currentMusic) {
                 event.setSound(null);
             } else {
                 musicPlaying = true;
@@ -156,15 +171,7 @@ public class ZombieSoundHandler {
     }
 
     private static SoundEvent determineTargetMusic(Minecraft mc, SoundManager manager) {
-        String targetMusicPreset;
-
-        if (mc.level == null) {
-            targetMusicPreset = "menu";
-        } else if (isGamePausedClient) {
-            targetMusicPreset = "default";
-        } else {
-            targetMusicPreset = currentClientMusicPreset;
-        }
+        String targetMusicPreset=effectiveMusicPreset(mc);
 
         SoundEvent targetMusic = null;
         if (targetMusicPreset.equals("menu")) {
@@ -184,22 +191,26 @@ public class ZombieSoundHandler {
             targetMusic = null;
             targetMusicVolume = 0.0f;
         } else {
-            targetMusic = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", targetMusicPreset));
-            if (targetMusic == null) targetMusic = SoundEvent.createVariableRangeEvent(new ResourceLocation("zombierool", targetMusicPreset));
+            var resource=new ResourceLocation(targetMusicPreset.contains(":")?targetMusicPreset:"zombierool:"+targetMusicPreset);
+            targetMusic = ForgeRegistries.SOUND_EVENTS.getValue(resource);
+            if (targetMusic == null) targetMusic = SoundEvent.createVariableRangeEvent(resource);
             targetMusicVolume = 0.05f;
         }
 
+        if(!zonePreset.isEmpty()&&!targetMusicPreset.equals("secret"))targetMusicVolume*=zoneGain;
         return targetMusic;
     }
 
     private static SoundInstance createMusicInstance(SoundEvent targetMusic, String preset, boolean loop) {
-        SoundInstance dynamicMusic = DynamicSoundLoader.getSoundByPrefix("zombierool:music/" + preset + "/", SoundSource.MUSIC, currentMusicVolume, 1.0f, loop, 0, 0, 0);
+        SoundInstance dynamicMusic = preset.contains(":")?DynamicSoundLoader.getSoundByExactName(preset,SoundSource.MUSIC,currentMusicVolume,1,loop,null):DynamicSoundLoader.nextMusic(preset, currentMusicVolume);
         if (dynamicMusic != null) {
             return dynamicMusic;
         }
-        return new SimpleSoundInstance(
-            targetMusic.getLocation(), SoundSource.MUSIC, currentMusicVolume, 1.0f, RandomSource.create(), loop, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true
-        );
+        return new MutableMusic(targetMusic.getLocation(),currentMusicVolume,loop);
+    }
+
+    public static boolean continuesDuringPause(SoundInstance sound) {
+        return sound == currentAmbientSound || sound == currentMusic;
     }
 
     private static SoundInstance createAmbientInstance() {
@@ -216,7 +227,7 @@ public class ZombieSoundHandler {
     @OnlyIn(Dist.CLIENT)
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        
+
         // Bloquer la lecture et les timers si le jeu est en train de télécharger des sons !
         if (DynamicSoundLoader.isSyncing()) {
             return;
@@ -224,6 +235,13 @@ public class ZombieSoundHandler {
 
         Minecraft mc = Minecraft.getInstance();
         SoundManager manager = mc.getSoundManager();
+
+        if(pendingZone!=null&&!currentClientMusicPreset.equals("secret")){
+            if(zoneRemaining>0&&currentMusic!=null){currentMusicVolume=zoneStartVolume*(--zoneRemaining/(float)Math.max(1,zoneFade));updateMusicVolume();return;}
+            if(currentMusic!=null)manager.stop(currentMusic);currentMusic=null;musicPlaying=false;
+            zonePreset=pendingZone;zoneGain=pendingGain;pendingZone=null;zoneFadeIn=zoneFade;
+            fadingIn=fadingOut=false;forceRestartDelay=-1;currentMusicVolume=0;tickCounter=CHECK_DELAY_TICKS;
+        }
 
         if (forceRestartDelay > 0) {
             forceRestartDelay--;
@@ -268,14 +286,19 @@ public class ZombieSoundHandler {
             }
         }
 
+        if(zoneFadeIn>0){zoneFadeIn--;musicStateChangedByFade=true;}
+        updateMusicVolume();
         if (musicStateChangedByFade || (tickCounter % CHECK_DELAY_TICKS == 0)) {
             SoundEvent targetMusic = determineTargetMusic(mc, manager);
-            String targetMusicPreset = mc.level == null ? "menu" : (isGamePausedClient ? "default" : currentClientMusicPreset);
+            String targetMusicPreset = effectiveMusicPreset(mc);
 
             if (!fadingIn && !fadingOut) {
                 currentMusicVolume = targetMusicVolume;
+                if(zoneFadeIn>0)currentMusicVolume*=1-zoneFadeIn/(float)Math.max(1,zoneFade);
             }
 
+            boolean endedSecret=currentClientMusicPreset.equals("secret")&&currentMusic!=null&&!manager.isActive(currentMusic);
+            if(endedSecret){currentClientMusicPreset=previousClientMusicPreset;currentMusic=null;musicPlaying=false;tickCounter=CHECK_DELAY_TICKS;return;}
             boolean needsRestart = !musicPlaying || currentMusic == null || !manager.isActive(currentMusic);
 
             if (targetMusic == null || currentMusicVolume == 0.0f) {
@@ -294,7 +317,7 @@ public class ZombieSoundHandler {
                     manager.play(currentMusic);
                     musicPlaying = true;
                 } else {
-                    if (currentMusic instanceof SimpleSoundInstance && ((SimpleSoundInstance)currentMusic).getVolume() != currentMusicVolume) {
+                    if (currentMusic instanceof SimpleSoundInstance && !(currentMusic instanceof MutableMusic) && ((SimpleSoundInstance)currentMusic).getVolume() != currentMusicVolume) {
                         manager.stop(currentMusic);
                         boolean loop = !"secret".equals(currentClientMusicPreset);
                         currentMusic = createMusicInstance(targetMusic, targetMusicPreset, loop);

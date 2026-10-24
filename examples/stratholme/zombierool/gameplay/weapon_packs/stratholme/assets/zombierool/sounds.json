@@ -1,0 +1,113 @@
+{
+  "knife_swing": {
+    "sounds": [
+      {
+        "name": "zombierool:knife_whoosh_00",
+        "stream": false
+      },
+      {
+        "name": "zombierool:knife_whoosh_01",
+        "stream": false
+      },
+      {
+        "name": "zombierool:knife_whoosh_02",
+        "stream": false
+      }
+    ],
+    "replace": true
+  },
+  "bowie_equip": {
+    "sounds": [
+      {
+        "name": "zombierool:bowie_start",
+        "stream": false
+      }
+    ],
+    "replace": true
+  },
+  "bowie_swing": {
+    "sounds": [
+      {
+        "name": "zombierool:bowie_swing1",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_swing2",
+        "stream": false
+      },
+      {
+        "name": "zombierool:bowie_swing3",
+        "stream": false
+      }
+    ],
+    "replace": true
+  },
+  "map_powder_fire": {
+    "replace": true,
+    "sounds": [
+      {
+        "name": "zombierool:weapons/stratholme/gunfire01",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/gunfire02",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/gunfire03",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "map_powder_load": {
+    "replace": true,
+    "sounds": [
+      {
+        "name": "zombierool:weapons/stratholme/gunload01",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/gunload02",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/gunload03",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "map_bow_release": {
+    "replace": true,
+    "sounds": [
+      {
+        "name": "zombierool:weapons/stratholme/bowrelease",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/bowrelease02",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/bowrelease03",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "map_bow_pull": {
+    "replace": true,
+    "sounds": [
+      {
+        "name": "zombierool:weapons/stratholme/bowpullback",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/bowpullback02",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "zombierool:weapons/stratholme/bowpullback03",
+        "attenuation_distance": 24
+      }
+    ]
+  }
+}

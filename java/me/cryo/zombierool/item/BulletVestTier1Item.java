@@ -15,7 +15,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
-import net.minecraft.nbt.CompoundTag; 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
 
 @Mod.EventBusSubscriber
@@ -63,7 +63,7 @@ public abstract class BulletVestTier1Item extends ArmorItem {
         }
         @Override
         public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-            return "zombierool:textures/models/armor/diamond__layer_1.png";
+            return "zombierool:textures/models/armor/ballistic_vest_layer_1.png";
         }
     }
 
@@ -73,12 +73,12 @@ public abstract class BulletVestTier1Item extends ArmorItem {
         if (event.getEntity() instanceof LivingEntity) {
             LivingEntity player = (LivingEntity) event.getEntity();
             ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
-            
+
             if (chestplate.getItem() instanceof BulletVestTier1Item.Chestplate && !chestplate.isEmpty()) {
                 CompoundTag tag = chestplate.getOrCreateTag();
                 final int MAX_ARMOR_POINTS = 4;
                 int currentArmorPoints = tag.getInt("BulletVestArmorPoints");
-                boolean isVestInitialized = tag.getBoolean("BulletVestInitialized"); 
+                boolean isVestInitialized = tag.getBoolean("BulletVestInitialized");
 
                 if (!isVestInitialized) {
                     currentArmorPoints = MAX_ARMOR_POINTS;
@@ -87,21 +87,21 @@ public abstract class BulletVestTier1Item extends ArmorItem {
                 }
 
                 if (currentArmorPoints > 0) {
-                    event.setAmount(0); 
-                    event.setCanceled(true); 
-                    currentArmorPoints--; 
-                    tag.putInt("BulletVestArmorPoints", currentArmorPoints); 
-                    
+                    event.setAmount(0);
+                    event.setCanceled(true);
+                    currentArmorPoints--;
+                    tag.putInt("BulletVestArmorPoints", currentArmorPoints);
+
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                             ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:plate_crack")),
                             SoundSource.PLAYERS, 1.0f, 1.0f);
-                            
+
                     if (!player.level().isClientSide) {
                         player.sendSystemMessage(Component.translatable("message.zombierool.vest.remaining", currentArmorPoints));
                     }
 
                     if (currentArmorPoints <= 0) {
-                        player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY); 
+                        player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
                         if (!player.level().isClientSide) {
                             player.sendSystemMessage(Component.translatable("message.zombierool.vest.broken").withStyle(ChatFormatting.RED));
                         }

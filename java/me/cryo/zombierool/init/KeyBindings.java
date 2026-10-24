@@ -19,13 +19,14 @@ public class KeyBindings {
     public static KeyMapping CONFIG_MENU_KEY;
     public static KeyMapping CRAWL_KEY;
     public static KeyMapping LETHAL_GRENADE_KEY;
+    public static KeyMapping EQUIPMENT_KEY;
     public static KeyMapping TACTICAL_GRENADE_KEY;
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         REPAIR_AND_PURCHASE_KEY = new KeyMapping("key.zombierool.repair_purchase", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F, "category.zombierool.keys");
         event.register(REPAIR_AND_PURCHASE_KEY);
-        
+
         RELOAD_KEY = new KeyMapping("key.zombierool.reload", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "category.zombierool.keys");
         event.register(RELOAD_KEY);
 
@@ -49,8 +50,10 @@ public class KeyBindings {
 
         LETHAL_GRENADE_KEY = new KeyMapping("key.zombierool.lethal_grenade", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.zombierool.keys");
         event.register(LETHAL_GRENADE_KEY);
+        EQUIPMENT_KEY = new KeyMapping("key.zombierool.equipment", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_X, "category.zombierool.keys");
+        event.register(EQUIPMENT_KEY);
 
-        TACTICAL_GRENADE_KEY = new KeyMapping("key.zombierool.tactical_grenade", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_APOSTROPHE, "category.zombierool.keys");
+        TACTICAL_GRENADE_KEY = new KeyMapping("key.zombierool.tactical_grenade", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, "category.zombierool.keys");
         event.register(TACTICAL_GRENADE_KEY);
     }
 }

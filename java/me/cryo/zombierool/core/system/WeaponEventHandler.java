@@ -50,12 +50,13 @@ public class WeaponEventHandler {
             if (event.phase != TickEvent.Phase.END) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.screen != null) return;
+            if (me.cryo.zombierool.gameplay.PortableEquipment.inHands(mc.player)) return;
 
             if (LethalWeaponManager.isCooking(mc.player.getUUID())) return;
 
             ItemStack stack = mc.player.getMainHandItem();
-            boolean attackDown = mc.options.keyAttack.isDown(); 
-            boolean useDown = mc.options.keyUse.isDown();       
+            boolean attackDown = mc.options.keyAttack.isDown();
+            boolean useDown = mc.options.keyUse.isDown();
 
             if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
                 if (gun instanceof FlamethrowerItem flamethrower) {
@@ -66,7 +67,7 @@ public class WeaponEventHandler {
                     PlasmaPistolItem.PlasmaPistolClient.handleTick(mc, mc.player, stack, attackDown);
                 }
 
-                if (!(gun instanceof WeaponImplementations.MeleeWeaponItem) && !(gun instanceof PlasmaPistolItem)) {
+                if (!(gun instanceof WeaponImplementations.MeleeWeaponItem) && !(gun instanceof PlasmaPistolItem)&&!(gun instanceof me.cryo.zombierool.item.MapBowItem)) {
                     long now = mc.level.getGameTime();
 
                     if (gun.isAkimbo(stack)) {
@@ -103,6 +104,8 @@ public class WeaponEventHandler {
         }
 
         private static void applyRecoil(Player player, WeaponSystem.BaseGunItem gun, ItemStack stack) {
+            if(java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii").contains(gun.getDefinition().id))return;
+
             float pitchRecoil = gun.getDefinition().recoil.pitch;
             float yawRecoil = gun.getDefinition().recoil.yaw;
             if (gun.isPackAPunched(stack)) {
@@ -128,7 +131,12 @@ public class WeaponEventHandler {
 
                 ItemStack stack = Minecraft.getInstance().player.getMainHandItem();
                 if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
+                    if(gun instanceof me.cryo.zombierool.item.MapBowItem){if(event.isAttack()){event.setCanceled(true);event.setSwingHand(false);}return;}
                     if (gun instanceof WeaponImplementations.MeleeWeaponItem) {
+                        if(gun instanceof me.cryo.zombierool.item.ScarletWeaponItem&&event.isAttack()){
+                            event.setCanceled(true);event.setSwingHand(true);
+                            NetworkHandler.INSTANCE.sendToServer(new me.cryo.zombierool.network.packet.C2SMeleeAttackPacket());
+                        }
                         return;
                     }
                     if (event.isAttack()) {
@@ -196,7 +204,7 @@ public class WeaponEventHandler {
                             player,
                             mainStack,
                             net.minecraft.world.item.ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                            false, 
+                            false,
                             poseStack,
                             event.getMultiBufferSource(),
                             event.getPackedLight()

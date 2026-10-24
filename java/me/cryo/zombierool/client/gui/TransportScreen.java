@@ -39,14 +39,16 @@ public final class TransportScreen extends Screen {
     private int page,left,widthPanel;
 
     private String error="";
+    private boolean explicitClose;
+    private CompoundTag original;
 
-    private static final Set<String> BOOLEANS=Set.of("invisible","enabled","allMobs","requiresPower","requiresLink","allPlayers","automatic","relink","sharedCooldown","jumpOnly");
+    private static final Set<String> BOOLEANS=Set.of("bidirectional","redstone","rewardAll","invisible","enabled","allMobs","allowPlayers","requiresPower","requiresLink","allPlayers","automatic","relink","sharedCooldown","jumpOnly","redistributeMobs","startRoundsOnArrival","enterOutnumberedOnArrival");
 
-    private static final Set<String> INTS=Set.of("chargeTime","duration","cost","linkTimeout","stay","secretStay","cooldown","papLinks","requiredSwitches");
+    private static final Set<String> INTS=Set.of("unlockAfterSeconds","chewTime","souls","rewardPoints","rewardCount","rewardChannel","resetAfter","gateWidth","gateHeight","channelDuration","chargeTime","duration","cost","linkTimeout","stay","secretStay","cooldown","papLinks","requiredSwitches");
 
-    private static final Set<String> DOUBLES=Set.of("clearance","secretChance","yaw");
+    private static final Set<String> DOUBLES=Set.of("radius","clearance","secretChance","yaw");
 
-    private static final String[] SECTIONS={"route","activation","linking","journey","advanced"};
+    private static final String[] SECTIONS={"route","activation","linking","journey","advanced","channels","timing"};
 
     private static final String[][] TELEPORTER={
 
@@ -56,21 +58,27 @@ public final class TransportScreen extends Screen {
 
         {"linkTimeout","relink","cooldown","sharedCooldown","automatic","jumpOnly"},
 
-        {"stay","secretIds","secretStay","secretChance","invisible","yaw"},
+        {"stay","secretIds","secretStay","secretChance","invisible","yaw","arrivalAtmospherePreset"},
 
-        {"condition","blockedCondition","requiredSwitches","papLinks"}
+        {"condition","blockedCondition","requiredSwitches","papLinks","startRoundsOnArrival","enterOutnumberedOnArrival"},
+        {"enableChannels","disableChannels","channelDuration","redistributeMobs"},
+        {"unlockAfterSeconds"}
 
     };
 
-    private static final String[] TRAVERSAL={"enabled","allMobs","duration","clearance"};
+    private static final String[] TRAVERSAL={"enabled","allMobs","duration","clearance","bidirectional"};
 
     public static void open(TransportPackets.Open p){if(p.config()!=null)Minecraft.getInstance().setScreen(new TransportScreen(p));}
 
-    private TransportScreen(TransportPackets.Open p){super(Component.translatable("gui.zombierool.transport."+p.kind()));packet=p;draft=p.config().copy();}
+    private TransportScreen(TransportPackets.Open p){super(Component.translatable("gui.zombierool.transport."+p.kind()));packet=p;draft=p.config().copy();original=draft.copy();}
 
     private static Component tr(String key){return Component.translatable("gui.zombierool.transport."+key);}
 
-    private boolean traversal(){return packet.kind().equals("traversal");}
+    private boolean traversal(){return !packet.kind().equals("teleporter")&&!objective()&&!packet.kind().equals("soul_checker");}
+    private boolean objective(){return packet.kind().equals("soul")||packet.kind().equals("cerberus");}
+    private int sectionCount(){return objective()?3:SECTIONS.length;}
+
+    private String helpKey(String key){return packet.kind().equals("soul_checker")&&Set.of("enableChannels","disableChannels","channelDuration").contains(key)?"checker."+key+".help":key+".help";}
 
     private Component value(String key){
 
@@ -82,6 +90,12 @@ public final class TransportScreen extends Screen {
 
     private String[] keys(){
 
+        if(packet.kind().equals("soul_checker"))return new String[]{"enabled","objectiveIds","enableChannels","disableChannels","channelDuration"};
+        if(objective())return page==0?(packet.kind().equals("cerberus")?new String[]{"objectiveId","souls","radius","chewTime","enabled","redstone"}:new String[]{"objectiveId","souls","radius","enabled","redstone","rewardAll"}):page==1?new String[]{"rewardItem","rewardCount","rewardPoints","rewardChannel","rewardAll"}:new String[]{"resetAfter","resetSignal"};
+        if(packet.kind().equals("oneway"))return new String[]{"enabled","gateWidth","gateHeight"};
+        if(packet.kind().equals("wall"))return new String[]{"enabled","duration"};
+        if(packet.kind().equals("zipline"))return page==0?new String[]{"enabled","bidirectional","duration","cost","requiresPower"}:new String[]{"allowPlayers","allMobs"};
+        if(packet.kind().equals("jump"))return new String[]{"enabled","bidirectional","duration","clearance","allMobs"};
         if(traversal())return TRAVERSAL;
 
         boolean receiver=draft.getString("role").equals("RECEIVER"),sw=draft.getString("role").equals("SWITCH");
@@ -90,7 +104,8 @@ public final class TransportScreen extends Screen {
 
         if(page==0&&sw)return new String[]{"role","id","channel","condition","enabled","requiresPower"};
 
-        if(receiver)return page==1?new String[]{"enabled","requiresPower"}:page==2?new String[]{"cooldown","sharedCooldown"}:page==3?new String[]{"invisible","yaw"}:new String[]{"condition","blockedCondition"};
+        if(page==5||page==6)return TELEPORTER[page];
+        if(receiver)return page==1?new String[]{"enabled","requiresPower"}:page==2?new String[]{"cooldown","sharedCooldown"}:page==3?new String[]{"invisible","yaw","arrivalAtmospherePreset"}:new String[]{"condition","blockedCondition","startRoundsOnArrival","enterOutnumberedOnArrival"};
 
         return TELEPORTER[page];
 
@@ -99,10 +114,15 @@ public final class TransportScreen extends Screen {
     @Override protected void init(){
 
         fields.clear();labels.clear();helpAreas.clear();widthPanel=Math.min(520,width-16);left=(width-widthPanel)/2;
+        if(packet.kind().equals("zipline")||packet.kind().equals("teleporter"))addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.block_power.button"),button->{if(capture())BlockPowerScreen.request(packet.pos(),this,null);}).bounds(left+widthPanel-120,4,120,16).build());
 
-        if(!traversal())for(int i=0;i<SECTIONS.length;i++){
+        if(packet.kind().equals("zipline"))for(int i=0;i<2;i++){
+            final int target=i;Button tab=Button.builder(tr(i==0?"section.general":"section.access"),b->{if(capture()){page=target;rebuildWidgets();}}).bounds(left+i*widthPanel/2,38,widthPanel/2-2,20).build();tab.active=i!=page;addRenderableWidget(tab);
+        }
 
-            final int target=i;Button tab=Button.builder(tr("section."+SECTIONS[i]),b->{if(capture()){page=target;rebuildWidgets();}}).bounds(left+i*widthPanel/5,38,widthPanel/5-2,20).build();tab.active=i!=page;addRenderableWidget(tab);
+        if(!traversal()&&!packet.kind().equals("soul_checker"))for(int i=0;i<sectionCount();i++){
+
+            final int target=i;Button tab=Button.builder(tr(objective()?"soul.section."+new String[]{"goal","rewards","reset"}[i]:"section."+SECTIONS[i]),b->{if(capture()){page=target;rebuildWidgets();}}).bounds(left+i*widthPanel/sectionCount(),38,widthPanel/sectionCount()-2,20).build();tab.active=i!=page;addRenderableWidget(tab);
 
         }
 
@@ -116,10 +136,14 @@ public final class TransportScreen extends Screen {
 
             helpAreas.put(key,new int[]{x,y,column,32});
 
-            Tooltip tooltip=Tooltip.create(tr(key+".help"));
+            Tooltip tooltip=Tooltip.create(tr(helpKey(key)));
 
             if(BOOLEANS.contains(key))addRenderableWidget(Button.builder(value(key),b->{draft.putBoolean(key,!draft.getBoolean(key));b.setMessage(value(key));}).bounds(x,y+10,column,20).tooltip(tooltip).build());
 
+            else if(key.equals("arrivalAtmospherePreset")){
+                labels.put(key,new int[]{x,y});String selected=draft.getString(key);Component name=tr(selected.equals("@map")?"atmosphere.map":"atmosphere.keep");for(var tag:packet.config().getList("_atmospherePresets",10)){var row=(CompoundTag)tag;if(row.getString("id").equals(selected))name=Component.literal(row.getString("name"));}
+                addRenderableWidget(Button.builder(name,b->{if(capture())minecraft.setScreen(new AtmospherePresetPickerScreen(this,packet.config().getList("_atmospherePresets",10),draft.getString(key),id->{draft.putString(key,id);rebuildWidgets();}));}).bounds(x,y+12,column,20).tooltip(tooltip).build());
+            }
             else if(key.equals("mode"))addRenderableWidget(Button.builder(value(key),b->{
 
                 if(!capture())return;
@@ -128,7 +152,7 @@ public final class TransportScreen extends Screen {
 
                 CompoundTag preset=TeleporterConfig.defaults(modes[next]);
 
-                for(String keep:new String[]{"id","channel","destination","returnId","secretIds","role"})preset.putString(keep,draft.getString(keep));
+                for(String keep:new String[]{"id","channel","destination","returnId","secretIds","role","arrivalAtmospherePreset"})preset.putString(keep,draft.getString(keep));
 
                 preset.putBoolean("invisible",draft.getBoolean("invisible"));draft=preset;rebuildWidgets();
 
@@ -142,7 +166,7 @@ public final class TransportScreen extends Screen {
 
                 labels.put(key,new int[]{x,y});boolean picker=Set.of("destination","returnId").contains(key);
 
-                EditBox box=new EditBox(font,x,y+12,column-(picker?48:0),20,tr(key));box.setMaxLength(128);
+                EditBox box=new EditBox(font,x,y+12,column-(picker?48:0),20,tr(key));box.setMaxLength(key.equals("objectiveIds")?512:key.equals("enableChannels")||key.equals("disableChannels")?256:128);
 
                 box.setValue(INTS.contains(key)?Integer.toString(draft.getInt(key)):DOUBLES.contains(key)?Double.toString(draft.getDouble(key)):draft.getString(key));
 
@@ -154,9 +178,9 @@ public final class TransportScreen extends Screen {
 
         }
 
-        addRenderableWidget(Button.builder(Component.translatable("zombierool.config.save"),b->{if(capture()){NetworkHandler.INSTANCE.sendToServer(new TransportPackets.Save(packet.pos(),draft.copy()));onClose();}}).bounds(left,height-26,column,20).build());
+        addRenderableWidget(Button.builder(Component.translatable("zombierool.config.save"),b->{if(capture()){NetworkHandler.INSTANCE.sendToServer(new TransportPackets.Save(packet.pos(),draft.copy()));explicitClose=true;onClose();}}).bounds(left,height-26,column,20).build());
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"),b->onClose()).bounds(left+column+8,height-26,column,20).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"),b->{explicitClose=true;onClose();}).bounds(left+column+8,height-26,column,20).build());
 
     }
 
@@ -188,9 +212,9 @@ public final class TransportScreen extends Screen {
 
         renderBackground(g);g.drawCenteredString(font,title,width/2,18,0xF4F1E9);
 
-        Component help=tr(traversal()?"helper.traversal":draft.getString("role").equals("RECEIVER")?"helper.receiver":draft.getString("role").equals("SWITCH")?"helper.switch":"helper."+SECTIONS[page]);
+        Component help=tr(traversal()?"helper."+packet.kind():objective()?"helper."+packet.kind():packet.kind().equals("soul_checker")?"helper.soul_checker":draft.getString("role").equals("RECEIVER")?"helper.receiver":draft.getString("role").equals("SWITCH")?"helper.switch":"helper."+SECTIONS[page]);
 
-        for(var entry:helpAreas.entrySet()){int[] r=entry.getValue();if(mx>=r[0]&&mx<r[0]+r[2]&&my>=r[1]&&my<r[1]+r[3])help=tr(entry.getKey()+".help");}
+        for(var entry:helpAreas.entrySet()){int[] r=entry.getValue();if(mx>=r[0]&&mx<r[0]+r[2]&&my>=r[1]&&my<r[1]+r[3])help=tr(helpKey(entry.getKey()));}
 
         g.fill(left,62,left+widthPanel,96,0xAA123021);g.enableScissor(left+4,64,left+widthPanel-4,95);g.drawWordWrap(font,help,left+6,66,widthPanel-12,0xB8E8C9);g.disableScissor();
 
@@ -204,6 +228,13 @@ public final class TransportScreen extends Screen {
 
     }
 
+    @Override public void onClose(){
+        if(packet.kind().equals("teleporter")&&!explicitClose){
+            if(!capture())return;
+            if(!draft.equals(original))NetworkHandler.INSTANCE.sendToServer(new TransportPackets.Save(packet.pos(),draft.copy()));
+        }
+        super.onClose();
+    }
     @Override public boolean isPauseScreen(){return false;}
 
     private static final class TargetScreen extends Screen {
@@ -235,4 +266,3 @@ public final class TransportScreen extends Screen {
     }
 
 }
-

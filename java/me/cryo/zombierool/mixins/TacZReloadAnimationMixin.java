@@ -9,9 +9,19 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(value = ObjectAnimationRunner.class, remap = false)
 public class TacZReloadAnimationMixin {
+    @org.spongepowered.asm.mixin.Shadow private long lastUpdateNs;
+    @org.spongepowered.asm.mixin.Unique private boolean zr$wasPaused;
+    @org.spongepowered.asm.mixin.injection.Inject(method={"update(Z)V","updateSoundOnly()V"},at=@At("HEAD"),remap=false)
+    private void zr$pauseClock(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        boolean paused=Minecraft.getInstance().isPaused();
+        // Keep the animation pose, but discard elapsed wall-clock time during a real pause.
+        if(paused||zr$wasPaused)lastUpdateNs=System.nanoTime();
+        zr$wasPaused=paused;
+    }
     // TacZ 1.1.7 and 1.1.8 pass a delta in nanoseconds, shared by animation and sound keyframes.
     @ModifyVariable(method = "updateProgress(J)V", at = @At("HEAD"), argsOnly = true, remap = false, require = 1)
     private long zombierool$speedReload(long deltaNs) {
+        if(Minecraft.getInstance().isPaused())return 0;
         var player = Minecraft.getInstance().player;
         if (player == null || deltaNs <= 0) return deltaNs;
         var animation = ((ObjectAnimationRunner) (Object) this).getAnimation();

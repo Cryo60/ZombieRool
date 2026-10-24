@@ -5,7 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity; 
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -34,14 +34,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import me.cryo.zombierool.config.GlobalSwitchState;
-import me.cryo.zombierool.config.WorldConfig; 
+import me.cryo.zombierool.config.WorldConfig;
 import me.cryo.zombierool.util.PlayerVoiceManager;
 import me.cryo.zombierool.scripting.LuaScriptManager;
 
 import java.util.Collections;
 import java.util.List;
-import net.minecraft.network.chat.Component; 
-import net.minecraft.world.item.TooltipFlag; 
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
 
 public class PowerSwitchBlock extends Block {
 
@@ -89,86 +89,15 @@ public class PowerSwitchBlock extends Block {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-        return switch (state.getValue(FACING)) {
-            default -> switch (state.getValue(FACE)) {
-                case FLOOR -> Shapes.or(
-                    box(12, 1, 12.2, 13, 8, 13.2),
-                    box(1, 1, 12.2, 2, 8, 13.2),
-                    box(7, 1, 12.2, 8, 8, 13.2),
-                    box(1, 8, 12.2, 13, 8.8, 13.2)
-                );
-                case WALL -> Shapes.or(
-                    box(12, 2.8, 1, 13, 3.8, 8),
-                    box(1, 2.8, 1, 2, 3.8, 8),
-                    box(7, 2.8, 1, 8, 3.8, 8),
-                    box(1, 2.8, 8, 13, 3.8, 8.8)
-                );
-                case CEILING -> Shapes.or(
-                    box(3, 8, 12.2, 4, 15, 13.2),
-                    box(14, 8, 12.2, 15, 15, 13.2),
-                    box(8, 8, 12.2, 9, 15, 13.2),
-                    box(3, 7.2, 12.2, 15, 8, 13.2)
-                );
-            };
-            case NORTH -> switch (state.getValue(FACE)) {
-                case FLOOR -> Shapes.or(
-                    box(3, 1, 2.8, 4, 8, 3.8),
-                    box(14, 1, 2.8, 15, 8, 3.8),
-                    box(8, 1, 2.8, 9, 8, 3.8),
-                    box(3, 8, 2.8, 15, 8.8, 3.8)
-                );
-                case WALL -> Shapes.or(
-                    box(3, 2.8, 8, 4, 3.8, 15),
-                    box(14, 2.8, 8, 15, 3.8, 15),
-                    box(8, 2.8, 8, 9, 3.8, 15),
-                    box(3, 2.8, 7.2, 15, 3.8, 8)
-                );
-                case CEILING -> Shapes.or(
-                    box(12, 8, 2.8, 13, 15, 3.8),
-                    box(1, 8, 2.8, 2, 15, 3.8),
-                    box(7, 8, 2.8, 8, 15, 3.8),
-                    box(1, 7.2, 2.8, 13, 8, 3.8)
-                );
-            };
-            case EAST -> switch (state.getValue(FACE)) {
-                case FLOOR -> Shapes.or(
-                    box(12.2, 1, 3, 13.2, 8, 4),
-                    box(12.2, 1, 14, 13.2, 8, 15),
-                    box(12.2, 1, 8, 13.2, 8, 9),
-                    box(12.2, 8, 3, 13.2, 8.8, 15)
-                );
-                case WALL -> Shapes.or(
-                    box(1, 2.8, 3, 8, 3.8, 4),
-                    box(1, 2.8, 14, 8, 3.8, 15),
-                    box(1, 2.8, 8, 8, 3.8, 9),
-                    box(8, 2.8, 3, 8.8, 3.8, 15)
-                );
-                case CEILING -> Shapes.or(
-                    box(12.2, 8, 12, 13.2, 15, 13),
-                    box(12.2, 8, 1, 13.2, 15, 2),
-                    box(12.2, 8, 7, 13.2, 15, 8),
-                    box(12.2, 7.2, 1, 13.2, 8, 13)
-                );
-            };
-            case WEST -> switch (state.getValue(FACE)) {
-                case FLOOR -> Shapes.or(
-                    box(2.8, 1, 12, 3.8, 8, 13),
-                    box(2.8, 1, 1, 3.8, 8, 2),
-                    box(2.8, 1, 7, 3.8, 8, 8),
-                    box(2.8, 8, 1, 3.8, 8.8, 13)
-                );
-                case WALL -> Shapes.or(
-                    box(8, 2.8, 12, 15, 3.8, 13),
-                    box(8, 2.8, 1, 15, 3.8, 2),
-                    box(8, 2.8, 7, 15, 3.8, 8),
-                    box(7.2, 2.8, 1, 8, 3.8, 13)
-                );
-                case CEILING -> Shapes.or(
-                    box(2.8, 8, 3, 3.8, 15, 4),
-                    box(2.8, 8, 14, 3.8, 15, 15),
-                    box(2.8, 8, 8, 3.8, 15, 9),
-                    box(2.8, 7.2, 3, 3.8, 8, 15)
-                );
+        // The model is a panel against its supporting face, not a collection of thin rods.
+        return switch (state.getValue(FACE)) {
+            case FLOOR -> box(0, 0, 0, 16, 4.5, 16);
+            case CEILING -> box(0, 11.5, 0, 16, 16, 16);
+            case WALL -> switch (state.getValue(FACING)) {
+                case SOUTH -> box(0, 0, 0, 16, 16, 4.5);
+                case EAST -> box(0, 0, 0, 4.5, 16, 16);
+                case WEST -> box(11.5, 0, 0, 16, 16, 16);
+                default -> box(0, 0, 11.5, 16, 16, 16);
             };
         };
     }
@@ -181,8 +110,8 @@ public class PowerSwitchBlock extends Block {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState()
-                .setValue(FACE, faceForDirection(context.getNearestLookingDirection()))
-                .setValue(FACING, context.getHorizontalDirection().getOpposite())
+                .setValue(FACE, context.getClickedFace() == Direction.UP ? AttachFace.FLOOR : context.getClickedFace() == Direction.DOWN ? AttachFace.CEILING : AttachFace.WALL)
+                .setValue(FACING, context.getClickedFace().getAxis().isHorizontal() ? context.getClickedFace() : context.getHorizontalDirection().getOpposite())
                 .setValue(POWERED, false);
     }
 
@@ -192,6 +121,16 @@ public class PowerSwitchBlock extends Block {
         if (!world.isClientSide && world instanceof ServerLevel serverLevel) {
             WorldConfig.get(serverLevel).addPowerSwitchPosition(pos);
         }
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moving) {
+        if (state.getBlock() != next.getBlock() && level instanceof ServerLevel server) {
+            WorldConfig.get(server).removePowerSwitchPosition(pos);
+            if (state.getValue(POWERED)) GlobalSwitchState.setActivated(level, false);
+            me.cryo.zombierool.gameplay.MapPower.refreshSoon(server);
+        }
+        super.onRemove(state, level, pos, next, moving);
     }
 
     @Override
@@ -221,6 +160,9 @@ public class PowerSwitchBlock extends Block {
         return state.getValue(POWERED) ? 15 : 0;
     }
 
+    @Override public int getDirectSignal(BlockState s, BlockGetter l, BlockPos p, Direction d) { return getSignal(s,l,p,d); }
+    @Override public boolean canConnectRedstone(BlockState s, BlockGetter l, BlockPos p, Direction d) { return true; }
+
     @Override
     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         return InteractionResult.PASS; // Désactive le clic droit
@@ -241,7 +183,7 @@ public class PowerSwitchBlock extends Block {
                     SoundSource.BLOCKS, 1f, 1f
             );
             PlayerVoiceManager.playPowerOnSound(player, world);
-            LuaScriptManager.callEvent("OnPowerActivated"); 
+            LuaScriptManager.callEvent("OnPowerActivated");
         }
 
         for (BlockPos activatorPos : GlobalSwitchState.getActivatorPositions(world)) {

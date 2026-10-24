@@ -1,0 +1,152 @@
+{
+  "id": "zombierool:stratholme_musket",
+  "name": "weapon.zombierool.stratholme_musket",
+  "type": "RIFLE",
+  "lore": [
+    "item.zombierool.stratholme_musket.tooltip"
+  ],
+  "stats": {
+    "damage": 18,
+    "fire_rate": 20,
+    "range": 60,
+    "mobility": 1,
+    "penetration": 0,
+    "durability": 0,
+    "damage_reduction_on_pierce": true,
+    "damage_falloff_start": 24,
+    "damage_falloff_end": 60,
+    "damage_falloff_min": 0.55
+  },
+  "ammo": {
+    "clip_size": 1,
+    "max_reserve": 60,
+    "reload_time": 62,
+    "ammo_per_shot": 1,
+    "reload_type": "MAGAZINE"
+  },
+  "ballistics": {
+    "count": 1,
+    "spread": 1,
+    "velocity": 4,
+    "type": "BULLET",
+    "gravity": false,
+    "trail_vfx": "NONE",
+    "hitscan_vfx": "POWDER"
+  },
+  "burst": {
+    "count": 1,
+    "delay": 0
+  },
+  "recoil": {
+    "pitch": 2,
+    "yaw": 0.5
+  },
+  "pack_a_punch": {
+    "name": "weapon.zombierool.stratholme_musket.pap",
+    "damage_bonus": 27.0,
+    "clip_bonus": 0,
+    "reserve_bonus": 60,
+    "reload_speed_mult": 0.75,
+    "spread_mult": 1.0,
+    "recoil_mult": 1.0,
+    "durability_bonus": 0,
+    "penetration_bonus": 0,
+    "incendiary": false,
+    "pellet_count_override": 0,
+    "burst_count_override": 0,
+    "burst_delay_override": 0,
+    "knockback_bonus": 0.0,
+    "headshot_threshold": 0.85,
+    "ricochet_count": 0
+  },
+  "headshot": {
+    "can_explode_head": true,
+    "head_explosion_chance": 0.3,
+    "base_bonus_damage": 0.0,
+    "pap_bonus_damage": 0.0
+  },
+  "sounds": {
+    "fire": "zombierool:map_powder_fire",
+    "fire_pap": "zombierool:map_powder_fire",
+    "reload": "zombierool:map_powder_load",
+    "dry": "",
+    "equip": "",
+    "pump": "",
+    "draw": "zombierool:map_powder_load"
+  },
+  "scoped": {
+    "boolean": false,
+    "scope": "none",
+    "zoom": "1x"
+  },
+  "explosion": {
+    "radius": 0.0,
+    "damage_multiplier": 1.0,
+    "self_damage_multiplier": 0.15,
+    "self_damage_cap": 3.0,
+    "knockback": 0.4,
+    "vfx_type": "NONE",
+    "sound": "",
+    "pap_only": false
+  },
+  "is_wonder_weapon": false,
+  "tags": [
+    "stratholme",
+    "mid",
+    "ranged"
+  ],
+  "animation": {
+    "fpRx": [
+      -4,
+      55,
+      -12
+    ],
+    "fpRy": [
+      0,
+      -30,
+      0
+    ],
+    "fpRz": [
+      0,
+      25,
+      3
+    ],
+    "fpY": [
+      0.22,
+      -0.1,
+      0
+    ],
+    "fpZ": [
+      -0.05,
+      0.1,
+      0.07
+    ],
+    "fpScale": [
+      0.82,
+      0,
+      0
+    ],
+    "tpX": [
+      -1.4,
+      0.75,
+      -0.1
+    ],
+    "tpY": [
+      -0.1,
+      0,
+      0
+    ],
+    "tpZ": [
+      -0.05,
+      0.3,
+      0
+    ],
+    "fpX": [
+      -0.1,
+      0,
+      0
+    ]
+  },
+  "weapon_kind": "musket",
+  "draw_ticks": 30
+}

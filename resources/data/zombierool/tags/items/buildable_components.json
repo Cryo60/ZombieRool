@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "#zombierool:upright_components",
+    "zombierool:pap_frame",
+    "zombierool:pap_gears",
+    "zombierool:pap_sign"
+  ]
+}

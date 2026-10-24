@@ -15,7 +15,7 @@ import java.util.Optional;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NetworkHandler {
     private static boolean alreadyRegistered = false;
-    private static final String PROTOCOL_VERSION = "7";
+    private static final String PROTOCOL_VERSION = "18";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation("zombierool", "main"),
             () -> PROTOCOL_VERSION,
@@ -93,6 +93,8 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CTriggerScopeScreamerPacket.class, S2CTriggerScopeScreamerPacket::encode, S2CTriggerScopeScreamerPacket::decode, S2CTriggerScopeScreamerPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, me.cryo.zombierool.network.packet.C2SToggleCrawlPacket.class, me.cryo.zombierool.network.packet.C2SToggleCrawlPacket::encode, me.cryo.zombierool.network.packet.C2SToggleCrawlPacket::decode, me.cryo.zombierool.network.packet.C2SToggleCrawlPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
             INSTANCE.registerMessage(id++, S2CSyncCrawlStatePacket.class, S2CSyncCrawlStatePacket::encode, S2CSyncCrawlStatePacket::decode, S2CSyncCrawlStatePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id++, C2SEquipmentStatePacket.class, C2SEquipmentStatePacket::encode, C2SEquipmentStatePacket::decode, C2SEquipmentStatePacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            INSTANCE.registerMessage(id++, S2CEquipmentFlashPacket.class, S2CEquipmentFlashPacket::encode, S2CEquipmentFlashPacket::decode, S2CEquipmentFlashPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, C2SUpdateLethalStatePacket.class, C2SUpdateLethalStatePacket::encode, C2SUpdateLethalStatePacket::decode, C2SUpdateLethalStatePacket::handle);
             INSTANCE.registerMessage(id++, C2SThrowBackGrenadePacket.class, C2SThrowBackGrenadePacket::encode, C2SThrowBackGrenadePacket::decode, C2SThrowBackGrenadePacket::handle);
             INSTANCE.registerMessage(id++, S2CSyncThirdPersonAnimPacket.class, S2CSyncThirdPersonAnimPacket::encode, S2CSyncThirdPersonAnimPacket::decode, S2CSyncThirdPersonAnimPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -117,8 +119,15 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id++, S2CMapTextureSlotPacket.class, S2CMapTextureSlotPacket::encode, S2CMapTextureSlotPacket::decode, S2CMapTextureSlotPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id++, C2SRefreshMapTexturesPacket.class, C2SRefreshMapTexturesPacket::encode, C2SRefreshMapTexturesPacket::decode, C2SRefreshMapTexturesPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
             INSTANCE.registerMessage(id++, S2CMatchAtmospherePacket.class, S2CMatchAtmospherePacket::encode, S2CMatchAtmospherePacket::decode, S2CMatchAtmospherePacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id+9,S2CBrutusLocksPacket.class,S2CBrutusLocksPacket::encode,S2CBrutusLocksPacket::decode,S2CBrutusLocksPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             me.cryo.zombierool.block.system.MapDevicePackets.register(INSTANCE, id);
             me.cryo.zombierool.block.system.TransportPackets.register(INSTANCE, id + 3);
+            me.cryo.zombierool.gameplay.BlockPowerPackets.register(INSTANCE,id+10);
+            me.cryo.zombierool.scripting.LuaWorkbenchPackets.register(INSTANCE,id+14);
+            INSTANCE.registerMessage(id+13,S2CDebugSettingsPacket.class,S2CDebugSettingsPacket::encode,S2CDebugSettingsPacket::decode,S2CDebugSettingsPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id+16,S2CEncounterShockPacket.class,S2CEncounterShockPacket::encode,S2CEncounterShockPacket::decode,S2CEncounterShockPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id+8,S2CPanzerCapturePacket.class,S2CPanzerCapturePacket::encode,S2CPanzerCapturePacket::decode,S2CPanzerCapturePacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id+17,S2CBonusVisualPacket.class,S2CBonusVisualPacket::encode,S2CBonusVisualPacket::decode,S2CBonusVisualPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         });
     }
 }

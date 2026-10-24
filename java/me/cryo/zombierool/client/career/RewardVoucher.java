@@ -1,0 +1,18 @@
+package me.cryo.zombierool.client.career;
+import com.google.gson.*;
+import java.security.*;
+import java.util.*;
+public final class RewardVoucher {
+ public static byte[] publicKey()throws java.io.IOException{try(var stream=me.cryo.zombierool.util.InternalResources.open("rewards/public-key.der")){return stream.readAllBytes();}}
+ public static JsonObject verify(String token,byte[] publicKey,String profile,long now)throws Exception{
+  if(token.length()>12000)throw new IllegalArgumentException("Code too long");String[] parts=token.split("\\.");if(parts.length!=3||!parts[0].equals("ZR2"))throw new IllegalArgumentException("Invalid signed code");byte[] bytes=Base64.getUrlDecoder().decode(parts[1]);var verifier=Signature.getInstance("Ed25519");verifier.initVerify(KeyFactory.getInstance("Ed25519").generatePublic(new java.security.spec.X509EncodedKeySpec(publicKey)));verifier.update(bytes);if(!verifier.verify(Base64.getUrlDecoder().decode(parts[2])))throw new IllegalArgumentException("Invalid code signature");var data=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+  if(!data.has("id")||!data.get("id").getAsString().matches("[A-Za-z0-9_-]{1,80}"))throw new IllegalArgumentException("Invalid code ID");if(data.has("notBefore")&&now<data.get("notBefore").getAsLong())throw new IllegalArgumentException("This code is not active yet");if(data.has("expires")&&now>=data.get("expires").getAsLong())throw new IllegalArgumentException("This code has expired");if(data.has("target")&&!data.get("target").getAsString().replace("-","").equalsIgnoreCase(profile.replace("-","")))throw new IllegalArgumentException("This code belongs to another account");if(!data.has("reward"))throw new IllegalArgumentException("Code has no reward");return data;
+ }
+ public static net.minecraft.network.chat.Component redeem(String token){try{
+  var mc=net.minecraft.client.Minecraft.getInstance();byte[] key=publicKey();
+  var claim=verify(token,key,mc.getUser().getUuid(),System.currentTimeMillis()/1000);String id="voucher:"+claim.get("id").getAsString();return LocalCareerManager.transaction(()->{var career=LocalCareerManager.getData();if(career.redeemedCodes.contains(id))throw new IllegalArgumentException("This code was already redeemed");var reward=claim.getAsJsonObject("reward");int zrf=amount(reward,"zrf"),xp=amount(reward,"xp");var camos=strings(reward,"camos");var skins=strings(reward,"skins");for(String camo:camos)if(!CareerUnlockables.CAMOS.containsKey(camo))throw new IllegalArgumentException("Unknown camo: "+camo);for(String skin:skins)if(!CareerUnlockables.SKINS.containsKey(skin))throw new IllegalArgumentException("Unknown skin: "+skin);
+  LocalCareerManager.addZRF(zrf,"",false);LocalCareerManager.addXp(xp,false);camos.forEach(LocalCareerManager::forceUnlockCamoGlobal);for(String skin:skins)if(!career.unlockedSkins.contains(skin))career.unlockedSkins.add(skin);LocalCareerManager.getData().redeemedCodes.add(id);LocalCareerManager.forceSave();return net.minecraft.network.chat.Component.literal("Reward claimed: "+zrf+" ZRF, "+xp+" XP, "+(camos.size()+skins.size())+" cosmetics");});
+ }catch(Exception e){return net.minecraft.network.chat.Component.literal("Error: "+e.getMessage());}}
+ private static int amount(JsonObject reward,String key){int amount=reward.has(key)?reward.get(key).getAsInt():0;if(amount<0||amount>1000000)throw new IllegalArgumentException("Invalid reward amount");return amount;}
+ private static java.util.List<String> strings(JsonObject object,String key){var result=new ArrayList<String>();if(object.has(key))for(var e:object.getAsJsonArray(key)){if(result.size()>=100)throw new IllegalArgumentException("Too many rewards");result.add(e.getAsString());}return result;}
+}

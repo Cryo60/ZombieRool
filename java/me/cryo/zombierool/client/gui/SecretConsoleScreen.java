@@ -20,6 +20,8 @@ public class SecretConsoleScreen extends Screen {
     private final Screen parent;
     private EditBox commandBox;
     private static final List<Component> logs = new ArrayList<>();
+    private static final List<String> history=new ArrayList<>();
+    private int historyIndex=history.size(),logOffset;
     public static SecretConsoleScreen instance;
 
     public SecretConsoleScreen(Screen parent) {
@@ -45,9 +47,28 @@ public class SecretConsoleScreen extends Screen {
                 if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
                     String cmd = this.getValue().trim();
                     if (!cmd.isEmpty()) {
+                        if(history.isEmpty()||!history.get(history.size()-1).equals(cmd))history.add(cmd);
+                        while(history.size()>100)history.remove(0);
+                        historyIndex=history.size();logOffset=0;
                         executeCommand(cmd);
                         this.setValue("");
                     }
+                    return true;
+                }
+                if(keyCode==GLFW.GLFW_KEY_UP||keyCode==GLFW.GLFW_KEY_DOWN){
+                    historyIndex=Math.max(0,Math.min(history.size(),historyIndex+(keyCode==GLFW.GLFW_KEY_UP?-1:1)));
+                    setValue(historyIndex==history.size()?"":history.get(historyIndex));return true;
+                }
+                if(keyCode==GLFW.GLFW_KEY_TAB){
+                    String prefix=getValue();var candidates=new java.util.TreeSet<String>();
+                    candidates.addAll(me.cryo.zombierool.gameplay.DebugConsole.HELP);
+                    candidates.addAll(List.of("wave ","weapon ","points ","killall","help","reload scripts","reload weapons","game start","game stop","game restart","game pause","game resume","perks limit ","perks clear","power source ","god on","god off","noclip on","noclip off"));
+                    for(var id:net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKeys())candidates.add("spawn "+id);
+                    for(var id:me.cryo.zombierool.gameplay.PerksManager.ALL_PERKS.keySet()){candidates.add("perk give "+id);candidates.add("perk remove "+id);}
+                    for(var id:me.cryo.zombierool.bonuses.BonusManager.ALL_BONUSES.keySet()){candidates.add("bonus "+id);candidates.add("bonus_next "+id);}
+                    candidates.add("bonus random");candidates.add("bonus_next random");candidates.add("bonus_next clear");
+                    for(var id:me.cryo.zombierool.core.system.WeaponSystem.Loader.LOADED_DEFINITIONS.keySet())candidates.add("weapon "+id);
+                    for(var candidate:candidates)if(candidate.startsWith(prefix)&&!candidate.equals(prefix)){setValue(candidate);break;}
                     return true;
                 }
                 if (keyCode == GLFW.GLFW_KEY_GRAVE_ACCENT || keyCode == 161 || keyCode == GLFW.GLFW_KEY_BACKSLASH || keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -73,7 +94,7 @@ public class SecretConsoleScreen extends Screen {
 
     private void executeCommand(String cmd) {
         logs.add(Component.literal("> " + cmd));
-        
+
         if (cmd.startsWith("map ")) {
             if (this.minecraft.level != null) {
                 addLog(Component.literal("§cCannot load a map while already in-game!"));
@@ -113,7 +134,7 @@ public class SecretConsoleScreen extends Screen {
                     }
                 });
             }).start();
-        } 
+        }
         else {
             if (this.minecraft.level != null) {
                 NetworkHandler.INSTANCE.sendToServer(new C2SSecretConsoleCommandPacket(cmd));
@@ -131,6 +152,7 @@ public class SecretConsoleScreen extends Screen {
         addHelp("gui.zombierool.console.help.points", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.wave", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.killall", ChatFormatting.GRAY);
+        addHelp("gui.zombierool.console.help.ingot", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.weapon", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.god", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.noclip", ChatFormatting.GRAY);
@@ -138,6 +160,7 @@ public class SecretConsoleScreen extends Screen {
         addHelp("gui.zombierool.console.help.reload_weapons", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.zombies", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.tp_last", ChatFormatting.GRAY);
+        for(String key:me.cryo.zombierool.gameplay.DebugConsole.HELP)if(!key.equals("god")&&!key.equals("noclip"))addHelp("gui.zombierool.console.debug.help."+key,ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.menu", ChatFormatting.GOLD);
         addHelp("gui.zombierool.console.help.map", ChatFormatting.GRAY);
         addHelp("gui.zombierool.console.help.devmap", ChatFormatting.GRAY);
@@ -204,11 +227,13 @@ public class SecretConsoleScreen extends Screen {
     }
 
     private static boolean isInGameCommand(String cmd) {
-        return cmd.startsWith("lua ")
+        return me.cryo.zombierool.gameplay.DebugConsole.HELP.contains(cmd.split(" ")[0])
+                || cmd.startsWith("lua ")
                 || cmd.startsWith("points ")
                 || cmd.startsWith("wave ")
                 || cmd.startsWith("weapon ")
                 || cmd.equals("cat") || cmd.equals("mrchief")
+                || cmd.equals("ingot") || cmd.equals("ingot_sale")
                 || cmd.equals("killall")
                 || cmd.equals("god")
                 || cmd.equals("noclip")
@@ -220,14 +245,14 @@ public class SecretConsoleScreen extends Screen {
 
     public void addLog(Component message) {
         logs.add(message);
-        if (logs.size() > 50) {
+        if (logs.size() > 500) {
             logs.remove(0);
         }
     }
 
     public static void receiveLog(String message) {
         logs.add(Component.literal(message));
-        if (logs.size() > 50) {
+        if (logs.size() > 500) {
             logs.remove(0);
         }
     }
@@ -236,13 +261,16 @@ public class SecretConsoleScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xDD000000);
         int y = this.height - 40;
-        for (int i = logs.size() - 1; i >= 0 && y > 10; i--) {
+        for (int i = logs.size() - 1 - logOffset; i >= 0 && y > 10; i--) {
             graphics.drawString(this.font, logs.get(i), 10, y, 0xFFFFFF);
             y -= 12;
         }
         this.commandBox.render(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
+
+    @Override
+    public boolean mouseScrolled(double x,double y,double delta){logOffset=Math.max(0,Math.min(Math.max(0,logs.size()-1),logOffset+(int)(delta*3)));return true;}
 
     @Override
     public boolean isPauseScreen() {

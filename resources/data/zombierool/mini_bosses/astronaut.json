@@ -1,0 +1,8 @@
+{
+  "template": "astronaut",
+  "name": "entity.zombierool.astronaut",
+  "texture": "zombierool:textures/entities/encounters/astronaut.png",
+  "health": 420,
+  "speed": 0.1,
+  "damage": 1
+}

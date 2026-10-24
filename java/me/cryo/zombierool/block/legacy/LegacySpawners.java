@@ -32,7 +32,7 @@ public class LegacySpawners {
         }
     }
 
-    public static abstract class LegacySpawnerBlock extends Block implements EntityBlock {
+    public static abstract class LegacySpawnerBlock extends Block implements EntityBlock, me.cryo.zombierool.block.WaterloggedElement {
         private final UniversalSpawnerSystem.SpawnerMobType targetType;
 
         public LegacySpawnerBlock(UniversalSpawnerSystem.SpawnerMobType targetType) {

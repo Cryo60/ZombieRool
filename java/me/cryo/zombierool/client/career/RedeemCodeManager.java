@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 public class RedeemCodeManager {
     private static final String API_REDEEM_URL = "https://zombierool-community.onrender.com/api/redeem";
     public static void redeemCode(String code, Consumer<Component> callback) {
+        if(code!=null&&code.trim().startsWith("ZR2.")){callback.accept(RewardVoucher.redeem(code.trim()));return;}
         if (!me.cryo.zombierool.configuration.ZRClientConfig.allowNetworkRequests()) {
             callback.accept(Component.translatable("gui.zombierool.network.disabled"));
             return;
@@ -29,7 +30,7 @@ public class RedeemCodeManager {
             callback.accept(Component.translatable("message.zombierool.redeem.invalid"));
             return;
         }
-        String cleanCode = code.trim().toUpperCase();
+        String cleanCode = code.trim().toUpperCase(java.util.Locale.ROOT);
         if (LocalCareerManager.getData().redeemedCodes.contains(cleanCode)) {
             callback.accept(Component.translatable("message.zombierool.redeem.already_used"));
             return;
@@ -44,7 +45,7 @@ public class RedeemCodeManager {
                 conn.setRequestProperty("User-Agent", "ZombieRool-Mod/1.0 (Minecraft Forge)");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setDoOutput(true);
-                String jsonInputString = "{\"code\": \"" + cleanCode + "\"}";
+                var requestBody=new JsonObject();requestBody.addProperty("code",cleanCode);String jsonInputString=requestBody.toString();
                 try (OutputStream os = conn.getOutputStream()) {
                     byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);
@@ -70,7 +71,7 @@ public class RedeemCodeManager {
                     int zrfAdded = 0;
                     if (reward.has("zrf")) {
                         zrfAdded = reward.get("zrf").getAsInt();
-                        LocalCareerManager.addZRF(zrfAdded, "");
+                        LocalCareerManager.addZRF(zrfAdded, "", false);
                     }
                     List<String> unlockedItems = new ArrayList<>();
                     if (reward.has("camos")) {

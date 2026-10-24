@@ -98,6 +98,14 @@
     "tacz_ww"
   ],
   "tacz": {
-    "gun_id": "ww:m1918a2"
+    "gun_id": "ww:m1918a2",
+    "fallbacks": [
+      {
+        "gun_id": "ww:m1918a1"
+      },
+      {
+        "gun_id": "ww:m1918"
+      }
+    ]
   }
 }

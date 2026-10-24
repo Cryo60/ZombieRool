@@ -39,7 +39,7 @@ public class ZombieCapabilitySystem {
 
         int getTotalPoints();
         void addTotalPoints(int amount);
-        void resetTotalPoints(); 
+        void resetTotalPoints();
 
         int getKills();
         void addKill();
@@ -52,16 +52,24 @@ public class ZombieCapabilitySystem {
 
         int getPerkPurchases(String perkId);
         void incrementPerkPurchases(String perkId);
-        void setPerkPurchases(String perkId, int count); 
+        void setPerkPurchases(String perkId, int count);
 
         void resetStats();
         void resetPerkPurchases();
-        
+
         String getLethalType();
         void setLethalType(String type);
         int getLethalCount();
         void setLethalCount(int count);
 
+        String getEquipmentType();
+        void setEquipmentType(String type);
+        int getEquipmentCount();
+        void setEquipmentCount(int count);
+        String getTacticalType();
+        void setTacticalType(String type);
+        int getTacticalCount();
+        void setTacticalCount(int count);
         void copyFrom(IData source);
         void sync(ServerPlayer player);
     }
@@ -69,7 +77,7 @@ public class ZombieCapabilitySystem {
     public static class Impl implements IData {
         private int points = 500;
         private int totalPoints = 0;
-        
+
         private int kills = 0;
         private int headshots = 0;
         private int assists = 0;
@@ -79,6 +87,8 @@ public class ZombieCapabilitySystem {
 
         private String lethalType = "zombierool:grenade";
         private int lethalCount = 5;
+        private String equipmentType = "none", tacticalType = "none";
+        private int equipmentCount, tacticalCount;
 
         @Override public int getPoints() { return points; }
         @Override public void setPoints(int amount) { this.points = Math.max(0, amount); }
@@ -86,7 +96,7 @@ public class ZombieCapabilitySystem {
 
         @Override public int getTotalPoints() { return totalPoints; }
         @Override public void addTotalPoints(int amount) { this.totalPoints += amount; }
-        @Override public void resetTotalPoints() { this.totalPoints = 0; } 
+        @Override public void resetTotalPoints() { this.totalPoints = 0; }
 
         @Override public int getKills() { return kills; }
         @Override public void addKill() { this.kills++; }
@@ -106,10 +116,19 @@ public class ZombieCapabilitySystem {
         @Override public int getLethalCount() { return lethalCount; }
         @Override public void setLethalCount(int count) { this.lethalCount = Math.max(0, Math.min(5, count)); }
 
-        @Override public void resetStats() { 
-            this.kills = 0; 
-            this.assists = 0; 
-            this.downs = 0; 
+        @Override public String getEquipmentType() { return equipmentType; }
+        @Override public void setEquipmentType(String type) { equipmentType = type; }
+        @Override public int getEquipmentCount() { return equipmentCount; }
+        @Override public void setEquipmentCount(int count) { equipmentCount = Math.max(0, Math.min(2, count)); }
+        @Override public String getTacticalType() { return tacticalType; }
+        @Override public void setTacticalType(String type) { tacticalType = type; }
+        @Override public int getTacticalCount() { return tacticalCount; }
+        @Override public void setTacticalCount(int count) { tacticalCount = Math.max(0, Math.min(2, count)); }
+
+        @Override public void resetStats() {
+            this.kills = 0;
+            this.assists = 0;
+            this.downs = 0;
             this.headshots = 0;
         }
         @Override public void resetPerkPurchases() { perkPurchases.clear(); }
@@ -123,7 +142,9 @@ public class ZombieCapabilitySystem {
             this.downs = source.getDowns();
             this.lethalType = source.getLethalType();
             this.lethalCount = source.getLethalCount();
-            
+            tacticalType = source.getTacticalType(); tacticalCount = source.getTacticalCount();
+            equipmentType = source.getEquipmentType(); equipmentCount = source.getEquipmentCount();
+
             this.perkPurchases.clear();
             if (source instanceof Impl implSource) {
                 this.perkPurchases.putAll(implSource.perkPurchases);
@@ -144,6 +165,8 @@ public class ZombieCapabilitySystem {
             tag.putInt("Downs", downs);
             tag.putString("LethalType", lethalType);
             tag.putInt("LethalCount", lethalCount);
+            tag.putString("TacticalType", tacticalType); tag.putInt("TacticalCount", tacticalCount);
+            tag.putString("EquipmentType", equipmentType); tag.putInt("EquipmentCount", equipmentCount);
 
             CompoundTag perksTag = new CompoundTag();
             for (Map.Entry<String, Integer> entry : perkPurchases.entrySet()) {
@@ -163,6 +186,10 @@ public class ZombieCapabilitySystem {
             if (nbt.contains("Downs")) this.downs = nbt.getInt("Downs");
             if (nbt.contains("LethalType")) this.lethalType = nbt.getString("LethalType");
             if (nbt.contains("LethalCount")) this.lethalCount = nbt.getInt("LethalCount");
+            if (nbt.contains("TacticalType")) tacticalType=nbt.getString("TacticalType");
+            setTacticalCount(nbt.getInt("TacticalCount"));
+            if (nbt.contains("EquipmentType")) equipmentType=nbt.getString("EquipmentType");
+            setEquipmentCount(nbt.getInt("EquipmentCount"));
 
             if (nbt.contains("PerkPurchases")) {
                 this.perkPurchases.clear();
@@ -191,11 +218,11 @@ public class ZombieCapabilitySystem {
             return LazyOptional.empty();
         }
 
-        @Override public CompoundTag serializeNBT() { 
-            return this.getOrCreateBackend().serializeNBT(); 
+        @Override public CompoundTag serializeNBT() {
+            return this.getOrCreateBackend().serializeNBT();
         }
-        @Override public void deserializeNBT(CompoundTag nbt) { 
-            this.getOrCreateBackend().deserializeNBT(nbt); 
+        @Override public void deserializeNBT(CompoundTag nbt) {
+            this.getOrCreateBackend().deserializeNBT(nbt);
         }
     }
 
@@ -340,7 +367,7 @@ public class ZombieCapabilitySystem {
             if (meteoriteCount > 0) {
                 totals.put("meteorite", meteoriteCount);
             }
-            
+
             syncAll(level);
         }
 
@@ -375,7 +402,7 @@ public class ZombieCapabilitySystem {
     @Mod.EventBusSubscriber(modid = "zombierool", value = net.minecraftforge.api.distmarker.Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ClientTabListRenderer {
         public static Map<UUID, PlayerStatsManager.PlayerStats> clientStats = new HashMap<>();
-        
+
         private static Map<String, Integer> clientPickablesCollected = new HashMap<>();
         private static Map<String, Integer> clientPickablesTotal = new HashMap<>();
 
@@ -391,8 +418,8 @@ public class ZombieCapabilitySystem {
         @SubscribeEvent
         public static void onRenderTabList(net.minecraftforge.client.event.RenderGuiOverlayEvent.Pre event) {
             if (event.getOverlay() == net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.PLAYER_LIST.type()) {
-                event.setCanceled(true); 
-                
+                event.setCanceled(true);
+
                 net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
                 if (mc.options.keyPlayerList.isDown() && mc.level != null) {
                     drawCustomTabList(event.getGuiGraphics(), mc);
@@ -401,205 +428,46 @@ public class ZombieCapabilitySystem {
         }
 
         private static void drawCustomTabList(net.minecraft.client.gui.GuiGraphics graphics, net.minecraft.client.Minecraft mc) {
-            net.minecraft.client.gui.Font font = mc.font;
-            int screenWidth = mc.getWindow().getGuiScaledWidth();
-
-            java.util.Collection<net.minecraft.client.multiplayer.PlayerInfo> players = mc.getConnection().getListedOnlinePlayers();
-            java.util.List<net.minecraft.client.multiplayer.PlayerInfo> sortedPlayers = new java.util.ArrayList<>(players);
-
-            sortedPlayers.sort((p1, p2) -> {
-                PlayerStatsManager.PlayerStats s1 = clientStats.getOrDefault(p1.getProfile().getId(), new PlayerStatsManager.PlayerStats());
-                PlayerStatsManager.PlayerStats s2 = clientStats.getOrDefault(p2.getProfile().getId(), new PlayerStatsManager.PlayerStats());
-                if (s1.kills != s2.kills) return Integer.compare(s2.kills, s1.kills);
-                if (s1.score != s2.score) return Integer.compare(s2.score, s1.score);
-                return p1.getProfile().getName().compareToIgnoreCase(p2.getProfile().getName());
-            });
-
-            int colNameW = 75;
-            int colTotalW = 40;
-            int colScoreW = 40;
-            int colHeadshotsW = 55;
-            int colKillsW = 30;
-            int colDownsW = 35;
-            int colAssistsW = 40;
-            int colPingW = 30;
-            int totalWidth = colNameW + colTotalW + colScoreW + colHeadshotsW + colKillsW + colDownsW + colAssistsW + colPingW + 20;
-            
-            int startX = (screenWidth - totalWidth) / 2;
-            int startY = 15;
-            int rowHeight = 12;
-
-            int tableHeight = (sortedPlayers.size() + 1) * rowHeight + 5;
-
-            graphics.fill(startX, startY, startX + totalWidth, startY + tableHeight, 0xAA000000);
-            graphics.renderOutline(startX, startY, totalWidth, tableHeight, 0xFF555555);
-
-            int currentY = startY + 4;
-            int xName = startX + 5;
-            int xTotal = xName + colNameW;
-            int xScore = xTotal + colTotalW;
-            int xHeadshots = xScore + colScoreW;
-            int xKills = xHeadshots + colHeadshotsW;
-            int xDowns = xKills + colKillsW;
-            int xAssists = xDowns + colDownsW;
-            int xPing = xAssists + colAssistsW;
-
-            graphics.drawString(font, net.minecraft.network.chat.Component.translatable("gui.zombierool.tab.player").getString(), xName, currentY, 0xFFAA00);
-            graphics.drawString(font, "Total", xTotal, currentY, 0xFFAA00);
-            graphics.drawString(font, "Score", xScore, currentY, 0xFFAA00);
-            graphics.drawString(font, "Headshot", xHeadshots, currentY, 0xFFAA00);
-            graphics.drawString(font, "Kills", xKills, currentY, 0xFFAA00);
-            graphics.drawString(font, "Downs", xDowns, currentY, 0xFFAA00);
-            graphics.drawString(font, "Assist", xAssists, currentY, 0xFFAA00);
-            graphics.drawString(font, "Ping", xPing, currentY, 0xFFAA00);
-            
-            currentY += rowHeight;
-
-            for (net.minecraft.client.multiplayer.PlayerInfo pInfo : sortedPlayers) {
-                String name = pInfo.getProfile().getName();
-                PlayerStatsManager.PlayerStats pStats = clientStats.getOrDefault(pInfo.getProfile().getId(), new PlayerStatsManager.PlayerStats());
-
-                int color = (pInfo.getGameMode() == net.minecraft.world.level.GameType.SPECTATOR) ? 0xAAAAAA : 0xFFFFFF;
-
-                graphics.drawString(font, name, xName, currentY, color);
-                graphics.drawString(font, String.valueOf(pStats.totalPoints), xTotal, currentY, 0xFFFFFF);
-                graphics.drawString(font, String.valueOf(pStats.score), xScore, currentY, 0x55FF55);
-                graphics.drawString(font, String.valueOf(pStats.headshots), xHeadshots, currentY, 0xAAAAAA);
-                graphics.drawString(font, String.valueOf(pStats.kills), xKills, currentY, 0xFFFFFF);
-                graphics.drawString(font, String.valueOf(pStats.deaths), xDowns, currentY, 0xFF5555);
-                graphics.drawString(font, String.valueOf(pStats.assists), xAssists, currentY, 0xAAAAAA);
-                graphics.drawString(font, pInfo.getLatency() + "ms", xPing, currentY, getPingColor(pInfo.getLatency()));
-                
-                currentY += rowHeight;
+            var font=mc.font;
+            int realWidth=mc.getWindow().getGuiScaledWidth(),realHeight=mc.getWindow().getGuiScaledHeight();
+            float scale=Math.min(1f,realWidth/660f);graphics.pose().pushPose();graphics.pose().scale(scale,scale,1);
+            int width=(int)(realWidth/scale),height=(int)(realHeight/scale),panel=Math.min(720,width-40),left=(width-panel)/2;
+            var players=new java.util.ArrayList<>(mc.getConnection().getListedOnlinePlayers());
+            players.sort(java.util.Comparator.<net.minecraft.client.multiplayer.PlayerInfo>comparingInt(p->-clientStats.getOrDefault(p.getProfile().getId(),new PlayerStatsManager.PlayerStats()).kills).thenComparing(p->p.getProfile().getName()));
+            int challengeCount=LocalCareerManager.getData().activeChallenges.size();
+            int challengeReserve=challengeCount==0?0:38+Math.min(4,(challengeCount+1)/2)*27;
+            int maxRows=Math.min(2,Math.max(1,(height-150-challengeReserve)/67));
+            int y=18+me.cryo.zombierool.client.BuildableClient.drawTab(graphics,width,18,38+maxRows*67,clientPickablesCollected,clientPickablesTotal);
+            int nameWidth=Math.max(170,panel*42/100),statWidth=(panel-nameWidth)/6,rowHeight=22;
+            int visible=Math.min(players.size(),Math.max(1,(height-y-75-challengeReserve)/rowHeight));int rows=Math.max(1,visible),tableHeight=27+rows*rowHeight;
+            graphics.fill(left,y,left+panel,y+tableHeight,0xB0000000);graphics.fill(left,y,left+panel,y+24,0xC0000000);
+            String map=mc.getSingleplayerServer()!=null?mc.getSingleplayerServer().getWorldData().getLevelName():mc.getCurrentServer()!=null?mc.getCurrentServer().name:"ZombieRool";
+            graphics.drawCenteredString(font,font.plainSubstrByWidth(map,nameWidth-12),left+nameWidth/2,y+8,0xE2E2E2);
+            String[] labels={"Score","Kills","Downs","Assist","Headshots","Ping"};
+            for(int c=0;c<6;c++){
+                int cx=left+nameWidth+c*statWidth;
+                graphics.drawCenteredString(font,labels[c],cx+statWidth/2,y+8,0xA9A9A9);
+                if(c%2==0)graphics.fill(cx,y+26,cx+statWidth-2,y+tableHeight-2,0x55306381);
             }
-
-            int lastBoxBottomY = startY + tableHeight + 10;
-
-            int activePickablesCount = (int) clientPickablesTotal.values().stream().filter(v -> v > 0).count();
-            if (activePickablesCount > 0) {
-                int pickBoxHeight = 20 + (activePickablesCount * 20);
-                int pickBoxWidth = 180;
-                int pickBoxX = (screenWidth - pickBoxWidth) / 2;
-
-                graphics.fill(pickBoxX, lastBoxBottomY, pickBoxX + pickBoxWidth, lastBoxBottomY + pickBoxHeight, 0xAA000000);
-                graphics.renderOutline(pickBoxX, lastBoxBottomY, pickBoxWidth, pickBoxHeight, 0xFF555555);
-
-                graphics.drawCenteredString(font, net.minecraft.network.chat.Component.translatable("gui.zombierool.tab.map_inventory").getString(), screenWidth / 2, lastBoxBottomY + 5, 0xFFAA00);
-
-                int pY = lastBoxBottomY + 18;
-                for (Map.Entry<String, Integer> entry : clientPickablesTotal.entrySet()) {
-                    if (entry.getValue() <= 0) continue;
-
-                    String category = entry.getKey();
-                    int total = entry.getValue();
-                    int collected = clientPickablesCollected.getOrDefault(category, 0);
-
-                    net.minecraft.world.item.ItemStack icon = net.minecraft.world.item.ItemStack.EMPTY;
-                    String displayName = category;
-                    
-                    if (category.equals("meteorite")) {
-                        displayName = net.minecraft.network.chat.Component.translatable("gui.zombierool.tab.meteorites").getString();
-                        icon = new net.minecraft.world.item.ItemStack(me.cryo.zombierool.core.registry.ZRBlocks.METEORITE.get());
-                    }
-
-                    if (!icon.isEmpty()) {
-                        graphics.renderItem(icon, pickBoxX + 10, pY);
-                    }
-
-                    String countText = collected + " / " + total;
-                    int textColor = (collected >= total) ? 0x55FF55 : 0xFFFFFF;
-
-                    graphics.drawString(font, displayName + ": " + countText, pickBoxX + 35, pY + 4, textColor);
-                    pY += 20;
+            for(int i=0;i<visible;i++){
+                var info=players.get(i);var stats=clientStats.getOrDefault(info.getProfile().getId(),new PlayerStatsManager.PlayerStats());int ry=y+27+i*rowHeight;
+                boolean self=info.getProfile().getId().equals(mc.player.getUUID());
+                if(self){graphics.fill(left+2,ry,left+panel-2,ry+rowHeight,0x40377094);graphics.renderOutline(left+2,ry,panel-4,rowHeight,0xFFF08A24);}
+                graphics.drawString(font,font.plainSubstrByWidth(info.getProfile().getName(),nameWidth-16),left+9,ry+7,self?0xF5CE4C:0xDCDCDC);
+                String[] values={""+stats.score,""+stats.kills,""+stats.deaths,""+stats.assists,""+stats.headshots,""+info.getLatency()};
+                for(int c=0;c<6;c++)graphics.drawCenteredString(font,values[c],left+nameWidth+c*statWidth+statWidth/2,ry+7,info.getGameMode()==net.minecraft.world.level.GameType.SPECTATOR?0x888888:0xE2E2E2);
+            }
+            int footer=y+tableHeight+9;
+            if(footer+18<height){
+                var career=LocalCareerManager.getData();graphics.fill(left,footer,left+panel,footer+19,0x99000000);
+                graphics.drawString(font,net.minecraft.network.chat.Component.translatable("gui.zombierool.buildable.career_compact",career.currentLevel,career.currentXp),left+7,footer+5,0xBBBBBB);
+                var held=mc.player.getMainHandItem();if(WeaponFacade.isWeapon(held)){
+                    String id=WeaponFacade.getCareerWeaponId(held),text=held.getHoverName().getString()+" · "+LocalCareerManager.getWeaponLevel(id);
+                    graphics.drawString(font,font.plainSubstrByWidth(text,panel/2-10),left+panel/2,footer+5,0x8BBAD3);
                 }
-
-                lastBoxBottomY += pickBoxHeight + 10;
             }
-
-            int careerBoxWidth = 260;
-            int careerBoxX = (screenWidth - careerBoxWidth) / 2;
-            int careerBoxHeight = 120; 
-
-            graphics.fill(careerBoxX, lastBoxBottomY, careerBoxX + careerBoxWidth, lastBoxBottomY + careerBoxHeight, 0xAA000000);
-            graphics.renderOutline(careerBoxX, lastBoxBottomY, careerBoxWidth, careerBoxHeight, 0xFF555555);
-
-            graphics.drawCenteredString(font, "--- Career Progression ---", screenWidth / 2, lastBoxBottomY + 5, 0xFFAA00);
-
-            LocalCareerManager.CareerData data = LocalCareerManager.getData();
-            int pY = lastBoxBottomY + 20;
-
-            int playerLevel = data.currentLevel;
-            int currentXP = data.currentXp;
-            int nextXP = LocalCareerManager.getXpRequiredForLevel(playerLevel);
-
-            graphics.drawString(font, "Player Level: " + playerLevel, careerBoxX + 10, pY, 0xFFFFFF);
-            
-            if (playerLevel < 50) {
-                int barWidth = 100;
-                graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + barWidth, pY + 6, 0xFF333333);
-                float progress = (float) currentXP / nextXP;
-                graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + (int)(barWidth * progress), pY + 6, 0xFF00FF00);
-                graphics.drawString(font, currentXP + "/" + nextXP + " XP", careerBoxX + 100 + barWidth + 5, pY, 0xAAAAAA);
-            } else {
-                graphics.drawString(font, "MAX LEVEL", careerBoxX + 100, pY, 0xFFFF00);
-            }
-            
-            pY += 15;
-
-            ItemStack heldWeapon = mc.player.getMainHandItem();
-            if (WeaponFacade.isWeapon(heldWeapon)) {
-                String weaponId = WeaponFacade.getWeaponId(heldWeapon).replace("zombierool:", "");
-                int wLevel = LocalCareerManager.getWeaponLevel(weaponId);
-                int wCurrentXP = LocalCareerManager.getWeaponXpInCurrentLevel(weaponId);
-                int wNextXP = LocalCareerManager.getWeaponXpForNextLevel(weaponId);
-                
-                String wpnName = heldWeapon.getHoverName().getString();
-                if (wpnName.length() > 10) wpnName = wpnName.substring(0, 10) + "..";
-
-                graphics.drawString(font, wpnName + " Lvl: " + wLevel, careerBoxX + 10, pY, 0x00FFFF);
-                
-                if (wLevel < 100) {
-                    int barWidth = 100;
-                    graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + barWidth, pY + 6, 0xFF333333);
-                    float progress = (float) wCurrentXP / wNextXP;
-                    graphics.fill(careerBoxX + 100, pY, careerBoxX + 100 + (int)(barWidth * progress), pY + 6, 0xFF00FFFF);
-                    graphics.drawString(font, wCurrentXP + "/" + wNextXP + " XP", careerBoxX + 100 + barWidth + 5, pY, 0xAAAAAA);
-                } else {
-                    graphics.drawString(font, "MAX LEVEL", careerBoxX + 100, pY, 0xFFFF00);
-                }
-            } else {
-                graphics.drawString(font, "Hold a weapon to see progression", careerBoxX + 10, pY, 0xAAAAAA);
-            }
-
-            pY += 20;
-
-            graphics.drawString(font, "Active Challenges:", careerBoxX + 10, pY, 0xFFAA00);
-            pY += 10;
-            
-            for (Map.Entry<String, LocalCareerManager.ChallengeDef> entry : data.activeChallenges.entrySet()) {
-                String id = entry.getKey();
-                LocalCareerManager.ChallengeDef def = entry.getValue();
-                int prog = data.challengeProgress.getOrDefault(id, 0);
-                boolean done = data.challengeCompleted.getOrDefault(id, false);
-
-                String typeStr = def.type.name().toLowerCase();
-                net.minecraft.network.chat.Component text;
-                if (def.context != null && !def.context.isEmpty()) {
-                    text = net.minecraft.network.chat.Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target, def.context.toUpperCase());
-                } else {
-                    text = net.minecraft.network.chat.Component.translatable("gui.zombierool.career.challenge." + typeStr, def.target);
-                }
-
-                graphics.drawString(font, "- " + text.getString(), careerBoxX + 10, pY, 0xFFFFFF);
-
-                if (done) {
-                    graphics.drawString(font, "DONE", careerBoxX + 210, pY, 0x00FF00);
-                } else {
-                    graphics.drawString(font, prog + "/" + def.target, careerBoxX + 210, pY, 0xAAAAAA);
-                }
-
-                pY += 12;
-            }
+            me.cryo.zombierool.client.TabChallenges.draw(graphics,mc,left,footer+27,panel,height);
+            graphics.pose().popPose();
         }
 
         private static int getPingColor(int ping) {

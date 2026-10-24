@@ -32,16 +32,16 @@ public class ClientSniperHandler {
 
     private static final ResourceLocation SNIPER_SCOPE = new ResourceLocation("zombierool", "textures/misc/sniper_scope_overlay.png");
     private static final ResourceLocation SCREAMER_TEX = new ResourceLocation("zombierool", "textures/misc/screamer.png");
-    
+
     private static final int TEX_WIDTH = 128;
     private static final int TEX_HEIGHT = 128;
-    
+
     private static final int SCREAMER_TEX_SIZE = 512;
 
     private static double currentZoomFov = 15.0;
 
     private static boolean isScoping = false;
-    private static boolean lastScopingState = false; 
+    private static boolean lastScopingState = false;
     private static boolean isTaczScope = false;
 
     private static BreathState breathState = BreathState.IDLE;
@@ -59,8 +59,9 @@ public class ClientSniperHandler {
 
     private static int lastSlot = -1;
     private static boolean requireNewClick = false;
-    
+
     public static int screamerTimer = 0;
+    public static boolean screamerInTaczScope;
 
     private enum BreathState {
         IDLE, INHALING, STABILIZED, EXHALED_SHAKY
@@ -68,11 +69,14 @@ public class ClientSniperHandler {
 
     public static void triggerScreamer(int ticks) {
         screamerTimer = ticks;
+        var player=Minecraft.getInstance().player;
+        screamerInTaczScope=player!=null&&me.cryo.zombierool.core.system.WeaponFacade.isTaczWeapon(player.getMainHandItem());
     }
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if(Minecraft.getInstance().isPaused())return;
 
         if (screamerTimer > 0) {
             screamerTimer--;
@@ -80,21 +84,25 @@ public class ClientSniperHandler {
 
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null) return;
+        if (player == null) {
+            isScoping=false;isTaczScope=false;lastScopingState=false;lastSlot=-1;requireNewClick=false;
+            breathState=BreathState.IDLE;screamerTimer=0;
+            return;
+        }
 
         int currentSlot = player.getInventory().selected;
         if (currentSlot != lastSlot) {
             if (isScoping) {
                 isScoping = false;
                 enterBreathState(BreathState.IDLE, player);
-                requireNewClick = true;
+                requireNewClick = !WeaponFacade.isTaczWeapon(player.getMainHandItem());
             }
             lastSlot = currentSlot;
         }
 
         ItemStack stack = player.getMainHandItem();
-        boolean holdingSniper = false;
-        
+        boolean holdingSniper = WeaponFacade.isScopedWeapon(stack);
+
         boolean isTacz = WeaponFacade.isTaczWeapon(stack);
         if (isTacz || stack.getItem() instanceof WeaponSystem.BaseGunItem) {
             WeaponSystem.Definition def = WeaponFacade.getDefinition(stack);
@@ -113,14 +121,17 @@ public class ClientSniperHandler {
             requireNewClick = false;
         }
 
-        if (holdingSniper && rightClickHeld && !requireNewClick) {
+        boolean aiming=mc.screen==null&&!me.cryo.zombierool.gameplay.PortableEquipment.inHands(player)&&holdingSniper&&(isTacz?TacZScopeBridge.isAiming(player):rightClickHeld&&!requireNewClick);
+        if(isTaczScope!=isTacz&&isScoping)enterBreathState(BreathState.IDLE,player);
+        isTaczScope=isTacz;
+        if (aiming) {
             if (!isScoping) {
                 isScoping = true;
                 isTaczScope = isTacz;
                 enterBreathState(BreathState.IDLE, player);
                 currentSwayScale = 0.3f;
             }
-            handleBreathLogic(player, mc);
+            if(!isTaczScope)handleBreathLogic(player, mc);
         } else {
             if (isScoping) {
                 isScoping = false;
@@ -213,21 +224,21 @@ public class ClientSniperHandler {
 
     @SubscribeEvent
     public static void onMovementInput(MovementInputUpdateEvent event) {
-        if (isScoping && KeyBindings.STABILIZE_KEY.isDown()) {
+        if (isNativeScoping() && KeyBindings.STABILIZE_KEY.isDown()) {
             event.getInput().shiftKeyDown = false;
         }
     }
 
     @SubscribeEvent
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
-        if (isScoping) {
+        if (isNativeScoping()) {
             event.setFOV(currentZoomFov);
         }
     }
 
     @SubscribeEvent
     public static void onCameraSetup(ViewportEvent.ComputeCameraAngles event) {
-        if (isScoping) {
+        if (isNativeScoping()) {
             float swayPitch = Mth.sin(swayTime) * currentSwayScale;
             float swayYaw = Mth.cos(swayTime * 0.8f) * currentSwayScale;
 
@@ -248,19 +259,19 @@ public class ClientSniperHandler {
             String id = event.getOverlay().id().toString();
             if (id.contains("elder_guardian")) return;
 
-            if (id.contains("crosshair") || id.contains("hotbar") || 
-                id.contains("experience_bar") || id.contains("jump_bar") || 
-                id.contains("chat_panel") || id.contains("player_health") || 
-                id.contains("armor_level") || id.contains("food_level") || 
+            if (id.contains("crosshair") || id.contains("hotbar") ||
+                id.contains("experience_bar") || id.contains("jump_bar") ||
+                id.contains("chat_panel") || id.contains("player_health") ||
+                id.contains("armor_level") || id.contains("food_level") ||
                 id.contains("item_name")) {
                 event.setCanceled(true);
             }
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST)
     public static void onRenderGameOverlayPost(RenderGuiEvent.Post event) {
-        if (isScoping) {
+        if (isNativeScoping()||screamerTimer>0) {
             Minecraft mc = Minecraft.getInstance();
             if (!mc.options.getCameraType().isFirstPerson()) {
                 return;
@@ -268,44 +279,28 @@ public class ClientSniperHandler {
 
             int screenWidth = mc.getWindow().getGuiScaledWidth();
             int screenHeight = mc.getWindow().getGuiScaledHeight();
-            
+
             RenderSystem.disableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GuiGraphics graphics = event.getGuiGraphics();
-            
-            if (screamerTimer > 0) {
-                RenderSystem.setShaderTexture(0, SCREAMER_TEX);
-                float alpha = screamerTimer > 10 ? 1.0f : (screamerTimer / 10.0f);
-                RenderSystem.enableBlend();
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                int drawSize = (int) (screenHeight * 0.8f * 2.5f);
-                int drawX = (screenWidth - drawSize) / 2;
-                int drawY = (screenHeight - drawSize) / 2;
-                graphics.blit(SCREAMER_TEX, drawX, drawY, drawSize, drawSize, 0, 0, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            }
-            
-            if (isTaczScope) {
-                RenderSystem.setShaderTexture(0, SNIPER_SCOPE);
-                graphics.blit(SNIPER_SCOPE, 0, 0, screenWidth, screenHeight, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-            } else {
+
+            if (isNativeScoping()) {
                 int scopeSize = (int) (screenHeight * 0.8f);
                 int scopeX = (screenWidth - scopeSize) / 2;
                 int scopeY = (screenHeight - scopeSize) / 2;
                 int blackColor = 0xFF000000;
-                
-                graphics.fill(0, 0, scopeX, screenHeight, blackColor); 
-                graphics.fill(scopeX + scopeSize, 0, screenWidth, screenHeight, blackColor); 
-                graphics.fill(scopeX, 0, scopeX + scopeSize, scopeY, blackColor); 
-                graphics.fill(scopeX, scopeY + scopeSize, scopeX + scopeSize, screenHeight, blackColor); 
-                
+
+                graphics.fill(0, 0, scopeX, screenHeight, blackColor);
+                graphics.fill(scopeX + scopeSize, 0, screenWidth, screenHeight, blackColor);
+                graphics.fill(scopeX, 0, scopeX + scopeSize, scopeY, blackColor);
+                graphics.fill(scopeX, scopeY + scopeSize, scopeX + scopeSize, screenHeight, blackColor);
+
                 RenderSystem.setShaderTexture(0, SNIPER_SCOPE);
                 graphics.blit(SNIPER_SCOPE, scopeX, scopeY, scopeSize, scopeSize, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-            }
-            
+
             int centerX = screenWidth / 2;
             int centerY = screenHeight / 2;
             int dotSize = 1;
@@ -320,6 +315,18 @@ public class ClientSniperHandler {
                 }
                 int scopeSizeForTip = (int) (screenHeight * 0.8f);
                 graphics.drawCenteredString(mc.font, tip, centerX, centerY + scopeSizeForTip / 2 + 20, 0xFFFFFFFF);
+            }
+            }
+            if (screamerTimer > 0&&!screamerInTaczScope) {
+                RenderSystem.setShaderTexture(0, SCREAMER_TEX);
+                float alpha = screamerTimer > 10 ? 1.0f : (screamerTimer / 10.0f);
+                RenderSystem.enableBlend();
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+                int drawSize = (int) (screenHeight * 0.8f * 2.5f);
+                int drawX = (screenWidth - drawSize) / 2;
+                int drawY = (screenHeight - drawSize) / 2;
+                graphics.blit(SCREAMER_TEX, drawX, drawY, drawSize, drawSize, 0, 0, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE, SCREAMER_TEX_SIZE);
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
 
             RenderSystem.depthMask(true);
@@ -338,7 +345,11 @@ public class ClientSniperHandler {
         return isScoping;
     }
 
+    public static boolean isNativeScoping() {
+        return isScoping&&!isTaczScope;
+    }
+
     public static boolean isStabilizing() {
-        return isScoping && breathState == BreathState.STABILIZED;
+        return isNativeScoping() && breathState == BreathState.STABILIZED;
     }
 }

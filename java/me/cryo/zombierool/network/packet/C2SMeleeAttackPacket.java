@@ -23,7 +23,8 @@ public class C2SMeleeAttackPacket {
         context.enqueueWork(() -> {
             ServerPlayer sender = context.getSender();
             if (sender != null) {
-                MeleeAttackHandler.performMeleeAttack(sender);
+                if(sender.getMainHandItem().getItem() instanceof me.cryo.zombierool.item.ScarletWeaponItem)me.cryo.zombierool.item.ScarletWeaponItem.strike(sender);
+                else MeleeAttackHandler.performMeleeAttack(sender);
             }
         });
         context.setPacketHandled(true);

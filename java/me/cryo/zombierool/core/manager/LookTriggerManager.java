@@ -52,15 +52,15 @@ public class LookTriggerManager {
         if (triggers.isEmpty()) return;
 
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
-            if (player.isSpectator()) continue;
+            if (player.isSpectator()||!player.isAlive()||player.level()!=level) continue;
 
-            boolean isScoping = player.getPersistentData().getBoolean("zr_is_scoping");
+            boolean isScoping = isScoping(player);
             Vec3 eye = player.getEyePosition();
             Vec3 look = player.getViewVector(1.0f);
 
             Map<String, Integer> progress = playerProgress.computeIfAbsent(player.getUUID(), k -> new HashMap<>());
 
-            for (Trigger t : triggers.values()) {
+            for (Trigger t : java.util.List.copyOf(triggers.values())) {
                 boolean lookingAt = false;
 
                 if (!t.requireScope || isScoping) {
@@ -68,7 +68,7 @@ public class LookTriggerManager {
                         t.pos.x - t.radius, t.pos.y - t.radius, t.pos.z - t.radius,
                         t.pos.x + t.radius, t.pos.y + t.radius, t.pos.z + t.radius
                     );
-                    Optional<Vec3> clip = box.clip(eye, eye.add(look.scale(150.0))); 
+                    Optional<Vec3> clip = box.clip(eye, eye.add(look.scale(150.0)));
                     if (clip.isPresent()) {
                         lookingAt = true;
                     }
@@ -80,12 +80,20 @@ public class LookTriggerManager {
 
                     if (current == t.requiredTicks) {
                         LuaScriptManager.callEvent("OnLookTriggerActivated", player.getUUID().toString(), t.id);
-                        progress.put(t.id, 0); 
+                        progress.put(t.id, 0);
                     }
                 } else {
                     progress.put(t.id, 0);
                 }
             }
         }
+    }
+
+    public static boolean isScoping(ServerPlayer player) {
+        var stack=player.getMainHandItem();
+        if(!me.cryo.zombierool.core.system.WeaponFacade.isScopedWeapon(stack))return false;
+        return me.cryo.zombierool.core.system.WeaponFacade.isTaczWeapon(stack)
+            ?me.cryo.zombierool.integration.TacZIntegration.isAiming(player)
+            :player.getPersistentData().getBoolean("zr_is_scoping");
     }
 }

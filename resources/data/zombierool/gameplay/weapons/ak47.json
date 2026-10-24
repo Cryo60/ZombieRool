@@ -103,6 +103,29 @@
     "pap_attachments": {
       "scope": "tacz:red_dot",
       "muzzle": "tacz:silencer"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "elitex:ak47",
+        "pap_attachments": {
+          "scope": "tacz:red_dot",
+          "muzzle": "tacz:silencer"
+        }
+      },
+      {
+        "gun_id": "tacz:ak47",
+        "pap_attachments": {
+          "scope": "tacz:red_dot",
+          "muzzle": "tacz:silencer"
+        }
+      },
+      {
+        "gun_id": "nmw2:kastov762",
+        "pap_attachments": {
+          "scope": "tacz:red_dot",
+          "muzzle": "tacz:silencer"
+        }
+      }
+    ]
   }
 }

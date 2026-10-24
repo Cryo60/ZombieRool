@@ -29,7 +29,9 @@ public class C2SSyncAimPacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
-                player.getPersistentData().putBoolean("zr_ads", msg.aiming);
+                boolean was=player.getPersistentData().getBoolean("zr_ads");player.getPersistentData().putBoolean("zr_ads", msg.aiming);
+                if(msg.aiming&&!was&&player.getMainHandItem().getItem() instanceof me.cryo.zombierool.core.system.WeaponSystem.BaseGunItem gun&&me.cryo.zombierool.gameplay.MapWeaponPacks.available(gun.getDefinition().id.replace("zombierool:",""))){String id=gun.getDefinition().sounds.draw;if(id!=null&&!id.isBlank()){var sound=net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(id));if(sound!=null)player.level().playSound(null,player.blockPosition(),sound,net.minecraft.sounds.SoundSource.PLAYERS,.8f,1);}}
+
             }
         });
         ctx.get().setPacketHandled(true);

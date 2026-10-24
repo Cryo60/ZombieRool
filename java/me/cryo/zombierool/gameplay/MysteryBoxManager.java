@@ -32,7 +32,7 @@ public class MysteryBoxManager extends SavedData {
     private static final Random STATIC_RANDOM = new Random();
     public static final Set<Item> WONDER_WEAPONS = new HashSet<>();
 
-    public boolean isLocked = false; 
+    public boolean isLocked = false;
 
     public static class MysteryBoxPair {
         public BlockPos mainPartPos;
@@ -171,7 +171,7 @@ public class MysteryBoxManager extends SavedData {
                         .setValue(MysteryBoxBlock.PART, true)
                         .setValue(MysteryBoxBlock.ACTIVE, false), 3);
                 }
-                
+
                 level.setBlock(pair.mainPartPos, MysteryBoxSystem.MYSTERY_BOX.get().defaultBlockState()
                     .setValue(MysteryBoxBlock.FACING, pair.facing)
                     .setValue(MysteryBoxBlock.PART, false)
@@ -182,7 +182,7 @@ public class MysteryBoxManager extends SavedData {
                     .setValue(MysteryBoxBlock.PART, true)
                     .setValue(MysteryBoxBlock.OPEN, false)
                     .setValue(MysteryBoxBlock.ACTIVE, true), 3);
-                
+
                 this.currentActiveMysteryBoxPair = pair;
                 this.isLocked = locked;
                 this.setDirty();
@@ -191,17 +191,18 @@ public class MysteryBoxManager extends SavedData {
         }
     }
 
+
     public void setupInitialMysteryBox(ServerLevel level, int initialScanRadius) {
         this.currentActiveMysteryBoxPair = null;
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<BlockPos> registeredPositions = worldConfig.getMysteryBoxPositions();
-        
+
         List<MysteryBoxPair> potentialBoxPairs = new ArrayList<>();
         Set<BlockPos> processedMainPositions = new HashSet<>();
 
         for (BlockPos pos : registeredPositions) {
             if (processedMainPositions.contains(pos)) continue;
-            
+
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof MysteryBoxBlock) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
@@ -224,7 +225,7 @@ public class MysteryBoxManager extends SavedData {
                     (otherState.getBlock() instanceof MysteryBoxBlock) &&
                     mainState.getValue(MysteryBoxBlock.FACING) == facing && !mainState.getValue(MysteryBoxBlock.PART) &&
                     otherState.getValue(MysteryBoxBlock.FACING) == facing && otherState.getValue(MysteryBoxBlock.PART)) {
-                    
+
                     MysteryBoxPair newPair = new MysteryBoxPair(mainPartPos.immutable(), otherPartPos.immutable(), facing);
                     if (!potentialBoxPairs.contains(newPair)) {
                         potentialBoxPairs.add(newPair);
@@ -282,13 +283,13 @@ public class MysteryBoxManager extends SavedData {
         this.currentActiveMysteryBoxPair.usesSinceLastMove = 0;
         this.currentActiveMysteryBoxPair.moveThreshold = generateRandomMoveThreshold();
         this.isLocked = false;
-        
+
         setDirty();
 
         level.getServer().getPlayerList().broadcastSystemMessage(
-            Component.translatable("message.zombierool.mystery_box.appeared", 
-                currentActiveMysteryBoxPair.mainPartPos.getX(), 
-                currentActiveMysteryBoxPair.mainPartPos.getY(), 
+            Component.translatable("message.zombierool.mystery_box.appeared",
+                currentActiveMysteryBoxPair.mainPartPos.getX(),
+                currentActiveMysteryBoxPair.mainPartPos.getY(),
                 currentActiveMysteryBoxPair.mainPartPos.getZ()).withStyle(ChatFormatting.GOLD), false
         );
     }
@@ -405,7 +406,7 @@ public class MysteryBoxManager extends SavedData {
         for (WeaponSystem.Definition def : WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
             ResourceLocation defLoc = new ResourceLocation(def.id != null && def.id.contains(":") ? def.id : "zombierool:" + def.id);
             if (worldConfig.isBoxWeaponDisabled(defLoc)) continue;
-            
+
             if (requiredTags != null && !requiredTags.isEmpty()) {
                 boolean matchesTag = false;
                 if (def.tags != null) {
@@ -418,14 +419,14 @@ public class MysteryBoxManager extends SavedData {
                 }
                 if (!matchesTag) continue;
             }
-            
+
             if (isWeaponOwnedBy(def, player)) continue;
-            
+
             if (isWonderWeapon(def)) {
                 if (playerHasWW) continue;
                 if (isWeaponOwnedByAnyone(def, level)) continue;
             }
-            
+
             return true;
         }
 
@@ -433,12 +434,12 @@ public class MysteryBoxManager extends SavedData {
             Item customItem = ForgeRegistries.ITEMS.getValue(customId);
             if (customItem != null && customItem != net.minecraft.world.item.Items.AIR) {
                 if (isCustomWeaponOwnedBy(customItem, player)) continue;
-                
+
                 if (worldConfig.getCustomWonderWeapons().contains(customId)) {
                     if (playerHasWW) continue;
                     if (isCustomWeaponOwnedByAnyone(customItem, level)) continue;
                 }
-                
+
                 return true;
             }
         }
@@ -448,7 +449,7 @@ public class MysteryBoxManager extends SavedData {
                 if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
                 if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
                 if (isUnmappedTaczOwnedBy(unmappedId, player)) continue;
-                
+
                 return true;
             }
         }
@@ -508,14 +509,14 @@ public class MysteryBoxManager extends SavedData {
                 if (worldConfig.isBoxWeaponDisabled(unmappedId)) continue;
                 if (!worldConfig.getEnabledUnmappedWeapons().contains(unmappedId)) continue;
                 if (isUnmappedTaczOwnedBy(unmappedId, player)) continue;
-                
+
                 ItemStack wep = WeaponFacade.createUnmappedTaczWeaponStack(unmappedId, false);
                 if (wep != null && !wep.isEmpty()) candidates.add(wep);
             }
         }
 
         if (candidates.isEmpty()) {
-            return ItemStack.EMPTY; 
+            return ItemStack.EMPTY;
         }
         return candidates.get(random.nextInt(candidates.size()));
     }
@@ -537,13 +538,13 @@ public class MysteryBoxManager extends SavedData {
 
         WorldConfig worldConfig = WorldConfig.get(level);
         Set<BlockPos> worldConfigBoxPositions = worldConfig.getMysteryBoxPositions();
-        
+
         this.registeredMysteryBoxLocations.clear();
         Set<BlockPos> processedMainPositions = new HashSet<>();
 
         for (BlockPos pos : worldConfigBoxPositions) {
             if (processedMainPositions.contains(pos)) continue;
-            
+
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof MysteryBoxBlock) {
                 boolean isOtherPart = state.getValue(MysteryBoxBlock.PART);
@@ -573,7 +574,7 @@ public class MysteryBoxManager extends SavedData {
                 availableLocations.add(pair);
             }
         }
-        
+
         if (availableLocations.isEmpty()) {
             availableLocations.addAll(registeredMysteryBoxLocations);
             if (currentActiveMysteryBoxPair != null) availableLocations.remove(currentActiveMysteryBoxPair);
@@ -608,7 +609,7 @@ public class MysteryBoxManager extends SavedData {
                 .setValue(MysteryBoxBlock.PART, true)
                 .setValue(MysteryBoxBlock.OPEN, false)
                 .setValue(MysteryBoxBlock.ACTIVE, true), 3);
-            
+
             this.currentActiveMysteryBoxPair = new MysteryBoxPair(
                 chosenNewLocationPair.mainPartPos,
                 chosenNewLocationPair.otherPartPos,
@@ -616,15 +617,15 @@ public class MysteryBoxManager extends SavedData {
             );
             this.currentActiveMysteryBoxPair.usesSinceLastMove = 0;
             this.currentActiveMysteryBoxPair.moveThreshold = generateRandomMoveThreshold();
-            
+
             level.getServer().getPlayerList().broadcastSystemMessage(
-                Component.translatable("message.zombierool.mystery_box.reappeared", 
-                    currentActiveMysteryBoxPair.mainPartPos.getX(), 
-                    currentActiveMysteryBoxPair.mainPartPos.getY(), 
+                Component.translatable("message.zombierool.mystery_box.reappeared",
+                    currentActiveMysteryBoxPair.mainPartPos.getX(),
+                    currentActiveMysteryBoxPair.mainPartPos.getY(),
                     currentActiveMysteryBoxPair.mainPartPos.getZ()).withStyle(ChatFormatting.AQUA), false
             );
         }
-        
+
         setDirty();
     }
 }

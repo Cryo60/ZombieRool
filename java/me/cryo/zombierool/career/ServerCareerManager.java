@@ -16,7 +16,9 @@ public class ServerCareerManager {
     private static final Map<UUID, Map<String, String>> playerEquippedSkins = new ConcurrentHashMap<>();
 
     public static void setEquippedCamos(ServerPlayer player, Map<String, String> camos) {
-        playerEquippedCamos.put(player.getUUID(), new ConcurrentHashMap<>(camos));
+        var active=new ConcurrentHashMap<>(camos);
+        active.values().removeIf("camo_resprune"::equals);
+        playerEquippedCamos.put(player.getUUID(),active);
         updateInventoryVisuals(player);
     }
 
@@ -49,7 +51,7 @@ public class ServerCareerManager {
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (WeaponFacade.isWeapon(stack)) {
-                String wId = WeaponFacade.getWeaponId(stack).replace("zombierool:", "");
+                String wId = WeaponFacade.getCareerWeaponId(stack);
                 String camo = camos.getOrDefault(wId, "");
                 String skin = skins.getOrDefault(wId, "");
 

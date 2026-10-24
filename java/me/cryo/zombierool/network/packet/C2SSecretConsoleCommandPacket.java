@@ -37,6 +37,7 @@ public class C2SSecretConsoleCommandPacket {
     }
 
     private static void sendLog(ServerPlayer player, String message) {
+        if(message.length()>4096)message=message.substring(0,4096)+"…";
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new S2CSecretConsoleLogPacket("§7" + message));
     }
 
@@ -52,45 +53,50 @@ public class C2SSecretConsoleCommandPacket {
             String cmd = msg.command.trim();
 
             try {
+                String debugResult=me.cryo.zombierool.gameplay.DebugConsole.execute(player,cmd);
+                if(debugResult!=null){sendLog(player,debugResult);return;}
                 if (cmd.startsWith("lua ")) {
-                    WaveManager.setCheatsUsed(true); 
+                    WaveManager.setCheatsUsed(true);
                     String code = cmd.substring(4);
                     String result = LuaScriptManager.executeString(code);
                     sendLog(player, result);
-                } 
+                }
                 else if ((cmd.equals("cat") || cmd.equals("mrchief"))) {
                     WaveManager.setCheatsUsed(true);
                     me.cryo.zombierool.gameplay.MrChiefEasterEgg.queueNextWave(player);
                     sendLog(player, net.minecraft.network.chat.Component.translatable("gui.zombierool.console.mr_chief_queued").getString());
                 }
+                else if (cmd.equals("ingot") || cmd.equals("ingot_sale")) {
+                    WaveManager.setCheatsUsed(true);
+                    me.cryo.zombierool.gameplay.IngotSaleDrops.queue(player);
+                    sendLog(player,net.minecraft.network.chat.Component.translatable("gui.zombierool.console.ingot_queued").getString());
+                }
                 else if (cmd.startsWith("points ")) {
-                    WaveManager.setCheatsUsed(true); 
+                    WaveManager.setCheatsUsed(true);
                     int amount = Integer.parseInt(cmd.substring(7).trim());
                     PointManager.modifyScore(player, amount);
                     sendLog(player, "§aPoints updated by " + amount);
-                } 
+                }
                 else if (cmd.startsWith("wave ")) {
-                    WaveManager.setCheatsUsed(true); 
+                    WaveManager.setCheatsUsed(true);
                     int wave = Integer.parseInt(cmd.substring(5).trim());
-                    WaveManager.forceSetWave(level, wave);
-                    sendLog(player, "§aWave forced to " + wave);
-                } 
+                    if(WaveManager.forceSetWave(level, wave))sendLog(player, "§aWave forced to " + wave);
+                    else sendLog(player,net.minecraft.network.chat.Component.translatable("message.zombierool.wave.start_required").getString());
+                }
                 else if (cmd.equals("killall")) {
-                    WaveManager.setCheatsUsed(true); 
+                    WaveManager.setCheatsUsed(true);
                     int count = 0;
                     for (net.minecraft.world.entity.Entity e : level.getAllEntities()) {
-                        if (e instanceof me.cryo.zombierool.entity.ZombieEntity ||
-                            e instanceof me.cryo.zombierool.entity.CrawlerEntity ||
-                            e instanceof me.cryo.zombierool.entity.HellhoundEntity) {
+                        if (e.isAlive()&&me.cryo.zombierool.gameplay.DebugConsole.enemy(e)) {
                             ((LivingEntity) e).setHealth(0);
                             ((LivingEntity) e).die(level.damageSources().generic());
                             count++;
                         }
                     }
                     sendLog(player, "§aKilled " + count + " active zombies.");
-                } 
+                }
                 else if (cmd.startsWith("weapon ")) {
-                    WaveManager.setCheatsUsed(true); 
+                    WaveManager.setCheatsUsed(true);
                     String id = cmd.substring(7).trim();
                     net.minecraft.world.item.ItemStack weapon = WeaponFacade.createWeaponStack(id, false, player);
                     if (!weapon.isEmpty()) {
@@ -99,48 +105,33 @@ public class C2SSecretConsoleCommandPacket {
                     } else {
                         sendLog(player, "§cUnknown weapon ID.");
                     }
-                } 
-                else if (cmd.equals("god") || cmd.equals("noclip")) {
-                    WaveManager.setCheatsUsed(true); 
-                    if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
-                        player.setGameMode(GameType.SURVIVAL);
-                        sendLog(player, "§aGamemode set to Survival.");
-                    } else {
-                        player.setGameMode(cmd.equals("noclip") ? GameType.SPECTATOR : GameType.CREATIVE);
-                        sendLog(player, "§aGamemode set to " + (cmd.equals("noclip") ? "Spectator" : "Creative"));
-                    }
-                } 
+                }
                 else if (cmd.equals("reload scripts")) {
                     LuaScriptManager.loadScripts(level);
                     sendLog(player, "§aLua scripts reloaded successfully.");
-                } 
+                }
                 else if (cmd.equals("reload weapons")) {
                     String weaponPayload = WeaponSystem.Loader.applyWorldWeapons(level);
                     TacZIntegration.syncTaczGunData();
                     NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new me.cryo.zombierool.network.packet.S2CReloadWeaponsPacket(weaponPayload));
                     sendLog(player, "§aWeapon definitions reloaded and synced.");
-                } 
+                }
                 else if (cmd.equals("zombies")) {
                     int count = 0;
                     for (net.minecraft.world.entity.Entity e : level.getAllEntities()) {
-                        if (e instanceof me.cryo.zombierool.entity.ZombieEntity ||
+                        if (e.isAlive() && (e instanceof me.cryo.zombierool.entity.ZombieEntity ||
                             e instanceof me.cryo.zombierool.entity.CrawlerEntity ||
-                            e instanceof me.cryo.zombierool.entity.HellhoundEntity) {
+                            e instanceof me.cryo.zombierool.entity.HellhoundEntity)) {
                             count++;
                         }
                     }
                     sendLog(player, "§bThere are currently " + count + " active zombies in the world.");
-                } 
+                }
                 else if (cmd.equals("tp_last")) {
-                    LivingEntity last = null;
-                    for (net.minecraft.world.entity.Entity e : level.getAllEntities()) {
-                        if (e instanceof me.cryo.zombierool.entity.ZombieEntity ||
-                            e instanceof me.cryo.zombierool.entity.CrawlerEntity ||
-                            e instanceof me.cryo.zombierool.entity.HellhoundEntity) {
-                            last = (LivingEntity) e;
-                        }
-                    }
+                    LivingEntity last = me.cryo.zombierool.gameplay.DebugConsole.lastEnemy(level);
                     if (last != null) {
+                        WaveManager.setCheatsUsed(true);
+                        me.cryo.zombierool.gameplay.TraversalMotion.cancel(last);
                         last.teleportTo(player.getX(), player.getY(), player.getZ());
                         sendLog(player, "§aTeleported a zombie to your location.");
                     } else {

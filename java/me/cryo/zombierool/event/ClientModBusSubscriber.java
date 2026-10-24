@@ -42,6 +42,7 @@ public class ClientModBusSubscriber {
         event.enqueueWork(() -> {
             MenuScreens.register(BlindBuySystem.MENU.get(), BlindBuySystem.BlindBuyManagerScreen::new);
             ItemBlockRenderTypes.setRenderLayer(BlindBuySystem.BLOCK.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(BlindBuySystem.RACK.get(), RenderType.cutout());
 
             MenuScreens.register(BuyWallWeaponSystem.MENU.get(), BuyWallWeaponSystem.WallWeaponManagerScreen::new);
             ItemBlockRenderTypes.setRenderLayer(BuyWallWeaponSystem.BLOCK.get(), RenderType.cutout());
@@ -86,6 +87,9 @@ public class ClientModBusSubscriber {
     @SuppressWarnings("unchecked")
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(me.cryo.zombierool.block.system.BuildableBlocks.SUPPORT.get(),me.cryo.zombierool.client.renderer.BuildablePartRenderer::new);
+        event.registerBlockEntityRenderer(me.cryo.zombierool.block.system.MapAuthorSystem.CERBERUS_TYPE.get(),me.cryo.zombierool.client.renderer.CerberusRenderer::new);
+        event.registerBlockEntityRenderer(me.cryo.zombierool.block.system.MapAuthorSystem.SOUL_TYPE.get(), me.cryo.zombierool.client.renderer.SoulChestAuraRenderer::new);
         event.registerBlockEntityRenderer((BlockEntityType<TraitorBlockEntity>)(Object)ZombieroolModBlockEntities.TRAITOR.get(), TraitorBlockRenderer::new);
         event.registerBlockEntityRenderer(me.cryo.zombierool.init.ZombieroolModExtraBlockEntities.DEFENSE_DOOR.get(), DefenseDoorSystem.DefenseDoorRenderer::new);
 
@@ -109,6 +113,6 @@ public class ClientModBusSubscriber {
         event.registerSpriteSet(ZombieroolModParticleTypes.BLOOD_STAIN.get(), BloodStainParticle::provider);
         event.registerSpriteSet(ZombieroolModParticleTypes.WISH.get(), WishParticle::provider);
         event.registerSpriteSet(ZombieroolModParticleTypes.ON_THE_HOUSE.get(), OnTheHouseParticle::provider);
-        event.registerSpriteSet(ZombieroolModParticleTypes.BLACK_CROW.get(), BlackCrowParticle::provider); 
+        event.registerSpriteSet(ZombieroolModParticleTypes.BLACK_CROW.get(), BlackCrowParticle::provider);
     }
 }

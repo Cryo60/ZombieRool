@@ -102,6 +102,20 @@
     "ammo_id": "tacz:9mm",
     "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "ronmc:ump45",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "mw19:smg45",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      }
+    ]
   }
 }

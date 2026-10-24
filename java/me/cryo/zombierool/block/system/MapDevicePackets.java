@@ -34,8 +34,11 @@ public final class MapDevicePackets {
         public static void handle(Save m,Supplier<NetworkEvent.Context> c) {
             c.get().enqueueWork(() -> {
                 ServerPlayer p=c.get().getSender();
-                if(p==null || !p.isCreative() || m.config==null || p.distanceToSqr(m.pos.getX()+.5,m.pos.getY()+.5,m.pos.getZ()+.5)>64 || !p.serverLevel().hasChunkAt(m.pos)) return;
+                if(p==null || !p.isCreative() || m.config==null || (p.distanceToSqr(m.pos.getX()+.5,m.pos.getY()+.5,m.pos.getZ()+.5)>64&&!me.cryo.zombierool.gameplay.VehicleDecorPhysics.reachable(p.serverLevel(),m.pos,p.getEyePosition(),8)) || !p.serverLevel().hasChunkAt(m.pos)) return;
                 if(p.level().getBlockEntity(m.pos) instanceof MapDeviceSystem.Device d) {
+                    if(m.config.getBoolean("vehicleEdit")){if(d.kind()!=MapDeviceSystem.Kind.VEHICLE)return;var hit=p.level().clip(new net.minecraft.world.level.ClipContext(p.getEyePosition(),p.getEyePosition().add(p.getLookAngle().scale(6)),net.minecraft.world.level.ClipContext.Block.OUTLINE,net.minecraft.world.level.ClipContext.Fluid.NONE,p));if(hit.getType()!=net.minecraft.world.phys.HitResult.Type.BLOCK||!hit.getBlockPos().equals(m.pos))return;if(m.config.getBoolean("removeVehicle"))p.level().destroyBlock(m.pos,false,p);else open(p,d);return;}
+
+                    if(m.config.getBoolean("giveRouteTool")&&(d.kind()==MapDeviceSystem.Kind.TORNADO||d.kind()==MapDeviceSystem.Kind.DCA)){d.stop();d.configure(m.config);me.cryo.zombierool.gameplay.AmbientScenery.giveRouteTool(p,d);return;}
                     d.stop(); d.configure(m.config);
                     if(m.preview && MapDeviceSystem.isEmitter(d.kind())) {
                         if(!d.emit()) p.displayClientMessage(net.minecraft.network.chat.Component.literal(d.lastError),false);

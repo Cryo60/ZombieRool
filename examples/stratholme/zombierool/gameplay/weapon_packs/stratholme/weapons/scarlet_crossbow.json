@@ -1,0 +1,99 @@
+{
+  "id": "zombierool:scarlet_crossbow",
+  "name": "weapon.zombierool.scarlet_crossbow",
+  "type": "PROJECTILE",
+  "is_wonder_weapon": false,
+  "tags": [
+    "fantasy",
+    "warcraft",
+    "ranged",
+    "ordinary"
+  ],
+  "stats": {
+    "damage": 20,
+    "fire_rate": 36,
+    "range": 64,
+    "damage_falloff_start": 24,
+    "damage_falloff_end": 64,
+    "damage_falloff_min": 0.6
+  },
+  "ammo": {
+    "clip_size": 1,
+    "max_reserve": 36,
+    "reload_time": 36,
+    "reload_type": "MAGAZINE"
+  },
+  "ballistics": {
+    "velocity": 3.4,
+    "gravity": true,
+    "type": "PROJECTILE",
+    "trail_vfx": "NONE",
+    "spread": 0.2
+  },
+  "sounds": {
+    "fire": "zombierool:map_bow_release",
+    "fire_pap": "zombierool:map_bow_release",
+    "reload": "zombierool:map_bow_pull",
+    "dry": "minecraft:block.dispenser.fail",
+    "equip": "minecraft:item.armor.equip_leather"
+  },
+  "pack_a_punch": {
+    "name": "Scarlet Crossbow +",
+    "damage_bonus": 20,
+    "reserve_bonus": 18,
+    "reload_speed_mult": 0.8
+  },
+  "weapon_kind": "crossbow",
+  "animation": {
+    "fpRx": [
+      -4,
+      55,
+      -8
+    ],
+    "fpRy": [
+      0,
+      -30,
+      0
+    ],
+    "fpRz": [
+      0,
+      25,
+      3
+    ],
+    "fpY": [
+      0.22,
+      -0.1,
+      0
+    ],
+    "fpZ": [
+      -0.05,
+      0.1,
+      0.07
+    ],
+    "fpScale": [
+      0.82,
+      0,
+      0
+    ],
+    "tpX": [
+      -1.4,
+      0.75,
+      -0.1
+    ],
+    "tpY": [
+      -0.1,
+      0,
+      0
+    ],
+    "tpZ": [
+      -0.05,
+      0.3,
+      0
+    ],
+    "fpX": [
+      -0.1,
+      0,
+      0
+    ]
+  }
+}

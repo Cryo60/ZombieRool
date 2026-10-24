@@ -53,13 +53,16 @@ public class CustomProjectileHandler {
                     if ("RPG".equals(trailVfx)) {
                         sl.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, arrow.getX(), arrow.getY(), arrow.getZ(), 2, 0.1, 0.1, 0.1, 0.02);
                     } else if ("RAYGUN".equals(trailVfx)) {
-                        Vector3f outerColor = isPap ? new Vector3f(1.0f, 0.0f, 0.0f) : new Vector3f(0.0f, 1.0f, 0.0f);
-                        Vector3f coreColor = isPap ? new Vector3f(1.0f, 0.4f, 0.0f) : new Vector3f(0.5f, 1.0f, 0.5f);
-                        sl.sendParticles(new DustParticleOptions(outerColor, 1.5f), arrow.getX(), arrow.getY(), arrow.getZ(), 3, 0.05, 0.05, 0.05, 0);
-                        sl.sendParticles(new DustParticleOptions(coreColor, 0.8f), arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0.02, 0.02, 0.02, 0);
+                        var end=arrow.position();
+                        var start=end.subtract(arrow.getDeltaMovement());
+                        me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
+                            net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(()->sl.getChunkAt(arrow.blockPosition())),
+                            new me.cryo.zombierool.network.packet.S2CWeaponVfxPacket("RAYGUN_TRAIL",start,end,isPap,false));
                     } else if ("FIREBALL".equals(trailVfx)) {
                         sl.sendParticles(ParticleTypes.FLAME, arrow.getX(), arrow.getY(), arrow.getZ(), 3, 0.1, 0.1, 0.1, 0.02);
                         sl.sendParticles(ParticleTypes.SMOKE, arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0.05, 0.05, 0.05, 0.0);
+                    } else if ("SHADOW".equals(trailVfx)) {
+                        sl.sendParticles(ParticleTypes.WITCH, arrow.getX(), arrow.getY(), arrow.getZ(), 3, .04, .04, .04, 0);
                     } else if ("LIGHTNING".equals(trailVfx)) {
                         sl.sendParticles(ParticleTypes.ELECTRIC_SPARK, arrow.getX(), arrow.getY(), arrow.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
                         sl.sendParticles(new DustParticleOptions(new Vector3f(0.5f, 0.8f, 1.0f), 1.0f), arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0,0,0,0);
@@ -72,9 +75,9 @@ public class CustomProjectileHandler {
                         }
                         if (target == null || !target.isAlive() || target.distanceToSqr(arrow) > 9.0) {
                             AABB searchBox = arrow.getBoundingBox().inflate(3.0);
-                            List<LivingEntity> potentialTargets = sl.getEntitiesOfClass(LivingEntity.class, searchBox, e -> 
+                            List<LivingEntity> potentialTargets = sl.getEntitiesOfClass(LivingEntity.class, searchBox, e ->
                                 e.isAlive() && e != arrow.getOwner() &&
-                                (e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
+                                (e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
                             );
                             if (!potentialTargets.isEmpty()) {
                                 potentialTargets.sort(Comparator.comparingDouble(e -> e.distanceToSqr(arrow)));
@@ -84,7 +87,7 @@ public class CustomProjectileHandler {
                                 tag.remove("zr_needle_target");
                             }
                         }
-                        
+
                         if (target != null) {
                             Vec3 targetPos = new Vec3(target.getX(), target.getY() + target.getBbHeight() * 0.85, target.getZ());
                             Vec3 dir = targetPos.subtract(arrow.position()).normalize();
@@ -115,6 +118,7 @@ public class CustomProjectileHandler {
 
                 if (event.getRayTraceResult().getType() == HitResult.Type.ENTITY) {
                     EntityHitResult ehr = (EntityHitResult) event.getRayTraceResult();
+                    if(ehr.getEntity() instanceof me.cryo.zombierool.entity.SpecialEnemyEntity special)special.recordShotImpact(ehr.getLocation(),arrow.getOwner());
                     if (ehr.getEntity() == arrow.getOwner()) {
                         event.setCanceled(true);
                         return;
@@ -128,7 +132,7 @@ public class CustomProjectileHandler {
                         if (target instanceof LivingEntity livingTarget && arrow.getOwner() instanceof ServerPlayer shooter) {
                             float damage = tag.getFloat(ZombieroolKeys.DAMAGE);
                             boolean isPap = tag.getBoolean(ZombieroolKeys.PAP);
-                            boolean headshot = arrow.getY() > livingTarget.getY() + livingTarget.getBbHeight() * 0.85;
+                            boolean headshot = event.getRayTraceResult().getLocation().y > livingTarget.getY() + livingTarget.getBbHeight() * 0.85;
 
                             float finalDamage = DamageManager.calculateDamage(shooter, livingTarget, damage, headshot, shooter.getMainHandItem());
 
@@ -141,30 +145,30 @@ public class CustomProjectileHandler {
                                         ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:impact_flesh")),
                                         SoundSource.PLAYERS, 0.5f, 1.0f + (livingTarget.getRandom().nextFloat() * 0.2f));
                                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), new S2CDisplayHitmarkerPacket());
-                                
+
                                 CompoundTag targetData = livingTarget.getPersistentData();
                                 int needles = targetData.getInt("zr_needles_stuck");
                                 long lastNeedleTick = targetData.getLong("zr_last_needle_tick");
                                 long currentTick = livingTarget.level().getGameTime();
-                                
+
                                 if (currentTick - lastNeedleTick > 60) {
                                     needles = 0;
                                 }
-                                
+
                                 needles++;
-                                int threshold = isPap ? 5 : 7; 
-                                
+                                int threshold = isPap ? 5 : 7;
+
                                 if (needles >= threshold) {
                                     needles = 0;
                                     float radius = isPap ? 4.5f : 3.0f;
                                     float explosionDamage = isPap ? 400.0f : 200.0f;
-                                    
+
                                     ExplosionControl.doCustomExplosion(
                                         livingTarget.level(), shooter, livingTarget.position().add(0, livingTarget.getBbHeight() / 2, 0),
                                         explosionDamage, radius, 1.0f, 0.0f, 0.0f, 0.2f, "EXPLOSION", "zombierool:needler_supercombine", isPap
                                     );
                                 }
-                                
+
                                 targetData.putInt("zr_needles_stuck", needles);
                                 targetData.putLong("zr_last_needle_tick", currentTick);
                             }
@@ -185,10 +189,10 @@ public class CustomProjectileHandler {
 
                 if (tag.getBoolean(ZombieroolKeys.EXPLOSIVE)) {
                     if (!arrow.level().isClientSide) {
-                        if (arrow.tickCount < 4) {
+                        if (arrow.tickCount < 4 && !"RAYGUN_IMPACT".equals(tag.getString(ZombieroolKeys.EXP_VFX))) {
                             if (event.getRayTraceResult().getType() == HitResult.Type.ENTITY) {
                                 Entity hitEntity = ((EntityHitResult) event.getRayTraceResult()).getEntity();
-                                hitEntity.hurt(arrow.damageSources().thrown(arrow, arrow.getOwner()), 10.0f); 
+                                hitEntity.hurt(arrow.damageSources().thrown(arrow, arrow.getOwner()), 10.0f);
                             }
                             arrow.level().playSound(null, arrow.getX(), arrow.getY(), arrow.getZ(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0f, 0.8f);
                             arrow.discard();
@@ -254,7 +258,7 @@ public class CustomProjectileHandler {
                         float damage = tag.getFloat(ZombieroolKeys.DAMAGE);
                         boolean headshot = false;
 
-                        if (arrow.getY() > livingTarget.getY() + livingTarget.getBbHeight() * 0.85) {
+                        if (event.getRayTraceResult().getLocation().y > livingTarget.getY() + livingTarget.getBbHeight() * 0.85) {
                             headshot = true;
                         }
 
@@ -268,6 +272,7 @@ public class CustomProjectileHandler {
                         }
 
                         if (DamageManager.applyDamage(livingTarget, shooter.damageSources().playerAttack(shooter), finalDamage)) {
+                            if(tag.getString("zr_fantasy_element").equals("FIREBALL"))livingTarget.setSecondsOnFire(2);
                             livingTarget.level().playSound(null, livingTarget.getX(), livingTarget.getY(), livingTarget.getZ(),
                                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:impact_flesh")),
                                     SoundSource.PLAYERS, 0.5f, 1.0f + (livingTarget.getRandom().nextFloat() * 0.2f));
@@ -282,7 +287,7 @@ public class CustomProjectileHandler {
                 } else if (event.getRayTraceResult().getType() == HitResult.Type.BLOCK) {
                     BlockPos hitPos = ((net.minecraft.world.phys.BlockHitResult) event.getRayTraceResult()).getBlockPos();
                     net.minecraft.world.level.block.state.BlockState state = arrow.level().getBlockState(hitPos);
-                    
+
                     boolean passThrough = false;
                     if (me.cryo.zombierool.block.system.DefenseWallSystem.bulletsPass(state)) {
                         passThrough = true;
@@ -291,9 +296,9 @@ public class CustomProjectileHandler {
                     } else if (state.getBlock() instanceof me.cryo.zombierool.block.system.DefenseDoorSystem.BaseDefenseDoor || state.getBlock() instanceof me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock) {
                         passThrough = true;
                     }
-                    
+
                     if (passThrough) {
-                        event.setCanceled(true); 
+                        event.setCanceled(true);
                         return;
                     }
 

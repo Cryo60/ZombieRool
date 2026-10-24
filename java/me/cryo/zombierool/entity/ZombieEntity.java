@@ -49,7 +49,13 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         if (isAlive() && !level().isClientSide && !isCrawler()) playSound(ZombieroolModSounds.ZOMBIE_STEP.get(), 0.4f, 0.95f + random.nextFloat()*0.1f);
     }
     public static final EntityType<ZombieEntity> TYPE = ZombieroolModEntities.ZOMBIE.get();
-    
+
+    private static final EntityDataAccessor<CompoundTag> MAP_OUTFIT=SynchedEntityData.defineId(ZombieEntity.class,EntityDataSerializers.COMPOUND_TAG);
+    public CompoundTag mapOutfit(){return entityData.get(MAP_OUTFIT);}
+    public void mapOutfit(CompoundTag value){entityData.set(MAP_OUTFIT,value.copy());}
+    private static final EntityDataAccessor<Boolean> INFERNO=SynchedEntityData.defineId(ZombieEntity.class,EntityDataSerializers.BOOLEAN);
+    public boolean isInferno(){return entityData.get(INFERNO);}
+    public void setInferno(boolean value){entityData.set(INFERNO,value);}
     private int ambientSoundCooldown = 0;
     private double baseSpeed = 0.23;
     private static final Random STATIC_RANDOM = new Random();
@@ -78,6 +84,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
+        this.entityData.define(INFERNO,false);entityData.define(MAP_OUTFIT,new CompoundTag());
         this.entityData.define(IS_SUPER_SPRINTER, false);
         this.entityData.define(IS_FAST_CRAWLER, false);
     }
@@ -106,11 +113,13 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("IsFastCrawler", this.isFastCrawler());
+        compound.putBoolean("Inferno",isInferno());compound.put("MapOutfit",mapOutfit().copy());
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
+        setInferno(compound.getBoolean("Inferno"));mapOutfit(compound.getCompound("MapOutfit"));
         if (compound.contains("IsFastCrawler")) {
             this.setFastCrawler(compound.getBoolean("IsFastCrawler"));
         }
@@ -152,9 +161,9 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
             if (this.deathTime > 0) {
                 return EntityDimensions.fixed(1.7f, 1.0f).scale(scale);
             }
-            return EntityDimensions.fixed(1.05f, 1.2f).scale(scale);
+            return EntityDimensions.fixed(.85f, .85f).scale(scale);
         }
-        return EntityDimensions.fixed(0.5f, 1.95f).scale(scale); 
+        return EntityDimensions.fixed(0.5f, 1.95f).scale(scale);
     }
 
     @Override
@@ -176,10 +185,13 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
         this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2, true) {
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
+                if(me.cryo.zombierool.gameplay.SubmergedMelee.canReach(this.mob,entity))return this.mob.distanceToSqr(entity)+.1;
                 return (this.mob.getBbWidth() * 2.5F * this.mob.getBbWidth() * 2.5F + entity.getBbWidth());
             }
         });
-        this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(4, new RandomLookAroundGoal(this){
+            @Override public boolean canUse(){return ZombieEntity.this.getTarget()==null&&super.canUse();}
+        });
         this.goalSelector.addGoal(3, new BreakDoorGoal(this, enumDifficulty -> true) {
             @Override
             public boolean canUse() {
@@ -208,6 +220,8 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
             return;
         }
 
+        var original=me.cryo.zombierool.gameplay.EncounterAudio.sound(this,"idle");
+        if(original!=null){level().playSound(null,getX(),getY(),getZ(),original,SoundSource.HOSTILE,.75f,1);return;}
         double currentSpeed = this.getAttribute(Attributes.MOVEMENT_SPEED).getValue();
         SoundEvent sound = null;
 
@@ -232,9 +246,9 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public boolean doHurtTarget(Entity entity) {
-        float damage = this.isCrawler() ? 1.0f : 2.0f;
+        float damage = me.cryo.zombierool.gameplay.NativeMapActors.owns(this) ? (float)getAttributeValue(Attributes.ATTACK_DAMAGE) : this.isCrawler() ? 1.0f : 2.0f;
         boolean flag = entity.hurt(this.damageSources().mobAttack(this), damage);
-        
+
         if (flag && !this.level().isClientSide) {
             SoundEvent attackSound;
             if (isCrawler()) {
@@ -243,6 +257,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
                 int idx = 1 + this.random.nextInt(16);
                 attackSound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "attack" + idx));
             }
+            var original=me.cryo.zombierool.gameplay.EncounterAudio.sound(this,"attack");if(original!=null)attackSound=original;
             if (attackSound != null) {
                 this.level().playSound(null, this.getX(), this.getY(), this.getZ(), attackSound, SoundSource.HOSTILE, 1.0F, 1.0F);
             }
@@ -268,6 +283,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public SoundEvent getHurtSound(DamageSource source) {
+        var original=me.cryo.zombierool.gameplay.EncounterAudio.sound(this,"hurt");if(original!=null)return me.cryo.zombierool.gameplay.EncounterAudio.allowHurt(this)?original:null;
         if (isCrawler()) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_hurt"));
         int idx = 1 + this.random.nextInt(2);
         return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "hurt" + idx));
@@ -275,6 +291,7 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     @Override
     public SoundEvent getDeathSound() {
+        var original=me.cryo.zombierool.gameplay.EncounterAudio.sound(this,"death");if(original!=null)return original;
         if (isCrawler()) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "crawler_death"));
         int idx = 1 + this.random.nextInt(10);
         return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "death" + idx));
@@ -282,9 +299,10 @@ public class ZombieEntity extends AbstractZombieRoolEntity {
 
     public static void init() {}
 
+    public static final double DEFAULT_MOVEMENT_SPEED=.19;
     public static AttributeSupplier.Builder createAttributes() {
         AttributeSupplier.Builder builder = Mob.createMobAttributes();
-        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.19);
+        builder = builder.add(Attributes.MOVEMENT_SPEED, DEFAULT_MOVEMENT_SPEED);
         builder = builder.add(Attributes.MAX_HEALTH, 4);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 2);

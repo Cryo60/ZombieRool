@@ -31,11 +31,11 @@ public final class CherryDischarge {
 
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
                 player.getBoundingBox().inflate(3.0), CherryDischarge::isTarget)) {
-            // A lethal discharge still hits a living zombie. Reject existing corpses
-            // before damage, and don't play the reaction when the hit is cancelled.
+            // Check again after damage: the death handler may already have made a corpse.
             if (!isTarget(target) || !DamageManager.applyDamage(target,
                     level.damageSources().playerAttack(player), 5.0f)) continue;
-            if (target.isAlive()) target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
+            if (!isTarget(target)) continue;
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 4));
             if (target instanceof ZombieEntity || target instanceof CrawlerEntity || target instanceof HellhoundEntity) {
                 level.playSound(null, target.getX(), target.getY(), target.getZ(),
                         ZombieroolModSounds.ZOMBIE_ELEC.get(), SoundSource.HOSTILE, 0.4f, 1.0f);

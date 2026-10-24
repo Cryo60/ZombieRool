@@ -145,9 +145,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         Vec3 visualStartPos = getVisualMuzzlePos(player);
 
         Vec3 maxEndPos = eyePos.add(lookVec.scale(7.5));
-        net.minecraft.world.phys.HitResult hit = player.level().clip(new net.minecraft.world.level.ClipContext(
-                eyePos, maxEndPos, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, null
-        ));
+        var hit = me.cryo.zombierool.gameplay.WeaponEffectTrace.clip(player.level(),eyePos,maxEndPos,player);
         Vec3 finalEndPos = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? maxEndPos : hit.getLocation();
 
         AABB flameArea = new AABB(eyePos, finalEndPos).inflate(1.75);
@@ -176,7 +174,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                 target -> target != player && target.isAlive() && !(target instanceof Player)
                         && !(target instanceof net.minecraft.world.entity.TamableAnimal && ((net.minecraft.world.entity.TamableAnimal)target).isTame())
                         && target.getBoundingBox().intersects(flameArea)
-                        && player.hasLineOfSight(target)
+                        && me.cryo.zombierool.gameplay.WeaponEffectTrace.clip(player.level(),eyePos,target.getBoundingBox().getCenter(),player).getType()==net.minecraft.world.phys.HitResult.Type.MISS
         );
 
         long currentTick = player.level().getGameTime();
@@ -185,6 +183,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
             if (currentTick - lastDmg >= 5) {
                 target.getPersistentData().putLong("LastFlameDmgTick", currentTick);
 
+                me.cryo.zombierool.gameplay.InfernoZombie.ordinaryBurn(target,8);
                 float totalDamage = flatDamage + (target.getMaxHealth() * percentageDamage);
                 target.getPersistentData().putBoolean(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG, true);
                 target.getPersistentData().putBoolean("zombierool:no_gore", true);
@@ -194,11 +193,11 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
 
                 if (target instanceof Monster) {
                     target.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 10, 0));
-                    me.cryo.zombierool.gameplay.PointManager.modifyScore(player, 10);
+                    me.cryo.zombierool.gameplay.PointManager.awardEnemyPoints(player, target, 10);
                 }
             }
 
-            target.setSecondsOnFire(8);
+            me.cryo.zombierool.gameplay.InfernoZombie.ordinaryBurn(target,8);
 
             if (isPap) {
                 if (!target.getPersistentData().getBoolean("BlueFire")) {
@@ -224,10 +223,10 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         boolean upgraded = isPackAPunched(stack);
         String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
         if (nameKey == null) nameKey = "Unknown Weapon";
-        
-        MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
+
+        MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ?
                 Component.translatable(nameKey) : Component.literal(nameKey);
-        MutableComponent nameComponent = Component.literal((upgraded ? "§6" : "§4")).append(baseComp);
+        MutableComponent nameComponent = Component.empty().append(baseComp).withStyle(upgraded?ChatFormatting.GOLD:ChatFormatting.DARK_RED);
 
         int currentOverheat = getOverheat(stack);
         if (isOverheatLocked(stack)) {
@@ -381,7 +380,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
                                 continue;
                             }
                         } else if (target instanceof Monster) {
-                            target.setSecondsOnFire(4);
+                            me.cryo.zombierool.gameplay.InfernoZombie.ordinaryBurn(target,4);
                             if (patch.isBlue) {
                                 if (!target.getPersistentData().getBoolean("BlueFire")) {
                                     target.getPersistentData().putBoolean("BlueFire", true);

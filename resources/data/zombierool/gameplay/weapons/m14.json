@@ -98,6 +98,14 @@
   ],
   "tacz": {
     "gun_id": "tacz:mk14",
-    "ammo_id": "tacz:762x51"
+    "ammo_id": "tacz:762x51",
+    "fallbacks": [
+      {
+        "gun_id": "nmw2:ebr14"
+      },
+      {
+        "gun_id": "nmw2:so14"
+      }
+    ]
   }
 }

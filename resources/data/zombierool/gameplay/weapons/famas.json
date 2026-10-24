@@ -101,6 +101,20 @@
     "ammo_id": "tacz:556x45",
     "pap_attachments": {
       "scope": "tacz:red_dot"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "lradd:famas",
+        "pap_attachments": {
+          "scope": "tacz:red_dot"
+        }
+      },
+      {
+        "gun_id": "rainforest:famas",
+        "pap_attachments": {
+          "scope": "tacz:red_dot"
+        }
+      }
+    ]
   }
 }

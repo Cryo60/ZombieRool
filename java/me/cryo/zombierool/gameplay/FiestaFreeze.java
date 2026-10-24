@@ -36,7 +36,7 @@ public final class FiestaFreeze {
         if(!(event.getEntity() instanceof Mob mob))return;
         if(!frozen(mob)){release(mob);return;}
         Hold hold=held(mob).computeIfAbsent(mob,m->{
-            boolean original=previousNoAi(m.getPersistentData(),m.isNoAi());
+            boolean original=previousNoAi(m.getPersistentData(),TraversalMotion.previousNoAi(m));
             if(!m.level().isClientSide)m.getPersistentData().putBoolean(AI_BEFORE,original);
             return new Hold(m.position(),original);
         });
@@ -52,7 +52,7 @@ public final class FiestaFreeze {
     private static void release(Mob mob){
         Hold hold=held(mob).remove(mob);
         if(!mob.level().isClientSide&&(hold!=null||mob.getPersistentData().contains(AI_BEFORE))){
-            mob.setNoAi(hold!=null?hold.noAi:previousNoAi(mob.getPersistentData(),mob.isNoAi()));
+            mob.setNoAi(!mob.isAlive()||TraversalMotion.active(mob)||(hold!=null?hold.noAi:previousNoAi(mob.getPersistentData(),mob.isNoAi())));
             mob.getPersistentData().remove(AI_BEFORE);mob.setDeltaMovement(Vec3.ZERO);
         }
     }

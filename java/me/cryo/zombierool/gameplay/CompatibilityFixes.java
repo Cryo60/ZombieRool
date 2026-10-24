@@ -13,7 +13,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.*;
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid="zombierool")
 public final class CompatibilityFixes {
+ // Removed prototype registrations must not block loading an existing world.
+ @net.minecraftforge.eventbus.api.SubscribeEvent
+ public static void removedPrototypeMappings(net.minecraftforge.registries.MissingMappingsEvent event){
+  var retired=java.util.Set.of("elevator_control","elevator_sliding_door","elevator_selector");
+  for(var mapping:event.getMappings(net.minecraftforge.registries.ForgeRegistries.Keys.BLOCKS,"zombierool"))if(retired.contains(mapping.getKey().getPath()))mapping.ignore();
+  for(var mapping:event.getMappings(net.minecraftforge.registries.ForgeRegistries.Keys.ITEMS,"zombierool"))if(retired.contains(mapping.getKey().getPath()))mapping.ignore();
+  for(var mapping:event.getMappings(net.minecraftforge.registries.ForgeRegistries.Keys.BLOCK_ENTITY_TYPES,"zombierool"))if(retired.contains(mapping.getKey().getPath()))mapping.ignore();
+ }
+
  public static net.minecraft.resources.ResourceLocation resolveLegacySound(net.minecraft.resources.ResourceLocation sound){
   if(!sound.getNamespace().equals("zombierool"))return sound;
   int slash=sound.getPath().lastIndexOf('/');

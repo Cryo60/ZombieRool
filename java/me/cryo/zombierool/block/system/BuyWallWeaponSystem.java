@@ -129,7 +129,7 @@ public class BuyWallWeaponSystem {
 
     @SubscribeEvent
     public static void buildContents(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"))) {
+        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
             event.accept(ITEM.get());
         }
     }
@@ -344,16 +344,20 @@ public class BuyWallWeaponSystem {
         }
 
         @Override public BlockState getMimic() { return mimicBlockState; }
-        @Override 
-        public void setMimic(BlockState state) { 
-            this.mimicBlockState = state; 
+        @Override
+        public void setMimic(BlockState state) {
+            this.mimicBlockState = state;
             if (this.level != null && this.worldPosition != null) {
                 BlockState cur = this.level.getBlockState(this.worldPosition);
                 if (cur.hasProperty(BuyWallWeaponBlock.HAS_MIMIC)) {
                     this.level.setBlock(this.worldPosition, cur.setValue(BuyWallWeaponBlock.HAS_MIMIC, state != null), 3);
                 }
+                // Replacing an existing mimic leaves has_mimic=true. setBlock then sends
+                // nothing, so copied walls kept displaying the previous block entity NBT.
+                BlockState updated=this.level.getBlockState(this.worldPosition);
+                this.level.sendBlockUpdated(this.worldPosition,cur,updated,3);
             }
-            setChanged(); 
+            setChanged();
         }
 
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
@@ -478,7 +482,7 @@ public class BuyWallWeaponSystem {
                 .create(startX + 80, startY + 65, 100, 20, Component.literal("Redstone: "), (btn, val) -> currentRedstoneMode = val));
 
             this.addRenderableWidget(Button.builder(Component.literal("§aSave"), btn -> {
-                int p = 0; 
+                int p = 0;
                 try { p = Integer.parseInt(priceBox.getValue()); } catch(Exception e){}
                 NetworkHandler.INSTANCE.sendToServer(new C2SSetWallWeaponConfigPacket(this.menu.pos, p, currentRedstoneMode, this.menu.getSlot(0).getItem()));
                 this.minecraft.player.closeContainer();
@@ -494,25 +498,25 @@ public class BuyWallWeaponSystem {
     }
 
     public record C2SSetWallWeaponConfigPacket(BlockPos pos, int price, int redstoneMode, ItemStack stack) {
-        public static void encode(C2SSetWallWeaponConfigPacket pkt, FriendlyByteBuf buf) { 
-            buf.writeBlockPos(pkt.pos()); buf.writeInt(pkt.price()); buf.writeInt(pkt.redstoneMode()); buf.writeItem(pkt.stack()); 
+        public static void encode(C2SSetWallWeaponConfigPacket pkt, FriendlyByteBuf buf) {
+            buf.writeBlockPos(pkt.pos()); buf.writeInt(pkt.price()); buf.writeInt(pkt.redstoneMode()); buf.writeItem(pkt.stack());
         }
-        public static C2SSetWallWeaponConfigPacket decode(FriendlyByteBuf buf) { 
-            return new C2SSetWallWeaponConfigPacket(buf.readBlockPos(), buf.readInt(), buf.readInt(), buf.readItem()); 
+        public static C2SSetWallWeaponConfigPacket decode(FriendlyByteBuf buf) {
+            return new C2SSetWallWeaponConfigPacket(buf.readBlockPos(), buf.readInt(), buf.readInt(), buf.readItem());
         }
         public static void handle(C2SSetWallWeaponConfigPacket pkt, Supplier<NetworkEvent.Context> ctx) {
-            ctx.get().enqueueWork(() -> { 
-                ServerPlayer s = ctx.get().getSender(); 
-                if (s != null && s.hasPermissions(2) && s.level().getBlockEntity(pkt.pos()) instanceof BuyWallWeaponBlockEntity be) { 
-                    be.setPrice(pkt.price()); 
-                    be.setRedstoneMode(pkt.redstoneMode()); 
-                    be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(cap -> { 
-                        if (cap instanceof ItemStackHandler h) h.setStackInSlot(0, pkt.stack().copy()); 
-                    }); 
-                    be.setChanged(); 
-                    s.level().sendBlockUpdated(pkt.pos(), be.getBlockState(), be.getBlockState(), 3); 
+            ctx.get().enqueueWork(() -> {
+                ServerPlayer s = ctx.get().getSender();
+                if (s != null && s.hasPermissions(2) && s.level().getBlockEntity(pkt.pos()) instanceof BuyWallWeaponBlockEntity be) {
+                    be.setPrice(pkt.price());
+                    be.setRedstoneMode(pkt.redstoneMode());
+                    be.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(cap -> {
+                        if (cap instanceof ItemStackHandler h) h.setStackInSlot(0, pkt.stack().copy());
+                    });
+                    be.setChanged();
+                    s.level().sendBlockUpdated(pkt.pos(), be.getBlockState(), be.getBlockState(), 3);
                 }
-            }); 
+            });
             ctx.get().setPacketHandled(true);
         }
     }
@@ -523,6 +527,20 @@ public class BuyWallWeaponSystem {
         private static final Map<UUID, Set<String>> PURCHASED_ITEMS = new HashMap<>();
         private static int textureCounter = 0;
         private static final Set<ResourceLocation> FAILED_TEXTURES = new HashSet<>();
+        private static ResourceLocation solidChalk;
+
+        private static ResourceLocation solidChalkTexture(){
+            if(solidChalk==null){
+                var image=new com.mojang.blaze3d.platform.NativeImage(1,1,false);image.setPixelRGBA(0,0,0xFFFFFFFF);
+                solidChalk=uploadChalk(new ResourceLocation("zombierool","dynamic/wall_chalk"),image);
+            }
+            return solidChalk;
+        }
+
+        /** DynamicTexture uploads bind the active sampler; restore it before the queued world draws. */
+        private static ResourceLocation uploadChalk(ResourceLocation location,com.mojang.blaze3d.platform.NativeImage image){
+            try(var state=new me.cryo.zombierool.client.TextureUploadState()){Minecraft.getInstance().getTextureManager().register(location,new DynamicTexture(image));return location;}
+        }
 
         public BuyWallWeaponRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -576,10 +594,16 @@ public class BuyWallWeaponSystem {
                 ResourceLocation originalTexture = sprite.contents().name();
 
                 boolean isTacz = WeaponFacade.isTaczWeapon(stack);
+                ResourceLocation taczIcon=me.cryo.zombierool.client.TacZVisuals.wallIcon(stack);
                 boolean isMissingTexture = originalTexture.getPath().equals("missingno") || isTacz;
 
-                if (stack.getItem() instanceof me.cryo.zombierool.item.throwable.ThrowableCore.BaseThrowableItem) {
-                    isMissingTexture = true; 
+                boolean isEquipment = stack.getItem()==me.cryo.zombierool.core.registry.ZRRegistry.BOWIE_KNIFE || stack.getItem()==me.cryo.zombierool.core.registry.ZRRegistry.ANIM_KNIFE || stack.getItem() instanceof me.cryo.zombierool.item.throwable.ThrowableCore.BaseThrowableItem
+                        || stack.getItem() instanceof me.cryo.zombierool.gameplay.EquipmentSystem.LoadoutItem
+                        || stack.getItem() instanceof me.cryo.zombierool.gameplay.PortableEquipment.Portable;
+                if (isEquipment) {
+                    isMissingTexture = true;
+                } else if(taczIcon!=null){
+                    originalTexture=taczIcon;isMissingTexture=false;
                 } else if (isTacz) {
                     String gunIdStr = stack.getOrCreateTag().getString("GunId");
                     if (!gunIdStr.isEmpty()) {
@@ -598,6 +622,7 @@ public class BuyWallWeaponSystem {
                 ResourceLocation outlineTexture = null;
                 ResourceLocation fullTexture = null;
 
+                if(stack.getItem() instanceof me.cryo.zombierool.item.ScarletWeaponItem||stack.getItem() instanceof me.cryo.zombierool.core.system.WeaponSystem.BaseGunItem mapGun&&(me.cryo.zombierool.gameplay.MapWeaponPacks.RESERVED.contains(mapGun.getDefinition().id.replace("zombierool:",""))||mapGun.getDefinition().id.replace("zombierool:","").startsWith("stratholme_")))isMissingTexture=true;
                 if (!isMissingTexture) {
                     outlineTexture = getOrCreateOutline(originalTexture);
                     fullTexture = hasPurchased ? getOrCreateFullTexture(originalTexture) : null;
@@ -624,6 +649,7 @@ public class BuyWallWeaponSystem {
                 double y = 0.5;
                 double z = 0.5 + face.getStepZ() * offset;
 
+                if(mimicState!=null&&mimicState.getBlock() instanceof FurnitureSystem.FurnitureBlock furniture){var mount=furniture.weaponMount(mimicState,face);x=mount.x;y=mount.y;z=mount.z;}
                 poseStack.translate(x, y, z);
                 float angle = switch(face) {
                     case NORTH -> 180f;
@@ -643,11 +669,13 @@ public class BuyWallWeaponSystem {
 
                     MultiBufferSource finalBuffer = buffer;
                     if (!hasPurchased) {
-                        finalBuffer = rt -> new ColorOverrideVertexConsumer(buffer.getBuffer(rt), 255, 255, 255, 255);
+                        finalBuffer = rt -> new ColorOverrideVertexConsumer(buffer.getBuffer(RenderType.entityCutoutNoCull(solidChalkTexture())), 255, 255, 255, 255);
                     }
 
-                    Minecraft.getInstance().getItemRenderer().renderStatic(
-                        stack, ItemDisplayContext.FIXED, frontLight, combinedOverlay, poseStack, finalBuffer, entity.getLevel(), 0
+                    var wallIcon=me.cryo.zombierool.client.WallModelIconCache.get(stack,model,isEquipment?ItemDisplayContext.GUI:ItemDisplayContext.FIXED);
+                    if(wallIcon!=null)me.cryo.zombierool.client.WallModelIconCache.render(wallIcon,hasPurchased,poseStack,buffer,frontLight,combinedOverlay);
+                    else Minecraft.getInstance().getItemRenderer().renderStatic(
+                        stack, isEquipment ? ItemDisplayContext.GUI : ItemDisplayContext.FIXED, frontLight, combinedOverlay, poseStack, finalBuffer, entity.getLevel(), 0
                     );
                     poseStack.popPose();
                 } else {
@@ -692,7 +720,7 @@ public class BuyWallWeaponSystem {
         }
 
         private static boolean hasPlayerPurchased(Player player, ItemStack weaponOnWall) {
-            String wId = WeaponFacade.getWeaponId(weaponOnWall);
+            String wId = WeaponFacade.getWallPurchaseId(weaponOnWall);
             Set<String> purchased = PURCHASED_ITEMS.get(player.getUUID());
             if (purchased != null && purchased.contains(wId)) return true;
 
@@ -700,6 +728,7 @@ public class BuyWallWeaponSystem {
             me.cryo.zombierool.core.system.WeaponSystem.Definition def = WeaponFacade.getDefinition(weaponOnWall);
 
             for (ItemStack s : player.getInventory().items) {
+                if(TacZIntegration.hasEquippedAttachment(s,weaponOnWall))return true;
                 if (isTacz && WeaponFacade.isTaczWeapon(s)) {
                     if (weaponOnWall.getOrCreateTag().getString("GunId").equals(s.getOrCreateTag().getString("GunId"))) return true;
                 } else if (!isTacz && def != null && WeaponFacade.isWeapon(s)) {
@@ -708,7 +737,8 @@ public class BuyWallWeaponSystem {
                     String dId = d != null && d.id != null ? d.id.replace("zombierool:", "") : "";
                     if (!dId.isEmpty() && dId.equals(defId)) return true;
                 } else if (!isTacz && def == null && s.getItem() == weaponOnWall.getItem()) {
-                    return true;
+                    if(!weaponOnWall.hasTag() || !weaponOnWall.getTag().contains("AttachmentId")
+                            || s.hasTag() && weaponOnWall.getTag().getString("AttachmentId").equals(s.getTag().getString("AttachmentId")))return true;
                 }
             }
             return false;
@@ -726,9 +756,8 @@ public class BuyWallWeaponSystem {
                 if (original == null) { FAILED_TEXTURES.add(originalTexture); return null; }
 
                 com.mojang.blaze3d.platform.NativeImage outline = createChalkOutline(original);
-                DynamicTexture dynamicTexture = new DynamicTexture(outline);
                 ResourceLocation outlineLocation = new ResourceLocation("zombierool", "dynamic/chalk_outline_" + textureCounter++);
-                Minecraft.getInstance().getTextureManager().register(outlineLocation, dynamicTexture);
+                uploadChalk(outlineLocation,outline);
 
                 OUTLINE_CACHE.put(originalTexture, outlineLocation);
                 original.close();
@@ -763,9 +792,8 @@ public class BuyWallWeaponSystem {
 
                 for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) squared.setPixelRGBA(x + offsetX, y + offsetY, original.getPixelRGBA(x, y));
 
-                DynamicTexture dynamicTexture = new DynamicTexture(squared);
                 ResourceLocation fullLocation = new ResourceLocation("zombierool", "dynamic/full_texture_" + textureCounter++);
-                Minecraft.getInstance().getTextureManager().register(fullLocation, dynamicTexture);
+                uploadChalk(fullLocation,squared);
 
                 OUTLINE_CACHE.put(lookupKey, fullLocation);
                 original.close();
@@ -780,6 +808,8 @@ public class BuyWallWeaponSystem {
         private static com.mojang.blaze3d.platform.NativeImage loadTexture(ResourceLocation location) {
             try {
                 var rm = Minecraft.getInstance().getResourceManager();
+                var direct=rm.getResource(location);
+                if(direct.isPresent())try(var stream=direct.get().open()){return cropIcon(com.mojang.blaze3d.platform.NativeImage.read(stream));}
                 String namespace = location.getNamespace();
                 String cleanPath = location.getPath().replace("gun/icon/", "").replace("textures/", "").replace(".png", "");
 
@@ -797,11 +827,20 @@ public class BuyWallWeaponSystem {
                 for (ResourceLocation p : attempts) {
                     var res = rm.getResource(p);
                     if (res.isPresent()) {
-                        try (InputStream stream = res.get().open()) { return com.mojang.blaze3d.platform.NativeImage.read(stream); } catch (Exception e) {}
+                        try (InputStream stream = res.get().open()) { return cropIcon(com.mojang.blaze3d.platform.NativeImage.read(stream)); } catch (Exception e) {}
                     }
                 }
             } catch (Exception e) {}
             return null;
+        }
+
+        private static com.mojang.blaze3d.platform.NativeImage cropIcon(com.mojang.blaze3d.platform.NativeImage image){
+            int minX=image.getWidth(),minY=image.getHeight(),maxX=-1,maxY=-1;
+            for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++)if((image.getPixelRGBA(x,y)>>>24)>16){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);}
+            if(maxX<minX||maxY<minY)return image;
+            var crop=new com.mojang.blaze3d.platform.NativeImage(maxX-minX+1,maxY-minY+1,true);
+            for(int y=0;y<crop.getHeight();y++)for(int x=0;x<crop.getWidth();x++)crop.setPixelRGBA(x,y,image.getPixelRGBA(x+minX,y+minY));
+            image.close();return crop;
         }
 
         private static com.mojang.blaze3d.platform.NativeImage createChalkOutline(com.mojang.blaze3d.platform.NativeImage original) {
@@ -814,15 +853,26 @@ public class BuyWallWeaponSystem {
 
             for (int y = 0; y < maxSize; y++) for (int x = 0; x < maxSize; x++) outline.setPixelRGBA(x, y, 0);
 
+            // Anti-aliased alpha and tiny disconnected specks must not become opaque chalk.
+            boolean[] mask=new boolean[width*height],visited=new boolean[mask.length];
+            for(int y=0;y<height;y++)for(int x=0;x<width;x++)mask[y*width+x]=(original.getPixelRGBA(x,y)>>>24)>=128;
+            int[] queue=new int[mask.length];int minimum=Math.max(2,width*height/16384);
+            for(int seed=0;seed<mask.length;seed++)if(mask[seed]&&!visited[seed]){
+                int read=0,count=1;queue[0]=seed;visited[seed]=true;
+                while(read<count){int point=queue[read++],px=point%width,py=point/width;
+                    for(int dy=-1;dy<=1;dy++)for(int dx=-1;dx<=1;dx++){int nx=px+dx,ny=py+dy;if(nx<0||ny<0||nx>=width||ny>=height)continue;int q=ny*width+nx;if(mask[q]&&!visited[q]){visited[q]=true;queue[count++]=q;}}
+                }
+                if(count<minimum)for(int i=0;i<count;i++)mask[queue[i]]=false;
+            }
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    if (((original.getPixelRGBA(x, y) >> 24) & 0xFF) > 0) {
+                    if (mask[y*width+x]) {
                         boolean isEdge = false;
                         for (int dy = -1; dy <= 1; dy++) {
                             for (int dx = -1; dx <= 1; dx++) {
                                 if (dx == 0 && dy == 0) continue;
                                 int nx = x + dx, ny = y + dy;
-                                if (nx < 0 || nx >= width || ny < 0 || ny >= height || ((original.getPixelRGBA(nx, ny) >> 24) & 0xFF) == 0) { isEdge = true; break; }
+                                if (nx < 0 || nx >= width || ny < 0 || ny >= height || !mask[ny*width+nx]) { isEdge = true; break; }
                             }
                             if (isEdge) break;
                         }

@@ -15,13 +15,28 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+// The public repository keeps the canonical source tree at its root.
+sourceSets {
+    main {
+        java.setSrcDirs(['java'])
+        resources.setSrcDirs(['resources', 'src/generated/resources'])
+    }
+}
+
+// Exporting every transformed class is expensive on the development drive.
+// Enable it explicitly for a Mixin investigation: -PzrMixinDiagnostics=true.
+def zrMixinDiagnostics = providers.gradleProperty('zrMixinDiagnostics').map { it.toBoolean() }.getOrElse(false)
 
 // A running dev client streams audio from its resource directory. Build cleanup
 // must never remove those files when a new JAR is compiled during a play test.
 if (gradle.startParameter.taskNames.any { it.tokenize(':').last().startsWith('runClient') || it.tokenize(':').last() == 'runServer' }) {
     def sessionId = System.currentTimeMillis()
-    def sessionResources = file("build/resources/dev-sessions/${sessionId}")
+    // Windows exFAT volumes can allocate 1 MiB for every tiny resource file.
+    // Keep independent snapshots on the local cache drive instead of multiplying
+    // that allocation cost in a workspace stored on an external/exFAT drive.
+    def localCache = System.getenv('LOCALAPPDATA')
+    def sessionRoot = localCache ? new File(localCache, "ZombieRool/dev-resources/${Integer.toHexString(rootDir.absolutePath.hashCode())}") : file('build/resources/dev-sessions')
+    def sessionResources = new File(sessionRoot, sessionId.toString())
     def sessionCopy = tasks.register("prepareDevSessionResources${sessionId}", ProcessResources) {
         from sourceSets.main.resources
         into sessionResources
@@ -50,7 +65,7 @@ minecraft {
             jvmArgs '-Dmixin.env.disableRefMap=true'
 
             property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
+            property 'forge.logging.console.level', zrMixinDiagnostics ? 'debug' : 'info'
 
             mods {
                 "${mod_id}" {
@@ -152,8 +167,8 @@ mixin {
 
     config "mixins.${mod_id}.json"
 
-    debug.verbose = true
-    debug.export = true
+    debug.verbose = zrMixinDiagnostics
+    debug.export = zrMixinDiagnostics
     dumpTargetOnFailure = true
 
     quiet
@@ -222,3 +237,14 @@ tasks.named('build').configure {
 }
 
 apply from: 'gradle/luaj-shadow.gradle'
+
+// Keep source artwork and development utilities out of player distributions.
+def playerResourceExcludes = [
+        '**/.git/**', '**/__pycache__/**', '**/node_modules/**',
+        '**/*.py', '**/*.pyc', '**/*.ps1', '**/*.bat', '**/*.cmd',
+        '**/*.blend', '**/*.blend1', '**/*.bbmodel', '**/*.fbx',
+        '**/*.psd', '**/*.xcf', '**/*.aseprite', '**/*.jfr',
+        '**/*.log', '**/*.tmp', '**/*.bak'
+]
+tasks.named('processResources').configure { exclude playerResourceExcludes }
+tasks.withType(Jar).configureEach { exclude playerResourceExcludes }

@@ -11,6 +11,9 @@ public final class MatchPlayerReset {
     private MatchPlayerReset() {}
 
     public static void applyStartLoadout(ServerPlayer player, WorldConfig config, int characterId) {
+        player.setAbsorptionAmount(0);
+        QueuedBonusDrops.clear(player);
+        IngotSaleDrops.clearTeamRewards(player);
         player.getPersistentData().putInt("zr_character_id", characterId);
         player.getPersistentData().putBoolean("zr_match_dirty", true);
         player.getPersistentData().remove(ZombieroolKeys.HAS_BOWIE_KNIFE);
@@ -21,8 +24,10 @@ public final class MatchPlayerReset {
             cap.resetPerkPurchases();
             cap.setLethalType(config.getStartingLethal());
             cap.setLethalCount(5);
+            me.cryo.zombierool.gameplay.EquipmentSystem.resetLoadout(player, cap);
             cap.sync(player);
         });
+        LunarEquipment.applyStartingSuit(player,config);
     }
 
     public static void applyEndLoadout(ServerPlayer player, ServerLevel level) {
@@ -32,6 +37,9 @@ public final class MatchPlayerReset {
             player.setHealth(player.getMaxHealth());
         }
         player.removeAllEffects();
+        player.setAbsorptionAmount(0);
+        QueuedBonusDrops.clear(player);
+        IngotSaleDrops.clearTeamRewards(player);
         player.getInventory().clearContent();
         player.getPersistentData().remove("zr_match_dirty");
         player.getPersistentData().remove(ZombieroolKeys.HAS_BOWIE_KNIFE);
@@ -41,6 +49,7 @@ public final class MatchPlayerReset {
             cap.resetTotalPoints();
             cap.setLethalType(WorldConfig.get(level).getStartingLethal());
             cap.setLethalCount(5);
+            me.cryo.zombierool.gameplay.EquipmentSystem.resetLoadout(player, cap);
             cap.sync(player);
         });
         if (player.isAlive()) {

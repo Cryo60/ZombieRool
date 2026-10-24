@@ -42,6 +42,29 @@ public class TacZIntegration {
     public static boolean equipWallAttachment(Player player, ItemStack attachment) {
         return ModList.get().isLoaded("tacz") && TacZImpl.equipWallAttachment(player, attachment);
     }
+    public static boolean hasEquippedAttachment(ItemStack weapon,ItemStack attachment) {
+        return ModList.get().isLoaded("tacz") && TacZImpl.hasEquippedAttachment(weapon,attachment);
+    }
+
+    public static void compensatePause(net.minecraft.world.entity.LivingEntity entity,long millis) {
+        if(ModList.get().isLoaded("tacz"))TacZImpl.compensatePause(entity,millis);
+    }
+    public static void stopTeleporterActions(Player player){
+        if(ModList.get().isLoaded("tacz")&&me.cryo.zombierool.core.system.WeaponFacade.isTaczWeapon(player.getMainHandItem())){
+            var operator=com.tacz.guns.api.entity.IGunOperator.fromLivingEntity(player);operator.cancelReload();operator.aim(false);
+        }
+    }
+    public static void fillMagazineAndChamber(ItemStack stack) {
+        if(ModList.get().isLoaded("tacz"))TacZImpl.fillMagazineAndChamber(stack);
+    }
+    public static boolean isSniper(ItemStack stack) {
+        if (!ModList.get().isLoaded("tacz")) return false;
+        var id=ResourceLocation.tryParse(stack.getOrCreateTag().getString("GunId"));
+        return id!=null&&com.tacz.guns.api.TimelessAPI.getCommonGunIndex(id).map(index->"sniper".equalsIgnoreCase(index.getType())).orElse(false);
+    }
+    public static boolean isAiming(Player player) {
+        return ModList.get().isLoaded("tacz")&&com.tacz.guns.api.entity.IGunOperator.fromLivingEntity(player).getSynIsAiming();
+    }
     public static void init() {
         if (ModList.get().isLoaded("tacz")) {
             TacZImpl.init();
@@ -166,6 +189,8 @@ public class TacZIntegration {
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (!initialized || event.phase != TickEvent.Phase.END) return;
+        var held=event.player.getMainHandItem();var def=me.cryo.zombierool.core.system.WeaponFacade.getDefinition(held);
+        if(me.cryo.zombierool.core.system.WeaponFacade.isTaczWeapon(held)&&def!=null&&(def.tags.contains("semi_auto")||def.tags.contains("bolt_action")))held.getOrCreateTag().putString("GunFireMode","SEMI");
         if (!event.player.level().isClientSide) {
             syncDummyAmmo(event.player);
         }
@@ -352,7 +377,7 @@ public class TacZIntegration {
                                 event.setCanceled(true);
                                 player.displayClientMessage(
                                     net.minecraft.network.chat.Component.translatable("message.zombierool.refit_disabled")
-                                        .withStyle(net.minecraft.ChatFormatting.RED), 
+                                        .withStyle(net.minecraft.ChatFormatting.RED),
                                     true
                                 );
                             }
@@ -370,7 +395,7 @@ public class TacZIntegration {
                 if (def != null) {
                     boolean isPap = me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack);
                     String nameKey = isPap && def.pap != null && def.pap.name != null && !def.pap.name.isEmpty() ? def.pap.name : def.name;
-                    
+
                     net.minecraft.network.chat.Component nameComp = net.minecraft.network.chat.Component.translatable(nameKey)
                             .withStyle(isPap ? net.minecraft.ChatFormatting.LIGHT_PURPLE : net.minecraft.ChatFormatting.GREEN);
                     event.getToolTip().clear();
@@ -405,4 +430,3 @@ public class TacZIntegration {
         }
     }
 }
-

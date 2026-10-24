@@ -17,6 +17,8 @@ public class C2SSetUniversalSpawnerConfigPacket {
     private final String stopChannels;
     private final boolean requirePower;
     private final int spawnWeight;
+    private net.minecraft.nbt.CompoundTag specialSettings;
+    public C2SSetUniversalSpawnerConfigPacket(BlockPos pos,UniversalSpawnerSystem.SpawnerMobType mobType,String zone,String startChannels,String stopChannels,boolean requirePower,int spawnWeight,net.minecraft.nbt.CompoundTag settings){this(pos,mobType,zone,startChannels,stopChannels,requirePower,spawnWeight);this.specialSettings=settings.copy();}
 
     public C2SSetUniversalSpawnerConfigPacket(BlockPos pos, UniversalSpawnerSystem.SpawnerMobType mobType, String zone, String startChannels, String stopChannels, boolean requirePower, int spawnWeight) {
         this.pos = pos;
@@ -36,6 +38,7 @@ public class C2SSetUniversalSpawnerConfigPacket {
         buf.writeUtf(msg.stopChannels);
         buf.writeBoolean(msg.requirePower);
         buf.writeInt(msg.spawnWeight);
+        buf.writeNbt(msg.specialSettings);
     }
 
     public static C2SSetUniversalSpawnerConfigPacket decode(FriendlyByteBuf buf) {
@@ -46,17 +49,26 @@ public class C2SSetUniversalSpawnerConfigPacket {
                 buf.readUtf(),
                 buf.readUtf(),
                 buf.readBoolean(),
-                buf.readInt()
+                buf.readInt(),
+                readSettings(buf)
         );
     }
+    private static net.minecraft.nbt.CompoundTag readSettings(FriendlyByteBuf buf){var tag=buf.readNbt();return tag==null?new net.minecraft.nbt.CompoundTag():tag;}
 
     public static void handle(C2SSetUniversalSpawnerConfigPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null && player.hasPermissions(2)) {
+            if (player != null && player.isCreative() && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(msg.pos))<=64 && player.level().hasChunkAt(msg.pos)) {
                 BlockEntity be = player.level().getBlockEntity(msg.pos);
                 if (be instanceof UniversalSpawnerSystem.UniversalSpawnerBlockEntity spawner) {
-                    spawner.setConfig(msg.mobType, msg.zone, msg.startChannels, msg.stopChannels, msg.requirePower, msg.spawnWeight);
+                    var type=(spawner.getMobType().boss()||msg.mobType.boss())?me.cryo.zombierool.config.SpecialEnemyConfig.type(player.serverLevel()):msg.mobType;
+                    spawner.setConfig(type, msg.zone, msg.startChannels, msg.stopChannels, msg.requirePower, msg.spawnWeight);
+                    if(msg.specialSettings!=null&&msg.specialSettings.contains("PowerMode",8)){
+                        try{me.cryo.zombierool.gameplay.BlockPowerSettings.setMode(player.serverLevel(),msg.pos,me.cryo.zombierool.gameplay.BlockPowerSettings.Mode.valueOf(msg.specialSettings.getString("PowerMode")));}
+                        catch(IllegalArgumentException ignored){}
+                    }
+                    // Advanced special-enemy rules are edited only in the map menu.
+                    if(!type.special())spawner.setSpecialConfig(msg.specialSettings);
                 }
             }
         });

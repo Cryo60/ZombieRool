@@ -39,6 +39,7 @@ import org.joml.Matrix4f;
 
 public class BloodDecalEntity extends Entity {
     private static final EntityDataAccessor<Float> SIZE = SynchedEntityData.defineId(BloodDecalEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> VARIANT=SynchedEntityData.defineId(BloodDecalEntity.class,EntityDataSerializers.INT);
     private static final ResourceLocation TEXTURE = new ResourceLocation("zombierool", "textures/entities/gore_blood.png");
 
     public BloodDecalEntity(PlayMessages.SpawnEntity packet, Level level) {
@@ -53,49 +54,50 @@ public class BloodDecalEntity extends Entity {
 
     public static void pool(ServerLevel level, double x, double y, double z, int count) {
         for (int i = 0; i < count; i++) {
+            if(!me.cryo.zombierool.gameplay.RemainsCleanup.allowBlood(level))break;
             BloodDecalEntity decal = new BloodDecalEntity(me.cryo.zombierool.init.ZombieroolModEntities.BLOOD_DECAL.get(), level);
             double ox = (level.random.nextDouble() - 0.5) * 1.35;
             double oz = (level.random.nextDouble() - 0.5) * 1.35;
-            decal.setPos(x + ox, groundY(level, x + ox, y, z + oz) + 0.02 + i * 0.0015, z + oz);
+            double ground=groundY(level,x+ox,y,z+oz);
+            if(!Double.isFinite(ground))continue;
+            decal.setPos(x+ox,ground,z+oz);
             decal.setYRot(level.random.nextFloat() * 360.0F);
-            decal.entityData.set(SIZE, 0.55F + level.random.nextFloat() * 1.05F);
+            decal.entityData.set(SIZE,me.cryo.zombierool.util.BloodAppearance.size(level.random));
+            decal.entityData.set(VARIANT,level.random.nextInt());
             level.addFreshEntity(decal);
         }
     }
 
     private static double groundY(ServerLevel level, double x, double y, double z) {
-        BlockPos pos = BlockPos.containing(x, y, z);
-        BlockState state = level.getBlockState(pos);
-        if (state.isAir()) {
-            pos = pos.below();
-            state = level.getBlockState(pos);
-        }
-        VoxelShape shape = state.getCollisionShape(level, pos);
-        if (shape.isEmpty()) return y + 0.02;
-        return pos.getY() + shape.max(Direction.Axis.Y);
+        var hit=me.cryo.zombierool.util.GoreCollision.clip(level,new net.minecraft.world.phys.Vec3(x,y+.05,z),new net.minecraft.world.phys.Vec3(x,y-2,z));
+        return hit.getType()==net.minecraft.world.phys.HitResult.Type.BLOCK?hit.getLocation().y:Double.NaN;
     }
 
     public float getSize() { return this.entityData.get(SIZE); }
+    public int getVariant(){return entityData.get(VARIANT);}
 
     @Override
     protected void defineSynchedData() {
         this.entityData.define(SIZE, 1.0F);
+        this.entityData.define(VARIANT,0);
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide && this.tickCount > 1200) this.discard();
+
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         this.entityData.set(SIZE, tag.getFloat("Size"));
+        this.entityData.set(VARIANT,tag.getInt("Variant"));
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putFloat("Size", this.getSize());
+        tag.putInt("Variant",getVariant());
     }
 
     @Override
@@ -116,25 +118,13 @@ public class BloodDecalEntity extends Entity {
 
         @Override
         public void render(BloodDecalEntity entity, float yaw, float partial, PoseStack pose, MultiBufferSource buffer, int light) {
-            if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() || ZRClientConfig.isGoreReduced()) return;
-            pose.pushPose();
-            pose.translate(0.0, 0.008 + (entity.getId() & 5) * 0.0012, 0.0);
-            pose.mulPose(Axis.YP.rotationDegrees(entity.getYRot()));
-            float size = entity.getSize();
-            pose.scale(size, 1.0F, size);
-            VertexConsumer vc = buffer.getBuffer(ZrBloodRenderType.DECAL);
-            Matrix4f matrix = pose.last().pose();
-            int overlay = OverlayTexture.NO_OVERLAY;
-            vc.vertex(matrix, -0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(0.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, -0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(0.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, 0.5F).color(85, 12, 18, 240).uv(1.0F, 1.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            vc.vertex(matrix, 0.5F, 0.0F, -0.5F).color(85, 12, 18, 240).uv(1.0F, 0.0F).overlayCoords(overlay).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-            pose.popPose();
+            // Collected and merged after block entities by BloodSurfaceRenderer.
+
         }
 
         @Override
         public ResourceLocation getTextureLocation(BloodDecalEntity entity) {
-            return TEXTURE;
+            return ZrBloodRenderType.texture(entity.getVariant());
         }
     }
 }

@@ -16,7 +16,7 @@ import net.minecraft.ChatFormatting;
 import java.util.Collections;
 import java.util.List;
 
-public class AbstractActivatorBlock extends Block {
+public class AbstractActivatorBlock extends SignalTechnicalBlock {
     private final String channelName;
     private final String tooltipName;
 
@@ -35,19 +35,15 @@ public class AbstractActivatorBlock extends Block {
     }
 
     @Override
-    public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
-        super.appendHoverText(itemstack, world, list, flag);
+    protected void addTechnicalTooltip(List<Component> list) {
         list.add(Component.translatable("block.zombierool.activator.generic.tooltip.1", tooltipName).withStyle(ChatFormatting.BLUE));
         list.add(Component.translatable("block.zombierool.activator.generic.tooltip.2").withStyle(ChatFormatting.GRAY));
         list.add(Component.translatable("block.zombierool.activator.generic.tooltip.3", tooltipName).withStyle(ChatFormatting.GRAY));
     }
 
-    @Override
-    public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
-        return 15;
-    }
+    public String signalChannel(){return channelName;}
 
-    @Override
+@Override
     public boolean canConnectRedstone(BlockState state, BlockGetter world, BlockPos pos, Direction side) {
         return true;
     }
@@ -58,16 +54,16 @@ public class AbstractActivatorBlock extends Block {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!world.isClientSide) {
-            boolean powered = world.hasNeighborSignal(pos);
-            MultiReceptorState.setActivated(world, channelName, powered);
-            world.updateNeighborsAt(pos, this);
-            for (BlockPos receptorPos : MultiReceptorState.getReceptorPositions(world, channelName)) {
-                if (world.hasChunkAt(receptorPos)) {
-                    world.updateNeighborsAt(receptorPos, world.getBlockState(receptorPos).getBlock());
-                }
-            }
-        }
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState previous, boolean moving) {
+        if (!level.isClientSide && state.getBlock() != previous.getBlock()) MultiReceptorState.updateActivator(level, channelName, pos, level.hasNeighborSignal(pos));
+    }
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moving) {
+        if (!level.isClientSide && state.getBlock() != next.getBlock()) MultiReceptorState.removeActivator(level, channelName, pos);
+        super.onRemove(state, level, pos, next, moving);
+    }
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
+        if (!level.isClientSide) MultiReceptorState.updateActivator(level, channelName, pos, level.hasNeighborSignal(pos));
     }
 }

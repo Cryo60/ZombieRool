@@ -15,13 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin {
+    @org.spongepowered.asm.mixin.injection.ModifyVariable(method="render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",at=@At("HEAD"),argsOnly=true)
+    private net.minecraft.client.renderer.MultiBufferSource zombierool_remainsFade(net.minecraft.client.renderer.MultiBufferSource original,LivingEntity entity,float yaw,float partial,com.mojang.blaze3d.vertex.PoseStack pose,net.minecraft.client.renderer.MultiBufferSource buffers,int light){return me.cryo.zombierool.client.RemainsFade.buffers(original,entity,partial);}
+
+
     @org.spongepowered.asm.mixin.injection.ModifyArg(index=3, method="render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at=@At(value="INVOKE",target="Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;setupRotations(Lnet/minecraft/world/entity/LivingEntity;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V"))
     private float zombierool_fiesta(LivingEntity entity, com.mojang.blaze3d.vertex.PoseStack pose, float age, float yaw, float partial){
         return me.cryo.zombierool.client.MatchAtmosphere.yaw(entity,yaw,partial);
     }
     @Inject(method = "getOverlayCoords", at = @At("HEAD"), cancellable = true)
     private static void zombierool_noDeathTint(LivingEntity entity, float partial, CallbackInfoReturnable<Integer> cir) {
-        if (entity instanceof AbstractZombieRoolEntity && entity.deathTime > 0) {
+        if(entity instanceof me.cryo.zombierool.entity.SpecialEnemyEntity){cir.setReturnValue(OverlayTexture.NO_OVERLAY);return;}
+        if ((entity instanceof AbstractZombieRoolEntity || entity instanceof me.cryo.zombierool.entity.MapActorEntity) && entity.deathTime > 0) {
             cir.setReturnValue(entity.hurtTime > 0
                     ? OverlayTexture.pack(OverlayTexture.u(0.0F), OverlayTexture.v(true))
                     : OverlayTexture.NO_OVERLAY);

@@ -19,13 +19,14 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 public class PlayerVoiceManager {
 
+    private static final ThreadLocal<Boolean> voiceCallback=ThreadLocal.withInitial(()->false);
     private static final Map<UUID, Long> lastKillConfirmedPlayTime = new HashMap<>();
     private static final int KILL_CONFIRM_COOLDOWN_TICKS = 40;
     private static final int KILL_CONFIRM_CHANCE_PERCENT = 45;
     private static final Random random = new Random();
 
     private static final Map<UUID, Boolean> wasReloadingLastTick = new HashMap<>();
-    
+
     private static final Map<UUID, Long> lastVoiceLineInitiationTime = new HashMap<>();
     private static final int VOICE_LINE_GLOBAL_COOLDOWN_TICKS = 10;
 
@@ -73,30 +74,33 @@ public class PlayerVoiceManager {
 
     public static void playLevelStart(Player player, Level level)        { playSoundType(player, level, "level_start"); }
     public static void playSpecialStart(Player player, Level level)      { playSoundType(player, level, "special_start"); }
-    
+
     public static void playKillHeadshot(Player player, Level level)      { playSoundType(player, level, "kill_headshot"); }
     public static void playKillHellhound(Player player, Level level)     { playSoundType(player, level, "kill_hellhound"); }
     public static void playKillCrawler(Player player, Level level)       { playSoundType(player, level, "kill_crawler"); }
-    
+
     public static void playRespawn(Player player, Level level)           { playSoundType(player, level, "respawn"); }
-    
+
     public static void playGeneralHit(Player player, Level level)        { playSoundType(player, level, "general_hit"); }
     public static void playZombieHit(Player player, Level level)         { playSoundType(player, level, "zombie_hit"); }
     public static void playCrawlerHit(Player player, Level level)        { playSoundType(player, level, "crawler_hit"); }
     public static void playHellhoundHit(Player player, Level level)      { playSoundType(player, level, "hellhound_hit"); }
-    
+
     public static void playBoxMove(Player player, Level level)           { playSoundType(player, level, "box_move"); }
     public static void playWeaponUpgraded(Player player, Level level)    { playSoundType(player, level, "weapon_upgraded"); }
     public static void playTookPerk(Player player, Level level)          { playSoundType(player, level, "took_perk"); }
-    
+
     public static void playWasRevived(Player player, Level level)        { playSoundType(player, level, "was_revived"); }
     public static void playIsReviving(Player player, Level level)        { playSoundType(player, level, "is_reviving"); }
     public static void playHasRevived(Player player, Level level)        { playSoundType(player, level, "has_revived"); }
 
     public static void playMeleeAttackSound(Player player, Level level)  { playSoundType(player, level, "voice_melee_attack"); }
 
-    private static void playSoundType(Player player, Level level, String soundType) {
-        if (level.isClientSide) return;
+    public static void playSoundType(Player player, Level level, String soundType) {
+        if (level.isClientSide||voiceCallback.get()) return;
+        var decision=me.cryo.zombierool.scripting.LuaScriptManager.eventResult("OnVoiceLineRequested",player.getUUID().toString(),soundType);
+        if(decision.isboolean()&&!decision.toboolean())return;
+        if(decision.isstring()&&!decision.tojstring().isBlank()){playVoice(player,decision.tojstring(),soundType);return;}
 
         int charId = player.getPersistentData().getInt("zr_character_id");
         if (charId < 1 || charId > 4) charId = 1;
@@ -105,10 +109,7 @@ public class PlayerVoiceManager {
         if (DynamicResourceManager.hasCustomVoice(charEventName)) {
             if (!canInitiateVoiceLine(player, level)) return;
             String randomKey = DynamicResourceManager.getRandomCustomVoiceKey(charEventName);
-            NetworkHandler.INSTANCE.send(
-                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new S2CPlayEntityVoiceSoundPacket(player.getId(), randomKey)
-            );
+            sendVoice(player,randomKey,soundType);
             return;
         }
 
@@ -130,10 +131,7 @@ public class PlayerVoiceManager {
         if (DynamicResourceManager.hasCustomVoice(presetEventName)) {
             if (!canInitiateVoiceLine(player, level)) return;
             String randomKey = DynamicResourceManager.getRandomCustomVoiceKey(presetEventName);
-            NetworkHandler.INSTANCE.send(
-                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new S2CPlayEntityVoiceSoundPacket(player.getId(), randomKey)
-            );
+            sendVoice(player,randomKey,soundType);
             return;
         }
 
@@ -146,18 +144,23 @@ public class PlayerVoiceManager {
                 legacyLoc = new ResourceLocation("zombierool", "player_" + voicePreset + "_" + soundType);
             }
 
-            // On ne vérifie PLUS ForgeRegistries car Minecraft peut jouer des sons déclarés 
+            // On ne vérifie PLUS ForgeRegistries car Minecraft peut jouer des sons déclarés
             // uniquement dans sounds.json sans avoir d'objet de Registre attribué.
 
             if (!canInitiateVoiceLine(player, level)) return;
 
-            NetworkHandler.INSTANCE.send(
-                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new S2CPlayEntityVoiceSoundPacket(player.getId(), legacyLoc.toString())
-            );
+            sendVoice(player,legacyLoc.toString(),soundType);
         }
     }
 
+    private static void sendVoice(Player player,String sound,String event){
+        NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(()->player),new S2CPlayEntityVoiceSoundPacket(player.getId(),sound));
+        try{voiceCallback.set(true);me.cryo.zombierool.scripting.LuaScriptManager.callEvent("OnVoiceLinePlayed",player.getUUID().toString(),event,sound);}finally{voiceCallback.set(false);}
+    }
+    public static boolean playVoice(Player player,String sound,String event){
+        if(player.level().isClientSide||voiceCallback.get()||sound==null||sound.length()>256||!canInitiateVoiceLine(player,player.level()))return false;
+        sendVoice(player,sound,event);return true;
+    }
     public static void playReloadingSound(Player player, Level level) {
         if (level.isClientSide) return;
         playSoundType(player, level, "inform_reloading");
@@ -174,7 +177,7 @@ public class PlayerVoiceManager {
 
         if (random.nextInt(100) < KILL_CONFIRM_CHANCE_PERCENT) {
             if (!canInitiateVoiceLine(player, level)) return;
-            
+
             scheduledKillConfirmedPlays.put(playerId, currentTick + KILL_CONFIRM_DELAY_TICKS);
             lastKillConfirmedPlayTime.put(playerId, currentTick);
         }

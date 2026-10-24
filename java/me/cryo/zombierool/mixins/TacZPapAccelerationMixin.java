@@ -11,7 +11,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public abstract class TacZPapAccelerationMixin {
     @Redirect(method="render",at=@At(value="INVOKE",target="Lcom/tacz/guns/compat/ar/ARCompat;shouldAccelerate()Z"))
     private boolean zr$normalForFoil(){
-        if(WeaponFacade.isPackAPunched(((BedrockGunModel)(Object)this).getCurrentGunItem()))return false;
+        var stack=((BedrockGunModel)(Object)this).getCurrentGunItem();
+        if(WeaponFacade.isPackAPunched(stack)||stack.hasTag()&&!stack.getTag().getString("zr_camo").isEmpty())return false;
         return com.tacz.guns.compat.ar.ARCompat.shouldAccelerate();
     }
 }

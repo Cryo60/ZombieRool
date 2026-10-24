@@ -128,24 +128,7 @@ public class ObstacleDoorSystem {
                     player.sendSystemMessage(Component.literal("Configuration saved on " + connectedBlocks.size() + " blocks!"));
                 }
             } else {
-                if (message.prix() <= 0) {
-                    player.sendSystemMessage(Component.literal("Invalid price!"));
-                    return;
-                }
-                List<BlockPos> connectedBlocks = new ArrayList<>();
-                Set<BlockPos> checked = new HashSet<>();
-                findAllConnectedBlocks(world, pos, connectedBlocks, checked);
-
-                int totalCost = message.prix();
-                if (PointManager.getScore(player) < totalCost) {
-                    player.sendSystemMessage(Component.literal("Not enough points: " + totalCost));
-                    return;
-                }
-                PointManager.modifyScore(player, -totalCost);
-                for (BlockPos blockPos : connectedBlocks) {
-                    world.setBlock(blockPos, ZombieroolModBlocks.PATH.get().defaultBlockState(), 3);
-                }
-                world.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.BLOCKS, 1.0F, 1.0F);
+                me.cryo.zombierool.handlers.ObstaclePurchaseHandler.tryPurchase(player,pos);
             }
         }
     }
@@ -156,7 +139,7 @@ public class ObstacleDoorSystem {
         for (Direction dir : Direction.values()) findAllConnectedBlocks(world, pos.relative(dir), found, checked);
     }
 
-    public static class ObstacleDoorBlock extends FenceBlock implements EntityBlock, MimicSystem.IMimicBlock {
+    public static class ObstacleDoorBlock extends FenceBlock implements EntityBlock, MimicSystem.IMimicBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final BooleanProperty CONN_UP = BooleanProperty.create("conn_up");
         public static final BooleanProperty CONN_DOWN = BooleanProperty.create("conn_down");
         public static final BooleanProperty HAS_COPIED_BLOCK = BooleanProperty.create("has_copied_block");
@@ -179,7 +162,7 @@ public class ObstacleDoorSystem {
                 VoxelShape shape = MimicSystem.getMimicShape(c.getMimic(), world, pos, context);
                 if (shape != null) return shape;
             }
-            return super.getShape(state, world, pos, context);
+            return Shapes.block();
         }
 
         @Override public VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
@@ -187,7 +170,7 @@ public class ObstacleDoorSystem {
                 VoxelShape shape = MimicSystem.getMimicVisualShape(c.getMimic(), world, pos, context);
                 if (shape != null) return shape;
             }
-            return super.getVisualShape(state, world, pos, context);
+            return Shapes.block();
         }
 
         @Override public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
@@ -197,6 +180,10 @@ public class ObstacleDoorSystem {
                 if (shape != null) return shape;
             }
             return Shapes.block();
+        }
+
+        @Override public void animateTick(BlockState state,Level level,BlockPos pos,net.minecraft.util.RandomSource random){
+            if(level.getBlockEntity(pos) instanceof ObstacleDoorBlockEntity entity){var source=entity.getMimic();if(source!=null&&source.getBlock() instanceof FurnitureSystem.FurnitureBlock furniture)furniture.animateTick(source,level,pos,random);}
         }
 
         @Override public FluidState getFluidState(BlockState state) { return Fluids.EMPTY.defaultFluidState(); }
@@ -228,10 +215,15 @@ public class ObstacleDoorSystem {
             return updateVerticalConnections(super.getStateForPlacement(context), context.getLevel(), context.getClickedPos()).setValue(HAS_COPIED_BLOCK, false);
         }
 
+        @Override public int getLightEmission(BlockState state,net.minecraft.world.level.BlockGetter world,BlockPos pos){
+            if(world.getBlockEntity(pos) instanceof MimicSystem.IMimicContainer c&&c.getMimic()!=null&&c.getMimic().getBlock() instanceof FurnitureSystem.FurnitureBlock)return c.getMimic().getLightEmission(world,pos);
+            return super.getLightEmission(state,world,pos);
+        }
         @Override
         public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (!player.isCreative()) return InteractionResult.PASS;
             ItemStack held = player.getItemInHand(hand);
+            if (held.is(me.cryo.zombierool.gameplay.WardenLocks.LOCK_ITEM.get())) return InteractionResult.PASS;
             if (!held.isEmpty() && held.getItem() instanceof BlockItem bi) {
                 Block blockToCopy = bi.getBlock();
                 if (!(blockToCopy instanceof MimicSystem.IMimicBlock)) {
@@ -239,7 +231,7 @@ public class ObstacleDoorSystem {
                         BlockEntity be = world.getBlockEntity(pos);
                         if (be instanceof MimicSystem.IMimicContainer mimicContainer) {
                             BlockState placementState = MimicSystem.getStateForMimic(player, hand, held, hit, blockToCopy);
-                            mimicContainer.setMimic(placementState);
+                            if(!(player instanceof ServerPlayer server)||!ObstacleDecorGroups.apply(server,pos,placementState))mimicContainer.setMimic(placementState);
                             player.displayClientMessage(Component.translatable("message.zombierool.texture_copied").withStyle(ChatFormatting.GREEN), true);
                         }
                     }
@@ -260,6 +252,7 @@ public class ObstacleDoorSystem {
     public static class ObstacleDoorBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer, MimicSystem.IMimicContainer {
         private net.minecraft.core.NonNullList<ItemStack> stacks = net.minecraft.core.NonNullList.withSize(9, ItemStack.EMPTY);
         private BlockState mimicBlockState = null;
+        public CompoundTag decorGroup=new CompoundTag();
         private int prix = 0;
         private String canal = "";
 
@@ -267,7 +260,7 @@ public class ObstacleDoorSystem {
             super(BE.get(), pos, state);
         }
 
-        @Override 
+        @Override
         public void onLoad() {
             super.onLoad();
             if (this.level != null && !this.level.isClientSide) {
@@ -294,6 +287,7 @@ public class ObstacleDoorSystem {
 
         @Override public BlockState getMimic() { return mimicBlockState; }
         @Override public void setMimic(@Nullable BlockState state) {
+            this.decorGroup=new CompoundTag();
             this.mimicBlockState = state;
             if (this.level != null && this.worldPosition != null) {
                 BlockState cur = this.level.getBlockState(this.worldPosition);
@@ -303,6 +297,7 @@ public class ObstacleDoorSystem {
                     this.level.sendBlockUpdated(this.worldPosition, cur, newState, 3);
                 }
             }
+            if(this.level!=null)this.level.getChunkSource().getLightEngine().checkBlock(worldPosition);
             setChanged();
         }
 
@@ -310,6 +305,7 @@ public class ObstacleDoorSystem {
 
         @Override public void load(CompoundTag compound) {
             super.load(compound);
+            this.decorGroup=compound.getCompound("DecorGroup");
             this.prix = compound.getInt("Prix");
             this.canal = compound.getString("Canal");
             this.mimicBlockState = MimicSystem.loadMimic(compound, this.level, "CopiedBlockId", true);
@@ -317,11 +313,13 @@ public class ObstacleDoorSystem {
 
         @Override protected void saveAdditional(CompoundTag compound) {
             super.saveAdditional(compound);
+            compound.put("DecorGroup",decorGroup.copy());
             compound.putInt("Prix", this.prix);
             compound.putString("Canal", this.canal);
             MimicSystem.saveMimic(compound, this.mimicBlockState);
         }
 
+        @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){if(!decorGroup.isEmpty())return new net.minecraft.world.phys.AABB(decorGroup.contains("minX")?decorGroup.getDouble("minX"):getBlockPos().getX(),decorGroup.contains("minY")?decorGroup.getDouble("minY"):getBlockPos().getY(),decorGroup.contains("minZ")?decorGroup.getDouble("minZ"):getBlockPos().getZ(),decorGroup.getDouble("maxX"),decorGroup.getDouble("maxY"),decorGroup.getDouble("maxZ")).inflate(1);return super.getRenderBoundingBox();}
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
         @Override public CompoundTag getUpdateTag() { return this.saveWithFullMetadata(); }
         @Override public int getContainerSize() { return stacks.size(); }
@@ -393,6 +391,13 @@ public class ObstacleDoorSystem {
         public ObstacleDoorBlockRenderer(BlockEntityRendererProvider.Context context) {}
 
         @Override public void render(ObstacleDoorBlockEntity entity, float pt, PoseStack ps, MultiBufferSource buf, int light, int ov) {
+            if(!entity.decorGroup.isEmpty()){
+                var n=entity.decorGroup;if(n.getLong("anchor")!=entity.getBlockPos().asLong())return;
+                ps.pushPose();ps.translate(n.getDouble("x")-entity.getBlockPos().getX(),n.getDouble("y")-entity.getBlockPos().getY(),n.getDouble("z")-entity.getBlockPos().getZ());float scale=(float)n.getDouble("scale");ps.scale(scale,scale,scale);
+                if(n.getString("type").equals("vehicle")){ps.mulPose(com.mojang.math.Axis.YP.rotationDegrees(n.getFloat("yaw")));me.cryo.zombierool.client.render.VehicleDecorModels.draw(n.getString("mesh"),ps,buf,light,0);}
+                else{var source=MimicSystem.loadMimic(n,entity.getLevel(),"",false);if(source!=null){MimicSystem.renderMimic(source,entity.getBlockPos(),entity.getLevel(),ps,buf,light,ov);if(source.getBlock() instanceof LargeFurnitureBlock large){for(int i=1;i<large.partCount;i++){ps.pushPose();var offset=large.offset(i,source.getValue(FurnitureSystem.FurnitureBlock.FACING));ps.translate(offset.getX(),offset.getY(),offset.getZ());MimicSystem.renderMimic(source.setValue(LargeFurnitureBlock.PART,i),entity.getBlockPos(),entity.getLevel(),ps,buf,light,ov);ps.popPose();}}else if(source.getBlock() instanceof FurnitureSystem.ExtendedFurnitureBlock extended){var direction=extended.extensionDirection(source);ps.translate(direction.getStepX(),direction.getStepY(),direction.getStepZ());MimicSystem.renderMimic(source.setValue(FurnitureSystem.ExtendedFurnitureBlock.EXTENSION,true),entity.getBlockPos(),entity.getLevel(),ps,buf,light,ov);}}}
+                ps.popPose();return;
+            }
             if (entity.getMimic() != null) {
                 ps.pushPose();
                 MimicSystem.renderMimic(entity.getMimic(), entity.getBlockPos(), entity.getLevel(), ps, buf, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos()), ov);

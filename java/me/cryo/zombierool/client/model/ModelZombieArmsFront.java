@@ -50,6 +50,7 @@ public class ModelZombieArmsFront<T extends Mob> extends HumanoidModel<T> {
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks,
                           float netHeadYaw, float headPitch) {
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        this.head.z=this.leftArm.z=this.rightArm.z=0;
 
         boolean isHalloween = HalloweenManager.isHalloweenPeriod();
         boolean gore = !ZRClientConfig.isGoreReduced() && !isHalloween;
@@ -89,6 +90,7 @@ public class ModelZombieArmsFront<T extends Mob> extends HumanoidModel<T> {
         if (this.leftElbowStump != null) this.leftElbowStump.visible = false;
         if (this.rightWristStump != null) this.rightWristStump.visible = false;
         if (this.leftWristStump != null) this.leftWristStump.visible = false;
+        this.rightArm.xScale=this.rightArm.zScale=this.leftArm.xScale=this.leftArm.zScale=1;this.leftLeg.xScale=this.leftLeg.zScale=this.rightLeg.xScale=this.rightLeg.zScale=1;
         this.rightArm.yScale = 1.0F;
         this.leftArm.yScale = 1.0F;
 
@@ -150,6 +152,13 @@ public class ModelZombieArmsFront<T extends Mob> extends HumanoidModel<T> {
             this.leftLeg.z = 0.0F;
         }
 
+        if(entity instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity z&&z.isCerberusFeeding()){
+            this.head.xRot=this.head.yRot=this.head.zRot=0;this.body.xRot=0;
+            this.rightArm.xRot=this.leftArm.xRot=.55f;this.rightArm.zRot=.16f;this.leftArm.zRot=-.16f;
+            this.rightLeg.xRot=this.leftLeg.xRot=-.12f;
+            if(this.rightForearm!=null)this.rightForearm.xRot=.35f;if(this.leftForearm!=null)this.leftForearm.xRot=.35f;
+            this.hat.copyFrom(this.head);return;
+        }
         if (corpse && !isCrawler) {
             ZombieRagdoll.Pose ragdoll = ZombieRagdoll.get(entity);
             if (ragdoll != null) {
@@ -182,6 +191,10 @@ public class ModelZombieArmsFront<T extends Mob> extends HumanoidModel<T> {
             }
             if (this.rightHand != null) this.rightHand.xRot = 0.0F;
             if (this.leftHand != null) this.leftHand.xRot = 0.0F;
+        }
+        if(entity instanceof ZombieEntity z){String skin=z.getCustomSkin();
+            if(skin.contains("/scourge_skeletons/")){this.rightArm.xScale=this.rightArm.zScale=this.leftArm.xScale=this.leftArm.zScale=.52f;this.leftLeg.xScale=this.leftLeg.zScale=this.rightLeg.xScale=this.rightLeg.zScale=.55f;this.body.xScale=.76f;this.body.zScale=.7f;}
+            if(skin.contains("/scourge_ghouls/")&&!corpse&&!isCrawler){this.body.xRot=.45f;this.head.z=-2.4f;this.leftArm.z=this.rightArm.z=-2.5f;this.leftArm.xRot=this.rightArm.xRot=-.65f;this.leftArm.yScale=this.rightArm.yScale=1.12f;}
         }
         this.hat.copyFrom(this.head);
     }

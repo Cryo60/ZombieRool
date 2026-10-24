@@ -149,7 +149,7 @@ public class PerksSystem {
         @Override public String getSerializedName() { return this.name; }
     }
 
-    public static class PerksAColaDummyBlock extends Block {
+    public static class PerksAColaDummyBlock extends Block implements me.cryo.zombierool.block.WaterloggedElement {
         public static final EnumProperty<DummyPart> PART = EnumProperty.create("part", DummyPart.class);
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -173,17 +173,17 @@ public class PerksSystem {
             Direction facing = state.getValue(FACING);
             BlockState mainState = BLOCK.get().defaultBlockState().setValue(PerksAColaBlock.FACING, facing);
             VoxelShape mainShape = mainState.getShape(world, pos, context);
-            
+
             if (state.getValue(PART) == DummyPart.LOWER) {
-                return mainShape.move(0, 1, 0); 
+                return mainShape.move(0, 1, 0);
             } else {
-                return mainShape.move(0, -1, 0); 
+                return mainShape.move(0, -1, 0);
             }
         }
 
         @Override
         public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-            return Shapes.empty(); 
+            return Shapes.empty();
         }
 
         @Override
@@ -226,7 +226,7 @@ public class PerksSystem {
         }
     }
 
-    public static class PerksAColaBlock extends Block implements EntityBlock {
+    public static class PerksAColaBlock extends Block implements EntityBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final EnumProperty<PerkType> PERK_TYPE = EnumProperty.create("perk_type", PerkType.class);
         public static final BooleanProperty POWERED = BooleanProperty.create("powered");
@@ -241,14 +241,14 @@ public class PerksSystem {
         @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, PERK_TYPE, POWERED); }
 
-        @Override 
-        public BlockState getStateForPlacement(BlockPlaceContext context) { 
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
             BlockPos mainPos = context.getClickedPos();
-            if (!context.getLevel().getBlockState(mainPos.below()).canBeReplaced() || 
+            if (!context.getLevel().getBlockState(mainPos.below()).canBeReplaced() ||
                 !context.getLevel().getBlockState(mainPos.above()).canBeReplaced()) {
                 return null;
             }
-            return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite()); 
+            return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
         }
 
         @Override
@@ -276,27 +276,27 @@ public class PerksSystem {
         @Override public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
             return switch (state.getValue(FACING)) {
                 case NORTH -> Shapes.or(
-                    Block.box(0, -16, 0, 16, 10.75, 16), 
-                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5), 
+                    Block.box(0, -16, 0, 16, 10.75, 16),
+                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5),
                     Block.box(3.25, -2.75, -1, 12.75, 9, 0)
                 );
                 case EAST -> Shapes.or(
-                    Block.box(0, -16, 0, 16, 10.75, 16), 
-                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5), 
+                    Block.box(0, -16, 0, 16, 10.75, 16),
+                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5),
                     Block.box(16, -2.75, 3.25, 17, 9, 12.75)
                 );
                 case SOUTH -> Shapes.or(
-                    Block.box(0, -16, 0, 16, 10.75, 16), 
-                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5), 
+                    Block.box(0, -16, 0, 16, 10.75, 16),
+                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5),
                     Block.box(3.25, -2.75, 16, 12.75, 9, 17)
                 );
                 case WEST -> Shapes.or(
-                    Block.box(0, -16, 0, 16, 10.75, 16), 
-                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5), 
+                    Block.box(0, -16, 0, 16, 10.75, 16),
+                    Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5),
                     Block.box(-1, -2.75, 3.25, 0, 9, 12.75)
                 );
                 default -> Shapes.or(
-                    Block.box(0, -16, 0, 16, 10.75, 16), 
+                    Block.box(0, -16, 0, 16, 10.75, 16),
                     Block.box(1.5, 10.75, 1.5, 14.5, 23, 14.5)
                 );
             };
@@ -385,10 +385,10 @@ public class PerksSystem {
             if (this.level != null) this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
         }
 
-        @Override public void saveAdditional(CompoundTag tag) { 
-            super.saveAdditional(tag); 
-            tag.putInt("savedPrice", savedPrice); 
-            tag.putString("savedPerkId", savedPerkId); 
+        @Override public void saveAdditional(CompoundTag tag) {
+            super.saveAdditional(tag);
+            tag.putInt("savedPrice", savedPrice);
+            tag.putString("savedPerkId", savedPerkId);
             tag.putBoolean("isPowered", isPowered);
 
             net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
@@ -402,8 +402,8 @@ public class PerksSystem {
         }
 
         @Override public void load(CompoundTag tag) {
-            super.load(tag); 
-            this.savedPrice = tag.getInt("savedPrice"); 
+            super.load(tag);
+            this.savedPrice = tag.getInt("savedPrice");
             this.savedPerkId = tag.getString("savedPerkId");
             if ("mastodonte".equals(this.savedPerkId)) this.savedPerkId = "juggernog";
             if ("double_tape".equals(this.savedPerkId)) this.savedPerkId = "double_tap";
@@ -421,8 +421,8 @@ public class PerksSystem {
 
         public void setSavedPrice(int p) { this.savedPrice = p; setChanged(); if (this.level != null) this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3); }
 
-        public void setSavedPerkId(String id) { 
-            this.savedPerkId = id; 
+        public void setSavedPerkId(String id) {
+            this.savedPerkId = id;
             if (this.level != null && !this.level.isClientSide) {
                 BlockState state = this.getBlockState();
                 PerkType newType = PerkType.fromString(id);
@@ -432,7 +432,7 @@ public class PerksSystem {
                     this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
                 }
             }
-            setChanged(); 
+            setChanged();
         }
 
         public int getSavedPrice() { return savedPrice; }
@@ -464,7 +464,7 @@ public class PerksSystem {
             AABB box = state.getShape(world, pos).bounds().move(pos);
             boolean wasTouching = be.localTouchMap.getOrDefault(player, false);
             boolean touching = box.inflate(0.1).intersects(player.getBoundingBox());
-            
+
             if (touching && !wasTouching) {
                 be.localTouchMap.put(player, true);
                 world.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:perks_collision")), SoundSource.BLOCKS, 1f, 1f, false);
@@ -525,6 +525,10 @@ public class PerksSystem {
                 }
             }
             this.addRenderableWidget(prix_input);
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.block_power.button"),button->{
+                String price=prix_input.getValue();int selected=currentPerkIndex;
+                me.cryo.zombierool.client.gui.BlockPowerScreen.request(menu.pos,this,()->{prix_input.setValue(price);currentPerkIndex=selected;});
+            }).bounds(startX+80,startY+178,100,20).build());
 
             this.addRenderableWidget(Button.builder(Component.literal("<- Prev"), btn -> {
                 if (currentPerkIndex > 0) currentPerkIndex--;
@@ -552,7 +556,7 @@ public class PerksSystem {
         }
     }
 
-    public static class LegacyUpperPerkBlock extends Block {
+    public static class LegacyUpperPerkBlock extends Block implements me.cryo.zombierool.block.WaterloggedElement {
         public LegacyUpperPerkBlock() { super(BlockBehaviour.Properties.of().noOcclusion().noCollission()); }
         @Override
         public void tick(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
@@ -586,7 +590,7 @@ public class PerksSystem {
         public int getPrice() { return price; }
     }
 
-    public static class LegacyPerkBlock extends Block implements EntityBlock {
+    public static class LegacyPerkBlock extends Block implements EntityBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public LegacyPerkBlock() {
             super(BlockBehaviour.Properties.of().noOcclusion().noCollission());
@@ -643,30 +647,30 @@ public class PerksSystem {
         public static void onRenderLevelStage(RenderLevelStageEvent event) {
             if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
 
-            Minecraft mc = Minecraft.getInstance(); 
-            Player player = mc.player; 
+            Minecraft mc = Minecraft.getInstance();
+            Player player = mc.player;
             Level level = mc.level;
             if (player == null || level == null || player.getMainHandItem().getItem() != ITEM.get()) return;
 
             if (mc.hitResult instanceof BlockHitResult bhr && bhr.getType() != HitResult.Type.MISS) {
                 BlockPlaceContext ctx = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, player.getMainHandItem(), bhr);
-                BlockPos mainPos = ctx.getClickedPos().above(); 
+                BlockPos mainPos = ctx.getClickedPos().above();
                 Direction facing = player.getDirection().getOpposite();
 
-                if (level.getBlockState(mainPos).canBeReplaced() 
-                    && level.getBlockState(mainPos.above()).canBeReplaced() 
+                if (level.getBlockState(mainPos).canBeReplaced()
+                    && level.getBlockState(mainPos.above()).canBeReplaced()
                     && level.getBlockState(mainPos.below()).canBeReplaced()) {
 
-                    PoseStack ps = event.getPoseStack(); 
+                    PoseStack ps = event.getPoseStack();
                     ps.pushPose();
-                    net.minecraft.world.phys.Vec3 cam = mc.gameRenderer.getMainCamera().getPosition(); 
+                    net.minecraft.world.phys.Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
                     ps.translate(-cam.x, -cam.y, -cam.z);
 
-                    RenderSystem.enableBlend(); 
-                    RenderSystem.defaultBlendFunc(); 
+                    RenderSystem.enableBlend();
+                    RenderSystem.defaultBlendFunc();
                     RenderSystem.disableCull();
                     RenderSystem.setShader(GameRenderer::getPositionColorShader);
-                    Tesselator tess = Tesselator.getInstance(); 
+                    Tesselator tess = Tesselator.getInstance();
                     BufferBuilder buf = tess.getBuilder();
                     buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
@@ -681,41 +685,41 @@ public class PerksSystem {
                         float fX2 = (float) (x2 + mainPos.getX());
                         float fY2 = (float) (y2 + mainPos.getY());
                         float fZ2 = (float) (z2 + mainPos.getZ());
-                        
+
                         buf.vertex(mat, fX1, fY1, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY2, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY1, fZ1).color(r, g, b, a).endVertex();
-                        
+
                         buf.vertex(mat, fX1, fY1, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY1, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY2, fZ2).color(r, g, b, a).endVertex();
-                        
+
                         buf.vertex(mat, fX1, fY1, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY1, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY2, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY2, fZ1).color(r, g, b, a).endVertex();
-                        
+
                         buf.vertex(mat, fX2, fY1, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY1, fZ2).color(r, g, b, a).endVertex();
-                        
+
                         buf.vertex(mat, fX1, fY1, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY1, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY1, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY1, fZ2).color(r, g, b, a).endVertex();
-                        
+
                         buf.vertex(mat, fX1, fY2, fZ1).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX1, fY2, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ2).color(r, g, b, a).endVertex();
                         buf.vertex(mat, fX2, fY2, fZ1).color(r, g, b, a).endVertex();
                     });
 
-                    tess.end(); 
-                    RenderSystem.enableCull(); 
-                    RenderSystem.disableBlend(); 
+                    tess.end();
+                    RenderSystem.enableCull();
+                    RenderSystem.disableBlend();
                     ps.popPose();
                 }
             }

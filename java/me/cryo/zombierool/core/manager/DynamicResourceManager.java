@@ -34,7 +34,7 @@ public class DynamicResourceManager {
 
     private static final Map<String, Map<String, ResourceLocation>> CLIENT_SKIN_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, ResourceLocation> CLIENT_CHALK_CACHE = new ConcurrentHashMap<>();
-    
+
     public static final Map<String, List<String>> CUSTOM_VOICE_MAP = new ConcurrentHashMap<>();
 
     public static boolean overrideSfx = false;
@@ -42,8 +42,8 @@ public class DynamicResourceManager {
     public static boolean overrideVoices = false;
     public static boolean overrideSkins = false;
 
-    private static final long MAX_AUDIO_SIZE = 15 * 1024 * 1024; 
-    private static final long MAX_SKIN_SIZE = 2 * 1024 * 1024; 
+    private static final long MAX_AUDIO_SIZE = 15 * 1024 * 1024;
+    private static final long MAX_SKIN_SIZE = 2 * 1024 * 1024;
 
     private static final String[] VALID_VOICE_EVENTS = {
         "level_start", "special_start", "inform_killfirm", "kill_headshot",
@@ -72,17 +72,18 @@ public class DynamicResourceManager {
         zrDir.mkdirs();
 
         createDefaultFilesIfMissing(zrDir);
-        loadConfiguration(zrDir); 
+        loadConfiguration(zrDir);
 
-        File skinsDir = new File(zrDir, "skins");
+        File skinsDir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins");
         loadSkins(skinsDir);
 
-        File chalksDir = new File(zrDir, "assets/chalks");
+        File chalksDir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"assets/chalks");
         loadChalks(chalksDir);
 
-        File audioDir = new File(zrDir, "audio");
+        File audioDir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio");
         loadAudioFiles(audioDir);
-        loadParticlePresets(new File(zrDir,"particles/custom"));
+        loadParticlePresets(me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"particles/custom"));
+        me.cryo.zombierool.gameplay.MapAtmosphereAssets.load(zrDir);
     }
 
     private static int countFiles(File dir, String extension) {
@@ -102,14 +103,15 @@ public class DynamicResourceManager {
     }
 
     private static void loadConfiguration(File zrDir) {
-        File configJson = new File(zrDir, "config.json");
+        File configJson = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"config.json");
+        configJson.getParentFile().mkdirs();
         JsonObject cfg = new JsonObject();
         boolean changed = false;
 
-        int currentSfxCount = countFiles(new File(zrDir, "audio/sfx"), ".ogg");
-        int currentMusicCount = countFiles(new File(zrDir, "audio/music"), ".ogg");
-        int currentVoicesCount = countFiles(new File(zrDir, "audio/voices"), ".ogg");
-        int currentSkinsCount = countFiles(new File(zrDir, "skins"), ".png");
+        int currentSfxCount = countFiles(me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/sfx"), ".ogg");
+        int currentMusicCount = countFiles(me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/music"), ".ogg");
+        int currentVoicesCount = countFiles(me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/voices"), ".ogg");
+        int currentSkinsCount = countFiles(me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins"), ".png");
 
         if (configJson.exists()) {
             try (FileReader fr = new FileReader(configJson)) {
@@ -137,21 +139,21 @@ public class DynamicResourceManager {
         int lastVoicesCount = cfg.has("last_voices_count") ? cfg.get("last_voices_count").getAsInt() : -1;
         int lastSkinsCount = cfg.has("last_skins_count") ? cfg.get("last_skins_count").getAsInt() : -1;
 
-        if (currentSfxCount != lastSfxCount) { 
-            if (currentSfxCount > 0) overrideSfx = true; 
-            changed = true; 
+        if (currentSfxCount != lastSfxCount) {
+            if (currentSfxCount > 0) overrideSfx = true;
+            changed = true;
         }
-        if (currentMusicCount != lastMusicCount) { 
-            if (currentMusicCount > 0) overrideMusic = true; 
-            changed = true; 
+        if (currentMusicCount != lastMusicCount) {
+            if (currentMusicCount > 0) overrideMusic = true;
+            changed = true;
         }
-        if (currentVoicesCount != lastVoicesCount) { 
-            if (currentVoicesCount > 0) overrideVoices = true; 
-            changed = true; 
+        if (currentVoicesCount != lastVoicesCount) {
+            if (currentVoicesCount > 0) overrideVoices = true;
+            changed = true;
         }
-        if (currentSkinsCount != lastSkinsCount) { 
-            if (currentSkinsCount > 0) overrideSkins = true; 
-            changed = true; 
+        if (currentSkinsCount != lastSkinsCount) {
+            if (currentSkinsCount > 0) overrideSkins = true;
+            changed = true;
         }
 
         if (changed) {
@@ -163,7 +165,7 @@ public class DynamicResourceManager {
             cfg.addProperty("last_music_count", currentMusicCount);
             cfg.addProperty("last_voices_count", currentVoicesCount);
             cfg.addProperty("last_skins_count", currentSkinsCount);
-            
+
             try (FileWriter fw = new FileWriter(configJson)) {
                 GSON.toJson(cfg, fw);
             } catch (Exception e) {
@@ -212,29 +214,33 @@ public class DynamicResourceManager {
         boolean hasSfx = hasAnyOggFiles(sfxDir);
 
         if (!hasMusic && !hasVoices && !hasSfx) {
-            System.out.println("[ZombieRool] Aucun fichier audio personnalisé. Chargement audio ignoré.");
+            System.out.println("[ZombieRool] Aucun fichier audio personnalisÃ©. Chargement audio ignorÃ©.");
             return;
         }
 
-        System.out.println("[ZombieRool] Chargement des fichiers audio en mémoire...");
+        System.out.println("[ZombieRool] Chargement des fichiers audio en mÃ©moire...");
 
-        if (hasMusic && overrideMusic) loadMusicFiles(musicDir);
+        if (hasMusic) loadMusicFiles(musicDir);
         CUSTOM_VOICE_MAP.clear();
         if (hasVoices && overrideVoices) loadVoiceFiles(voicesDir);
         if (hasSfx && overrideSfx) loadSfxFiles(sfxDir);
 
-        System.out.println("[ZombieRool] " + SERVER_AUDIO_CACHE.size() + " son(s) chargé(s) en mémoire.");
+        System.out.println("[ZombieRool] " + SERVER_AUDIO_CACHE.size() + " son(s) chargÃ©(s) en mÃ©moire.");
     }
 
     private static void loadMusicFiles(File musicDir) {
-        Map<String, String> musicFolders = Map.of(
+        Map<String, String> musicFolders = new java.util.LinkedHashMap<>(Map.of(
             "default", "zombie_soundtrack",
             "damned", "zombie_soundtrack_damned",
             "secret", "secret_song",
             "menu", "menu_music"
-        );
+        ));
+
+        File[] customFolders=musicDir.listFiles(File::isDirectory);
+        if(customFolders!=null)for(File folder:customFolders)if(folder.getName().matches("[a-z0-9_][a-z0-9_.-]{0,63}")&&!musicFolders.containsKey(folder.getName()))musicFolders.put(folder.getName(),folder.getName());
 
         for (Map.Entry<String, String> entry : musicFolders.entrySet()) {
+            if(!overrideMusic&&java.util.Set.of("default","damned","secret","menu").contains(entry.getKey()))continue;
             File folder = new File(musicDir, entry.getKey());
             if (folder.exists() && folder.isDirectory()) {
                 File[] files = folder.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".ogg"));
@@ -248,7 +254,7 @@ public class DynamicResourceManager {
         }
 
         File[] looseMusic = musicDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".ogg"));
-        if (looseMusic != null) {
+        if (overrideMusic&&looseMusic != null) {
             for (File f : looseMusic) {
                 String safeName = getSafeName(f.getName()).replace(".ogg", "");
                 storeAudioFile(f, "zombierool:music/" + safeName, "music");
@@ -276,7 +282,7 @@ public class DynamicResourceManager {
             for (File subDir : subDirs) {
                 String presetName = getSafeName(subDir.getName());
                 File[] subFiles = subDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".ogg"));
-                
+
                 if (subFiles != null) {
                     for (File f : subFiles) {
                         String safeName = getSafeName(f.getName()).replace(".ogg", "");
@@ -331,7 +337,7 @@ public class DynamicResourceManager {
     private static void storeAudioFile(File file, String soundEventName, String category) {
         try {
             if (file.length() > MAX_AUDIO_SIZE) {
-                System.err.println("[ZombieRool] Fichier audio trop volumineux (max 15MB) rejeté : " + file.getName());
+                System.err.println("[ZombieRool] Fichier audio trop volumineux (max 15MB) rejetÃ© : " + file.getName());
                 return;
             }
             byte[] data = Files.readAllBytes(file.toPath());
@@ -341,7 +347,21 @@ public class DynamicResourceManager {
         }
     }
 
+    /** Register a map editor import without clearing any existing resources or reloading packs. */
+    public static void importAmbientAudio(net.minecraft.server.MinecraftServer server,String id,byte[] data) {
+        SERVER_AUDIO_CACHE.put(id,new AudioEntry("ambient",data));
+        for(var player:server.getPlayerList().getPlayers()) {
+            var target=PacketDistributor.PLAYER.with(()->player);
+            NetworkHandler.INSTANCE.send(target,S2CSyncDynamicSoundPacket.begin(id,"ambient",data.length));
+            int size=S2CSyncDynamicSoundPacket.CHUNK_SIZE;
+            for(int offset=0,index=0;offset<data.length;offset+=size,index++)NetworkHandler.INSTANCE.send(target,S2CSyncDynamicSoundPacket.data(id,index,Arrays.copyOfRange(data,offset,Math.min(data.length,offset+size))));
+            NetworkHandler.INSTANCE.send(target,S2CSyncDynamicSoundPacket.end(id));
+        }
+    }
+
     public static void sendAudioToPlayer(ServerPlayer player) {
+        me.cryo.zombierool.gameplay.MapAtmosphereAssets.sync(player);
+        me.cryo.zombierool.gameplay.MapWeaponPacks.sync(player);
         if (SERVER_AUDIO_CACHE.isEmpty() && SERVER_CHALK_CACHE.isEmpty()) return;
 
         System.out.println("[ZombieRool] Envoi des ressources dynamiques au joueur " + player.getGameProfile().getName());
@@ -355,7 +375,7 @@ public class DynamicResourceManager {
             String soundEventName = entry.getKey();
             AudioEntry audio = entry.getValue();
             byte[] data = audio.data;
-            
+
             int totalSize = data.length;
             int chunkSize = S2CSyncDynamicSoundPacket.CHUNK_SIZE;
 
@@ -369,12 +389,12 @@ public class DynamicResourceManager {
             while (offset < totalSize) {
                 int length = Math.min(chunkSize, totalSize - offset);
                 byte[] chunk = Arrays.copyOfRange(data, offset, offset + length);
-                
+
                 NetworkHandler.INSTANCE.send(
                     PacketDistributor.PLAYER.with(() -> player),
                     S2CSyncDynamicSoundPacket.data(soundEventName, chunkIndex, chunk)
                 );
-                
+
                 offset += length;
                 chunkIndex++;
             }
@@ -415,6 +435,7 @@ public class DynamicResourceManager {
         }
 
         loadMobSkins(new File(skinsDir, "zombie"), "zombie");
+        loadMobSkins(new File(skinsDir, "map_actor"), "map_actor");
         loadMobSkins(new File(skinsDir, "crawler"), "crawler");
         loadMobSkins(new File(skinsDir, "hellhound"), "hellhound");
         loadMobSkins(new File(skinsDir, "zombie_eyes"), "zombie_eyes");
@@ -427,18 +448,18 @@ public class DynamicResourceManager {
 
         Map<String, byte[]> mobSkins = new HashMap<>();
         File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".png"));
-        
+
         if (files != null) {
             for (File file : files) {
                 try {
                     if (file.length() > MAX_SKIN_SIZE) {
-                        System.err.println("[ZombieRool] Fichier skin trop volumineux (max 2MB) rejeté : " + file.getName());
+                        System.err.println("[ZombieRool] Fichier skin trop volumineux (max 2MB) rejetÃ© : " + file.getName());
                         continue;
                     }
                     byte[] data = Files.readAllBytes(file.toPath());
                     String skinId = file.getName().replace(".png", "")
                         .toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "");
-                    
+
                     mobSkins.put(skinId, data);
                 } catch (Exception e) {
                     System.err.println("[ZombieRool] Impossible de charger la skin "
@@ -446,7 +467,7 @@ public class DynamicResourceManager {
                 }
             }
         }
-        
+
         if (!mobSkins.isEmpty()) {
             SERVER_SKIN_CACHE.put(mobType, mobSkins);
         }
@@ -462,7 +483,7 @@ public class DynamicResourceManager {
             for (File file : files) {
                 try {
                     if (file.length() > MAX_SKIN_SIZE) {
-                        System.err.println("[ZombieRool] Fichier chalk trop volumineux (max 2MB) rejeté : " + file.getName());
+                        System.err.println("[ZombieRool] Fichier chalk trop volumineux (max 2MB) rejetÃ© : " + file.getName());
                         continue;
                     }
                     byte[] data = Files.readAllBytes(file.toPath());
@@ -505,7 +526,7 @@ public class DynamicResourceManager {
 
     public static String getRandomCustomVoiceKey(String eventName) {
         List<String> list = CUSTOM_VOICE_MAP.get(eventName);
-        if (list == null || list.isEmpty()) return "zombierool:" + eventName; 
+        if (list == null || list.isEmpty()) return "zombierool:" + eventName;
         return list.get(RANDOM.nextInt(list.size()));
     }
 
@@ -514,10 +535,10 @@ public class DynamicResourceManager {
         try {
             NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(data));
             DynamicTexture texture = new DynamicTexture(image);
-            
+
             ResourceLocation location = new ResourceLocation("zombierool",
                 "dynamic_skin_" + mobType + "_" + skinId);
-            
+
             Minecraft.getInstance().execute(() -> {
                 Minecraft.getInstance().getTextureManager().register(location, texture);
                 CLIENT_SKIN_CACHE.computeIfAbsent(mobType, k -> new HashMap<>())
@@ -562,38 +583,38 @@ public class DynamicResourceManager {
     }
 
     private static void createDefaultFilesIfMissing(File zrDir) {
-        File readme = new File(zrDir, "README.md");
+        File readme = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"README.md");
         if (!readme.exists()) {
             try (FileWriter fw = new FileWriter(readme)) {
                 String readmeContent = """
                         # ZombieRool Customization
                         This folder allows you to override or add custom assets to your ZombieRool map without needing a traditional resource pack. These assets are sent to the client automatically when they join the world.
-                        
+
                         ## 1. Audio (`audio/`)
                         - `music/`: Custom background music (`default`, `damned`, `secret`, `menu`).
                         - `sfx/`: Custom sound effects for game events (`start`, `round_change`, etc.).
                         - `voices/`: Custom character voice lines (`player_1_xxx.ogg`).
                         All audio files MUST be in `.ogg` format and smaller than 15MB.
-                        
+
                         ## 2. Skins (`skins/`)
                         - Add custom `.png` textures for mobs (`zombie/`, `hellhound/`, `crawler/`).
                         - Add custom `.png` textures for emissive eyes (`zombie_eyes/`, etc.).
                         All skin files MUST be in `.png` format and smaller than 2MB.
-                        
+
                         ## 3. Chalks / Overlays (`assets/chalks/`)
                         - Place your custom `.png` chalk textures here.
                         - These textures will be automatically loaded and available in-game using the **Chalk** item (Craie).
                         - You can use the Chalk item to select, rotate, and place these textures as overlays on blocks (great for writing "HELP", drawing arrows, or map secrets).
                         - **Recommended Size:** `128x128` pixels to match the vanilla ZombieRool style.
                         All chalk files MUST be in `.png` format and smaller than 2MB.
-                        
+
                         *Note: Overrides in config.json will automatically switch to true if you add files.*
                         """;
                 fw.write(readmeContent);
             } catch (Exception e) {}
         }
 
-        File sfxDir = new File(zrDir, "audio/sfx");
+        File sfxDir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/sfx");
         sfxDir.mkdirs();
         new File(sfxDir, "start").mkdirs();
         new File(sfxDir, "round_change").mkdirs();
@@ -602,24 +623,24 @@ public class DynamicResourceManager {
         new File(sfxDir, "ambient").mkdirs();
         new File(sfxDir, "misc").mkdirs();
 
-        new File(zrDir, "audio/voices").mkdirs();
-        new File(zrDir, "audio/custom").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/voices").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/custom").mkdirs();
 
-        File musicDir = new File(zrDir, "audio/music");
+        File musicDir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"audio/music");
         musicDir.mkdirs();
         new File(musicDir, "default").mkdirs();
         new File(musicDir, "damned").mkdirs();
         new File(musicDir, "secret").mkdirs();
         new File(musicDir, "menu").mkdirs();
 
-        new File(zrDir, "skins/zombie").mkdirs();
-        new File(zrDir, "skins/crawler").mkdirs();
-        new File(zrDir, "skins/hellhound").mkdirs();
-        new File(zrDir, "skins/zombie_eyes").mkdirs();
-        new File(zrDir, "skins/crawler_eyes").mkdirs();
-        new File(zrDir, "skins/hellhound_eyes").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/zombie").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/crawler").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/hellhound").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/zombie_eyes").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/crawler_eyes").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"skins/hellhound_eyes").mkdirs();
 
-        new File(zrDir, "assets/chalks").mkdirs();
+        me.cryo.zombierool.util.WorldZombieroolPaths.resolve(zrDir,"assets/chalks").mkdirs();
     }
 
     private static String getSafeName(String original) {

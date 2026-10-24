@@ -103,6 +103,26 @@
     "ammo_id": "tacz:762x51",
     "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "tacz:scar_h",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "ronmc:mk17",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "elitex:fs_scar19",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      }
+    ]
   }
 }

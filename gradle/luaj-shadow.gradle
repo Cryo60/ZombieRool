@@ -4,3 +4,22 @@
 tasks.withType(AbstractCopyTask).configureEach {
     exclude 'META-INF/services/javax.script.ScriptEngineFactory'
 }
+
+// Only the pure Lua VM and explicitly selected math library are shipped.
+tasks.named('shadowJar').configure {
+    exclude 'org/luaj/vm2/lib/jse/JsePlatform*'
+    exclude 'org/luaj/vm2/lib/jse/JseBaseLib*'
+    exclude 'org/luaj/vm2/lib/jse/JseIoLib*'
+    exclude 'org/luaj/vm2/lib/jse/JseOsLib*'
+    exclude 'org/luaj/vm2/lib/jse/JseProcess*'
+    exclude 'org/luaj/vm2/lib/jse/LuajavaLib*'
+    exclude 'org/luaj/vm2/lib/jse/Java*'
+    exclude 'org/luaj/vm2/lib/jse/Coerce*'
+    exclude 'org/luaj/vm2/lib/IoLib*'
+    exclude 'org/luaj/vm2/lib/OsLib*'
+    exclude 'org/luaj/vm2/lib/PackageLib*'
+    exclude 'org/luaj/vm2/lib/CoroutineLib*'
+    exclude 'org/luaj/vm2/script/**'
+    exclude 'org/luaj/vm2/luajc/**'
+    exclude 'lua*.class'
+}

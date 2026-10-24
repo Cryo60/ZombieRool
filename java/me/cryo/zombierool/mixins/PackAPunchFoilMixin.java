@@ -12,6 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class PackAPunchFoilMixin {
     @Inject(method="isFoil",at=@At("HEAD"),cancellable=true)
     private void zr$upgraded(ItemStack stack,CallbackInfoReturnable<Boolean> result){
-        if(WeaponFacade.isTaczWeapon(stack)&&WeaponFacade.isPackAPunched(stack))result.setReturnValue(true);
+        if(WeaponFacade.isTaczWeapon(stack)&&WeaponFacade.isPackAPunched(stack))result.setReturnValue(false);
     }
 }

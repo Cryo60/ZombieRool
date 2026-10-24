@@ -129,7 +129,7 @@ public class MysteryBoxSystem {
                 .strength(-1, 3600000)
                 .isRedstoneConductor((bs, br, bp) -> false)
                 .pushReaction(PushReaction.BLOCK)
-                .lightLevel(state -> 10)
+                .lightLevel(state -> state.getValue(ACTIVE)?12:0)
                 .noOcclusion()
             );
             this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(PART, false).setValue(OPEN, false).setValue(ACTIVE, true));
@@ -602,7 +602,7 @@ public class MysteryBoxSystem {
             poseStack.mulPose(Axis.YP.rotationDegrees(rotation));
             poseStack.scale(0.8f, 0.8f, 0.8f);
             Minecraft.getInstance().getItemRenderer().renderStatic(
-                toRender, ItemDisplayContext.GROUND, combinedLight, combinedOverlay, poseStack, buffer, entity.getLevel(), 0
+                toRender, ItemDisplayContext.GROUND, net.minecraft.client.renderer.LightTexture.FULL_BRIGHT, combinedOverlay, poseStack, buffer, entity.getLevel(), 0
             );
             poseStack.popPose();
         }
@@ -630,10 +630,10 @@ public class MysteryBoxSystem {
 
             Matrix4f matrix = poseStack.last().pose();
             float width = 0.15f;
-            float height = 512.0f;
+            float height = Math.min(112.0f,Minecraft.getInstance().options.getEffectiveRenderDistance()*16f);
             int a = (int)(alpha * 150);
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 2; i++) {
                 poseStack.mulPose(Axis.YP.rotationDegrees(90.0f));
                 builder.vertex(matrix, -width, 0, 0).uv(0, 0).color(r, g, b, a).endVertex();
                 builder.vertex(matrix, width, 0, 0).uv(1, 0).color(r, g, b, a).endVertex();

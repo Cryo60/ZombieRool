@@ -40,17 +40,21 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
         boolean isPap = isPackAPunched(stack);
         float damage = getWeaponDamage(stack);
 
+        fire((ServerPlayer)player, def, isPap, damage, getVisualMuzzlePos(player));
+    }
+
+    /** Native and TaCZ versions share targeting, damage, stun, chain limits and visuals. */
+    public static void fire(ServerPlayer player, WeaponSystem.Definition definition, boolean isPap, float damage, Vec3 visualStart) {
         int maxChains = isPap ? 24 : 10;
         double chainRange = 8.0;
 
-        Entity firstHit = BallisticManager.getRayTraceTarget((ServerPlayer)player, def.stats.range);
-        Vec3 visualStart = getVisualMuzzlePos(player);
+        Entity firstHit = BallisticManager.getRayTraceTarget(player, definition.stats.range);
 
         if (firstHit == null) {
             Vec3 eyePos = player.getEyePosition(1.0f);
             Vec3 lookVec = player.getViewVector(1.0f);
-            Vec3 endPos = eyePos.add(lookVec.scale(def.stats.range));
-            sendLightningVfx((ServerPlayer)player, visualStart, endPos, isPap);
+            Vec3 endPos = eyePos.add(lookVec.scale(definition.stats.range));
+            sendLightningVfx(player, visualStart, endPos, isPap);
             return;
         }
 
@@ -65,12 +69,12 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
                 hitTargets.add(currentTarget);
                 Vec3 targetCenter = currentTarget.position().add(0, currentTarget.getBbHeight() / 2.0, 0);
 
-                sendLightningVfx((ServerPlayer)player, lastPos, targetCenter, isPap);
+                sendLightningVfx(player, lastPos, targetCenter, isPap);
                 lastPos = targetCenter;
 
                 boolean wouldDie = currentTarget.getHealth() <= damage;
                 DamageManager.applyDamage(currentTarget, player.damageSources().playerAttack(player), damage);
-                
+
                 // Son électrique
                 currentTarget.level().playSound(null, currentTarget.blockPosition(), ZombieroolModSounds.ZOMBIE_ELEC.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
 
@@ -82,21 +86,20 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
                 AABB searchBox = currentTarget.getBoundingBox().inflate(chainRange);
                 List<LivingEntity> potentialNext = player.level().getEntitiesOfClass(LivingEntity.class, searchBox, e ->
                     e != player && e.isAlive() && !hitTargets.contains(e) &&
-                    (e instanceof ZombieEntity || e instanceof CrawlerEntity || e instanceof HellhoundEntity || e instanceof DummyEntity)
+                    (e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || e instanceof ZombieEntity || e instanceof CrawlerEntity || e instanceof HellhoundEntity || e instanceof DummyEntity)
                 );
 
                 if (potentialNext.isEmpty()) break;
 
                 final LivingEntity refTarget = currentTarget;
                 potentialNext.sort(Comparator.comparingDouble(e -> e.distanceToSqr(refTarget)));
-                currentTarget = potentialNext.get(0); 
+                currentTarget = potentialNext.get(0);
             }
         }
     }
 
-    private void sendLightningVfx(ServerPlayer player, Vec3 start, Vec3 end, boolean isPap) {
+    private static void sendLightningVfx(ServerPlayer player, Vec3 start, Vec3 end, boolean isPap) {
         S2CWeaponVfxPacket packet = new S2CWeaponVfxPacket("WUNDERWAFFE", start, end, isPap, false);
-        NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> player.level().getChunkAt(player.blockPosition())), packet);
-        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        NetworkHandler.INSTANCE.send(PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(start.x,start.y,start.z,96,player.level().dimension())), packet);
     }
 }

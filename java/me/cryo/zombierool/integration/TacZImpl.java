@@ -17,9 +17,21 @@ class TacZImpl {
     }
 
     public static class TacZEventHandlers {
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void repairLegacyPapNames(net.minecraftforge.event.TickEvent.PlayerTickEvent event){
+            if(event.phase!=net.minecraftforge.event.TickEvent.Phase.END||event.player.level().isClientSide||event.player.tickCount%20!=0)return;
+            for(var stack:event.player.getInventory().items){
+                if(stack.isEmpty()||!(stack.getItem() instanceof com.tacz.guns.api.item.IGun)||!me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack)||!stack.hasCustomHoverName())continue;
+                var def=me.cryo.zombierool.core.system.WeaponFacade.getDefinition(stack);if(def==null||def.pap.name==null||def.pap.name.isBlank())continue;
+                String stored=stack.getHoverName().getString();if(stored.equals(def.pap.name)||stored.equals("§d"+def.pap.name))stack.setHoverName(net.minecraft.network.chat.Component.translatable(def.pap.name).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
+            }
+        }
         private static void playLayeredFire(net.minecraft.server.level.ServerPlayer player, me.cryo.zombierool.core.system.WeaponSystem.Definition definition, boolean pap) {
-            java.util.LinkedHashSet<String> tracks=new java.util.LinkedHashSet<>();tracks.add(definition.sounds.fire);if(pap)tracks.add(definition.sounds.fire_pap);
-            for(String id:tracks){if(id==null||id.isBlank())continue;var sound=net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(id));if(sound!=null)player.level().playSound(null,player.getX(),player.getY(),player.getZ(),sound,net.minecraft.sounds.SoundSource.PLAYERS,5.0f,1.0f);}
+            boolean wonder=java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii","zombierool:wunderwaffedg2").contains(definition.id);
+            java.util.LinkedHashSet<String> tracks=new java.util.LinkedHashSet<>();
+            if(wonder)tracks.add(pap&&definition.sounds.fire_pap!=null&&!definition.sounds.fire_pap.isBlank()?definition.sounds.fire_pap:definition.sounds.fire);
+            else{tracks.add(definition.sounds.fire);if(pap)tracks.add(definition.sounds.fire_pap);}
+            for(String id:tracks){if(id==null||id.isBlank())continue;var sound=net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(id));if(sound!=null)player.level().playSound(null,player.getX(),player.getY(),player.getZ(),sound,net.minecraft.sounds.SoundSource.PLAYERS,wonder?1.1f:5.0f,1.0f);}
         }
         private static final java.util.Set<String> OVERRIDE_SOUND_WEAPONS = java.util.Set.of(
             "m40a3", "deagle", "kar98k", "barret", "fg42", "ppsh41", "intervention", "usp45", "m14", "m1garand", "gewehr43"
@@ -31,6 +43,9 @@ class TacZImpl {
             net.minecraft.world.level.block.state.BlockState hitState = event.getState();
             if (!event.getAmmo().level().isClientSide) me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(event.getAmmo().level(), event.getHitResult().getBlockPos());
             if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock
+                    || hitState.getBlock() instanceof me.cryo.zombierool.block.system.DefenseDoorSystem.BaseDefenseDoor
+                        && (!(hitState.getBlock() instanceof me.cryo.zombierool.block.system.GlassDefenseDoorBlock)
+                            || hitState.getValue(me.cryo.zombierool.block.system.GlassDefenseDoorBlock.BREACHED))
                     || me.cryo.zombierool.block.system.DefenseWallSystem.bulletsPass(hitState)) {
                 event.setCanceled(true);
                 return;
@@ -45,6 +60,7 @@ class TacZImpl {
 
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onGunReload(com.tacz.guns.api.event.common.GunReloadEvent event) {
+            if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(event.getEntity())||(me.cryo.zombierool.gameplay.LunarEquipment.busy(event.getEntity())||me.cryo.zombierool.gameplay.BuildableSystem.busy(event.getEntity())))){event.setCanceled(true);return;}
             if (event.getLogicalSide().isServer() && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
                 me.cryo.zombierool.gameplay.CherryDischarge.trigger(player);
             }
@@ -52,7 +68,7 @@ class TacZImpl {
 
         @net.minecraftforge.eventbus.api.SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
         public static void onEntityHurtByGunPre(com.tacz.guns.api.event.common.EntityHurtByGunEvent.Pre event) {
-            if (event.getLogicalSide().isClient()) return; 
+            if (event.getLogicalSide().isClient()) return;
 
             net.minecraft.world.entity.Entity target = event.getHurtEntity();
             if (target instanceof me.cryo.zombierool.entity.CrawlerCorpse || (target instanceof me.cryo.zombierool.entity.CrawlerEntity crawler && !crawler.isAlive())) { if (event.isCancelable()) event.setCanceled(true); return; }
@@ -66,6 +82,9 @@ class TacZImpl {
             }
 
             boolean headshot = event.isHeadShot();
+            if(target instanceof me.cryo.zombierool.entity.SpecialEnemyEntity special&&special.isBoss()){
+                headshot=false;event.setHeadshotMultiplier(1f);
+            }
             if (!(attacker instanceof net.minecraft.server.level.ServerPlayer sp)) return;
             if (!(target instanceof net.minecraft.world.entity.LivingEntity living)) return;
 
@@ -75,7 +94,10 @@ class TacZImpl {
             me.cryo.zombierool.core.system.WeaponSystem.Definition def = me.cryo.zombierool.core.system.WeaponFacade.getDefinition(gunStack);
             boolean isPap = me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(gunStack);
 
-            float baseDamage = event.getBaseAmount(); 
+            if(def!=null && def.id.equals("zombierool:raygunmarkii"))
+                me.cryo.zombierool.gameplay.RayGunShots.impact(sp,living.getBoundingBox().getCenter(),isPap);
+
+            float baseDamage = event.getBaseAmount();
             int pelletCount = 1;
             float headshotFlatBonus = 0f;
             boolean canExplodeHead = true;
@@ -98,7 +120,7 @@ class TacZImpl {
                 headshotExplosionChance = def.headshot.head_explosion_chance;
             }
 
-            if (me.cryo.zombierool.bonuses.BonusManager.isInstaKillActive(sp)) {
+            if (me.cryo.zombierool.bonuses.BonusManager.isInstaKillActive(sp) && !me.cryo.zombierool.gameplay.EquipmentEffects.instantKillImmune(living)) {
                 baseDamage = 100000f;
             }
             if (sp.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {
@@ -113,20 +135,23 @@ class TacZImpl {
                 totalDamage = (baseDamage + adjustedFlatBonus) * globalMultiplier;
             }
 
+            if(!me.cryo.zombierool.bonuses.BonusManager.isInstaKillActive(sp)||me.cryo.zombierool.gameplay.EquipmentEffects.instantKillImmune(living))
+                totalDamage *= me.cryo.zombierool.gameplay.ShotgunBalance.multiplier(def,sp.distanceTo(living));
+
             if (def != null && def.id.contains("percepteur")) {
                 if (living.getHealth() / living.getMaxHealth() <= 0.05f) {
                     totalDamage += living.getHealth() + 10;
-                    int pts = isPap ? 75 : 50; 
-                    me.cryo.zombierool.gameplay.PointManager.modifyScore(sp, pts); 
+                    int pts = isPap ? 75 : 50;
+                    me.cryo.zombierool.gameplay.PointManager.awardEnemyPoints(sp, living, pts);
                     ((net.minecraft.server.level.ServerLevel)sp.level()).sendParticles(
-                        net.minecraft.core.particles.ParticleTypes.SOUL, 
-                        living.getX(), living.getY() + 1, living.getZ(), 
+                        net.minecraft.core.particles.ParticleTypes.SOUL,
+                        living.getX(), living.getY() + 1, living.getZ(),
                         10, 0.2, 0.5, 0.2, 0.1
                     );
                     sp.level().playSound(
-                        null, living.blockPosition(), 
-                        net.minecraft.sounds.SoundEvents.SOUL_ESCAPE, 
-                        net.minecraft.sounds.SoundSource.PLAYERS, 
+                        null, living.blockPosition(),
+                        net.minecraft.sounds.SoundEvents.SOUL_ESCAPE,
+                        net.minecraft.sounds.SoundSource.PLAYERS,
                         1f, 1f
                     );
                 }
@@ -134,11 +159,11 @@ class TacZImpl {
 
             event.setBaseAmount(totalDamage);
             if (headshot) {
-                event.setHeadshotMultiplier(1.0f); 
+                event.setHeadshotMultiplier(1.0f);
             }
 
             if (def != null && isPap && (def.id.contains("scarh") || def.id.contains("wunderwaffedg2"))) {
-                int maxChains = def.id.contains("wunderwaffedg2") ? 24 : (def.stats.penetration + def.pap.penetration_bonus > 0 ? def.stats.penetration + def.pap.penetration_bonus : 3);
+                int maxChains = def.id.contains("wunderwaffedg2") ? 24 : Math.max(1,Math.min(8,def.stats.penetration + def.pap.penetration_bonus > 0 ? def.stats.penetration + def.pap.penetration_bonus : 3));
                 double chainRange = 8.0;
 
                 java.util.Set<net.minecraft.world.entity.LivingEntity> hitTargets = new java.util.HashSet<>();
@@ -150,20 +175,14 @@ class TacZImpl {
                     hitTargets.add(currentTarget);
 
                     net.minecraft.world.phys.Vec3 targetCenter = currentTarget.position().add(0, currentTarget.getBbHeight() / 2.0, 0);
-                    
-                    me.cryo.zombierool.network.packet.S2CWeaponVfxPacket packet = new me.cryo.zombierool.network.packet.S2CWeaponVfxPacket("WUNDERWAFFE", lastPos, targetCenter, isPap, false);
+
+                    me.cryo.zombierool.network.packet.S2CWeaponVfxPacket packet = new me.cryo.zombierool.network.packet.S2CWeaponVfxPacket(def.id.contains("scarh") ? "SCAR_CHAIN" : "WUNDERWAFFE", lastPos, targetCenter, isPap, false);
                     me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                        net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> sp.level().getChunkAt(sp.blockPosition())), 
-                        packet
-                    );
-                    me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp), 
-                        packet
-                    );
+                        net.minecraftforge.network.PacketDistributor.NEAR.with(() -> new net.minecraftforge.network.PacketDistributor.TargetPoint(targetCenter.x,targetCenter.y,targetCenter.z,96,sp.level().dimension())),packet);
 
                     lastPos = targetCenter;
 
-                    if (i > 0) { 
+                    if (i > 0) {
                         me.cryo.zombierool.core.manager.DamageManager.applyDamage(currentTarget, sp.damageSources().playerAttack(sp), totalDamage);
                         sp.level().playSound(null, currentTarget.getX(), currentTarget.getY(), currentTarget.getZ(),
                             net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation("zombierool:impact_flesh")),
@@ -180,14 +199,13 @@ class TacZImpl {
                     java.util.List<net.minecraft.world.entity.LivingEntity> potentialNext = sp.level().getEntitiesOfClass(
                         net.minecraft.world.entity.LivingEntity.class, searchBox, e ->
                             e != sp && e.isAlive() && !hitTargets.contains(e) &&
-                            (e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
+                            (e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
                     );
 
                     if (potentialNext.isEmpty()) break;
-                    
+
                     final net.minecraft.world.entity.LivingEntity refTarget = currentTarget;
-                    potentialNext.sort(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(refTarget)));
-                    currentTarget = potentialNext.get(0);
+                    currentTarget = potentialNext.stream().min(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(refTarget))).orElse(null);
                 }
             }
 
@@ -201,9 +219,9 @@ class TacZImpl {
             sp.level().playSound(null, living.getX(), living.getY(), living.getZ(),
                 net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation("zombierool:impact_flesh")),
                 net.minecraft.sounds.SoundSource.PLAYERS, 0.5f, 1.0f + (sp.level().random.nextFloat() * 0.2f));
-            
+
             me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp), 
+                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
                 new me.cryo.zombierool.network.packet.S2CDisplayHitmarkerPacket()
             );
 
@@ -225,9 +243,9 @@ class TacZImpl {
             if (def != null && def.explosion != null && def.explosion.radius > 0 && (!def.explosion.pap_only || isPap)) {
                 float radius = def.explosion.radius + (isPap ? def.pap.explosion_radius_bonus : 0);
                 me.cryo.zombierool.gameplay.ExplosionControl.doCustomExplosion(
-                    sp.level(), sp, living.position(), totalDamage, radius, 
-                    def.explosion.damage_multiplier, def.explosion.self_damage_multiplier, 
-                    def.explosion.self_damage_cap, def.explosion.knockback, 
+                    sp.level(), sp, living.position(), totalDamage, radius,
+                    def.explosion.damage_multiplier, def.explosion.self_damage_multiplier,
+                    def.explosion.self_damage_cap, def.explosion.knockback,
                     def.explosion.vfx_type, def.explosion.sound, isPap
                 );
             }
@@ -235,6 +253,8 @@ class TacZImpl {
 
         @net.minecraftforge.eventbus.api.SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
         public static void onGunShoot(com.tacz.guns.api.event.common.GunShootEvent event) {
+            if(event.getShooter() instanceof Player p&&me.cryo.zombierool.gameplay.PortableEquipment.inHands(p)){event.setCanceled(true);return;}
+            if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(event.getShooter())||(me.cryo.zombierool.gameplay.LunarEquipment.busy(event.getShooter())||me.cryo.zombierool.gameplay.BuildableSystem.busy(event.getShooter())))){event.setCanceled(true);return;}
             if (event.getShooter() instanceof Player player && me.cryo.zombierool.handlers.LethalWeaponManager.isCooking(player.getUUID())) {
                 if (event.isCancelable()) {
                     event.setCanceled(true);
@@ -245,20 +265,22 @@ class TacZImpl {
             if (event.getLogicalSide().isServer()) {
                 net.minecraft.world.item.ItemStack stack = event.getGunItemStack();
                 me.cryo.zombierool.core.system.WeaponSystem.Definition def = me.cryo.zombierool.core.system.WeaponFacade.getDefinition(stack);
-                
+
                 if (def != null) {
                     boolean isPap = me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack);
                     net.minecraft.server.level.ServerPlayer sp = (net.minecraft.server.level.ServerPlayer)event.getShooter();
+                    // These use GunFireEvent per real round, after TaCZ accepts the shot.
+                    if(java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii","zombierool:wunderwaffedg2").contains(def.id))return;
                     long now = sp.level().getGameTime();
                     long lastFire = stack.getOrCreateTag().getLong("zombierool:LastFire");
-                    
+
                     int fireRate = def.stats.fire_rate;
                     if (sp.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {
                         fireRate = (int)(fireRate * 0.75f);
                     }
 
-                    boolean isCustomProjectile = "RAYGUN".equalsIgnoreCase(def.ballistics.type) || 
-                                                 "ROCKET".equalsIgnoreCase(def.ballistics.type) || 
+                    boolean isCustomProjectile = "RAYGUN".equalsIgnoreCase(def.ballistics.type) ||
+                                                 "ROCKET".equalsIgnoreCase(def.ballistics.type) ||
                                                  "PROJECTILE".equalsIgnoreCase(def.ballistics.type) ||
                                                  def.id.contains("thundergun");
 
@@ -268,17 +290,11 @@ class TacZImpl {
                             return;
                         }
                         stack.getOrCreateTag().putLong("zombierool:LastFire", now);
-                        
+
                         com.tacz.guns.api.item.IGun iGun = com.tacz.guns.api.item.IGun.getIGunOrNull(stack);
                         if (iGun != null) {
-                            int currentAmmo = iGun.getCurrentAmmoCount(stack);
-                            if (currentAmmo <= 0) {
-                                if (event.isCancelable()) event.setCanceled(true);
-                                return;
-                            }
-                            if (!sp.isCreative()) {
-                                iGun.reduceCurrentAmmoCount(stack);
-                            }
+                            if (iGun.getCurrentAmmoCount(stack) <= 0) { if(event.isCancelable())event.setCanceled(true);return; }
+                            if (!sp.isCreative()) iGun.reduceCurrentAmmoCount(stack);
                         }
 
                         playLayeredFire(sp, def, isPap);
@@ -291,7 +307,7 @@ class TacZImpl {
                         }
                         float yawOffset = (sp.getRandom().nextBoolean() ? 1 : -1) * yawRecoil;
                         me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                            net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp), 
+                            net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
                             new me.cryo.zombierool.network.packet.S2CRecoilPacket(pitchRecoil, yawOffset)
                         );
 
@@ -302,16 +318,16 @@ class TacZImpl {
 
                             net.minecraft.world.phys.Vec3 eyePos = sp.getEyePosition(1.0f);
                             net.minecraft.world.phys.Vec3 lookVec = sp.getViewVector(1.0f);
-                            
+
                             me.cryo.zombierool.network.packet.S2CWeaponVfxPacket packet = new me.cryo.zombierool.network.packet.S2CWeaponVfxPacket(
                                 "THUNDERGUN", eyePos, eyePos.add(lookVec.scale(range)), isPap, false
                             );
                             me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                                net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> sp.level().getChunkAt(sp.blockPosition())), 
+                                net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> sp.level().getChunkAt(sp.blockPosition())),
                                 packet
                             );
                             me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(
-                                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp), 
+                                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
                                 packet
                             );
 
@@ -319,17 +335,17 @@ class TacZImpl {
                             java.util.List<net.minecraft.world.entity.LivingEntity> targets = sp.level().getEntitiesOfClass(
                                 net.minecraft.world.entity.LivingEntity.class, box, e ->
                                     e != sp && e.isAlive() &&
-                                    (e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
+                                    (e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity || e instanceof me.cryo.zombierool.entity.ZombieEntity || e instanceof me.cryo.zombierool.entity.CrawlerEntity || e instanceof me.cryo.zombierool.entity.HellhoundEntity || e instanceof me.cryo.zombierool.entity.DummyEntity)
                             );
 
                             for (net.minecraft.world.entity.LivingEntity target : targets) {
                                 net.minecraft.world.phys.Vec3 toTarget = target.position().subtract(sp.position());
                                 if (toTarget.length() > range) continue;
-                                
+
                                 if (lookVec.dot(toTarget.normalize()) > 0.5) {
                                     me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, sp.damageSources().playerAttack(sp), damage);
                                     double kbStrength = isPap ? 3.5 : 2.5;
-                                    target.setDeltaMovement(lookVec.x * kbStrength, isPap ? 1.5 : 1.0, lookVec.z * kbStrength);
+                                    if(!(me.cryo.zombierool.gameplay.MapActors.owns(target)&&target.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)>=1))target.setDeltaMovement(lookVec.x * kbStrength, isPap ? 1.5 : 1.0, lookVec.z * kbStrength);
                                     target.hurtMarked = true;
                                 }
                             }
@@ -338,9 +354,9 @@ class TacZImpl {
                         }
 
                         if (event.isCancelable()) {
-                            event.setCanceled(true); 
+                            event.setCanceled(true);
                         }
-                    } 
+                    }
                     else {
                         if (OVERRIDE_SOUND_WEAPONS.contains(def.id.replace("zombierool:", ""))) {
                             playLayeredFire(sp, def, isPap);
@@ -349,6 +365,36 @@ class TacZImpl {
                 }
             }
         }
+        /** GunShootEvent is before animation/cooldown finalization; GunFireEvent is per actual burst round. */
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void onWonderFire(com.tacz.guns.api.event.common.GunFireEvent event){
+            if(!event.getLogicalSide().isServer() || !(event.getShooter() instanceof net.minecraft.server.level.ServerPlayer player))return;
+            var stack=event.getGunItemStack();var def=me.cryo.zombierool.core.system.WeaponFacade.getDefinition(stack);
+            if(def==null||!java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii","zombierool:wunderwaffedg2").contains(def.id))return;
+            boolean pap=me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack);
+            if(def.id.equals("zombierool:raygunmarkii")){
+                me.cryo.zombierool.gameplay.RayGunShots.markIIFired(player,def,pap);
+            }else{
+                // Cancel only the gunpack projectile. TaCZ retains ammo, cooldowns and shoot animation.
+                event.setCanceled(true);
+                com.tacz.guns.network.NetworkHandler.sendToTrackingEntity(
+                    new com.tacz.guns.network.message.event.ServerMessageGunFire(player.getId(),stack),player);
+                playLayeredFire(player,def,pap);
+                if(def.id.equals("zombierool:wunderwaffedg2"))
+                    me.cryo.zombierool.item.WunderwaffeItem.fire(player,def,pap,def.stats.damage+(pap?def.pap.damage_bonus:0),player.getEyePosition().add(player.getLookAngle().scale(.5)));
+                else me.cryo.zombierool.core.system.WeaponFacade.shootCustomTaczProjectile(player,stack,def);
+            }
+            float factor=pap?def.pap.recoil_mult:1;
+            me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->player),
+                new me.cryo.zombierool.network.packet.S2CRecoilPacket(def.recoil.pitch*factor,(player.getRandom().nextBoolean()?1:-1)*def.recoil.yaw*factor));
+        }
+
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public static void onTeleporterMelee(com.tacz.guns.api.event.common.GunMeleeEvent event){if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(event.getShooter())||(me.cryo.zombierool.gameplay.LunarEquipment.busy(event.getShooter())||me.cryo.zombierool.gameplay.BuildableSystem.busy(event.getShooter()))))event.setCanceled(true);}
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public static void onTeleporterFireSelect(com.tacz.guns.api.event.common.GunFireSelectEvent event){if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(event.getShooter())||(me.cryo.zombierool.gameplay.LunarEquipment.busy(event.getShooter())||me.cryo.zombierool.gameplay.BuildableSystem.busy(event.getShooter()))))event.setCanceled(true);}
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public static void onTeleporterFire(com.tacz.guns.api.event.common.GunFireEvent event){if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(event.getShooter())||(me.cryo.zombierool.gameplay.LunarEquipment.busy(event.getShooter())||me.cryo.zombierool.gameplay.BuildableSystem.busy(event.getShooter()))))event.setCanceled(true);}
 
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onExplosionDetonate(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
@@ -372,21 +418,23 @@ class TacZImpl {
 
     public static void applyTaczPap(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
         net.minecraft.nbt.CompoundTag tag = stack.getOrCreateTag();
+        var mapping = TacZMappings.forStack(def, stack);
         tag.putBoolean("zombierool:pap", true);
 
         if (def != null && def.pap.name != null && !def.pap.name.isEmpty()) {
-            stack.setHoverName(net.minecraft.network.chat.Component.literal("§d" + def.pap.name));
+            stack.setHoverName(net.minecraft.network.chat.Component.translatable(def.pap.name).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
         } else if (def != null) {
-            stack.setHoverName(net.minecraft.network.chat.Component.literal("§d" + def.name + " (PAP)"));
+            stack.setHoverName(net.minecraft.network.chat.Component.translatable(def.name).append(" (PAP)").withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
         }
 
-        if (def != null && def.tacz != null && def.tacz.pap_gun_id != null && !def.tacz.pap_gun_id.isEmpty()) {
-            tag.putString("GunId", def.tacz.pap_gun_id);
+        if (mapping != null && mapping.pap_gun_id != null && !mapping.pap_gun_id.isEmpty()
+                && TacZIntegration.isTaczGunAvailable(mapping.pap_gun_id)) {
+            tag.putString("GunId", mapping.pap_gun_id);
         }
 
         net.minecraft.resources.ResourceLocation gunId = new net.minecraft.resources.ResourceLocation(tag.getString("GunId"));
         String validMag = findValidExtendedMag(gunId);
-        if (validMag != null) {
+        if (validMag != null && def==null) {
             net.minecraft.nbt.CompoundTag attTag = new net.minecraft.nbt.CompoundTag();
             attTag.putString("id", "tacz:attachment");
             attTag.putByte("Count", (byte)1);
@@ -396,11 +444,11 @@ class TacZImpl {
             tag.put("AttachmentEXTENDED_MAG", attTag);
         }
 
-        if (def != null && def.tacz != null && def.tacz.pap_attachments != null) {
-            for (java.util.Map.Entry<String, String> entry : def.tacz.pap_attachments.entrySet()) {
+        if (mapping != null && mapping.pap_attachments != null) {
+            for (java.util.Map.Entry<String, String> entry : mapping.pap_attachments.entrySet()) {
                 String type = entry.getKey().toUpperCase();
                 String attId = entry.getValue();
-                
+
                 if (com.tacz.guns.util.AllowAttachmentTagMatcher.match(gunId, new net.minecraft.resources.ResourceLocation(attId))) {
                     net.minecraft.nbt.CompoundTag attTag = new net.minecraft.nbt.CompoundTag();
                     attTag.putString("id", "tacz:attachment");
@@ -414,12 +462,12 @@ class TacZImpl {
         }
 
         int nativeMax = getTacZWeaponMaxAmmo(stack, def);
-        tag.putInt("GunCurrentAmmoCount", nativeMax);
-        
+        fillMagazineAndChamber(stack);
+
         if (def != null) {
-            me.cryo.zombierool.core.system.WeaponFacade.setReserve(stack, def.ammo.max_reserve + def.pap.reserve_bonus);
+            me.cryo.zombierool.core.system.WeaponFacade.setReserve(stack, getTacZWeaponMaxReserve(stack,def));
         } else {
-            me.cryo.zombierool.core.system.WeaponFacade.setReserve(stack, nativeMax * 8);
+            me.cryo.zombierool.core.system.WeaponFacade.setReserve(stack, getTacZWeaponMaxReserve(stack,null));
         }
     }
 
@@ -431,19 +479,56 @@ class TacZImpl {
         var type=attachment.getType(purchase);
         if(!gun.allowAttachmentType(held,type))return false;
         var previous=gun.getAttachment(held,type).copy();
+        int oldReserve=me.cryo.zombierool.core.system.WeaponFacade.getReserve(held),oldMaxReserve=me.cryo.zombierool.core.system.WeaponFacade.getMaxReserve(held);
         var installed=purchase.copy();installed.setCount(1);gun.installAttachment(held,installed);purchase.shrink(1);
+        if(type==com.tacz.guns.api.item.attachment.AttachmentType.EXTENDED_MAG){fillMagazineAndChamber(held);int max=me.cryo.zombierool.core.system.WeaponFacade.getMaxReserve(held);me.cryo.zombierool.core.system.WeaponFacade.setReserve(held,Math.min(max,oldReserve+Math.max(0,max-oldMaxReserve)));}
+        com.tacz.guns.resource.modifier.AttachmentPropertyManager.postChangeEvent(player,held);
         if(!previous.isEmpty() && !player.getInventory().add(previous))player.drop(previous,false);
         if(!purchase.isEmpty() && !player.getInventory().add(purchase))player.drop(purchase,false);
         player.getInventory().setChanged();player.inventoryMenu.broadcastChanges();
         return true;
     }
+    public static boolean hasEquippedAttachment(net.minecraft.world.item.ItemStack weapon,net.minecraft.world.item.ItemStack attachmentStack) {
+        var gun=com.tacz.guns.api.item.IGun.getIGunOrNull(weapon);
+        var attachment=com.tacz.guns.api.item.IAttachment.getIAttachmentOrNull(attachmentStack);
+        if(gun==null || attachment==null || attachmentStack.isEmpty())return false;
+        var installed=gun.getAttachment(weapon,attachment.getType(attachmentStack));
+        var installedAttachment=com.tacz.guns.api.item.IAttachment.getIAttachmentOrNull(installed);
+        return installedAttachment!=null && attachment.getAttachmentId(attachmentStack).equals(installedAttachment.getAttachmentId(installed));
+    }
+    public static void compensatePause(net.minecraft.world.entity.LivingEntity entity,long millis) {
+        var d=com.tacz.guns.api.entity.IGunOperator.fromLivingEntity(entity).getDataHolder();
+        long resumedAt=System.currentTimeMillis();
+        d.reloadTimestamp=TacZPauseClock.compensateTimestamp(d.reloadTimestamp,millis,resumedAt);
+        d.boltTimestamp=TacZPauseClock.compensateTimestamp(d.boltTimestamp,millis,resumedAt);
+        d.drawTimestamp=TacZPauseClock.compensateTimestamp(d.drawTimestamp,millis,resumedAt);
+        // Shoot times are relative to TacZ's synchronized base; other action
+        // clocks are absolute. Convert before measuring the pause overlap.
+        if(d.shootTimestamp!=-1)d.shootTimestamp=TacZPauseClock.compensateTimestamp(d.baseTimestamp+d.shootTimestamp,millis,resumedAt)-d.baseTimestamp;
+        if(d.lastShootTimestamp!=-1)d.lastShootTimestamp=TacZPauseClock.compensateTimestamp(d.baseTimestamp+d.lastShootTimestamp,millis,resumedAt)-d.baseTimestamp;
+        d.aimingTimestamp=TacZPauseClock.compensateTimestamp(d.aimingTimestamp,millis,resumedAt);
+        d.meleeTimestamp=TacZPauseClock.compensateTimestamp(d.meleeTimestamp,millis,resumedAt);
+        d.sprintTimestamp=TacZPauseClock.compensateTimestamp(d.sprintTimestamp,millis,resumedAt);
+        d.heatTimestamp=TacZPauseClock.compensateTimestamp(d.heatTimestamp,millis,resumedAt);
+    }
+    public static void fillMagazineAndChamber(net.minecraft.world.item.ItemStack stack) {
+        var gun=com.tacz.guns.api.item.IGun.getIGunOrNull(stack);if(gun==null)return;
+        com.tacz.guns.api.TimelessAPI.getCommonGunIndex(gun.getGunId(stack)).ifPresent(index->{
+            gun.setCurrentAmmoCount(stack,Math.max(0,com.tacz.guns.util.AttachmentDataUtils.getAmmoCountWithAttachment(stack,index.getGunData())-(index.getGunData().getBolt()==com.tacz.guns.resource.pojo.data.gun.Bolt.MANUAL_ACTION?1:0)));
+            gun.setBulletInBarrel(stack,index.getGunData().getBolt()!=com.tacz.guns.resource.pojo.data.gun.Bolt.OPEN_BOLT);
+        });
+    }
     public static void applyDefaultAttachments(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
-        if (def != null && def.tacz != null && def.tacz.attachments != null) {
+        var mapping = TacZMappings.forStack(def, stack);
+        if (mapping != null && mapping.attachments != null) {
             net.minecraft.nbt.CompoundTag tag = stack.getOrCreateTag();
-            for (Map.Entry<String, String> entry : def.tacz.attachments.entrySet()) {
+            var gunId = ResourceLocation.tryParse(tag.getString("GunId"));
+            for (Map.Entry<String, String> entry : mapping.attachments.entrySet()) {
                 String type = entry.getKey().toUpperCase();
                 String attId = entry.getValue();
-                
+                var attachmentId = ResourceLocation.tryParse(attId);
+                if (gunId == null || attachmentId == null || !com.tacz.guns.util.AllowAttachmentTagMatcher.match(gunId, attachmentId)) continue;
+
                 net.minecraft.nbt.CompoundTag attTag = new net.minecraft.nbt.CompoundTag();
                 attTag.putString("id", "tacz:attachment");
                 attTag.putByte("Count", (byte)1);
@@ -471,7 +556,7 @@ class TacZImpl {
             ResourceLocation gunId = iGun.getGunId(stack);
             var indexOpt = com.tacz.guns.api.TimelessAPI.getCommonGunIndex(gunId);
             if (indexOpt.isPresent()) {
-                return com.tacz.guns.util.AttachmentDataUtils.getAmmoCountWithAttachment(stack, indexOpt.get().getGunData());
+                var data=indexOpt.get().getGunData();return com.tacz.guns.util.AttachmentDataUtils.getAmmoCountWithAttachment(stack,data)+(data.getBolt()==com.tacz.guns.resource.pojo.data.gun.Bolt.CLOSED_BOLT?1:0);
             }
         }
         if (def != null) {
@@ -486,23 +571,13 @@ class TacZImpl {
 
     public static int getTacZWeaponMaxReserve(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
         int baseReserve = def != null ? def.ammo.max_reserve : 120;
-        int attachmentBonus = 0;
-
-        if (stack.getItem() instanceof com.tacz.guns.api.item.IGun iGun) {
-            ResourceLocation magId = iGun.getAttachmentId(stack, com.tacz.guns.api.item.attachment.AttachmentType.EXTENDED_MAG);
-            if (!com.tacz.guns.api.DefaultAssets.isEmptyAttachmentId(magId)) {
-                var magIndex = com.tacz.guns.api.TimelessAPI.getCommonAttachmentIndex(magId);
-                if (magIndex.isPresent() && magIndex.get().getData() != null) {
-                    attachmentBonus = magIndex.get().getData().getExtendedMagLevel();
-                }
-            }
-        }
-
-        int totalReserve = baseReserve + (attachmentBonus * 4);
-        
-        if (def != null && me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack)) {
-            totalReserve += def.pap.reserve_bonus;
-        }
+        boolean pap=me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack);
+        if(def!=null&&pap)baseReserve+=def.pap.reserve_bonus;
+        int baseline=def!=null?def.ammo.clip_size+(pap?def.pap.clip_bonus:0):30;
+        var gun=com.tacz.guns.api.item.IGun.getIGunOrNull(stack);
+        if(gun!=null&&def==null){var index=com.tacz.guns.api.TimelessAPI.getCommonGunIndex(gun.getGunId(stack));if(index.isPresent()){baseline=index.get().getGunData().getAmmoAmount()*(pap?2:1);baseReserve=baseline*4;}}
+        int current=getTacZWeaponMaxAmmo(stack,def);
+        int totalReserve=(int)Math.ceil(baseReserve*(double)Math.max(1,current)/Math.max(1,baseline));
 
         return totalReserve;
     }
@@ -596,7 +671,7 @@ class TacZImpl {
                 def.stats.fire_rate = Math.max(1, 1200 / Math.max(1, gunData.getRoundsPerMinute()));
                 def.ammo.clip_size = gunData.getAmmoAmount();
                 def.ammo.max_reserve = gunData.getAmmoAmount() * 4;
-                def.ammo.reload_time = 40; 
+                def.ammo.reload_time = 40;
 
                 if (gunData.getBurstData() != null && gunData.getBurstData().getCount() > 1) {
                     def.burst.count = gunData.getBurstData().getCount();
@@ -625,7 +700,7 @@ class TacZImpl {
 
                 me.cryo.zombierool.core.system.WeaponSystem.Definition match = null;
                 for (me.cryo.zombierool.core.system.WeaponSystem.Definition def : me.cryo.zombierool.core.system.WeaponSystem.Loader.LOADED_DEFINITIONS.values()) {
-                    if (def.tacz != null && taczId.toString().equals(def.tacz.gun_id)) {
+                    if (TacZMappings.matchesBase(def, taczId.toString())) {
                         match = def;
                         break;
                     }
@@ -636,7 +711,7 @@ class TacZImpl {
 
                     int targetRpm = 1200 / Math.max(1, match.stats.fire_rate);
                     if (gunData.getBolt() == com.tacz.guns.resource.pojo.data.gun.Bolt.MANUAL_ACTION) {
-                        targetRpm = 1200; 
+                        targetRpm = 1200;
                     }
                     setFieldValue(gunData, "roundsPerMinute", targetRpm);
 
@@ -656,8 +731,9 @@ class TacZImpl {
                             setFieldValue(burstData, "count", match.burst.count);
                             int burstRpm = 1200 / Math.max(1, match.burst.delay);
                             setFieldValue(burstData, "bpm", burstRpm);
+                            if(match.id.equals("zombierool:raygunmarkii"))setFieldValue(burstData,"minInterval",match.stats.fire_rate/20.0);
                         }
-                    } else if (match.stats.fire_rate <= 5) {
+                    } else if ((match.stats.fire_rate <= 5 || match.id.equals("zombierool:raygun")) && !match.tags.contains("semi_auto") && !match.tags.contains("bolt_action")) {
                         newFireModes.add(com.tacz.guns.api.item.gun.FireMode.AUTO);
                     } else {
                         newFireModes.add(com.tacz.guns.api.item.gun.FireMode.SEMI);
@@ -667,7 +743,18 @@ class TacZImpl {
                     com.tacz.guns.resource.pojo.data.gun.BulletData bulletData = gunData.getBulletData();
                     if (bulletData != null) {
                         setFieldValue(bulletData, "damageAmount", match.stats.damage);
-                        setFieldValue(bulletData, "extraDamage", null); 
+                        setFieldValue(bulletData, "extraDamage", null);
+                        if (java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii","zombierool:wunderwaffedg2").contains(match.id))
+                            {
+                            setFieldValue(bulletData,"explosionData",null);
+                            setFieldValue(bulletData,"ignite",new com.tacz.guns.resource.pojo.data.gun.Ignite(false,false));
+                            if(match.id.equals("zombierool:raygunmarkii")){
+                                setFieldValue(bulletData,"pierce",match.stats.penetration);
+                                setFieldValue(bulletData,"gravity",0f);
+                                setFieldValue(bulletData,"friction",0f);
+                                setFieldValue(bulletData,"speed",160f);
+                            }
+                        }
                     }
 
                     setFieldValue(gunData, "weight", 0.0f);

@@ -38,10 +38,13 @@ public class PointManager {
     }
 
     public static void modifyScore(Player player, int amount) { modifyScore(player,amount,true); }
+    public static void awardEnemyPoints(Player player,net.minecraft.world.entity.LivingEntity enemy,int amount){
+        if(!MapActors.owns(enemy))modifyScore(player,amount);
+    }
     public static void modifyScore(Player player, int amount, boolean round) {
         if (player.level().isClientSide()) return;
 
-        int originalAmount = amount; 
+        int originalAmount = amount;
 
         if (player.isCreative()) return;
 
@@ -72,7 +75,7 @@ public class PointManager {
             int finalScore = cap.getPoints();
 
             Scoreboard scoreboard = player.level().getScoreboard();
-            Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID); 
+            Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID);
 
             if (objective == null) {
                 objective = scoreboard.addObjective(
@@ -89,7 +92,7 @@ public class PointManager {
             if (player instanceof ServerPlayer serverPlayer) {
                 cap.sync(serverPlayer);
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new S2CPointGainPacket(finalAmount));
-                
+
                 PlayerStatsManager.syncAll(serverPlayer.serverLevel());
             }
         });
@@ -117,7 +120,7 @@ public class PointManager {
             int finalScore = cap.getPoints();
 
             Scoreboard scoreboard = player.level().getScoreboard();
-            Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID); 
+            Objective objective = scoreboard.getObjective(ServerEventHandler.OBJECTIVE_ID);
 
             if (objective == null) {
                 objective = scoreboard.addObjective(

@@ -32,14 +32,17 @@ public abstract class CustomMobMixin {
     @Inject(method = "customServerAiStep", at = @At("TAIL"))
     private void onAiUpdate(CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
+        if(mob.getTarget()!=null&&me.cryo.zombierool.gameplay.MapActorBehavior.enemies(mob,mob.getTarget())||mob instanceof me.cryo.zombierool.entity.MapActorEntity||me.cryo.zombierool.gameplay.NativeMapActors.owns(mob))return;
 
         if (me.cryo.zombierool.gameplay.FiestaFreeze.frozen(mob) || mob instanceof me.cryo.zombierool.entity.MrChiefEntity || mob instanceof WhiteKnightEntity) {
             return;
         }
 
+        if(me.cryo.zombierool.gameplay.EquipmentEffects.active(mob)||me.cryo.zombierool.gameplay.WonderWeaponEffects.frozen(mob)||mob instanceof me.cryo.zombierool.entity.VrilHumanEntity)return;
+        if(mob instanceof me.cryo.zombierool.entity.SpecialEnemyEntity special&&special.encounter.isFleeing())return;
         Level world = mob.level();
         if (!world.isClientSide()) {
-            
+
             // 1. PRIORITÉ ABSOLUE : BOMBE SINGE (Via liste statique ultra-rapide)
             MonkeyBomb.MonkeyBombEntity closestMonkey = null;
             double closestMonkeyDistSqr = MONKEY_SCAN_RADIUS_SQR;
@@ -55,6 +58,7 @@ public abstract class CustomMobMixin {
             }
 
             if (closestMonkey != null) {
+                me.cryo.zombierool.gameplay.WonderWeaponEffects.clearDecoy(mob);
                 this.setTarget(null); // On efface la cible joueur
                 // On met à jour le pathfinding seulement 2 fois par seconde pour éviter le lag massif
                 if (mob.tickCount % 10 == 0) {
@@ -64,13 +68,13 @@ public abstract class CustomMobMixin {
             }
 
             // 2. COMPORTEMENT STANDARD (Joueurs / Chevaliers)
-            
+
             // Optimisation : au lieu de scanner le monde entier (lag), on itère juste sur les joueurs connectés
             Player nearestPlayer = null;
             double closestPlayerDistSqr = Double.MAX_VALUE;
 
             for (Player p : world.players()) {
-                if (p.isSpectator() || BonusManager.isZombieBloodActive(p) || PlayerDownManager.isPlayerDown(p.getUUID())) {
+                if (!p.isAlive() || p.isCreative() || p.isSpectator() || BonusManager.isZombieBloodActive(p) || PlayerDownManager.isPlayerDown(p.getUUID())) {
                     continue;
                 }
                 double distSqr = mob.distanceToSqr(p);
@@ -84,7 +88,7 @@ public abstract class CustomMobMixin {
             WhiteKnightEntity nearestKnight = null;
             double closestKnightDistSqr = KNIGHT_SCAN_RADIUS * KNIGHT_SCAN_RADIUS;
             List<WhiteKnightEntity> knights = world.getEntitiesOfClass(WhiteKnightEntity.class, mob.getBoundingBox().inflate(KNIGHT_SCAN_RADIUS));
-            
+
             for (WhiteKnightEntity wk : knights) {
                 double distSqr = mob.distanceToSqr(wk);
                 if (distSqr < closestKnightDistSqr) {
@@ -94,6 +98,13 @@ public abstract class CustomMobMixin {
             }
 
             LivingEntity chosenTarget = nearestPlayer;
+            var human=me.cryo.zombierool.gameplay.WonderWeaponEffects.decoy(mob,closestPlayerDistSqr);
+            if(human!=null){
+                this.setTarget(human);
+                if(mob.tickCount%10==0)mob.getNavigation().moveTo(human,1.2);
+                return;
+            }
+            if(me.cryo.zombierool.gameplay.PortableEquipment.pursuingDevice(mob))return;
             if (nearestKnight != null && closestKnightDistSqr < closestPlayerDistSqr) {
                 chosenTarget = nearestKnight;
             }
@@ -112,10 +123,14 @@ public abstract class CustomMobMixin {
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void onSetTarget(LivingEntity target, CallbackInfo ci) {
         Mob mob = (Mob) (Object) this;
+        if(target!=null&&me.cryo.zombierool.gameplay.WonderWeaponEffects.frozen(mob)){ci.cancel();return;}
         if (mob instanceof me.cryo.zombierool.entity.MrChiefEntity || target!=null && me.cryo.zombierool.gameplay.FiestaFreeze.frozen(mob)) { ci.cancel(); return; }
+        if(target instanceof Player && me.cryo.zombierool.gameplay.EquipmentEffects.active(mob)){ci.cancel();return;}
         if (mob instanceof WhiteKnightEntity || target instanceof WhiteKnightEntity) return;
+        var decoy=me.cryo.zombierool.gameplay.WonderWeaponEffects.lockedDecoy(mob);
+        if(decoy!=null&&target!=decoy&&!me.cryo.zombierool.gameplay.EquipmentEffects.active(mob)){ci.cancel();return;}
 
-        if (target instanceof Player player && (BonusManager.isZombieBloodActive(player) || PlayerDownManager.isPlayerDown(player.getUUID()))) { 
+        if (target instanceof Player player && (BonusManager.isZombieBloodActive(player) || PlayerDownManager.isPlayerDown(player.getUUID()))) {
             ci.cancel();
         }
     }

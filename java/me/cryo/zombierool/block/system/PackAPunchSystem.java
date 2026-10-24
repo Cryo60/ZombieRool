@@ -164,6 +164,7 @@ public class PackAPunchSystem {
 
                 be.startUpgrading(held.copy(), player.getUUID());
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                if(player instanceof ServerPlayer sp)me.cryo.zombierool.gameplay.EquipmentSystem.animate(sp,"knuckle_crack",40);
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")), SoundSource.BLOCKS, 1f, 1f);
                 level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "pap_upgrade")), SoundSource.BLOCKS, 1f, 1f);
 
@@ -185,7 +186,7 @@ public class PackAPunchSystem {
                 if (player instanceof ServerPlayer sp) {
                     if (!me.cryo.zombierool.gameplay.WaveManager.areCheatsUsed()) {
                         CareerManager.progressChallenge(sp, CareerManager.ChallengeType.PAP_USED, 1);
-                        String wId = WeaponFacade.getWeaponId(upgraded).replace("zombierool:", "");
+                        String wId = WeaponFacade.getCareerWeaponId(upgraded);
                         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sp), new S2CProgressWeaponStatPacket(wId, 0, 0, 1));
                     }
                 }
@@ -279,10 +280,10 @@ public class PackAPunchSystem {
         @Nullable
         @Override
         public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-            return level.isClientSide ? 
+            return level.isClientSide ?
                 (lvl, pos, st, be) -> {
                     if (be instanceof PackAPunchBlockEntity pbe) PackAPunchBlockEntity.clientTick(lvl, pos, st, pbe);
-                } : 
+                } :
                 (lvl, pos, st, be) -> {
                     if (be instanceof PackAPunchBlockEntity pbe) PackAPunchBlockEntity.serverTick(lvl, pos, st, pbe);
                 };
@@ -305,9 +306,9 @@ public class PackAPunchSystem {
     public static class PackAPunchBlockEntity extends BlockEntity {
         private ItemStack currentWeapon = ItemStack.EMPTY;
         private UUID owner = null;
-        private int state = 0; 
+        private int state = 0;
         private int timer = 0;
-        private int price = 5000; 
+        private int price = 5000;
 
         public PackAPunchBlockEntity(BlockPos pos, BlockState state) {
             super(BE.get(), pos, state);
@@ -367,7 +368,7 @@ public class PackAPunchSystem {
                 }
             } else if (be.state == 2) {
                 be.timer++;
-                if (be.timer >= 200) { 
+                if (be.timer >= 200) {
                     be.reset();
                     level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "pap_deny")), SoundSource.BLOCKS, 1f, 1f);
                 }
@@ -477,17 +478,17 @@ public class PackAPunchSystem {
 
             float stepX = facing.getStepX();
             float stepZ = facing.getStepZ();
-            float gunRotY = -facing.toYRot() + 90f; 
+            float gunRotY = -facing.toYRot() + 90f;
 
-            if (state == 1) { 
+            if (state == 1) {
                 float progress = Math.min(1.0f, time / 100.0f);
                 float inOut;
                 if (progress < 0.2f) {
                     inOut = 1.0f - (progress / 0.2f);
-                } 
+                }
                 else if (progress > 0.8f) {
                     inOut = (progress - 0.8f) / 0.2f;
-                } 
+                }
                 else {
                     inOut = 0.0f;
                 }
@@ -500,7 +501,7 @@ public class PackAPunchSystem {
                 } else {
                     poseStack.mulPose(Axis.YP.rotationDegrees(gunRotY));
                 }
-            } else if (state == 2) { 
+            } else if (state == 2) {
                 poseStack.translate(stepX * 1.2, Math.sin(time * 0.1) * 0.05, stepZ * 1.2);
                 poseStack.mulPose(Axis.YP.rotationDegrees(gunRotY));
             }
@@ -533,7 +534,7 @@ public class PackAPunchSystem {
                 if (current == null || !current.getLocation().equals(desiredLoc) || !mc.getSoundManager().isActive(current)) {
                     stopSounds(pos);
                     SimpleSoundInstance newSound = new SimpleSoundInstance(
-                        desiredLoc, 
+                        desiredLoc,
                         SoundSource.BLOCKS, 1.0f, 1.0f,
                         net.minecraft.client.resources.sounds.SoundInstance.createUnseededRandom(),
                         true, 0, SoundInstance.Attenuation.LINEAR,

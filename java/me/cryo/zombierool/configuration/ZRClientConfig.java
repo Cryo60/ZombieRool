@@ -10,15 +10,16 @@ public class ZRClientConfig {
     public static final ForgeConfigSpec.BooleanValue ANIMATE_WEAPON_PREVIEW;
     public static final ForgeConfigSpec.BooleanValue HIDE_XP_NOTIFICATIONS;
     public static final ForgeConfigSpec.BooleanValue REDUCED_GORE;
+    public static final ForgeConfigSpec.BooleanValue HIDE_HEALTH;
     public static final ForgeConfigSpec.BooleanValue SHOW_ENEMIES_REMAINING;
     public static final ForgeConfigSpec.BooleanValue ALLOW_NETWORK_REQUESTS;
     public static final ForgeConfigSpec.BooleanValue HAS_ANSWERED_NETWORK_PROMPT;
     public static final ForgeConfigSpec.BooleanValue DISCORD_PRESENCE;
     public static final ForgeConfigSpec.ConfigValue<String> DISCORD_APPLICATION_ID;
     public enum HalloweenMode {
-        AUTO,      
-        FORCE_ON,  
-        FORCE_OFF  
+        AUTO,
+        FORCE_ON,
+        FORCE_OFF
     }
     static {
         BUILDER.push("ZombieRool Client Settings");
@@ -42,6 +43,7 @@ public class ZRClientConfig {
             .translation("zombierool.config.hide_xp")
             .define("hideXpNotifications", false);
         SHOW_ENEMIES_REMAINING = BUILDER.comment("Show remaining wave enemies beside the hotbar.").define("showEnemiesRemaining",false);
+        HIDE_HEALTH = BUILDER.comment("Hide the health and absorption display. Injury effects remain enabled.").define("hideHealth",true);
         REDUCED_GORE = BUILDER
             .comment("Drastically reduces blood, dismemberment and corpses.")
             .translation("zombierool.config.gore")

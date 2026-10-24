@@ -74,6 +74,10 @@ public class ClientEnvironmentEffects {
         handleWeatherSync(false, "", "", "");
     }
 
+    /** A temporary presentation override: never overwrites the map's fog or atmosphere settings. */
+    public static boolean hellhoundFog(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.player!=null&&mc.player.isAlive()&&!mc.player.isSpectator()&&WaveManager.isGameRunning()&&WaveManager.isClientHellhoundFog();}
+    public static boolean hasMapFog(){return enableFog||hellhoundFog();}
+
     public static void setFogPreset(String preset, float r, float g, float b, float near, float far, boolean outdoorsOnly) {
         fogOutdoorsOnly = outdoorsOnly;
         setFogPreset(preset, r, g, b, near, far);
@@ -149,14 +153,14 @@ public class ClientEnvironmentEffects {
 
     @SubscribeEvent
     public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
-        if (enableFog && !WaveManager.isClientSpecialWave()) {
+        if (enableFog && !hellhoundFog()) {
             event.setRed(fogColorRed);
             event.setGreen(fogColorGreen);
             event.setBlue(fogColorBlue);
-        } else if (WaveManager.isClientSpecialWave()) {
-             event.setRed(0.6f);
-             event.setGreen(0.6f);
-             event.setBlue(0.6f);
+        } else if (hellhoundFog()) {
+             event.setRed(0.92f);
+             event.setGreen(0.92f);
+             event.setBlue(0.92f);
         }
     }
 
@@ -164,16 +168,16 @@ public class ClientEnvironmentEffects {
     public static void onRenderFog(ViewportEvent.RenderFog event) {
         Player player = Minecraft.getInstance().player;
         if (player == null || player.isSpectator()
-                || player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
-                || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER)) {
+                || !hellhoundFog()&&(player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
+                || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER))) {
             return;
         }
 
-        if (!enableFog) {
+        if (!hasMapFog()) {
             return;
         }
 
-        if (fogOutdoorsOnly) {
+        if (fogOutdoorsOnly&&!hellhoundFog()) {
             event.setFogShape(FogShape.CYLINDER);
             event.setNearPlaneDistance(512.0F);
             event.setFarPlaneDistance(1024.0F);
@@ -183,10 +187,10 @@ public class ClientEnvironmentEffects {
 
         event.setFogShape(shaderPackActive() ? FogShape.SPHERE : FogShape.CYLINDER);
 
-        if (WaveManager.isClientSpecialWave()) {
+        if (hellhoundFog()) {
             event.setNearPlaneDistance(1.0F);
             event.setFarPlaneDistance(12.0F);
-            event.setCanceled(true); 
+            event.setCanceled(true);
         } else {
             float currentFarPlane = fogFarPlane;
             if (enableFogPulse) {
@@ -194,7 +198,7 @@ public class ClientEnvironmentEffects {
             }
             event.setNearPlaneDistance(fogNearPlane);
             event.setFarPlaneDistance(currentFarPlane);
-            event.setCanceled(true); 
+            event.setCanceled(true);
         }
     }
 
@@ -207,18 +211,18 @@ public class ClientEnvironmentEffects {
     @SubscribeEvent
     public static void onRenderShaderFog(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
-        if (fogShader == null || !enableFog || (!shaderPackActive() && !fogOutdoorsOnly)) return;
+        if (fogShader == null || !hasMapFog() || (!shaderPackActive() && !fogOutdoorsOnly)) return;
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null || player.isSpectator()
-                || player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
-                || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER)) {
+                || !hellhoundFog()&&(player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
+                || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER))) {
             return;
         }
 
         float far = fogFarPlane;
         float near = fogNearPlane;
-        if (WaveManager.isClientSpecialWave()) {
+        if (hellhoundFog()) {
             near = 1.0F;
             far = 12.0F;
         } else if (enableFogPulse) {
@@ -231,9 +235,9 @@ public class ClientEnvironmentEffects {
         Matrix4f invViewRot = new Matrix4f(RenderSystem.getInverseViewRotationMatrix());
         var camera = cam.getPosition();
 
-        float red = WaveManager.isClientSpecialWave() ? 0.6F : fogColorRed;
-        float green = WaveManager.isClientSpecialWave() ? 0.6F : fogColorGreen;
-        float blue = WaveManager.isClientSpecialWave() ? 0.6F : fogColorBlue;
+        float red = hellhoundFog() ? 0.92F : fogColorRed;
+        float green = hellhoundFog() ? 0.92F : fogColorGreen;
+        float blue = hellhoundFog() ? 0.92F : fogColorBlue;
         var target = minecraft.getMainRenderTarget();
         Matrix4f inverseProjection = new Matrix4f(event.getProjectionMatrix()).invert();
 
@@ -254,14 +258,14 @@ public class ClientEnvironmentEffects {
         RenderSystem.setShaderTexture(1, fogHeightTexture.getId());
         fogShader.safeGetUniform("InvProjMat").set(inverseProjection);
         fogShader.safeGetUniform("InvViewRot").set(invViewRot);
-        fogShader.safeGetUniform("FogColor").set(red, green, blue, fogColorAlpha);
+        fogShader.safeGetUniform("FogColor").set(red, green, blue, hellhoundFog()?1f:fogColorAlpha);
         fogShader.safeGetUniform("FogNear").set(near);
         fogShader.safeGetUniform("FogFar").set(far);
         fogShader.safeGetUniform("ScreenSize").set((float) target.width, (float) target.height);
         fogShader.safeGetUniform("CameraPos").set((float) camera.x, (float) camera.y, (float) camera.z);
         fogShader.safeGetUniform("HeightOrigin").set((float) fogHeightOriginX, (float) fogHeightOriginZ);
         fogShader.safeGetUniform("MapSize").set((float) FOG_HEIGHT_MAP);
-        fogShader.safeGetUniform("OutdoorsOnly").set(fogOutdoorsOnly ? 1.0F : 0.0F);
+        fogShader.safeGetUniform("OutdoorsOnly").set(fogOutdoorsOnly&&!hellhoundFog() ? 1.0F : 0.0F);
 
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
@@ -297,7 +301,7 @@ public class ClientEnvironmentEffects {
         }
     }
 
-    private static boolean shaderPackActive() {
+    public static boolean shaderPackActive() {
         long now = System.currentTimeMillis();
         if (now - shaderCheckedAt < 1000L) return shaderPackInUse;
         shaderCheckedAt = now;
@@ -376,8 +380,10 @@ public class ClientEnvironmentEffects {
                 default -> 6;
             };
 
+            AmbientParticles.emissionBudget(particlesToSpawn);
             RandomSource random = level.random;
             for (int i = 0; i < particlesToSpawn; ++i) {
+                if (!AmbientParticles.canSpawn()) break;
                 double angle = random.nextDouble() * Math.PI * 2.0;
                 double radius = Math.sqrt(random.nextDouble()) * 32.0;
                 double px = player.getX() + Math.cos(angle) * radius;
@@ -386,23 +392,23 @@ public class ClientEnvironmentEffects {
                 BlockPos pos = BlockPos.containing(px, player.getY(), pz);
 
                 if (clientParticleMode.equals("atmospheric")) {
-                    int topY = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos).getY();
+                    int topY = AmbientParticles.visibleHeight(level,pos.getX(),pos.getZ());
                     if (player.getY() < topY - 15) {
-                        continue; 
+                        continue;
                     }
                     double baseSpawnY = Math.max(player.getY() + 8.0, topY);
                     py = baseSpawnY + random.nextDouble() * 20.0;
                 } else {
                     py = player.getY() + (random.nextDouble() - 0.5) * 32.0;
                     BlockPos checkPos = BlockPos.containing(px, py, pz);
-                    if (level.getBlockState(checkPos).isSolidRender(level, checkPos)) {
+                    if (!me.cryo.zombierool.util.GoreCollision.ignored(level.getBlockState(checkPos))&&level.getBlockState(checkPos).isSolidRender(level, checkPos)) {
                         continue;
                     }
                 }
                 double vx = (random.nextDouble() - 0.5) * 0.1;
-                double vy = -0.05 - random.nextDouble() * 0.1; 
+                double vy = -0.05 - random.nextDouble() * 0.1;
                 double vz = (random.nextDouble() - 0.5) * 0.1;
-                level.addParticle(activeParticleType, px, py, pz, vx, vy, vz);
+                AmbientParticles.spawn(activeParticleType, px, py, pz, vx, vy, vz);
             }
         }
     }

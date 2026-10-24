@@ -51,26 +51,20 @@ public class MainMenuExtensions {
         }
         int currentY = startY;
         int col = 0;
+        event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.maps"), btn -> {
+            playSound();Minecraft.getInstance().setScreen(new MapDownloaderScreen(screen));
+        }).bounds(startX,currentY,buttonWidth,buttonHeight).build());
+        if(useGrid)col++;else currentY+=buttonHeight+spacing;
         if (ModList.get().isLoaded("tacz")) {
             event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.tacz"), btn -> {
                 playSound();
                 Minecraft.getInstance().setScreen(new TacZPackDownloaderScreen(screen));
             }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
             if (useGrid) {
-                col++;
+                col=(col+1)%2;if(col==0)currentY+=buttonHeight+spacing;
             } else {
                 currentY += buttonHeight + spacing;
             }
-        }
-        event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.maps"), btn -> {
-            playSound();
-            Minecraft.getInstance().setScreen(new MapDownloaderScreen(screen));
-        }).bounds(startX + (col * (buttonWidth + spacing)), currentY, buttonWidth, buttonHeight).build());
-        if (useGrid) {
-            col = 0;
-            currentY += buttonHeight + spacing;
-        } else {
-            currentY += buttonHeight + spacing;
         }
         event.addListener(Button.builder(Component.translatable("gui.zombierool.mainmenu.career"), btn -> {
             playSound();

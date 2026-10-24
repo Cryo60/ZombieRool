@@ -1,0 +1,7 @@
+{
+  "template": "brutus",
+  "name": "Warden",
+  "health": 320,
+  "speed": 0.42,
+  "damage": 3
+}

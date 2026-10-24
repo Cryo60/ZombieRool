@@ -1,0 +1,37 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "zombierool:buildable_part",
+          "functions": [
+            {
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "recipe",
+                  "target": "BlockEntityTag.recipe",
+                  "op": "replace"
+                },
+                {
+                  "source": "part",
+                  "target": "BlockEntityTag.part",
+                  "op": "replace"
+                },
+                {
+                  "source": "visual",
+                  "target": "BlockEntityTag.visual",
+                  "op": "replace"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

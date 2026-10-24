@@ -32,6 +32,7 @@ public class ZRBlocks {
 	public static final List<RegistryObject<Block>> CUTOUT_BLOCKS = new ArrayList<>();
 
 	public static final RegistryObject<Block> DEFENSE_DOOR = registerTallBlock("defense_door", DefenseDoorSystem.DefenseDoorBlock::new);
+	public static final RegistryObject<Block> IRON_DEFENSE_DOOR = registerTallBlock("iron_defense_door", DefenseDoorSystem.DefenseDoorBlock::new);
 	public static final RegistryObject<Block> GLASS_DEFENSE_DOOR = registerTallBlock("glass_defense_door", me.cryo.zombierool.block.system.GlassDefenseDoorBlock::new);
 	public static final RegistryObject<Block> STORAGE_BOX = registerBlock("storage_box", () -> new ZRDecorativeBlock(SoundType.WOOD, ZRDecorativeBlock.ShapeType.FULL, true));
 	public static final RegistryObject<Block> DEFENSE_DOOR_OPENED = registerBlockNoItem("defense_door_opened", DefenseDoorSystem.DefenseDoorOpenedBlock::new);
@@ -224,20 +225,20 @@ public class ZRBlocks {
         registerSimple("corrupted_flesh", SoundType.HONEY_BLOCK, false);
         registerSimple("vile_flesh", SoundType.HONEY_BLOCK, false);
         registerCarpet("scattered_documents", SoundType.WOOD);
-        
+
         RegistryObject<Block> barbedWire = registerBlock("barbed_wire", () -> new BarbedWireBlock(BlockBehaviour.Properties.of().sound(SoundType.METAL).strength(2.0f, 3600000.0f).noOcclusion()));
         CUTOUT_BLOCKS.add(barbedWire);
-        
+
         registerFamily("fabric", SoundType.WOOL, false);
         registerFamily("asphalt", SoundType.STONE, false);
         registerFamily("asphalt2", SoundType.STONE, false);
         registerFamily("dungeon_stone", SoundType.STONE, false);
         registerFamily("dungeon_stone2", SoundType.STONE, false);
-        
-        registerFamily("arctic_ice", SoundType.GLASS, true); 
+
+        registerFamily("arctic_ice", SoundType.GLASS, true);
         registerFamily("hard_ice", SoundType.GLASS, true);
         registerFamily("crackeled_dirt", SoundType.GRAVEL, false);
-        
+
         registerBlock("zr_lava", () -> new ZRDecorativeBlock(SoundType.STONE, ZRDecorativeBlock.ShapeType.FULL, false, false, 15));
         MapTextures.registerBlocks();
 	}

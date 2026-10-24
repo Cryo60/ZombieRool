@@ -12,7 +12,8 @@ public abstract class EntityTurnMixin {
 
     @ModifyVariable(method = "turn", at = @At("HEAD"), ordinal = 0, argsOnly = true)
     private double modifyYaw(double yRot) {
-        if ((Object)this == Minecraft.getInstance().player && ClientSniperHandler.isScoping()) {
+        if(me.cryo.zombierool.gameplay.TeleporterPlayerLock.active((Entity)(Object)this))return 0;
+        if ((Object)this == Minecraft.getInstance().player && ClientSniperHandler.isNativeScoping()) {
             return yRot * 0.3;
         }
         return yRot;
@@ -20,7 +21,8 @@ public abstract class EntityTurnMixin {
 
     @ModifyVariable(method = "turn", at = @At("HEAD"), ordinal = 1, argsOnly = true)
     private double modifyPitch(double xRot) {
-        if ((Object)this == Minecraft.getInstance().player && ClientSniperHandler.isScoping()) {
+        if(me.cryo.zombierool.gameplay.TeleporterPlayerLock.active((Entity)(Object)this))return 0;
+        if ((Object)this == Minecraft.getInstance().player && ClientSniperHandler.isNativeScoping()) {
             return xRot * 0.3;
         }
         return xRot;

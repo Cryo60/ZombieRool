@@ -25,13 +25,23 @@ import me.cryo.zombierool.util.WorldZombieroolPaths;
 import me.cryo.zombierool.util.ZombieroolGson;
 
 public class WorldConfig extends SavedData {
+    private CompoundTag addonConfig = new CompoundTag();
+    public CompoundTag getAddonConfig(){return MapConfigExtensions.sanitize(addonConfig);}
+    private CompoundTag specialEnemies = SpecialEnemyConfig.defaults();
+    private boolean specialEnemiesConfigured;
+    public CompoundTag getSpecialEnemies() { return specialEnemies.copy(); }
+    public boolean hasSpecialEnemies() { return specialEnemiesConfigured; }
+    public void setSpecialEnemies(CompoundTag settings) { specialEnemies=SpecialEnemyConfig.sanitize(settings);specialEnemiesConfigured=true;setDirty(); }
     private static final String DATA_NAME = "zombierool_world_config";
     public static final TicketType<ChunkPos> PATH_TICKET = TicketType.create("zombierool_path", Comparator.comparingLong(ChunkPos::toLong));
 
-    private int dataVersion = 1; 
+    private boolean encounterLabHordeMigrated;
+    public void migrateEncounterLabHorde(){if(!encounterLabHordeMigrated&&(mapId.equals("enemy_encounter_lab")||mapId.equals("zr_enemy_encounter_lab"))){maxActiveMobsPerPlayer=50;zombiesCanSprint=true;superSprintersEnabled=true;encounterLabHordeMigrated=true;setDirty();}}
+    private int dataVersion = 1;
     private String mapId = "";
 
     private boolean spookyAmbience = false;
+    private boolean sprintBgSounds = false;
     private boolean forceHalloween = false;
 
     private Set<BlockPos> playerSpawnerPositions = new HashSet<>();
@@ -42,8 +52,9 @@ public class WorldConfig extends SavedData {
     private Set<BlockPos> excludedMysteryBoxes = new HashSet<>();
     private Set<BlockPos> excludedWunderfizzes = new HashSet<>();
 
-    private Set<BlockPos> powerSwitchPositions = new HashSet<>(); 
-    private Set<BlockPos> pathPositions = new HashSet<>(); 
+    private Set<BlockPos> powerSwitchPositions = new HashSet<>();
+    private Set<BlockPos> pathPositions = new HashSet<>();
+    private transient java.util.Map<Long,java.util.List<BlockPos>> pathColumnsByChunk;
     private Set<BlockPos> meteoritePositions = new HashSet<>();
     private transient Map<ChunkPos, Integer> chunkPathCounts = new HashMap<>();
 
@@ -58,18 +69,25 @@ public class WorldConfig extends SavedData {
     private ResourceLocation starterItem = new ResourceLocation("zombierool", "m1911");
     private CompoundTag starterItemTag = null;
     private String startingLethal = "zombierool:grenade";
-    private String dayNightMode = "night"; 
+    private String startingEquipment = "none";
+    private String startingTactical = "none";
+    private String dayNightMode = "night";
 
     private boolean particlesEnabled = false;
     private ResourceLocation particleTypeId = null;
     private String particleDensity = "normal";
     private String particleMode = "global";
 
-    private String musicPreset = "default"; 
+    private String musicPreset = "default";
     private String eyeColorPreset = "default";
-    private String voicePreset = "none"; 
+    private String zombieSkinPreset = "nazi";
+    private String hellhoundSkinPreset = "auto";
+    private String voicePreset = "none";
     private boolean coldWaterEffectEnabled = false;
-    private String deathPenalty = "respawn"; 
+    private String deathPenalty = "respawn";
+    private int maxPerks = 4;
+    public int getMaxPerks() { return maxPerks; }
+    public void setMaxPerks(int value) { maxPerks = Math.max(-1, Math.min(256, value)); setDirty(); }
 
     private int baseZombies = 6;
     private int maxActiveMobsPerPlayer = 50;
@@ -80,10 +98,9 @@ public class WorldConfig extends SavedData {
     private float crawlerBaseHealth = 5f;
     private float crawlerMaxHealth = 800f;
 
-    private boolean sprintBgSounds = true;
     private boolean zombiesCanSprint = true;
     private int zombieSprintWave = 5;
-    private float zombieSprintChance = 0.5f; 
+    private float zombieSprintChance = 0.5f;
     private float zombieSprintSpeed = 0.25f;
     private boolean superSprintersEnabled = false;
     private int superSprinterActivationWave = 6;
@@ -108,7 +125,7 @@ public class WorldConfig extends SavedData {
     private Set<ResourceLocation> customBoxWeapons = new HashSet<>(Arrays.asList(new ResourceLocation("zombierool:molotov")));
     private Set<ResourceLocation> customWonderWeapons = new HashSet<>();
     private Set<String> mysteryBoxTags = new HashSet<>();
-    private Set<ResourceLocation> enabledUnmappedWeapons = new HashSet<>(); 
+    private Set<ResourceLocation> enabledUnmappedWeapons = new HashSet<>();
 
     private int meteoriteFragmentsFound = 0;
 
@@ -124,11 +141,11 @@ public class WorldConfig extends SavedData {
 
     public static WorldConfig load(CompoundTag nbt) {
         WorldConfig config = new WorldConfig();
-        
+
         if (nbt.contains("dataVersion")) {
             config.dataVersion = nbt.getInt("dataVersion");
         } else {
-            config.dataVersion = 0; 
+            config.dataVersion = 0;
         }
 
         BlockPosNbt.loadSet(nbt, "playerSpawnerPositions", config.playerSpawnerPositions);
@@ -151,6 +168,7 @@ public class WorldConfig extends SavedData {
             }
         }
 
+        config.encounterLabHordeMigrated=nbt.getBoolean("encounterLabHordeMigrated");
         config.loadEditable(nbt);
         config.rebuildChunkCounts();
 
@@ -159,6 +177,7 @@ public class WorldConfig extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag compound) {
+        compound.putBoolean("encounterLabHordeMigrated",encounterLabHordeMigrated);
         compound.putInt("dataVersion", dataVersion);
         BlockPosNbt.saveSet(compound, "playerSpawnerPositions", playerSpawnerPositions);
         BlockPosNbt.saveSet(compound, "mysteryBoxPositions", mysteryBoxPositions);
@@ -185,7 +204,11 @@ public class WorldConfig extends SavedData {
     }
 
     public void loadEditable(CompoundTag nbt) {
+        if(nbt.contains("maxPerks"))setMaxPerks(nbt.getInt("maxPerks"));
+        if(nbt.contains("addonConfig",10))addonConfig=MapConfigExtensions.sanitize(nbt.getCompound("addonConfig"));
+        if(nbt.contains("specialEnemies",10))setSpecialEnemies(nbt.getCompound("specialEnemies"));
         if (nbt.contains("mapId")) mapId = nbt.getString("mapId");
+        if(nbt.contains("sprintBgSounds"))sprintBgSounds=nbt.getBoolean("sprintBgSounds");
         if (nbt.contains("spookyAmbience")) spookyAmbience = nbt.getBoolean("spookyAmbience");
         if (nbt.contains("forceHalloween")) forceHalloween = nbt.getBoolean("forceHalloween");
 
@@ -201,19 +224,23 @@ public class WorldConfig extends SavedData {
         if (nbt.contains("starterItem")) starterItem = new ResourceLocation(nbt.getString("starterItem"));
         starterItemTag = nbt.contains("starterItemTag") ? nbt.getCompound("starterItemTag").copy() : null;
         if (nbt.contains("startingLethal")) startingLethal = nbt.getString("startingLethal");
+        if (nbt.contains("startingTactical")) startingTactical = nbt.getString("startingTactical");
+        if (nbt.contains("startingEquipment")) startingEquipment = nbt.getString("startingEquipment");
         if (nbt.contains("dayNightMode")) dayNightMode = nbt.getString("dayNightMode");
         if (nbt.contains("particlesEnabled")) particlesEnabled = nbt.getBoolean("particlesEnabled");
         if (nbt.contains("particleTypeId")) particleTypeId = new ResourceLocation(nbt.getString("particleTypeId"));
         if (nbt.contains("particleDensity")) particleDensity = nbt.getString("particleDensity");
         if (nbt.contains("particleMode")) particleMode = nbt.getString("particleMode");
         if (nbt.contains("musicPreset")) musicPreset = nbt.getString("musicPreset");
+        if (nbt.contains("zombieSkinPreset")) zombieSkinPreset = EnemySkinPresets.zombiePreset(nbt.getString("zombieSkinPreset"));
+        if (nbt.contains("hellhoundSkinPreset")) hellhoundSkinPreset = EnemySkinPresets.houndPreset(nbt.getString("hellhoundSkinPreset"));
         if (nbt.contains("eyeColorPreset")) eyeColorPreset = nbt.getString("eyeColorPreset");
         if (nbt.contains("voicePreset")) voicePreset = nbt.getString("voicePreset");
         if (nbt.contains("coldWaterEffectEnabled")) coldWaterEffectEnabled = nbt.getBoolean("coldWaterEffectEnabled");
         if (nbt.contains("deathPenalty")) deathPenalty = nbt.getString("deathPenalty");
 
         if (nbt.contains("baseZombies")) baseZombies = nbt.getInt("baseZombies");
-        if (nbt.contains("maxActiveMobsPerPlayer")) maxActiveMobsPerPlayer = nbt.getInt("maxActiveMobsPerPlayer");
+        if (nbt.contains("maxActiveMobsPerPlayer")) maxActiveMobsPerPlayer = normalizeActiveMobCap(nbt.getInt("maxActiveMobsPerPlayer"));
 
         if (nbt.contains("zombieBaseHealth")) zombieBaseHealth = nbt.getFloat("zombieBaseHealth");
         if (nbt.contains("zombieMaxHealth")) zombieMaxHealth = nbt.getFloat("zombieMaxHealth");
@@ -222,7 +249,6 @@ public class WorldConfig extends SavedData {
         if (nbt.contains("crawlerBaseHealth")) crawlerBaseHealth = nbt.getFloat("crawlerBaseHealth");
         if (nbt.contains("crawlerMaxHealth")) crawlerMaxHealth = nbt.getFloat("crawlerMaxHealth");
 
-        if (nbt.contains("sprintBgSounds")) sprintBgSounds = nbt.getBoolean("sprintBgSounds");
         if (nbt.contains("zombiesCanSprint")) zombiesCanSprint = nbt.getBoolean("zombiesCanSprint");
         if (nbt.contains("zombieSprintWave")) zombieSprintWave = nbt.getInt("zombieSprintWave");
         if (nbt.contains("zombieSprintChance")) zombieSprintChance = nbt.getFloat("zombieSprintChance");
@@ -246,7 +272,7 @@ public class WorldConfig extends SavedData {
 
         if (nbt.contains("bonusDropsEnabled")) bonusDropsEnabled = nbt.getBoolean("bonusDropsEnabled");
         if (nbt.contains("allowDownMovement")) allowDownMovement = nbt.getBoolean("allowDownMovement");
-        
+
         if (nbt.contains("meteoriteFragmentsFound")) meteoriteFragmentsFound = nbt.getInt("meteoriteFragmentsFound");
 
         if (nbt.contains("disabledBoxWeapons", 9)) {
@@ -260,7 +286,7 @@ public class WorldConfig extends SavedData {
             ListTag list = nbt.getList("customBoxWeapons", 8);
             for (int i = 0; i < list.size(); i++) customBoxWeapons.add(new ResourceLocation(list.getString(i)));
         }
-        
+
         if (nbt.contains("customWonderWeapons", 9)) {
             customWonderWeapons.clear();
             ListTag list = nbt.getList("customWonderWeapons", 8);
@@ -284,7 +310,7 @@ public class WorldConfig extends SavedData {
             ListTag list = nbt.getList("mysteryBoxTags", 8);
             for (int i = 0; i < list.size(); i++) mysteryBoxTags.add(list.getString(i));
         }
-        
+
         if (nbt.contains("enabledUnmappedWeapons", 9)) {
             enabledUnmappedWeapons.clear();
             ListTag list = nbt.getList("enabledUnmappedWeapons", 8);
@@ -305,8 +331,12 @@ public class WorldConfig extends SavedData {
     }
 
     public void saveEditable(CompoundTag compound) {
+        compound.putInt("maxPerks", maxPerks);
+        compound.put("addonConfig",getAddonConfig());
+        compound.put("specialEnemies",specialEnemies.copy());
         compound.putString("mapId", mapId);
         compound.putBoolean("spookyAmbience", spookyAmbience);
+        compound.putBoolean("sprintBgSounds",sprintBgSounds);
         compound.putBoolean("forceHalloween", forceHalloween);
 
         compound.putString("fogPreset", fogPreset);
@@ -321,6 +351,8 @@ public class WorldConfig extends SavedData {
         compound.putString("starterItem", starterItem.toString());
         if (starterItemTag != null) compound.put("starterItemTag", starterItemTag.copy());
         compound.putString("startingLethal", startingLethal);
+        compound.putString("startingTactical", startingTactical);
+        compound.putString("startingEquipment", startingEquipment);
         compound.putString("dayNightMode", dayNightMode);
 
         compound.putBoolean("particlesEnabled", particlesEnabled);
@@ -330,6 +362,8 @@ public class WorldConfig extends SavedData {
 
         compound.putString("musicPreset", musicPreset);
         compound.putString("eyeColorPreset", eyeColorPreset);
+        compound.putString("zombieSkinPreset", zombieSkinPreset);
+        compound.putString("hellhoundSkinPreset", hellhoundSkinPreset);
         compound.putString("voicePreset", voicePreset);
         compound.putBoolean("coldWaterEffectEnabled", coldWaterEffectEnabled);
         compound.putString("deathPenalty", deathPenalty);
@@ -344,7 +378,6 @@ public class WorldConfig extends SavedData {
         compound.putFloat("crawlerBaseHealth", crawlerBaseHealth);
         compound.putFloat("crawlerMaxHealth", crawlerMaxHealth);
 
-        compound.putBoolean("sprintBgSounds", sprintBgSounds);
         compound.putBoolean("zombiesCanSprint", zombiesCanSprint);
         compound.putInt("zombieSprintWave", zombieSprintWave);
         compound.putFloat("zombieSprintChance", zombieSprintChance);
@@ -368,7 +401,7 @@ public class WorldConfig extends SavedData {
 
         compound.putBoolean("bonusDropsEnabled", bonusDropsEnabled);
         compound.putBoolean("allowDownMovement", allowDownMovement);
-        
+
         compound.putInt("meteoriteFragmentsFound", meteoriteFragmentsFound);
 
         ListTag wpns = new ListTag();
@@ -394,7 +427,7 @@ public class WorldConfig extends SavedData {
         ListTag boxTags = new ListTag();
         for (String id : mysteryBoxTags) boxTags.add(StringTag.valueOf(id));
         compound.put("mysteryBoxTags", boxTags);
-        
+
         ListTag unmappedWpns = new ListTag();
         for (ResourceLocation id : enabledUnmappedWeapons) unmappedWpns.add(StringTag.valueOf(id.toString()));
         compound.put("enabledUnmappedWeapons", unmappedWpns);
@@ -416,6 +449,8 @@ public class WorldConfig extends SavedData {
                 try (FileReader reader = new FileReader(configJson)) {
                     JsonObject json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
                     boolean modified = false;
+                    if(json.has("specialEnemiesNbt")){try{setSpecialEnemies(net.minecraft.nbt.TagParser.parseTag(json.get("specialEnemiesNbt").getAsString()));modified=true;}catch(com.mojang.brigadier.exceptions.CommandSyntaxException ignored){}}
+                    if(json.has("addonConfigNbt")){try{addonConfig=MapConfigExtensions.sanitize(net.minecraft.nbt.TagParser.parseTag(json.get("addonConfigNbt").getAsString()));modified=true;}catch(com.mojang.brigadier.exceptions.CommandSyntaxException ignored){}}
 
                     if (json.has("custom_wonder_weapons")) {
                         customWonderWeapons.clear();
@@ -451,7 +486,7 @@ public class WorldConfig extends SavedData {
                     if (json.has("hellhoundBaseHealth")) hellhoundBaseHealth = json.get("hellhoundBaseHealth").getAsFloat();
                     if (json.has("hellhoundMaxHealth")) hellhoundMaxHealth = json.get("hellhoundMaxHealth").getAsFloat();
 
-                    if (json.has("maxActiveMobsPerPlayer")) maxActiveMobsPerPlayer = json.get("maxActiveMobsPerPlayer").getAsInt();
+                    if (json.has("maxActiveMobsPerPlayer")) maxActiveMobsPerPlayer = normalizeActiveMobCap(json.get("maxActiveMobsPerPlayer").getAsInt());
                     if (json.has("baseZombies")) baseZombies = json.get("baseZombies").getAsInt();
 
                     if (json.has("superSprintersEnabled")) superSprintersEnabled = json.get("superSprintersEnabled").getAsBoolean();
@@ -480,8 +515,9 @@ public class WorldConfig extends SavedData {
                         json.getAsJsonArray("allowedItems").forEach(e -> allowedItems.add(e.getAsString()));
                         modified = true;
                     }
-                    
+
                     if (json.has("dayNightMode")) dayNightMode = json.get("dayNightMode").getAsString();
+                    if (json.has("maxPerks")) setMaxPerks(json.get("maxPerks").getAsInt());
                     if (json.has("deathPenalty")) deathPenalty = json.get("deathPenalty").getAsString();
                     if (json.has("starterItem")) starterItem = new ResourceLocation(json.get("starterItem").getAsString());
                     if (json.has("starterItemNbt")) {
@@ -531,7 +567,7 @@ public class WorldConfig extends SavedData {
             com.google.gson.JsonArray tagsArr = new com.google.gson.JsonArray();
             for (String s : mysteryBoxTags) tagsArr.add(s);
             json.add("mystery_box_tags", tagsArr);
-            
+
             com.google.gson.JsonArray unmappedArr = new com.google.gson.JsonArray();
             for (ResourceLocation rl : enabledUnmappedWeapons) unmappedArr.add(rl.toString());
             json.add("enabled_unmapped_weapons", unmappedArr);
@@ -569,10 +605,13 @@ public class WorldConfig extends SavedData {
             com.google.gson.JsonArray allowedItemsArr = new com.google.gson.JsonArray();
             for (String s : allowedItems) allowedItemsArr.add(s);
             json.add("allowedItems", allowedItemsArr);
-            
+
             json.addProperty("dayNightMode", dayNightMode);
+            json.addProperty("maxPerks", maxPerks);
             json.addProperty("deathPenalty", deathPenalty);
             json.addProperty("starterItem", starterItem.toString());
+            json.addProperty("specialEnemiesNbt",specialEnemies.toString());
+            json.addProperty("addonConfigNbt",getAddonConfig().toString());
             if (starterItemTag != null) json.addProperty("starterItemNbt", starterItemTag.toString());
 
             try (FileWriter writer = new FileWriter(configJson)) {
@@ -584,9 +623,12 @@ public class WorldConfig extends SavedData {
     }
 
     public void resetGeneral() {
+        maxPerks = 4;
         dayNightMode = "night";
         musicPreset = "default";
         eyeColorPreset = "default";
+        zombieSkinPreset = "nazi";
+        hellhoundSkinPreset = "auto";
         voicePreset = "none";
         particlesEnabled = false;
         particleTypeId = null;
@@ -594,8 +636,9 @@ public class WorldConfig extends SavedData {
         particleMode = "global";
         deathPenalty = "respawn";
         coldWaterEffectEnabled = false;
-        sprintBgSounds = true;
         startingLethal = "zombierool:grenade";
+        startingTactical = "none";
+        startingEquipment = "none";
         setDirty();
     }
 
@@ -606,7 +649,7 @@ public class WorldConfig extends SavedData {
         crawlerMaxHealth = 800f;
         hellhoundBaseHealth = 8f;
         hellhoundMaxHealth = 250f;
-        
+
         zombiesCanSprint = true;
         zombieSprintWave = 5;
         zombieSprintChance = 0.5f;
@@ -643,7 +686,7 @@ public class WorldConfig extends SavedData {
         customBoxWeapons.add(new ResourceLocation("zombierool:molotov"));
         customWonderWeapons.clear();
         mysteryBoxTags.clear();
-        enabledUnmappedWeapons.clear(); 
+        enabledUnmappedWeapons.clear();
         setDirty();
     }
 
@@ -686,6 +729,7 @@ public class WorldConfig extends SavedData {
     public String getMapId() { return mapId; }
     public void setMapId(String v) { this.mapId = v; this.setDirty(); }
 
+    public boolean isSprintBgSoundsEnabled(){return sprintBgSounds;}
     public boolean isSpookyAmbience() { return spookyAmbience; }
     public void setSpookyAmbience(boolean v) { this.spookyAmbience = v; this.setDirty(); }
 
@@ -729,6 +773,10 @@ public class WorldConfig extends SavedData {
         this.setDirty();
     }
 
+    public String getStartingEquipment() { return startingEquipment; }
+    public void setStartingEquipment(String v) { startingEquipment=v;setDirty(); }
+    public String getStartingTactical() { return startingTactical; }
+    public void setStartingTactical(String v) { startingTactical=v;setDirty(); }
     public String getStartingLethal() { return startingLethal; }
     public void setStartingLethal(String v) { this.startingLethal = v; this.setDirty(); }
 
@@ -744,7 +792,7 @@ public class WorldConfig extends SavedData {
 
     public Set<ResourceLocation> getCustomWonderWeapons() { return customWonderWeapons; }
     public void setCustomWonderWeapons(Set<ResourceLocation> set) { customWonderWeapons = new HashSet<>(set); setDirty(); }
-    
+
     public Set<ResourceLocation> getEnabledUnmappedWeapons() { return enabledUnmappedWeapons; }
     public void setEnabledUnmappedWeapons(Set<ResourceLocation> set) { enabledUnmappedWeapons = new HashSet<>(set); setDirty(); }
 
@@ -775,6 +823,8 @@ public class WorldConfig extends SavedData {
     public String getMusicPreset() { return musicPreset; }
     public void setMusicPreset(String musicPreset) { this.musicPreset = musicPreset; this.setDirty(); }
 
+    public String getZombieSkinPreset() { return zombieSkinPreset; }
+    public String getHellhoundSkinPreset() { return hellhoundSkinPreset; }
     public String getEyeColorPreset() { return eyeColorPreset; }
     public void setEyeColorPreset(String eyeColorPreset) { this.eyeColorPreset = eyeColorPreset; this.setDirty(); }
 
@@ -824,6 +874,7 @@ public class WorldConfig extends SavedData {
         if (chunkPathCounts == null) rebuildChunkCounts();
         ChunkPos chunkPos = new ChunkPos(pos);
         if (pathPositions.add(pos)) {
+            if(pathColumnsByChunk!=null)pathColumnsByChunk.computeIfAbsent(ChunkPos.asLong(pos.getX()>>4,pos.getZ()>>4),k->new java.util.ArrayList<>()).add(pos);
             this.setDirty();
             int newCount = chunkPathCounts.getOrDefault(chunkPos, 0) + 1;
             chunkPathCounts.put(chunkPos, newCount);
@@ -834,6 +885,7 @@ public class WorldConfig extends SavedData {
         if (chunkPathCounts == null) rebuildChunkCounts();
         ChunkPos chunkPos = new ChunkPos(pos);
         if (pathPositions.remove(pos)) {
+            if(pathColumnsByChunk!=null){var rows=pathColumnsByChunk.get(ChunkPos.asLong(pos.getX()>>4,pos.getZ()>>4));if(rows!=null)rows.remove(pos);}
             this.setDirty();
             int newCount = chunkPathCounts.getOrDefault(chunkPos, 1) - 1;
             if (newCount <= 0) {
@@ -845,6 +897,13 @@ public class WorldConfig extends SavedData {
         }
     }
     public Set<BlockPos> getPathPositions() { return Collections.unmodifiableSet(pathPositions); }
+    /** Local encounter searches must not traverse every path marker in a large map. */
+    public java.util.List<BlockPos> getPathPositionsNear(BlockPos center,double radius){
+        if(pathColumnsByChunk==null){pathColumnsByChunk=new java.util.HashMap<>();for(var p:pathPositions)pathColumnsByChunk.computeIfAbsent(ChunkPos.asLong(p.getX()>>4,p.getZ()>>4),k->new java.util.ArrayList<>()).add(p);}
+        var result=new java.util.ArrayList<BlockPos>();int r=(int)Math.ceil(radius);
+        for(int x=(center.getX()-r)>>4;x<=(center.getX()+r)>>4;x++)for(int z=(center.getZ()-r)>>4;z<=(center.getZ()+r)>>4;z++){var rows=pathColumnsByChunk.get(ChunkPos.asLong(x,z));if(rows!=null)result.addAll(rows);}
+        return result;
+    }
 
     public void setActiveWunderfizzPosition(BlockPos pos, ServerLevel level) {
         this.activeWunderfizzPosition = pos;
@@ -892,8 +951,9 @@ public class WorldConfig extends SavedData {
     public int getBaseZombies() { return baseZombies; }
     public void setBaseZombies(int v) { this.baseZombies = v; this.setDirty(); }
 
-    public int getMaxActiveMobsPerPlayer() { return maxActiveMobsPerPlayer; }
-    public void setMaxActiveMobsPerPlayer(int v) { this.maxActiveMobsPerPlayer = v; this.setDirty(); }
+    public static int normalizeActiveMobCap(int value) { return value < 40 ? 50 : Math.min(50,value); }
+    public int getMaxActiveMobsPerPlayer() { return normalizeActiveMobCap(maxActiveMobsPerPlayer); }
+    public void setMaxActiveMobsPerPlayer(int v) { this.maxActiveMobsPerPlayer = normalizeActiveMobCap(v); this.setDirty(); }
 
     public float getZombieBaseHealth() { return zombieBaseHealth; }
     public void setZombieBaseHealth(float v) { this.zombieBaseHealth = v; this.setDirty(); }
@@ -910,8 +970,6 @@ public class WorldConfig extends SavedData {
     public float getCrawlerMaxHealth() { return crawlerMaxHealth; }
     public void setCrawlerMaxHealth(float v) { this.crawlerMaxHealth = v; this.setDirty(); }
 
-    public boolean isSprintBgSoundsEnabled() { return sprintBgSounds; }
-    public void setSprintBgSounds(boolean v) { this.sprintBgSounds = v; this.setDirty(); }
 
     public boolean isZombiesCanSprint() { return zombiesCanSprint; }
     public void setZombiesCanSprint(boolean v) { this.zombiesCanSprint = v; this.setDirty(); }

@@ -218,7 +218,7 @@ public final class MapTextures {
         cachedSounds[slot] = id;
         if (worldRoot == null) return;
         try {
-            writeManifest(worldRoot.resolve("zombierool").resolve("custom_blocks").resolve("manifest.txt"), cached, cachedSounds);
+            writeManifest(me.cryo.zombierool.util.WorldZombieroolPaths.path(worldRoot,"custom_blocks").resolve("manifest.txt"), cached, cachedSounds);
         } catch (IOException ignored) {}
     }
 
@@ -228,13 +228,13 @@ public final class MapTextures {
     }
 
     public static Path customDir() {
-        return worldRoot == null ? null : worldRoot.resolve("zombierool").resolve("custom_blocks");
+        return worldRoot == null ? null : me.cryo.zombierool.util.WorldZombieroolPaths.path(worldRoot,"custom_blocks");
     }
 
     /** Assigns new PNG files to free slots and returns the 32 names (empty if unused). */
     public static List<String> syncFolder(ServerLevel level) {
         worldRoot = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
-        Path dir = worldRoot.resolve("zombierool").resolve("custom_blocks");
+        Path dir = me.cryo.zombierool.util.WorldZombieroolPaths.path(worldRoot,"custom_blocks");
         try {
             Files.createDirectories(dir);
             Files.createDirectories(dir.resolve("import"));
@@ -316,7 +316,7 @@ public final class MapTextures {
         Arrays.fill(slots, "");
         Arrays.fill(cachedSounds, "stone");
         if (root == null) return slots;
-        Path manifest = root.resolve("zombierool").resolve("custom_blocks").resolve("manifest.txt");
+        Path manifest = me.cryo.zombierool.util.WorldZombieroolPaths.path(root,"custom_blocks").resolve("manifest.txt");
         if (!Files.exists(manifest)) return slots;
         try {
             for (String line : Files.readAllLines(manifest, StandardCharsets.UTF_8)) {
@@ -450,6 +450,11 @@ public final class MapTextures {
     }
     public static class TexHead extends TexBlock {
         TexHead(int slot){super(slot,true);}
+        @Override public net.minecraft.world.InteractionResult use(BlockState state,Level level,net.minecraft.core.BlockPos pos,Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){
+            if(!player.isCreative()||hand!=net.minecraft.world.InteractionHand.MAIN_HAND||!player.getItemInHand(hand).isEmpty())return net.minecraft.world.InteractionResult.PASS;
+            if(!level.isClientSide)level.setBlock(pos,state.setValue(FACING,player.isShiftKeyDown()?state.getValue(FACING).getCounterClockWise():state.getValue(FACING).getClockWise()),3);
+            return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+        }
         @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,net.minecraft.world.level.BlockGetter level,net.minecraft.core.BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){return Block.box(4,0,4,12,8,12);}
     }
 

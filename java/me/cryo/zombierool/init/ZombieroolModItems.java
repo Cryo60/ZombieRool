@@ -21,6 +21,12 @@ import me.cryo.zombierool.ZombieroolMod;
 
 public class ZombieroolModItems {
 	public static final DeferredRegister<Item> REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, ZombieroolMod.MODID);
+    public static final RegistryObject<Item> SCARLET_GUARD=REGISTRY.register("scarlet_guard",me.cryo.zombierool.item.ScarletWeaponItem.Guard::new);
+	public static final RegistryObject<Item> SCARLET_SWORD=net.minecraftforge.registries.RegistryObject.create(new net.minecraft.resources.ResourceLocation("zombierool","scarlet_sword"),ForgeRegistries.ITEMS);
+    public static final RegistryObject<Item> SCARLET_AXE=net.minecraftforge.registries.RegistryObject.create(new net.minecraft.resources.ResourceLocation("zombierool","scarlet_axe"),ForgeRegistries.ITEMS);
+    public static final RegistryObject<Item> SCARLET_HALBERD=net.minecraftforge.registries.RegistryObject.create(new net.minecraft.resources.ResourceLocation("zombierool","scarlet_halberd"),ForgeRegistries.ITEMS);
+    public static final RegistryObject<Item> SCARLET_SHIELD=net.minecraftforge.registries.RegistryObject.create(new net.minecraft.resources.ResourceLocation("zombierool","scarlet_shield"),ForgeRegistries.ITEMS);
+    public static final RegistryObject<Item> CREATIVE_ICON = REGISTRY.register("creative_icon",()->new Item(new Item.Properties()));
 	public static final RegistryObject<Item> PATH = block(ZombieroolModBlocks.PATH);
 	public static final RegistryObject<Item> ZOMBIE_SPAWN_EGG = REGISTRY.register("zombie_spawn_egg", () -> new ForgeSpawnEggItem(ZombieroolModEntities.ZOMBIE, -10092442, -10092544, new Item.Properties()));
 	public static final RegistryObject<Item> LIMIT = block(ZombieroolModBlocks.LIMIT);

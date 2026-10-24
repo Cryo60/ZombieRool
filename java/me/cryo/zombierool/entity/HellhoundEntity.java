@@ -85,7 +85,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return EntityDimensions.fixed(0.5F, 1.1F); 
+        return EntityDimensions.fixed(0.5F, 1.1F);
     }
 
     @Override
@@ -113,19 +113,19 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
                     this.mob.setTarget(p);
                     return true;
                 }
-                HellhoundEntity.this.assignedTarget = null; 
+                HellhoundEntity.this.assignedTarget = null;
                 return false;
             }
 
             @Override
             public boolean canContinueToUse() {
-                return canUse(); 
+                return canUse();
             }
         });
 
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false) {
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, true) {
             private int pathRecalcDelay = 0;
-            
+
             @Override
             public boolean canUse() {
                 return HellhoundEntity.this.isRevealedClient() && super.canUse();
@@ -151,6 +151,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
             @Override
             protected double getAttackReachSqr(LivingEntity entity) {
+                if(me.cryo.zombierool.gameplay.SubmergedMelee.canReach(this.mob,entity))return this.mob.distanceToSqr(entity)+.1;
                 return (this.mob.getBbWidth() * 2.5F * this.mob.getBbWidth() * 2.5F + entity.getBbWidth());
             }
         });
@@ -158,7 +159,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this) {
             @Override
             public boolean canUse() {
-                return HellhoundEntity.this.isRevealedClient() && super.canUse();
+                return HellhoundEntity.this.getTarget()==null&&HellhoundEntity.this.isRevealedClient() && super.canUse();
             }
         });
     }
@@ -185,7 +186,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
     @Override
     public boolean doHurtTarget(Entity target) {
         if (!this.isRevealedClient() && !me.cryo.zombierool.block.system.MapDeviceSystem.isTrapDamage()) return false;
-        
+
         boolean flag = target.hurt(this.damageSources().mobAttack(this), 1.0f);
         if (flag) {
             this.playSound(ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:hellhound_bite")), 1.0f, 1.0f);
@@ -210,8 +211,8 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
     @Override
     public void die(DamageSource cause) {
-        super.die(cause); 
-        
+        super.die(cause);
+
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             if (isFireVariant) {
                 ExplosionControl.doCustomExplosion(this.level(), this, this.position(), 15.0f, 2.5f, 1.0f, 0.0f, 0.0f, 0.5f, "EXPLOSION", "NONE", false);
@@ -237,21 +238,21 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
         builder = builder.add(Attributes.MAX_HEALTH, 6);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 1);
-        builder = builder.add(Attributes.FOLLOW_RANGE, 1024.0); 
+        builder = builder.add(Attributes.FOLLOW_RANGE, 1024.0);
         builder = builder.add(Attributes.KNOCKBACK_RESISTANCE, 1);
         return builder;
     }
 
     private void validateOrAssignTarget() {
         ServerLevel serverLevel = (ServerLevel) this.level();
-        
+
         if (assignedTarget != null) {
             ServerPlayer p = serverLevel.getServer().getPlayerList().getPlayer(assignedTarget);
             if (p != null && p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)) {
-                return; 
+                return;
             }
         }
-        
+
         List<ServerPlayer> validPlayers = serverLevel.getServer().getPlayerList().getPlayers().stream()
             .filter(p -> p.isAlive() && !PlayerDownManager.isPlayerDown(p.getUUID()) && !BonusManager.isZombieBloodActive(p) && (p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE))
             .collect(Collectors.toList());
@@ -270,7 +271,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             ServerPlayer chosen = validPlayers.stream()
                 .min(Comparator.comparingInt(p -> targetCounts.get(p.getUUID())))
                 .orElse(validPlayers.get(this.random.nextInt(validPlayers.size())));
-            
+
             assignedTarget = chosen.getUUID();
         } else {
             assignedTarget = null;
@@ -294,7 +295,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
         if (!spawnInitialized && !this.level().isClientSide()) {
             spawnInitialized = true;
-            
+
             if (WorldConfig.get((ServerLevel)this.level()).isHellhoundFireVariant() && this.random.nextInt(4) == 0) {
                 isFireVariant = true;
             }
@@ -318,20 +319,20 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
 
         if (!this.level().isClientSide() && spawnInitialized && !this.entityData.get(REVEALED)) {
             this.setDeltaMovement(0, this.getDeltaMovement().y, 0);
-            
+
             if (spawnTimer-- <= 0) {
                 this.setInvisible(false);
                 this.entityData.set(REVEALED, true);
                 if (isFireVariant) {
                     this.setSecondsOnFire(15);
                 }
-                
+
                 this.level().playSound(
                     null, this.blockPosition(),
                     ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool:dog_strike")),
                     this.getSoundSource(), 1.0f, 1.0f
                 );
-                
+
                 if (this.level() instanceof ServerLevel serverLevel) {
                     for (int i = 0; i < 50; i++) {
                         double dx = (this.random.nextDouble() - 0.5) * 1.5;

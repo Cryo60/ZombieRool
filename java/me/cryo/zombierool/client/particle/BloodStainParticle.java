@@ -28,30 +28,17 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class BloodStainParticle extends TextureSheetParticle {
-    /** Overlapping puddles blend instead of fighting for the same depth. */
-    private static final ParticleRenderType STUCK_SHEET = new ParticleRenderType() {
-        @Override
-        public void begin(BufferBuilder builder, TextureManager textures) {
-            RenderSystem.depthMask(false);
-            RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
-            RenderSystem.enableBlend();
-            RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
-        }
-
-        @Override
-        public void end(Tesselator tesselator) {
-            tesselator.end();
-            RenderSystem.depthMask(true);
-        }
-
-        @Override
-        public String toString() {
-            return "ZOMBIEROOL_BLOOD_STAIN";
-        }
-    };
-
     private static int session;
+    private static boolean deferredPass;
+    private static final java.util.Set<BloodStainParticle> LIVE=java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    public static boolean hasDeferred(){for(var p:LIVE)if(p.isAlive()&&!p.stuck)return true;return false;}
+    public static void renderDeferred(VertexConsumer out,Camera camera,float partial){
+        var visible=new java.util.ArrayList<BloodStainParticle>();
+        LIVE.removeIf(p->!p.isAlive());for(var drop:LIVE)if(!drop.stuck)visible.add(drop);
+        visible.sort(java.util.Comparator.comparingDouble((BloodStainParticle p)->camera.getPosition().distanceToSqr(p.x,p.y,p.z)).reversed());
+        deferredPass=true;try{for(var drop:visible)drop.render(out,camera,partial);}finally{deferredPass=false;}
+    }
+
 
     private boolean stuck;
     private int stuckSession;
@@ -61,7 +48,7 @@ public class BloodStainParticle extends TextureSheetParticle {
     private float lift = 0.03F;
 
     public static void expireAll() {
-        session++;
+        session++;LIVE.clear();
     }
 
     public static BloodStainParticleProvider provider(SpriteSet spriteSet) {
@@ -87,7 +74,8 @@ public class BloodStainParticle extends TextureSheetParticle {
         this.pickSprite(spriteSet);
         this.lifetime = 16 + level.random.nextInt(10);
         this.gravity = 0.62F;
-        this.hasPhysics = true;
+        // Collision is resolved by the visible-surface ray, so technical barriers cannot stop a drop.
+        this.hasPhysics = false;
         this.xd = vx;
         this.yd = vy;
         this.zd = vz;
@@ -95,11 +83,12 @@ public class BloodStainParticle extends TextureSheetParticle {
         this.setColor(0.30F, 0.008F, 0.015F);
         this.setSize(0.12F, 0.12F);
         this.stuckSession = session;
+        LIVE.add(this);
     }
 
     @Override
     public ParticleRenderType getRenderType() {
-        return this.stuck ? STUCK_SHEET : ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
     @Override
@@ -133,23 +122,8 @@ public class BloodStainParticle extends TextureSheetParticle {
     }
 
     private BlockHitResult clipSolid(Vec3 from, Vec3 to) {
-        Vec3 start = from;
-        Vec3 dir = to.subtract(from);
-        double len = dir.length();
-        if (len < 1.0E-6) return null;
-        dir = dir.scale(1.0 / len);
-        for (int i = 0; i < 8; i++) {
-            BlockHitResult hit = this.level.clip(new ClipContext(start, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
-            if (hit.getType() != HitResult.Type.BLOCK) return null;
-            net.minecraft.world.level.block.state.BlockState state = this.level.getBlockState(hit.getBlockPos());
-            if (!(state.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock)
-                    && state.getRenderShape() != net.minecraft.world.level.block.RenderShape.INVISIBLE) {
-                return hit;
-            }
-            start = hit.getLocation().add(dir.scale(0.06));
-            if (start.distanceToSqr(to) <= 1.0E-6) return null;
-        }
-        return null;
+        var hit=me.cryo.zombierool.util.GoreCollision.clip(this.level,from,to);
+        return hit.getType()==HitResult.Type.BLOCK?hit:null;
     }
 
     private void stick(Vec3 pos, Direction hitFace, float speed) {
@@ -175,6 +149,7 @@ public class BloodStainParticle extends TextureSheetParticle {
 
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partial) {
+        if(!deferredPass&&me.cryo.zombierool.client.MapAtmosphereClient.deferredBlood())return;
         if (!this.stuck) {
             super.render(buffer, camera, partial);
             return;

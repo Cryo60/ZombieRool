@@ -100,6 +100,11 @@
   ],
   "tacz": {
     "gun_id": "elitex:inter_m200",
-    "ammo_id": "tacz:338"
+    "ammo_id": "tacz:338",
+    "fallbacks": [
+      {
+        "gun_id": "lradd:m200"
+      }
+    ]
   }
 }

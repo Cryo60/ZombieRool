@@ -25,7 +25,7 @@ public final class MapTextureSync {
         var old=previous.get(server);var next=new S2CMapTextureSlotPacket[MapTextures.SLOTS];
         for(int slot=0;slot<MapTextures.SLOTS;slot++){
             byte[][] faces;
-            try{faces=MapTexturePixels.read(root.resolve("zombierool/custom_blocks"),names[slot]);}
+            try{faces=MapTexturePixels.read(me.cryo.zombierool.util.WorldZombieroolPaths.path(root,"custom_blocks"),names[slot]);}
             catch(Exception e){me.cryo.zombierool.ZombieroolMod.LOGGER.warn("Cannot load map texture {}",names[slot],e);try{faces=MapTexturePixels.read(root,"");}catch(java.io.IOException impossible){throw new IllegalStateException(impossible);}}
             next[slot]=new S2CMapTextureSlotPacket(slot,names[slot],MapTextures.soundId(slot),faces);
             boolean changed=old==null||!old[slot].name().equals(names[slot])||!old[slot].sound().equals(next[slot].sound())||!Arrays.deepEquals(old[slot].faces(),faces);

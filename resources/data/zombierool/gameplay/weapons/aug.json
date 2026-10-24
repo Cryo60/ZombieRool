@@ -102,6 +102,20 @@
     "ammo_id": "tacz:556x45",
     "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "lradd:aug",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "mw19:aug",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      }
+    ]
   }
 }

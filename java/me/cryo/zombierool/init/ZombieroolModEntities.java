@@ -28,6 +28,19 @@ import me.cryo.zombierool.ZombieroolMod;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ZombieroolModEntities {
 	public static final DeferredRegister<EntityType<?>> REGISTRY = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ZombieroolMod.MODID);
+	public static final RegistryObject<EntityType<me.cryo.zombierool.entity.MapActorEntity>> MAP_ACTOR = register("map_actor",EntityType.Builder.<me.cryo.zombierool.entity.MapActorEntity>of(me.cryo.zombierool.entity.MapActorEntity::new,MobCategory.MONSTER).sized(.6f,1.8f).clientTrackingRange(96).updateInterval(2));
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> PENTAGON_THIEF=special("pentagon_thief",.6f,1.95f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> GEIST=special("geist",.65f,1.9f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> CUSTOM_MINI_BOSS=special("custom_mini_boss",.95f,2.8f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> PANZER=special("panzer",.95f,2.8f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> BRUTUS=special("brutus",.95f,2.65f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> NAPALM_MINION=special("napalm_minion",.6f,1.8f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> SKELETON_MINION=special("skeleton_minion",.4f,1.3f);
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.NapalmFireEntity>> NAPALM_FIRE=register("napalm_fire",EntityType.Builder.<me.cryo.zombierool.entity.NapalmFireEntity>of(me.cryo.zombierool.entity.NapalmFireEntity::new,MobCategory.MISC).sized(8,.2f).clientTrackingRange(64).updateInterval(10));
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.PanzerClawEntity>> PANZER_CLAW=register("panzer_claw",EntityType.Builder.<me.cryo.zombierool.entity.PanzerClawEntity>of(me.cryo.zombierool.entity.PanzerClawEntity::new,MobCategory.MISC).sized(.3f,.3f).clientTrackingRange(64).updateInterval(1).noSave());
+    private static RegistryObject<EntityType<me.cryo.zombierool.entity.SpecialEnemyEntity>> special(String id,float width,float height){return register(id,EntityType.Builder.<me.cryo.zombierool.entity.SpecialEnemyEntity>of(me.cryo.zombierool.entity.SpecialEnemyEntity::new,MobCategory.MONSTER).sized(width,height).setShouldReceiveVelocityUpdates(true).clientTrackingRange(64).updateInterval(2));}
+    public static final RegistryObject<EntityType<me.cryo.zombierool.entity.VrilHumanEntity>> VRIL_HUMAN=register("vril_human",EntityType.Builder.<me.cryo.zombierool.entity.VrilHumanEntity>of(me.cryo.zombierool.entity.VrilHumanEntity::new,MobCategory.MISC).sized(.6f,1.8f).clientTrackingRange(64).updateInterval(2).noSave().noSummon());
+	public static final RegistryObject<EntityType<me.cryo.zombierool.entity.SoulOrbEntity>> SOUL_ORB = register("soul_orb",EntityType.Builder.<me.cryo.zombierool.entity.SoulOrbEntity>of(me.cryo.zombierool.entity.SoulOrbEntity::new,MobCategory.MISC).sized(.5f,.5f).clientTrackingRange(128).updateInterval(1).noSave().noSummon().setCustomClientFactory(me.cryo.zombierool.entity.SoulOrbEntity::new));
 	public static final RegistryObject<EntityType<ZombieEntity>> ZOMBIE = register("zombie",
 			EntityType.Builder.<ZombieEntity>of(ZombieEntity::new, MobCategory.MONSTER).setShouldReceiveVelocityUpdates(true).setTrackingRange(124).setUpdateInterval(3).setCustomClientFactory(ZombieEntity::new)
 
@@ -74,6 +87,15 @@ public class ZombieroolModEntities {
 
 	@SubscribeEvent
 	public static void registerAttributes(EntityAttributeCreationEvent event) {
+        event.put(PENTAGON_THIEF.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(350,.34,0).build());
+        event.put(GEIST.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(30,.28,1).build());
+        event.put(MAP_ACTOR.get(),me.cryo.zombierool.entity.MapActorEntity.attributes().build());
+        event.put(CUSTOM_MINI_BOSS.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(360,.36,4).build());
+        event.put(PANZER.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(480,.30,4).build());
+        event.put(BRUTUS.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(360,.36,3).build());
+        event.put(NAPALM_MINION.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(10,.16,2).build());
+        event.put(SKELETON_MINION.get(),me.cryo.zombierool.entity.SpecialEnemyEntity.attributes(4,.34,1).build());
+        event.put(VRIL_HUMAN.get(),me.cryo.zombierool.entity.VrilHumanEntity.attributes().build());
 		event.put(MR_CHIEF.get(), me.cryo.zombierool.entity.MrChiefEntity.attributes().build());
 		event.put(ZOMBIE.get(), ZombieEntity.createAttributes().build());
 		event.put(HELLHOUND.get(), HellhoundEntity.createAttributes().build());

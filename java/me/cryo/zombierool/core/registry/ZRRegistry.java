@@ -65,17 +65,7 @@ public class ZRRegistry {
             });
         }
 
-        if (event.getRegistryKey().equals(Registries.CREATIVE_MODE_TAB)) {
-            TAB_KEY = ResourceKey.create(Registries.CREATIVE_MODE_TAB, new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"));
-            event.register(Registries.CREATIVE_MODE_TAB, helper -> {
-                CreativeModeTab tab = CreativeModeTab.builder()
-                        .title(Component.translatable("itemGroup.zombierool.zombie_arsenal"))
-                        .icon(() -> !GUN_ITEMS.isEmpty() ? new ItemStack(GUN_ITEMS.get(0)) : new ItemStack(Items.IRON_AXE))
-                        .withSearchBar() 
-                        .build();
-                helper.register(TAB_KEY, tab);
-            });
-        }
+        TAB_KEY = ResourceKey.create(Registries.CREATIVE_MODE_TAB, new ResourceLocation(ZombieroolMod.MODID, "zb_rct"));
     }
 
     @SubscribeEvent

@@ -1,0 +1,15 @@
+{
+  "id": "zombierool:longbow",
+  "name": "Map weapon",
+  "type": "PROJECTILE",
+  "weapon_kind": "bow",
+  "stats": {
+    "damage": 0,
+    "range": 0,
+    "fire_rate": 20
+  },
+  "ammo": {
+    "clip_size": 0,
+    "max_reserve": 0
+  }
+}

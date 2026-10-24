@@ -102,6 +102,20 @@
     "ammo_id": "tacz:57x28",
     "pap_attachments": {
       "scope": "tacz:sight_coyote"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "tacz:p90",
+        "pap_attachments": {
+          "scope": "tacz:sight_coyote"
+        }
+      },
+      {
+        "gun_id": "lradd:p90",
+        "pap_attachments": {
+          "scope": "tacz:sight_coyote"
+        }
+      }
+    ]
   }
 }

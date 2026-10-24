@@ -103,6 +103,32 @@
     "ammo_id": "tacz:45acp",
     "pap_attachments": {
       "muzzle": "tacz:compensator"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "tacz:m1911",
+        "pap_attachments": {
+          "muzzle": "tacz:compensator"
+        }
+      },
+      {
+        "gun_id": "ronmc:m1911",
+        "pap_attachments": {
+          "muzzle": "tacz:compensator"
+        }
+      },
+      {
+        "gun_id": "ww:m1911a1",
+        "pap_attachments": {
+          "muzzle": "tacz:compensator"
+        }
+      },
+      {
+        "gun_id": "elitex:colt_m1911x1",
+        "pap_attachments": {
+          "muzzle": "tacz:compensator"
+        }
+      }
+    ]
   }
 }

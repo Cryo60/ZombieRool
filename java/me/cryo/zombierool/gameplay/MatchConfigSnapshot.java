@@ -27,6 +27,7 @@ public final class MatchConfigSnapshot extends SavedData {
     }
     public static void begin(ServerLevel level) {
         restore(level);
+        for(var world:level.getServer().getAllLevels())MapAtmosphere.beginMatch(world);
         var journal=get(level);
         journal.original=new CompoundTag();
         WorldConfig.get(level).saveEditable(journal.original);
@@ -34,9 +35,11 @@ public final class MatchConfigSnapshot extends SavedData {
     }
     public static void restore(ServerLevel level) {
         var journal=get(level);
+        for(var world:level.getServer().getAllLevels())MapAtmosphere.restoreMatch(world);
         if(journal.original==null)return;
         var config=WorldConfig.get(level);
         config.loadEditable(journal.original.copy());config.setDirty();
+        me.cryo.zombierool.config.SpecialEnemyConfig.syncSpawners(level);
         journal.original=null;journal.setDirty();
         WaveManager.currentSessionMusic=config.getMusicPreset();
         if(WaveManager.currentSessionMusic==null||WaveManager.currentSessionMusic.isEmpty())WaveManager.currentSessionMusic="default";

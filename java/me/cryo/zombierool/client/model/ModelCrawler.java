@@ -40,6 +40,8 @@ public class ModelCrawler<T extends LivingEntity> extends SpiderModel<T> {
 
     @Override
     public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+        var flight=me.cryo.zombierool.gameplay.TraversalMotion.flight(entity);
+        if(flight!=null&&flight.style==2){limbSwing=ageInTicks*.8f;limbSwingAmount=.8f;}
         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 
         if (!me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod() && GoreManager.hasLostLimb(entity, GoreManager.Limb.HEAD)) {
@@ -60,8 +62,12 @@ public class ModelCrawler<T extends LivingEntity> extends SpiderModel<T> {
             this.rightFrontLeg.visible = true;
         }
 
-        boolean corpse = (entity.deathTime > 0 || !entity.isAlive()) && !ZRClientConfig.isGoreReduced();
+        boolean corpse = (entity.deathTime > 0 || !entity.isAlive()) && !ZRClientConfig.isGoreReduced()
+                && !(entity instanceof me.cryo.zombierool.entity.AbstractZombieRoolEntity z&&z.isCerberusFeeding());
         if (!corpse) {
+            if(entity instanceof me.cryo.zombierool.entity.CrawlerEntity crawler){
+                int phase=crawler.leapPhase();if(phase==1){head.xRot+=.25f;leftFrontLeg.xRot-=.35f;rightFrontLeg.xRot-=.35f;}if(phase==2){head.xRot-=.2f;leftFrontLeg.xRot=-1.1f;rightFrontLeg.xRot=-1.1f;}
+            }
             this.head.zRot = 0.0F;
             if (this.abdomen != null) this.abdomen.xRot = 0.0F;
             return;

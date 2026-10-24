@@ -21,9 +21,11 @@ public abstract class TacZShootIntervalMixin {
     @Inject(method = "getShootInterval", at = @At("RETURN"), cancellable = true, remap = false)
     private void zombierool_modifyShootInterval(LivingEntity shooter, FireMode fireMode, ItemStack gunStack, CallbackInfoReturnable<Long> cir) {
         long interval = cir.getReturnValue();
+        var definition=me.cryo.zombierool.core.system.WeaponFacade.getDefinition(gunStack);
+        if(definition!=null&&!gunStack.getOrCreateTag().getBoolean("zombierool:unmapped"))interval=Math.max(1,definition.stats.fire_rate)*50L;
 
         if (this.getBolt() == Bolt.MANUAL_ACTION) {
-            interval = 0L; 
+            interval = 0L;
         }
 
         if (shooter != null && shooter.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_DOUBLE_TAP.get())) {

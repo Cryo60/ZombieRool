@@ -28,9 +28,26 @@ public class LethalWeaponManager {
     private static final Map<UUID, Integer> cookingTimers = new ConcurrentHashMap<>();
     private static final Map<UUID, String> pickedUpLethals = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> throwCooldowns = new ConcurrentHashMap<>();
+    private record PendingThrow(String type,int cookedTicks,long releaseTick,net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension){}
+    private static final Map<UUID,PendingThrow> pendingThrows=new ConcurrentHashMap<>();
     private static final int MAX_COOK_TICKS = 100;
     public static boolean isCooking(UUID playerId) {
-        return cookingTimers.containsKey(playerId);
+        return cookingTimers.containsKey(playerId)||pendingThrows.containsKey(playerId);
+    }
+    public static void cancel(ServerPlayer player){
+        if(cookingTimers.remove(player.getUUID())!=null)me.cryo.zombierool.gameplay.EquipmentSystem.animate(player,"equipment_cancel",6);
+        pickedUpLethals.remove(player.getUUID());throwCooldowns.remove(player.getUUID());
+        pendingThrows.remove(player.getUUID());
+    }
+    @SubscribeEvent
+    public static void death(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        if(event.getEntity() instanceof ServerPlayer player){
+            cancel(player);me.cryo.zombierool.gameplay.EquipmentSystem.cancel(player);
+        }
+    }
+    @SubscribeEvent
+    public static void clone(PlayerEvent.Clone event) {
+        if(event.getOriginal() instanceof ServerPlayer player){cancel(player);me.cryo.zombierool.gameplay.EquipmentSystem.cancel(player);}
     }
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -38,6 +55,7 @@ public class LethalWeaponManager {
         cookingTimers.remove(pid);
         pickedUpLethals.remove(pid);
         throwCooldowns.remove(pid);
+        pendingThrows.remove(pid);
     }
     public static void startCookingPickedUpGrenade(ServerPlayer player, int cookedTicks, String type) {
         cookingTimers.put(player.getUUID(), cookedTicks);
@@ -50,26 +68,30 @@ public class LethalWeaponManager {
         }
     }
     private static String getAnimNameForCook(String type) {
+        if (type.contains("semtex")) return "semtex_hold";
         if (type.contains("molotov")) return "molotov_light";
         if (type.contains("stielhandgranate")) return "stielhandgranate_cook";
         if (type.contains("monkey_bomb")) return "monkey_bomb_cook";
         return "grenade_cook";
     }
     private static String getAnimNameForThrow(String type) {
+        if (type.contains("semtex")) return "semtex_throw";
         if (type.contains("molotov")) return "molotov_throw";
         if (type.contains("stielhandgranate")) return "stielhandgranate_throw";
         if (type.contains("monkey_bomb")) return "monkey_bomb_throw";
         return "grenade_throw";
     }
     private static SoundEvent getPinSoundForType(String type) {
+        if (type.contains("semtex")) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "semtex_draw"));
         if (type.contains("molotov")) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "molotov_light"));
         if (type.contains("monkey_bomb")) return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "monkey_ratchet"));
         return ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "grenade_pin"));
     }
     public static void handleStateChange(ServerPlayer player, int state) {
+        if(!me.cryo.zombierool.gameplay.EquipmentSystem.valid(player)||me.cryo.zombierool.gameplay.EquipmentSystem.busy(player.getUUID()))return;
         long now = player.level().getGameTime();
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
-            if (state == 1) { 
+            if (state == 1) {
                 long cd = throwCooldowns.getOrDefault(player.getUUID(), 0L);
                 if (now < cd) return;
                 if (cap.getLethalCount() > 0 && !cookingTimers.containsKey(player.getUUID())) {
@@ -82,7 +104,7 @@ public class LethalWeaponManager {
                         player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1f, 1f);
                     }
                 }
-            } else if (state == 2) { 
+            } else if (state == 2) {
                 if (cookingTimers.containsKey(player.getUUID())) {
                     int cookedTicks = cookingTimers.remove(player.getUUID());
                     String pickedUpType = pickedUpLethals.remove(player.getUUID());
@@ -90,15 +112,18 @@ public class LethalWeaponManager {
                     String animName = getAnimNameForThrow(type);
                     NetworkHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new S2CSyncThirdPersonAnimPacket(player.getUUID(), animName, 15));
                     if (pickedUpType != null) {
-                        throwLethal(player, pickedUpType, cookedTicks);
-                        throwCooldowns.put(player.getUUID(), now + 40); 
+                        scheduleThrow(player, pickedUpType, cookedTicks);
+                        throwCooldowns.put(player.getUUID(), now + 40);
+                    } else if (type.contains("semtex") && cap.getLethalCount()>0) {
+                        me.cryo.zombierool.gameplay.EquipmentSystem.releaseSemtex(player);
+                        throwCooldowns.put(player.getUUID(), now+20);
                     } else if (cap.getLethalCount() > 0) {
                         if (type.contains("molotov") && cookedTicks < 24) {
-                            return; 
+                            return;
                         }
                         cap.setLethalCount(cap.getLethalCount() - 1);
                         cap.sync(player);
-                        throwLethal(player, type, cookedTicks);
+                        scheduleThrow(player, type, cookedTicks);
                         throwCooldowns.put(player.getUUID(), now + 40);
                     }
                 }
@@ -108,8 +133,21 @@ public class LethalWeaponManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        for(var entry:pendingThrows.entrySet()){
+            var player=event.getServer().getPlayerList().getPlayer(entry.getKey());var action=entry.getValue();
+            if(player==null||!me.cryo.zombierool.gameplay.EquipmentSystem.valid(player)||player.level().dimension()!=action.dimension()){
+                pendingThrows.remove(entry.getKey());continue;
+            }
+            if(player.level().getGameTime()>=action.releaseTick()){
+                pendingThrows.remove(entry.getKey());throwLethal(player,action.type(),Math.min(MAX_COOK_TICKS,action.cookedTicks()+5));
+            }
+        }
         for (Map.Entry<UUID, Integer> entry : cookingTimers.entrySet()) {
             UUID playerId = entry.getKey();
+            ServerPlayer holder=event.getServer().getPlayerList().getPlayer(playerId);
+            if(holder==null||!me.cryo.zombierool.gameplay.EquipmentSystem.valid(holder)){cookingTimers.remove(playerId);pickedUpLethals.remove(playerId);continue;}
+            boolean semtex=holder.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).map(c->c.getLethalType().contains("semtex")).orElse(false);
+            if(semtex)continue;
             int ticks = entry.getValue() + 1;
             if (ticks >= MAX_COOK_TICKS) {
                 cookingTimers.remove(playerId);
@@ -134,6 +172,9 @@ public class LethalWeaponManager {
                 cookingTimers.put(playerId, ticks);
             }
         }
+    }
+    private static void scheduleThrow(ServerPlayer player,String type,int cookedTicks){
+        pendingThrows.put(player.getUUID(),new PendingThrow(type,cookedTicks,player.level().getGameTime()+5,player.level().dimension()));
     }
     private static void throwLethal(ServerPlayer player, String type, int cookedTicks) {
         ThrowableItemProjectile projectile;

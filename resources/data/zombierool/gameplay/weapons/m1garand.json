@@ -97,6 +97,14 @@
     "tacz_ww"
   ],
   "tacz": {
-    "gun_id": "ww:m1g"
+    "gun_id": "ww:m1g",
+    "fallbacks": [
+      {
+        "gun_id": "elitex:m1_garand"
+      },
+      {
+        "gun_id": "hamster:m1garand"
+      }
+    ]
   }
 }

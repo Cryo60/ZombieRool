@@ -15,6 +15,7 @@ import me.cryo.zombierool.ZombieroolMod;
 
 public class ZombieroolModParticleTypes {
 	public static final DeferredRegister<ParticleType<?>> REGISTRY = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, ZombieroolMod.MODID);
+    public static final RegistryObject<SimpleParticleType> THIEF_DIGITS=REGISTRY.register("thief_digits",()->new SimpleParticleType(false));
 	public static final RegistryObject<SimpleParticleType> INSTAKILL = REGISTRY.register("instakill", () -> new SimpleParticleType(false));
 	public static final RegistryObject<SimpleParticleType> MAXAMMO = REGISTRY.register("maxammo", () -> new SimpleParticleType(false));
 	public static final RegistryObject<SimpleParticleType> NUKE = REGISTRY.register("nuke", () -> new SimpleParticleType(false));

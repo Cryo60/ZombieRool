@@ -44,65 +44,84 @@ import java.util.*;
 
 /** World-local map devices. Configuration persists, paid activations deliberately do not. */
 public final class MapDeviceSystem {
-    public enum Kind { SOUND, PARTICLE, CONTROL, ELECTRIC, FIRE, TURRET }
+    public enum Kind { SOUND, PARTICLE, CONTROL, ELECTRIC, FIRE, TURRET, DCA, AIRCRAFT, TORNADO, VEHICLE }
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, "zombierool");
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, "zombierool");
     public static final DeferredRegister<BlockEntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, "zombierool");
     public static final Map<Kind, RegistryObject<Block>> TYPES = new EnumMap<>(Kind.class);
+    public static final Map<String,RegistryObject<Block>> ALL_TYPES=new LinkedHashMap<>();
     static {
+        ITEMS.register("scenery_route_tool",me.cryo.zombierool.gameplay.AmbientScenery.RouteTool::new);
         add("sound_emitter", Kind.SOUND); add("particle_emitter", Kind.PARTICLE);
         add("trap_controller", Kind.CONTROL); add("electric_trap", Kind.ELECTRIC);
         add("fire_pit", Kind.FIRE); add("turret", Kind.TURRET);
+        for(String vehicle:java.util.List.of("tank","plane","helicopter","truck"))add("decor_"+vehicle,Kind.VEHICLE);
+        for(String transport:me.cryo.zombierool.gameplay.AmbientScenery.transports())add("decor_"+transport,Kind.VEHICLE);
+        for(String model:me.cryo.zombierool.gameplay.AmbientScenery.carModels())add(model.equals("sedan")?"decor_car":"decor_car_"+model,Kind.VEHICLE);
+        add("ambient_dca",Kind.DCA);add("aircraft_spawner",Kind.AIRCRAFT);add("tornado_generator",Kind.TORNADO);
     }
     public static final RegistryObject<BlockEntityType<Device>> DEVICE = ENTITIES.register("map_device",
-            () -> BlockEntityType.Builder.of(Device::new, TYPES.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
-    private static final Map<Level, Set<Device>> LOADED = new WeakHashMap<>();
+            () -> BlockEntityType.Builder.of(Device::new, ALL_TYPES.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
+    private static final Map<Level, Set<Device>> LOADED = java.util.Collections.synchronizedMap(new WeakHashMap<>());
     private static final ThreadLocal<ServerPlayer> DAMAGE_OWNER = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> TRAP_DAMAGE = new ThreadLocal<>();
+    public static boolean teleporterShock(net.minecraft.world.entity.LivingEntity target,ServerPlayer owner){
+        var previous=DAMAGE_OWNER.get();var previousTrap=TRAP_DAMAGE.get();
+        try{TRAP_DAMAGE.set(true);if(owner!=null)DAMAGE_OWNER.set(owner);else DAMAGE_OWNER.remove();if(target instanceof me.cryo.zombierool.entity.SpecialEnemyEntity boss && boss.isBoss())return boss.teleporterShock();return DamageManager.applyDamage(target,target.damageSources().generic(),100000);}
+        finally{if(previous==null)DAMAGE_OWNER.remove();else DAMAGE_OWNER.set(previous);if(previousTrap==null)TRAP_DAMAGE.remove();else TRAP_DAMAGE.set(previousTrap);}
+    }
     public static ServerPlayer damageOwner() { return DAMAGE_OWNER.get(); }
     public static boolean isTrapDamage() { return Boolean.TRUE.equals(TRAP_DAMAGE.get()); }
+    public static boolean portableTurretHit(net.minecraft.world.entity.LivingEntity target,ServerPlayer owner,float damage){
+        var previous=DAMAGE_OWNER.get();var previousTrap=TRAP_DAMAGE.get();
+        try{TRAP_DAMAGE.set(true);if(owner!=null)DAMAGE_OWNER.set(owner);else DAMAGE_OWNER.remove();return DamageManager.applyDamage(target,target.damageSources().generic(),damage);}
+        finally{if(previous==null)DAMAGE_OWNER.remove();else DAMAGE_OWNER.set(previous);if(previousTrap==null)TRAP_DAMAGE.remove();else TRAP_DAMAGE.set(previousTrap);}
+    }
     private static void add(String id, Kind kind) {
         RegistryObject<Block> block = BLOCKS.register(id, () -> new DeviceBlock(kind));
-        TYPES.put(kind, block);
+        TYPES.putIfAbsent(kind, block);ALL_TYPES.put(id,block);
         ITEMS.register(id, () -> new BlockItem(block.get(), new Item.Properties()));
     }
     public static void register(IEventBus bus) {
         BLOCKS.register(bus); ITEMS.register(bus); ENTITIES.register(bus);
         bus.addListener((BuildCreativeModeTabContentsEvent e) -> {
             if (e.getTabKey().location().equals(new ResourceLocation("zombierool", "zb_rct")))
-                TYPES.values().forEach(b -> e.accept(b.get()));
+                ALL_TYPES.values().forEach(b -> e.accept(b.get()));
         });
     }
     public static List<Device> devices(Level level) { return new ArrayList<>(LOADED.getOrDefault(level, Set.of())); }
     public static void reset(ServerLevel level) {
-        for (Device device : devices(level)) { device.remaining = device.cooldown = 0; device.owner = null; device.counter = 0; device.targetHits.clear(); device.setActive(false); device.syncRuntime(); }
+        for (Device device : devices(level)) { if(device.kind()==Kind.VEHICLE)continue;device.remaining = device.cooldown = 0; device.owner = null; device.counter = 0; device.targetHits.clear(); device.setActive(false); device.syncRuntime(); }
     }
     public static boolean isEmitter(Kind kind) { return kind == Kind.SOUND || kind == Kind.PARTICLE; }
-    public static final class DeviceBlock extends Block implements EntityBlock {
+    public static final class DeviceBlock extends Block implements EntityBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final DirectionProperty FACING = BlockStateProperties.FACING;
         public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
         public final Kind kind;
         DeviceBlock(Kind kind) {
-            super(Properties.of().strength(-1, 3600000).noOcclusion().dynamicShape().lightLevel(s -> s.getValue(ACTIVE) ? 8 : 0));
+            super(Properties.of().strength(-1, 3600000).noOcclusion().dynamicShape().lightLevel(s -> kind!=Kind.VEHICLE&&s.getValue(ACTIVE) ? 8 : 0));
             this.kind = kind;
             registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ACTIVE, false));
         }
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) { b.add(FACING, ACTIVE); }
         @Override public BlockState getStateForPlacement(BlockPlaceContext c) {
-            Direction facing = kind == Kind.CONTROL ? c.getHorizontalDirection().getOpposite() : c.getClickedFace();
+            Direction facing = kind == Kind.CONTROL || kind==Kind.VEHICLE ? c.getHorizontalDirection().getOpposite() : c.getClickedFace();
             if (kind == Kind.TURRET || isEmitter(kind)) facing = c.getHorizontalDirection().getOpposite();
             return defaultBlockState().setValue(FACING, facing);
         }
         @Override public BlockState rotate(BlockState s, Rotation r) { return s.setValue(FACING, r.rotate(s.getValue(FACING))); }
         @Override public BlockState mirror(BlockState s, Mirror m) { return rotate(s, m.getRotation(s.getValue(FACING))); }
         private boolean invisible() {
-            return isEmitter(kind) && net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()
+            return (isEmitter(kind)||kind==Kind.AIRCRAFT||kind==Kind.TORNADO||kind==Kind.VEHICLE) && net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()
                     && me.cryo.zombierool.client.TechnicalBlockClient.shouldBeInvisible();
         }
+        @Override public void setPlacedBy(Level level,BlockPos pos,BlockState state,net.minecraft.world.entity.LivingEntity placer,net.minecraft.world.item.ItemStack stack){super.setPlacedBy(level,pos,state,placer,stack);if(kind==Kind.VEHICLE&&placer!=null&&level.getBlockEntity(pos) instanceof Device d){var n=d.config();n.getCompound("scenery").putDouble("yaw",net.minecraft.util.Mth.wrapDegrees(-placer.getYRot()));d.configure(n);}}
         @Override public RenderShape getRenderShape(BlockState s) { return invisible() ? RenderShape.INVISIBLE : RenderShape.MODEL; }
         @Override public VoxelShape getShape(BlockState s, BlockGetter l, BlockPos p, CollisionContext c) {
-            if (invisible()) return Shapes.empty();
-            if (isEmitter(kind)) return Block.box(3,3,3,13,13,13);
+            if(kind==Kind.VEHICLE){if(l instanceof Level world){var g=me.cryo.zombierool.gameplay.VehicleDecorPhysics.geometry(world,p);if(g!=null){return Shapes.create(g.bounds().move(-p.getX(),-p.getY(),-p.getZ()));}}return Block.box(0,0,0,16,16,16);}
+            if (invisible() && (!(c instanceof net.minecraft.world.phys.shapes.EntityCollisionContext ec) || !(ec.getEntity() instanceof Player player) || !player.isCreative())) return Shapes.empty();
+            if(kind==Kind.DCA)return Block.box(1,0,1,15,24,15);
+            if (isEmitter(kind)||kind==Kind.AIRCRAFT||kind==Kind.TORNADO||kind==Kind.VEHICLE) return Block.box(3,3,3,13,13,13);
             if (kind == Kind.TURRET) return Block.box(2,0,2,14,15,14);
             Direction d = s.getValue(FACING);
             return switch (d) {
@@ -112,14 +131,14 @@ public final class MapDeviceSystem {
             };
         }
         @Override public VoxelShape getCollisionShape(BlockState s, BlockGetter l, BlockPos p, CollisionContext c) {
-            return isEmitter(kind) || kind == Kind.CONTROL ? Shapes.empty() : getShape(s,l,p,c);
+            return isEmitter(kind) || kind == Kind.CONTROL || kind==Kind.AIRCRAFT||kind==Kind.TORNADO||kind==Kind.VEHICLE ? Shapes.empty() : getShape(s,l,p,c);
         }
-        @Override public boolean isPathfindable(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.level.pathfinder.PathComputationType type) { return kind == Kind.CONTROL || isEmitter(kind); }
-        @Override public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.entity.Mob mob) { return kind == Kind.CONTROL || isEmitter(kind) ? net.minecraft.world.level.pathfinder.BlockPathTypes.OPEN : null; }
+        @Override public boolean isPathfindable(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.level.pathfinder.PathComputationType type) { return kind == Kind.CONTROL || isEmitter(kind)||kind==Kind.AIRCRAFT||kind==Kind.TORNADO||kind==Kind.VEHICLE; }
+        @Override public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(BlockState s, BlockGetter l, BlockPos p, net.minecraft.world.entity.Mob mob) { return kind == Kind.CONTROL || isEmitter(kind)||kind==Kind.AIRCRAFT||kind==Kind.TORNADO||kind==Kind.VEHICLE ? net.minecraft.world.level.pathfinder.BlockPathTypes.OPEN : null; }
         @Override public BlockEntity newBlockEntity(BlockPos p, BlockState s) { return new Device(p,s); }
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l, BlockState s, BlockEntityType<T> t) {
             if(t!=DEVICE.get())return null;
-            return l.isClientSide ? (world,p,state,be) -> me.cryo.zombierool.client.ElectricTrapSounds.tickDevice((Device)be)
+            return l.isClientSide ? (world,p,state,be) -> {me.cryo.zombierool.client.ElectricTrapSounds.tickDevice((Device)be);me.cryo.zombierool.gameplay.AmbientScenery.tickAim((Device)be);me.cryo.zombierool.client.AmbientScenerySounds.tickDevice((Device)be);}
                     : (world,p,state,be) -> ((Device)be).tick();
         }
         @Override public InteractionResult use(BlockState s, Level l, BlockPos p, Player player, InteractionHand hand, BlockHitResult hit) {
@@ -131,6 +150,9 @@ public final class MapDeviceSystem {
         }
     }
     public static final class Device extends BlockEntity {
+        public CompoundTag scenery;public long sceneryStart;
+        public float sceneryYaw,sceneryPitch,sceneryPrevYaw,sceneryPrevPitch;public long sceneryRotationTick;public boolean sceneryRotationReady;
+        public me.cryo.zombierool.gameplay.AmbientScenery.Aim sceneryAim;public long sceneryAimTick;private long sceneryShot=Long.MIN_VALUE;
         public String channel = "", effect = "";
         public boolean enabled = true, requiresPower = true;
         public int interval = 40, count = 8, cost = 1000, duration = 600, recharge = 1200;
@@ -159,21 +181,24 @@ public final class MapDeviceSystem {
         private String parsedEffect = "";
         public Device(BlockPos p, BlockState s) {
             super(DEVICE.get(),p,s);
+            scenery=me.cryo.zombierool.gameplay.AmbientScenery.defaults(p);if(kind()==Kind.VEHICLE){String vehicle=net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock()).getPath().replace("decor_","");scenery.putString("vehicle",vehicle.startsWith("car")?"car":vehicle);if(vehicle.startsWith("car_"))scenery.putString("carModel",vehicle.substring(4));if(vehicle.equals("helicopter"))scenery.putString("era","modern");}if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind())){interval=kind()==Kind.DCA?40:8;requiresPower=kind()==Kind.DCA;volume=kind()==Kind.DCA?.2f:.1f;}
             if (kind() == Kind.PARTICLE) effect = "minecraft:flame";
             if (kind() == Kind.SOUND) effect = "minecraft:ambient.cave";
             if (kind() == Kind.ELECTRIC || kind() == Kind.FIRE) { range = 3; damage = 100000; }
             if (kind() == Kind.TURRET) interval = 5;
         }
         public Kind kind() { return ((DeviceBlock)getBlockState().getBlock()).kind; }
-        @Override public void onLoad() { super.onLoad(); if (level != null && !level.isClientSide) LOADED.computeIfAbsent(level,k -> new HashSet<>()).add(this); }
-        @Override public void setRemoved() { if (level != null) { var entries = LOADED.get(level); if (entries != null) entries.remove(this); } super.setRemoved(); }
+        @Override public void onLoad() { super.onLoad();me.cryo.zombierool.gameplay.VehicleDecorPhysics.invalidate(level); if (level != null) LOADED.computeIfAbsent(level,k -> new HashSet<>()).add(this); }
+        @Override public void setRemoved() {me.cryo.zombierool.gameplay.VehicleDecorPhysics.invalidate(level); if (level != null) { var entries = LOADED.get(level); if (entries != null) entries.remove(this); } super.setRemoved(); }
         public CompoundTag config() {
             CompoundTag n = new CompoundTag(); n.putString("channel",channel); n.putString("effect",effect); n.putBoolean("enabled",enabled);
             n.putInt("interval",interval); n.putInt("count",count); n.putInt("cost",cost); n.putInt("duration",duration); n.putInt("recharge",recharge);
             n.putFloat("volume",volume); n.putFloat("pitch",pitch); n.putFloat("range",range); n.putFloat("spread",spread); n.putFloat("speed",speed); n.putFloat("damage",damage); n.putBoolean("requires_power",requiresPower);
-            return n;
+            if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind()))n.put("scenery",scenery.copy());return n;
         }
         public void configure(CompoundTag n) {
+            me.cryo.zombierool.gameplay.VehicleDecorPhysics.invalidate(level);
+            if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind())){sceneryAim=null;sceneryShot=Long.MIN_VALUE;scenery=me.cryo.zombierool.gameplay.AmbientScenery.sanitize(n.getCompound("scenery"),worldPosition);if(kind()==Kind.VEHICLE&&!me.cryo.zombierool.gameplay.AmbientScenery.states(scenery.getString("vehicle")).contains(scenery.getString("variant")))scenery.putString("variant","normal");sceneryStart=level==null?0:level.getGameTime();}
             channel = n.getString("channel").substring(0,Math.min(64,n.getString("channel").length()));
             effect = n.getString("effect").substring(0,Math.min(512,n.getString("effect").length())); enabled = n.getBoolean("enabled");
             interval = clamp(n.getInt("interval"),1,72000); count = clamp(n.getInt("count"),1,100);
@@ -186,11 +211,14 @@ public final class MapDeviceSystem {
         }
         private static int clamp(int v,int lo,int hi) { return Math.max(lo,Math.min(hi,v)); }
         private static float finite(float v,float lo,float hi) { return Float.isFinite(v) ? Math.max(lo,Math.min(hi,v)) : lo; }
-        @Override protected void saveAdditional(CompoundTag n) { super.saveAdditional(n); n.put("Device",config()); }
-        @Override public void load(CompoundTag n) { super.load(n); if (n.contains("Device")) configure(n.getCompound("Device")); aimYaw=n.getFloat("AimYaw"); aimPitch=n.getFloat("AimPitch"); remaining=n.getInt("ActiveTicks"); cooldown=n.getInt("CooldownTicks"); linkedActive=n.getInt("LinkedActive"); linkedCooldown=n.getInt("LinkedCooldown"); linkedTrapKinds=n.getInt("LinkedTrapKinds"); powerAvailable=!n.contains("HasPower") || n.getBoolean("HasPower"); }
+        @Override protected void saveAdditional(CompoundTag n) { super.saveAdditional(n); n.put("Device",config());n.putLong("SceneryStart",sceneryStart); }
+        @Override public void load(CompoundTag n) { super.load(n); if (n.contains("Device")) configure(n.getCompound("Device")); sceneryStart=n.getLong("SceneryStart");aimYaw=n.getFloat("AimYaw"); aimPitch=n.getFloat("AimPitch"); remaining=n.getInt("ActiveTicks"); cooldown=n.getInt("CooldownTicks"); linkedActive=n.getInt("LinkedActive"); linkedCooldown=n.getInt("LinkedCooldown"); linkedTrapKinds=n.getInt("LinkedTrapKinds"); powerAvailable=!n.contains("HasPower") || n.getBoolean("HasPower"); }
         @Override public CompoundTag getUpdateTag() { var n=saveWithoutMetadata(); n.putFloat("AimYaw",aimYaw); n.putFloat("AimPitch",aimPitch); n.putInt("ActiveTicks",remaining); n.putInt("CooldownTicks",cooldown); n.putInt("LinkedActive",linkedActive); n.putInt("LinkedCooldown",linkedCooldown); n.putInt("LinkedTrapKinds",linkedTrapKinds); n.putBoolean("HasPower",powerAvailable); return n; }
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
         @Override public AABB getRenderBoundingBox() {
+            if(kind()==Kind.AIRCRAFT&&scenery.getString("variant").equals("necropolis"))return new AABB(worldPosition).inflate(Math.max(220,scenery.getDouble("altitude")+scenery.getDouble("size")*1.2));
+            if(kind()==Kind.VEHICLE)return new AABB(worldPosition).inflate(16*scenery.getDouble("size"));
+            if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind()))return new AABB(worldPosition).inflate(kind()==Kind.AIRCRAFT&&scenery.getString("variant").equals("airship")?me.cryo.zombierool.gameplay.AmbientScenery.airshipLength(scenery)*.5+64:220);
             if(kind()==Kind.ELECTRIC && level!=null && getBlockState().getValue(DeviceBlock.ACTIVE))
                 return me.cryo.zombierool.gameplay.TrapContact.area(Vec3.atCenterOf(worldPosition),
                         me.cryo.zombierool.gameplay.TrapContact.beamEnd(level,worldPosition,getBlockState().getValue(DeviceBlock.FACING),range)).inflate(.25);
@@ -208,8 +236,11 @@ public final class MapDeviceSystem {
             if(!state.equals(lastRuntimeState)) {lastRuntimeState=state;level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         }
         public void setActive(boolean active) {
-            if (level != null && getBlockState().getValue(DeviceBlock.ACTIVE) != active)
+            if (level != null && getBlockState().getValue(DeviceBlock.ACTIVE) != active) {
                 level.setBlock(worldPosition,getBlockState().setValue(DeviceBlock.ACTIVE,active),3);
+                // setBlock can query shapes during neighbor updates: discard that intermediate snapshot.
+                if(kind()==Kind.VEHICLE)me.cryo.zombierool.gameplay.VehicleDecorPhysics.invalidate(level);
+            }
         }
         public String activate(ServerPlayer player, boolean paid) {
             if (kind() != Kind.CONTROL && kind() != Kind.TURRET) return "message.zombierool.trap.use_controller";
@@ -240,8 +271,10 @@ public final class MapDeviceSystem {
         }
         public boolean hasPower() {
             if (!(level instanceof ServerLevel server)) return false;
-            return !requiresPower || me.cryo.zombierool.config.WorldConfig.get(server).getPowerSwitchPositions().isEmpty()
-                    || me.cryo.zombierool.config.GlobalSwitchState.isActivated(server) || me.cryo.zombierool.gameplay.MapPower.receives(level,worldPosition);
+            if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind()))return me.cryo.zombierool.gameplay.BlockPowerSettings.required(level,worldPosition,requiresPower,me.cryo.zombierool.gameplay.MapPower.receives(level,worldPosition));
+            return me.cryo.zombierool.gameplay.BlockPowerSettings.required(level,worldPosition,requiresPower,
+                    !me.cryo.zombierool.gameplay.MapPower.hasMapPower(server)
+                    || me.cryo.zombierool.config.GlobalSwitchState.isActivated(server) || me.cryo.zombierool.gameplay.MapPower.receives(level,worldPosition));
         }
         private boolean lineClear(Vec3 start,Vec3 end,net.minecraft.world.entity.Entity entity) {
             return !Boolean.TRUE.equals(BlockGetter.traverseBlocks(start,end,entity,(e,p) -> {
@@ -252,6 +285,7 @@ public final class MapDeviceSystem {
         }
         private void tick() {
             if (!(level instanceof ServerLevel server)) return;
+            if(me.cryo.zombierool.gameplay.AmbientScenery.kind(kind())){boolean active=enabled&&hasPower();if(active!=getBlockState().getValue(DeviceBlock.ACTIVE)){sceneryStart=server.getGameTime();setActive(active);setChanged();server.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);me.cryo.zombierool.scripting.LuaScriptManager.callEvent("OnAmbientDeviceState",worldPosition.getX(),worldPosition.getY(),worldPosition.getZ(),kind().name(),active);}if(active&&kind()==Kind.DCA){me.cryo.zombierool.gameplay.AmbientScenery.tickAim(this);long cycle=me.cryo.zombierool.gameplay.AmbientScenery.dcaCycle(this,(server.getGameTime()-sceneryStart)/20.0);if(cycle!=sceneryShot){sceneryShot=cycle;if(me.cryo.zombierool.gameplay.AmbientScenery.dcaFires(this,cycle)){var target=me.cryo.zombierool.gameplay.AmbientScenery.dcaTarget(this);me.cryo.zombierool.scripting.LuaScriptManager.callEvent("OnAmbientDcaShot",worldPosition.getX(),worldPosition.getY(),worldPosition.getZ(),target.x,target.y,target.z);}}}return;}
             syncRuntime();
             if (!WaveManager.isGameRunning()) { remaining = cooldown = counter = 0; owner = null; setActive(false); return; }
             if (!enabled || ((kind() == Kind.CONTROL || kind() == Kind.TURRET && controller() == this) && !hasPower())) { stop(); setActive(false); return; }

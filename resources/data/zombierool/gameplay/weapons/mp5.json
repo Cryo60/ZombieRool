@@ -105,6 +105,26 @@
     },
     "pap_attachments": {
       "scope": "gucci_attachments:sight_holosun_reddot"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "tacz:hk_mp5a5",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "ronmc:mp5a3",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      },
+      {
+        "gun_id": "ronmc:mp5a2",
+        "pap_attachments": {
+          "scope": "gucci_attachments:sight_holosun_reddot"
+        }
+      }
+    ]
   }
 }

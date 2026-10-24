@@ -35,6 +35,8 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.nbt.CompoundTag;
 import java.util.List;
 public abstract class AbstractZombieRoolEntity extends Monster {
+    private boolean appearanceAssigned;
+    public boolean hasAssignedAppearance() { return appearanceAssigned; }
     protected boolean headshotDeath = false;
     protected int headshotDeathTicks = 0;
     private int corpseLinger = 0;
@@ -48,6 +50,16 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     private static final EntityDataAccessor<String> CUSTOM_EYE_SKIN = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Float> ZR_SCALE = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> GORE_MASK = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> EMERGENCE=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.INT);
+    public int getEmergenceTicks(){return entityData.get(EMERGENCE);}
+    public void setEmergenceTicks(int ticks){entityData.set(EMERGENCE,Math.max(0,Math.min(me.cryo.zombierool.gameplay.SpawnEmergence.DURATION,ticks)));}
+    private static final EntityDataAccessor<Boolean> CERBERUS_FEED=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<net.minecraft.core.BlockPos> CERBERUS_HEAD=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.BLOCK_POS);
+    public net.minecraft.core.BlockPos getCerberusHead(){return entityData.get(CERBERUS_HEAD);}
+    public void setCerberusHead(net.minecraft.core.BlockPos pos){entityData.set(CERBERUS_HEAD,pos.immutable());}
+    public boolean isCerberusFeeding(){return entityData.get(CERBERUS_FEED);}
+    public void setCerberusFeeding(boolean value){entityData.set(CERBERUS_FEED,value);}
+    protected boolean tickFeedingCorpse(){if(!isCerberusFeeding())return false;setNoAi(true);setNoGravity(true);noPhysics=true;setDeltaMovement(Vec3.ZERO);deathTime=19;return true;}
     private static final EntityDataAccessor<Boolean> CHARRED = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.BOOLEAN);
     public static final int GORE_HEAD = 1;
     public static final int GORE_LEFT_ARM = 1 << 1;
@@ -62,18 +74,42 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     public static final int GORE_SKULL = 1 << 10;
     public AbstractZombieRoolEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
+        this.moveControl=new me.cryo.zombierool.gameplay.DoorwayMoveControl(this);
         setMaxUpStep(1.25f);
         xpReward = 0;
         setNoAi(false);
         setPersistenceRequired();
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.WATER,0);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.WATER_BORDER,0);
         if (this.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
-            nav.setCanFloat(true);
+            nav.setCanFloat(false);
             nav.setMaxVisitedNodesMultiplier(4.0f);
         }
     }
+    @Override protected net.minecraft.world.entity.ai.navigation.PathNavigation createNavigation(Level level){
+        return new me.cryo.zombierool.gameplay.RouteNavigation(this,level);
+    }
     public void resetStuckTimer() {
         this.stuckTimer = 0;
+    }
+    @Override public boolean isPushedByFluid(){return !isInWater()&&super.isPushedByFluid();}
+    @Override public void travel(Vec3 input){
+        if(isAlive()&&isEffectiveAi()&&isInWater()&&!noPhysics&&!isNoGravity()){
+            if(me.cryo.zombierool.gameplay.EnemyWaterMovement.swims(this)){
+                moveRelative(getSpeed()*(.85f*(1-.9f)/(1-.6f*.91f)),input);
+                move(net.minecraft.world.entity.MoverType.SELF,getDeltaMovement());
+                setDeltaMovement(getDeltaMovement().scale(.9));
+                calculateEntityAnimation(false);
+                return;
+            }
+            // Walk on the bed. No buoyancy, vertical steering or water-wall boost.
+            moveRelative(getSpeed()*(.85f*(1-.9f)/(1-.6f*.91f)),new Vec3(input.x,0,input.z));
+            move(net.minecraft.world.entity.MoverType.SELF,getDeltaMovement());
+            Vec3 velocity=getDeltaMovement();
+            setDeltaMovement(velocity.x*.9,(velocity.y-.04)*.98,velocity.z*.9);
+            calculateEntityAnimation(false);
+        }else super.travel(input);
     }
     @Override
     protected void defineSynchedData() {
@@ -83,6 +119,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         this.entityData.define(ZR_SCALE, 1.0f);
         this.entityData.define(GORE_MASK, 0);
         this.entityData.define(CHARRED, false);
+        this.entityData.define(EMERGENCE,0);this.entityData.define(CERBERUS_FEED,false);this.entityData.define(CERBERUS_HEAD,net.minecraft.core.BlockPos.ZERO);
     }
     public void setCharred(boolean charred) { this.entityData.set(CHARRED, charred); }
     public boolean isCharred() { return this.entityData.get(CHARRED); }
@@ -95,7 +132,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         return (this.entityData.get(GORE_MASK) & bit) != 0;
     }
     public String getCustomSkin() { return this.entityData.get(CUSTOM_SKIN); }
-    public void setCustomSkin(String skinId) { this.entityData.set(CUSTOM_SKIN, skinId); }
+    public void setCustomSkin(String skinId) { this.entityData.set(CUSTOM_SKIN, skinId == null ? "" : skinId); appearanceAssigned = true; }
     public String getCustomEyeSkin() { return this.entityData.get(CUSTOM_EYE_SKIN); }
     public void setCustomEyeSkin(String skinId) { this.entityData.set(CUSTOM_EYE_SKIN, skinId == null ? "" : skinId); }
     public String getEyeSkinId() {
@@ -105,7 +142,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     }
     public void assignRolledSkins(String mobType) {
         String body = me.cryo.zombierool.core.manager.DynamicResourceManager.getRandomSkin(mobType);
-        setCustomSkin(body == null ? "" : body);
+        setCustomSkin(body == null || body.isEmpty() ? (level() instanceof ServerLevel server ? me.cryo.zombierool.config.EnemySkinPresets.roll(server,mobType) : "") : body);
         assignEyeSkin(mobType);
     }
     public void assignEyeSkin(String mobType) {
@@ -155,7 +192,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
-        setCustomSkin(compound.getString("CustomSkin"));
+        if (compound.contains("CustomSkin")) setCustomSkin(compound.getString("CustomSkin"));
         if (compound.contains("CustomEyeSkin")) {
             setCustomEyeSkin(compound.getString("CustomEyeSkin"));
         }
@@ -188,7 +225,16 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     public float getPickRadius() { return 0.3F * getScale(); }
     @Override
     public boolean isPushable() {
-        return false; 
+        return false;
+    }
+    @Override
+    public boolean canBeCollidedWith() {
+        return isAlive() && !isCorpseTarget();
+    }
+    @Override
+    public boolean canCollideWith(Entity other) {
+        // Keep crowds free to move, but never let a zombie walk through its victim.
+        return canBeCollidedWith() && other instanceof Player player && player.isAlive() && !player.isSpectator();
     }
     @Override
     protected void doPush(Entity entityIn) {
@@ -205,7 +251,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             }
             return playerHit;
         }
-        if (source.getEntity() instanceof Player player && BonusManager.isInstaKillActive(player)) {
+        if (source.getEntity() instanceof Player player && BonusManager.isInstaKillActive(player) && !me.cryo.zombierool.gameplay.EquipmentEffects.instantKillImmune(this)) {
             amount = 100000f;
         }
         boolean quietHit = source.is(DamageTypes.MOB_ATTACK)
@@ -217,7 +263,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         boolean isHitscan = !quietHit && !isProjectile && source.getEntity() instanceof Player;
         if (isProjectile) {
             Projectile p = (Projectile) source.getDirectEntity();
-            headshot = p.getY() >= headshotThreshold;
+            headshot = this.getBoundingBox().clip(new Vec3(p.xo,p.yo,p.zo),p.position().add(p.getDeltaMovement())).orElse(p.position()).y >= headshotThreshold;
         } else if (isHitscan && source.getEntity() instanceof Player player) {
             Vec3 playerEyePos = player.getEyePosition(1.0f);
             Vec3 lookVec = player.getViewVector(1.0f);
@@ -255,8 +301,10 @@ public abstract class AbstractZombieRoolEntity extends Monster {
 
     @Override
     protected void tickDeath() {
+        if(tickFeedingCorpse())return;
+        settleCorpse();
         boolean reduced = this.level() instanceof ServerLevel serverLevel && WorldConfig.get(serverLevel).isReducedGore();
-        if (reduced || this instanceof HellhoundEntity) {
+        if (reduced) {
             super.tickDeath();
             return;
         }
@@ -271,9 +319,15 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             this.deathTime = 19;
         }
         this.corpseLinger++;
-        if (!this.level().isClientSide && this.corpseLinger > 3600) {
-            this.remove(Entity.RemovalReason.KILLED);
-        }
+
+    }
+    /** NoAI suppresses vanilla travel, so persistent corpses need their own falling movement. */
+    protected final void settleCorpse(){
+        me.cryo.zombierool.gameplay.TraversalMotion.cancel(this);
+        setNoAi(true);setNoGravity(false);noPhysics=false;
+        double speed=getDeltaMovement().y;
+        move(net.minecraft.world.entity.MoverType.SELF,new net.minecraft.world.phys.Vec3(0,speed-.08*me.cryo.zombierool.gameplay.LunarPhysics.gravityAt(this),0));
+        setDeltaMovement(0,onGround()?0:(speed-.08*me.cryo.zombierool.gameplay.LunarPhysics.gravityAt(this))*.98,0);
     }
     @Override
     public void handleEntityEvent(byte id) {
@@ -304,6 +358,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             this.setRemainingFireTicks(0);
         }
         super.die(cause);
+        if(!isAlive())me.cryo.zombierool.gameplay.TraversalMotion.cancel(this);
         if (!this.level().isClientSide) {
             if (fireKill) GoreManager.onChar(this);
             else if (!skipGore && !(this instanceof HellhoundEntity)) GoreManager.onDeath(this, GoreManager.canDismember(cause));
@@ -321,9 +376,8 @@ public abstract class AbstractZombieRoolEntity extends Monster {
             if (player != null) {
                 boolean hasIngot = player.getInventory().items.stream()
                     .anyMatch(st -> st.getItem() instanceof me.cryo.zombierool.item.IngotSaleItem);
-                if (!hasIngot && player.level().random.nextFloat() < 0.0015f) {
-                    player.getInventory().add(new ItemStack(
-                        me.cryo.zombierool.init.ZombieroolModItems.INGOT_SALE.get()));
+                if (me.cryo.zombierool.gameplay.IngotSaleDrops.consume(player,this) || !hasIngot && player.level().random.nextFloat() < 0.0015f) {
+                    me.cryo.zombierool.gameplay.IngotSaleDrops.grant(player);
                     me.cryo.zombierool.gameplay.FireSaleHandler.startFireSale(player);
                 }
             }
@@ -336,7 +390,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 } else if (this.random.nextFloat() < 0.005f) {
                     shouldSpawnBonus = true;
                 }
-                if (shouldSpawnBonus) {
+                if (shouldSpawnBonus && !getPersistentData().getBoolean("zr_forced_bonus_drop")) {
                     BonusManager.Bonus randomBonus = BonusManager.getRandomBonus(player);
                     if (randomBonus != null) {
                         Vec3 bonusPos = new Vec3(this.getX(), this.getY() + 0.5, this.getZ());
@@ -351,8 +405,9 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         super.tick();
         if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
         if(!this.level().isClientSide)me.cryo.zombierool.gameplay.TrapContact.tick(this);
-        if (!this.level().isClientSide() && this.isAlive()) {
-            List<Entity> nearby = this.level().getEntities(this, this.getBoundingBox().inflate(0.3D), 
+        if (!this.level().isClientSide() && this.isAlive() && !me.cryo.zombierool.gameplay.TraversalMotion.active(this)
+                && !me.cryo.zombierool.block.system.TraversalSystem.boardingZipline(this)) {
+            List<Entity> nearby = this.level().getEntities(this, this.getBoundingBox().inflate(0.3D),
                 e -> e instanceof AbstractZombieRoolEntity && e.isAlive());
             if (!nearby.isEmpty()) {
                 double pushX = 0;
@@ -362,9 +417,9 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                     double dx = this.getX() - other.getX();
                     double dz = this.getZ() - other.getZ();
                     double distSq = dx * dx + dz * dz;
-                    if (distSq < 0.25) { 
+                    if (distSq < 0.25) {
                         double dist = Math.max(0.001, Math.sqrt(distSq));
-                        double force = (0.5 - dist) * 0.06; 
+                        double force = (0.5 - dist) * 0.06;
                         pushX += (dx / dist) * force;
                         pushZ += (dz / dist) * force;
                         count++;
@@ -391,12 +446,14 @@ public abstract class AbstractZombieRoolEntity extends Monster {
                 double distMoved = this.position().distanceToSqr(this.lastPos);
                 if (distMoved < 0.01 && this.isAlive() && this.getTarget() != null && this.tickCount % 40 == 0) this.getNavigation().recomputePath();
                 boolean nearPlayer = this.level().getNearestPlayer(this.getX(), this.getY(), this.getZ(), 20.0, false) != null;
-                if (distMoved < 0.01 && !nearPlayer && this.getTarget() != null) {
+                if (distMoved < 0.01 && !nearPlayer && this.getTarget() instanceof net.minecraft.world.entity.player.Player pursuit
+                        && me.cryo.zombierool.gameplay.RouteNavigation.reachesPlayer(this.getNavigation().getPath(),pursuit)
+                        && !me.cryo.zombierool.gameplay.TraversalMotion.active(this)) {
                     this.stuckTimer += 20;
                 } else {
                     this.stuckTimer = 0;
                 }
-                if (this.stuckTimer >= 300) { 
+                if (this.stuckTimer >= 300) {
                     WaveManager.recycleMob(this, (ServerLevel) this.level());
                 }
                 this.lastPos = this.position();

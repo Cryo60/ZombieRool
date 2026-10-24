@@ -32,13 +32,6 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CamoBakedModelManager {
 
-    private static final Map<ResourceLocation, MaskData> OPAQUE_CACHE = new HashMap<>();
-
-    private static class MaskData {
-        boolean[][] opaque;
-        int width, height;
-    }
-
     @SubscribeEvent
     public static void registerAmmoModels(ModelEvent.RegisterAdditional event) {
         event.register(new ResourceLocation(ZombieroolMod.MODID, "item/rpg_empty"));
@@ -49,7 +42,7 @@ public class CamoBakedModelManager {
 
     @SubscribeEvent
     public static void onModelBake(ModelEvent.ModifyBakingResult event) {
-        OPAQUE_CACHE.clear();
+        SpriteCamoTextures.clear();
         for (Item weapon : ZRRegistry.GUN_ITEMS) {
             ResourceLocation reg = ForgeRegistries.ITEMS.getKey(weapon);
             if (reg != null) {
@@ -72,49 +65,24 @@ public class CamoBakedModelManager {
         }
     }
 
-    private static MaskData getOpaqueMap(ResourceLocation spriteName) {
-        if (OPAQUE_CACHE.containsKey(spriteName)) return OPAQUE_CACHE.get(spriteName);
-        
-        MaskData data = new MaskData();
-        ResourceLocation fileLoc = new ResourceLocation(spriteName.getNamespace(), "textures/" + spriteName.getPath() + ".png");
-
-        try {
-            Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(fileLoc);
-            if (resource.isPresent()) {
-                try (NativeImage img = NativeImage.read(resource.get().open())) {
-                    data.width = img.getWidth();
-                    data.height = img.getHeight();
-                    data.opaque = new boolean[data.width][data.height];
-
-                    for (int y = 0; y < data.height; y++) {
-                        for (int x = 0; x < data.width; x++) {
-                            int alpha = (img.getPixelRGBA(x, y) >> 24) & 0xFF;
-                            data.opaque[x][y] = alpha > 25;
-                        }
-                    }
-                }
-            } else {
-                ZombieroolMod.LOGGER.warn("[ZombieRool] Impossible de trouver le fichier texture pour le masque: " + fileLoc);
-                data.width = 0;
-            }
-        } catch (Exception e) {
-            ZombieroolMod.LOGGER.error("[ZombieRool] Erreur de lecture de la texture: " + fileLoc, e);
-            data.width = 0;
-        }
-
-        OPAQUE_CACHE.put(spriteName, data);
-        return data;
-    }
-
     public static class CamoWrapperModel implements BakedModel {
         private final BakedModel original;
         private final ItemOverrides overrides;
+        private record TextureKey(BakedModel base, String id, boolean skin) {}
+        private final Map<TextureKey, BakedModel> textures = new LinkedHashMap<>(32, .75f, true) {
+            @Override protected boolean removeEldestEntry(Map.Entry<TextureKey, BakedModel> entry) { return size() > 128; }
+        };
+        private BakedModel textured(BakedModel base, String id, boolean skin) {
+            return textures.computeIfAbsent(new TextureKey(base, id, skin),
+                    key -> new ActiveTextureModel(base, id, skin ? "item/skins/" : "item/camos/", skin));
+        }
 
         public CamoWrapperModel(BakedModel original, Map<Integer, BakedModel> ammoModels) {
             this.original = original;
             this.overrides = new ItemOverrides() {
                 @Override
                 public BakedModel resolve(BakedModel model, ItemStack stack, ClientLevel level, LivingEntity entity, int seed) {
+                    BakedModel map = me.cryo.zombierool.client.MapWeaponPackClient.model(stack,entity);if(map!=null)return map;
                     BakedModel resolved = original.getOverrides().resolve(original, stack, level, entity, seed);
                     if (resolved == null) resolved = original;
                     // Preserve resource-pack overrides; resolve the built-in ammo variants
@@ -129,11 +97,11 @@ public class CamoBakedModelManager {
                     if (stack.hasTag()) {
                         String skinId = stack.getTag().getString("zr_skin");
                         if (!skinId.isEmpty()) {
-                            return new ActiveTextureModel(resolved, skinId, "item/skins/", true);
+                            return textured(resolved, skinId, true);
                         }
                         String camoId = stack.getTag().getString("zr_camo");
                         if (!camoId.isEmpty()) {
-                            return new ActiveTextureModel(resolved, camoId, "item/camos/", false);
+                            return textured(resolved, camoId, false);
                         }
                     }
                     return resolved;
@@ -152,6 +120,29 @@ public class CamoBakedModelManager {
         @Override
         public List<net.minecraft.client.renderer.RenderType> getRenderTypes(ItemStack itemStack, boolean fabulous) {
             return java.util.List.of(net.minecraft.client.renderer.RenderType.cutout());
+        }
+    }
+
+    private static final class SpritePass extends ActiveTextureModel {
+        private final BakedModel original;private final String camo;private final ResourceLocation source;
+        SpritePass(BakedModel original,String camo,ResourceLocation source){super(original,camo,"",false);this.original=original;this.camo=camo;this.source=source;}
+        @Override public List<BakedModel> getRenderPasses(ItemStack stack,boolean fabulous){return List.of(this);}
+        @Override public List<BakedQuad> getQuads(@Nullable BlockState state,@Nullable Direction side,RandomSource random){
+            var result=new ArrayList<BakedQuad>();
+            for(var quad:original.getQuads(state,side,random)){
+                boolean front=quad.getDirection()==Direction.NORTH||quad.getDirection()==Direction.SOUTH;
+                if(source==null){if(!front)result.add(quad);continue;}
+                if(!front||!quad.getSprite().contents().name().equals(source))continue;
+                var old=quad.getSprite();int[] vertices=quad.getVertices().clone();
+                for(int i=0;i<4;i++){int offset=i*8;float u=Float.intBitsToFloat(vertices[offset+4]),v=Float.intBitsToFloat(vertices[offset+5]);vertices[offset+4]=Float.floatToRawIntBits((u-old.getU0())/(old.getU1()-old.getU0()));vertices[offset+5]=Float.floatToRawIntBits((v-old.getV0())/(old.getV1()-old.getV0()));}
+                result.add(new BakedQuad(vertices,quad.getTintIndex(),quad.getDirection(),quad.getSprite(),quad.isShade()));
+            }
+            return result;
+        }
+        @Override public List<net.minecraft.client.renderer.RenderType> getRenderTypes(ItemStack stack,boolean fabulous){
+            if(source==null)return List.of(net.minecraft.client.renderer.RenderType.cutout());
+            var texture=SpriteCamoTextures.texture(source,camo);
+            return List.of(net.minecraft.client.renderer.RenderType.entityCutoutNoCull(texture));
         }
     }
 
@@ -181,6 +172,20 @@ public class CamoBakedModelManager {
             }
         }
 
+        private List<BakedModel> spritePasses;
+        @Override public List<BakedModel> getRenderPasses(ItemStack stack,boolean fabulous){
+            if(isSkin)return List.of(this);
+            if(spritePasses==null){
+                Set<ResourceLocation> sprites=new LinkedHashSet<>();
+                for(Direction face:Direction.values())for(var quad:base.getQuads(null,face,RandomSource.create(42)))if(quad.getDirection()==Direction.NORTH||quad.getDirection()==Direction.SOUTH)sprites.add(quad.getSprite().contents().name());
+                for(var quad:base.getQuads(null,null,RandomSource.create(42)))if(quad.getDirection()==Direction.NORTH||quad.getDirection()==Direction.SOUTH)sprites.add(quad.getSprite().contents().name());
+                var passes=new ArrayList<BakedModel>();passes.add(new SpritePass(base,textureId,null));
+                for(var sprite:sprites){if(SpriteCamoTextures.texture(sprite,textureId)==null)return List.of(base);passes.add(new SpritePass(base,textureId,sprite));}
+                spritePasses=List.copyOf(passes);
+            }
+            return spritePasses;
+        }
+
         private List<BakedQuad> buildQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
             List<BakedQuad> quads = new ArrayList<>();
             String cleanName = textureId.replace("camo_", "");
@@ -190,39 +195,16 @@ public class CamoBakedModelManager {
                 .getSprite(spriteLocation);
 
             for (BakedQuad quad : base.getQuads(state, side, rand)) {
+                if (customSprite.contents().name().equals(net.minecraft.client.renderer.texture.MissingTextureAtlasSprite.getLocation())) {
+                    quads.add(quad);
+                    continue;
+                }
                 if (isSkin) {
                     quads.add(remapQuad(quad, customSprite));
                 } else {
-                    ResourceLocation spriteName = quad.getSprite().contents().name();
-                    if (quad.getDirection() == Direction.SOUTH || quad.getDirection() == Direction.NORTH) {
-                        MaskData maskData = getOpaqueMap(spriteName);
-                        if (maskData.width == 0) {
-                            quads.add(quad);
-                            continue;
-                        }
-
-                        float zDepth = Float.intBitsToFloat(quad.getVertices()[2]);
-                        zDepth += quad.getDirection() == Direction.SOUTH ? 0.001f : -0.001f;
-
-                        for (int py = 0; py < maskData.height; py++) {
-                            int startX = -1;
-                            for (int px = 0; px < maskData.width; px++) {
-                                if (maskData.opaque[px][py]) {
-                                    if (startX == -1) startX = px;
-                                } else {
-                                    if (startX != -1) {
-                                        quads.add(createRectQuad(startX, py, px - startX, 1, maskData.width, maskData.height, zDepth, quad.getDirection(), customSprite, quad.getTintIndex()));
-                                        startX = -1;
-                                    }
-                                }
-                            }
-                            if (startX != -1) {
-                                quads.add(createRectQuad(startX, py, maskData.width - startX, 1, maskData.width, maskData.height, zDepth, quad.getDirection(), customSprite, quad.getTintIndex()));
-                            }
-                        }
-                    } else {
-                        quads.add(quad);
-                    }
+                    // Renderers using the Forge item passes receive the composed
+                    // faces; direct quad consumers retain the original geometry.
+                    quads.add(quad);
                 }
             }
             return quads;
@@ -231,7 +213,7 @@ public class CamoBakedModelManager {
         private BakedQuad remapQuad(BakedQuad quad, TextureAtlasSprite newSprite) {
             TextureAtlasSprite oldSprite = quad.getSprite();
             int[] vertexData = Arrays.copyOf(quad.getVertices(), quad.getVertices().length);
-            
+
             for (int i = 0; i < 4; i++) {
                 int offset = i * 8;
                 float u = Float.intBitsToFloat(vertexData[offset + 4]);
@@ -247,59 +229,6 @@ public class CamoBakedModelManager {
                 vertexData[offset + 5] = Float.floatToRawIntBits(newV);
             }
             return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), newSprite, quad.isShade());
-        }
-
-        private BakedQuad createRectQuad(int px, int py, int rectW, int rectH, int totalW, int totalH, float z, Direction face, TextureAtlasSprite customSprite, int tintIndex) {
-            int[] vertexData = new int[32];
-
-            float x_min = px / (float) totalW;
-            float x_max = (px + rectW) / (float) totalW;
-            float y_max = (totalH - py) / (float) totalH;
-            float y_min = (totalH - (py + rectH)) / (float) totalH;
-
-            float u_min = customSprite.getU0() + x_min * (customSprite.getU1() - customSprite.getU0());
-            float u_max = customSprite.getU0() + x_max * (customSprite.getU1() - customSprite.getU0());
-            float v_min = customSprite.getV0() + (1.0f - y_max) * (customSprite.getV1() - customSprite.getV0());
-            float v_max = customSprite.getV0() + (1.0f - y_min) * (customSprite.getV1() - customSprite.getV0());
-
-            int color = -1;
-            int packedNormal = calculatePackedNormal(face);
-
-            if (face == Direction.SOUTH) {
-                putVertex(vertexData, 0, x_min, y_max, z, color, u_min, v_min, packedNormal);
-                putVertex(vertexData, 1, x_min, y_min, z, color, u_min, v_max, packedNormal);
-                putVertex(vertexData, 2, x_max, y_min, z, color, u_max, v_max, packedNormal);
-                putVertex(vertexData, 3, x_max, y_max, z, color, u_max, v_min, packedNormal);
-            } else {
-                putVertex(vertexData, 0, x_max, y_max, z, color, u_max, v_min, packedNormal);
-                putVertex(vertexData, 1, x_max, y_min, z, color, u_max, v_max, packedNormal);
-                putVertex(vertexData, 2, x_min, y_min, z, color, u_min, v_max, packedNormal);
-                putVertex(vertexData, 3, x_min, y_max, z, color, u_min, v_min, packedNormal);
-            }
-
-            return new BakedQuad(vertexData, tintIndex, face, customSprite, false);
-        }
-
-        private void putVertex(int[] data, int index, float x, float y, float z, int color, float u, float v, int normal) {
-            int offset = index * 8;
-            data[offset]     = Float.floatToRawIntBits(x);
-            data[offset + 1] = Float.floatToRawIntBits(y);
-            data[offset + 2] = Float.floatToRawIntBits(z);
-            data[offset + 3] = color;
-            data[offset + 4] = Float.floatToRawIntBits(u);
-            data[offset + 5] = Float.floatToRawIntBits(v);
-            data[offset + 6] = 0;
-            data[offset + 7] = normal;
-        }
-
-        private int calculatePackedNormal(Direction dir) {
-            float x = dir.getStepX();
-            float y = dir.getStepY();
-            float z = dir.getStepZ();
-            int nx = (int) (x * 127.0F) & 255;
-            int ny = (int) (y * 127.0F) & 255;
-            int nz = (int) (z * 127.0F) & 255;
-            return nx | (ny << 8) | (nz << 16);
         }
 
         @Override public boolean useAmbientOcclusion() { return base.useAmbientOcclusion(); }

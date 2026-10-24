@@ -51,6 +51,7 @@ public class ZRConfigScreen extends Screen {
         settings.add(new Setting(0, "zombierool.config.setting.preview", ZRClientConfig.ANIMATE_WEAPON_PREVIEW));
         settings.add(new Setting(0, "zombierool.config.setting.gore", ZRClientConfig.REDUCED_GORE));
         settings.add(new Setting(1, "zombierool.config.setting.xp", ZRClientConfig.HIDE_XP_NOTIFICATIONS));
+        settings.add(new Setting(1,"zombierool.config.setting.hide_health",ZRClientConfig.HIDE_HEALTH));
         settings.add(new Setting(1, "zombierool.config.setting.counter", ZRClientConfig.SHOW_ENEMIES_REMAINING));
         settings.add(new Setting(2, "zombierool.config.setting.network", ZRClientConfig.ALLOW_NETWORK_REQUESTS));
         settings.add(new Setting(2, "zombierool.config.setting.discord", ZRClientConfig.DISCORD_PRESENCE));
@@ -113,6 +114,7 @@ public class ZRConfigScreen extends Screen {
     }
 
     private void save() {
+        boolean previousWeaponMode = ZRClientConfig.prefersZrWeapons();
         for (Setting setting : settings) setting.apply();
         ZRClientConfig.HAS_ANSWERED_NETWORK_PROMPT.set(true);
         ZRClientConfig.SPEC.save();
@@ -120,6 +122,9 @@ public class ZRConfigScreen extends Screen {
         if (minecraft.getConnection() != null && minecraft.player != null) {
             NetworkHandler.INSTANCE.sendToServer(new C2SSyncClientPrefsPacket(
                     ZRClientConfig.getHalloweenMode().name(), ZRClientConfig.prefersZrWeapons()));
+        }
+        if (previousWeaponMode != ZRClientConfig.prefersZrWeapons()) {
+            me.cryo.zombierool.client.TacZWeaponModeBridge.resetActions(minecraft.player);
         }
         onClose();
     }

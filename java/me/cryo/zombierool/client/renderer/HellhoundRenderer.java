@@ -50,6 +50,8 @@ public class HellhoundRenderer extends MobRenderer<HellhoundEntity,Modelwolf<Hel
             ResourceLocation dyn = DynamicResourceManager.getClientSkin("hellhound", customSkin);
             if (dyn != null) return dyn;
         }
+        ResourceLocation builtin = me.cryo.zombierool.config.EnemySkinPresets.texture(entity.getCustomSkin());
+        if (builtin != null) return builtin;
         return new ResourceLocation("zombierool:textures/entities/carrie-the-dark-puppy.png");
     }
 

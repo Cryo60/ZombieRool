@@ -100,6 +100,8 @@ public class DummyEntity extends Monster {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (source.is(net.minecraft.world.damagesource.DamageTypes.FALL)
+                || source.is(net.minecraft.world.damagesource.DamageTypes.DROWN)) return false;
         if (source.getEntity() instanceof Player remover && !this.level().isClientSide) {
             boolean emptySneak = remover.isShiftKeyDown() && remover.getMainHandItem().isEmpty();
             if (remover.isCreative() || emptySneak || remover.getMainHandItem().is(Items.DIAMOND_PICKAXE)) {
@@ -134,18 +136,18 @@ public class DummyEntity extends Monster {
             }
         }
         this.setHealth(this.getMaxHealth());
-        return true; 
+        return true;
     }
 
     public static void init() {}
     public static AttributeSupplier.Builder createAttributes() {
         AttributeSupplier.Builder builder = Mob.createMobAttributes();
         builder = builder.add(Attributes.MOVEMENT_SPEED, 0.0);
-        builder = builder.add(Attributes.MAX_HEALTH, 100); 
+        builder = builder.add(Attributes.MAX_HEALTH, 100);
         builder = builder.add(Attributes.ARMOR, 0);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 0);
         builder = builder.add(Attributes.FOLLOW_RANGE, 16);
-        builder = builder.add(Attributes.KNOCKBACK_RESISTANCE, 1.0); 
+        builder = builder.add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
         return builder;
     }
 }

@@ -1,0 +1,1 @@
+{"type": "minecraft:block", "pools": [{"rolls": 1, "entries": [{"type": "minecraft:item", "name": "zombierool:furniture_flag_lordaeron"}], "conditions": [{"condition": "minecraft:block_state_property", "block": "zombierool:furniture_flag_lordaeron", "properties": {"part": "0"}}, {"condition": "minecraft:survives_explosion"}]}]}

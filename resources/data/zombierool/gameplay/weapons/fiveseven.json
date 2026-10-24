@@ -99,6 +99,11 @@
   ],
   "tacz": {
     "gun_id": "elitex:five_seven",
-    "ammo_id": "tacz:9mm"
+    "ammo_id": "tacz:9mm",
+    "fallbacks": [
+      {
+        "gun_id": "ronmc:57usg"
+      }
+    ]
   }
 }

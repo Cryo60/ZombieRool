@@ -49,23 +49,8 @@ public class WhisperItem extends WeaponImplementations.PistolGunItem {
         super.inventoryTick(stack, level, ent, slot, selected);
         if (!(ent instanceof Player player)) return;
 
-        int ammo = getAmmo(stack);
-        boolean isPlaying = isFourIsReadyPlaying(stack);
-
-        if (selected) {
-            if (ammo == 1 && !isPlaying) {
-                level.playSound(null, player.getX(), player.getY(), player.getZ(), ZombieroolModSounds.FOUR_IS_READY.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-                setFourIsReadyPlaying(stack, true);
-            } else if (ammo != 1 && isPlaying) {
-                stopFourIsReadySound(player);
-                setFourIsReadyPlaying(stack, false);
-            }
-        } else {
-            if (isPlaying) {
-                stopFourIsReadySound(player);
-                setFourIsReadyPlaying(stack, false);
-            }
-        }
+        // Readiness audio is owned by WhisperSounds on each client, attached to its player.
+        if (!level.isClientSide && isFourIsReadyPlaying(stack)) setFourIsReadyPlaying(stack, false);
     }
 
     @Override
@@ -109,14 +94,14 @@ public class WhisperItem extends WeaponImplementations.PistolGunItem {
     public static void spawnCrowParticles(Entity target) {
         if (target.level() instanceof ServerLevel serverLevel) {
             double x = target.getX();
-            double y = target.getY() + target.getBbHeight() / 2.0D;
+            double y = target.getEyeY();
             double z = target.getZ();
 
-            serverLevel.sendParticles(new DustParticleOptions(new Vector3f(0f, 0f, 0f), 3.0f), x, y, z, 50, 0.4, 0.4, 0.4, 0.15);
-            for (int i = 0; i < 40; i++) {
-                double vx = (serverLevel.random.nextFloat() - 0.5) * 2.0;
-                double vy = serverLevel.random.nextFloat() * 1.5 + 0.5;
-                double vz = (serverLevel.random.nextFloat() - 0.5) * 2.0;
+            serverLevel.sendParticles(new DustParticleOptions(new Vector3f(.06f, .04f, .08f), .65f), x, y, z, 8, .12, .10, .12, .02);
+            for (int i = 0; i < 9; i++) {
+                double vx = (serverLevel.random.nextFloat() - 0.5) * .38;
+                double vy = serverLevel.random.nextFloat() * .16 + .12;
+                double vz = (serverLevel.random.nextFloat() - 0.5) * .38;
                 serverLevel.sendParticles(ZombieroolModParticleTypes.BLACK_CROW.get(), x, y, z, 0, vx, vy, vz, 1.0);
             }
             serverLevel.playSound(null, x, y, z, ZombieroolModSounds.CROW_WAVE.get(), SoundSource.HOSTILE, 1.5f, 0.7f + serverLevel.random.nextFloat() * 0.3f);

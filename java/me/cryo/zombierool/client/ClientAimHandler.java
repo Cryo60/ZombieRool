@@ -23,10 +23,11 @@ public class ClientAimHandler {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
         boolean next = false;
-        if (mc.player != null && mc.screen == null && mc.options.keyUse.isDown()) {
+        if (mc.player != null && mc.screen == null && !me.cryo.zombierool.gameplay.PortableEquipment.inHands(mc.player) && mc.options.keyUse.isDown()) {
             ItemStack stack = mc.player.getMainHandItem();
             if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun
                     && !(gun instanceof WeaponImplementations.MeleeWeaponItem)
+                    && !(gun instanceof me.cryo.zombierool.item.MapBowItem)
                     && !gun.isAkimbo(stack)) {
                 WeaponSystem.Definition def = gun.getDefinition();
                 boolean scoped = def != null && def.scoped != null && def.scoped.isScoped;

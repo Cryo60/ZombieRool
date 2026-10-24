@@ -98,6 +98,11 @@
   ],
   "tacz": {
     "gun_id": "tacz:fn_fal",
-    "ammo_id": "tacz:762x51"
+    "ammo_id": "tacz:762x51",
+    "fallbacks": [
+      {
+        "gun_id": "rainforest:fal"
+      }
+    ]
   }
 }

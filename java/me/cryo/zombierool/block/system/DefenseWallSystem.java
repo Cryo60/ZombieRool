@@ -251,7 +251,7 @@ public class DefenseWallSystem {
             AABB detectionBox = new AABB(pos).inflate(1.5);
             List<ZombieEntity> zombies = level.getEntitiesOfClass(ZombieEntity.class, detectionBox);
             for (ZombieEntity zombie : zombies) {
-                if (zombie.isAlive() && !zombie.isCrawler()) {
+                if (zombie.isAlive()) {
                     if (handleMobAttack(zombie, level, pos, state, currentStage)) {
                         break;
                     }
@@ -273,7 +273,7 @@ public class DefenseWallSystem {
                         level.playSound(null, pos, ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "wall_snap")), SoundSource.HOSTILE, 1.0f, 1.0f);
                     }
                     data.remove(key);
-                    mob.level().broadcastEntityEvent(mob, (byte) 4); 
+                    mob.level().broadcastEntityEvent(mob, (byte) 4);
                     return true;
                 }
             }
@@ -297,7 +297,7 @@ public class DefenseWallSystem {
             return ClientboundBlockEntityDataPacket.create(this);
         }
     }
-    public static class DefenseWallBlock extends HorizontalDirectionalBlock implements EntityBlock, MimicSystem.IMimicBlock {
+    public static class DefenseWallBlock extends HorizontalDirectionalBlock implements EntityBlock, MimicSystem.IMimicBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final IntegerProperty STAGE = IntegerProperty.create("stage", 0, 7);
         public static final BooleanProperty HAS_MIMIC = BooleanProperty.create("has_mimic");
@@ -441,6 +441,7 @@ public class DefenseWallSystem {
         }
         @Override
         public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+            if(DefenseDoorSystem.mapperPasses(context))return Shapes.empty();
             if (context instanceof EntityCollisionContext ecc) {
                 Entity entity = ecc.getEntity();
                 if (entity instanceof net.minecraft.world.entity.projectile.Projectile) {
@@ -448,11 +449,8 @@ public class DefenseWallSystem {
                 }
                 if (state.getValue(STAGE) <= 0) {
                     if (entity instanceof ZombieEntity || entity instanceof CrawlerEntity || entity instanceof HellhoundEntity) {
-                        return Shapes.empty(); 
+                        return Shapes.empty();
                     }
-                }
-                if (entity instanceof Player p && p.isCreative()) {
-                    return Shapes.empty();
                 }
                 if (entity instanceof ZombieEntity || entity instanceof CrawlerEntity || entity instanceof HellhoundEntity) {
                     return Shapes.box(0, 0, 0, 1, 1.5, 1);
@@ -506,7 +504,7 @@ public class DefenseWallSystem {
             tooltip.add(Component.translatable("block.zombierool.defense_wall.tooltip.3").withStyle(ChatFormatting.GRAY));
         }
     }
-    public static class DefenseWallDummyBlock extends Block implements MimicSystem.IMimicBlock, EntityBlock {
+    public static class DefenseWallDummyBlock extends Block implements MimicSystem.IMimicBlock, EntityBlock, me.cryo.zombierool.block.WaterloggedElement {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final EnumProperty<WallPart> PART = EnumProperty.create("part", WallPart.class);
         public static final IntegerProperty STAGE = IntegerProperty.create("stage", 0, 7);
@@ -586,6 +584,7 @@ public class DefenseWallSystem {
         }
         @Override
         public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+            if(DefenseDoorSystem.mapperPasses(context))return Shapes.empty();
             if (context instanceof EntityCollisionContext ecc) {
                 Entity entity = ecc.getEntity();
                 if (entity instanceof net.minecraft.world.entity.projectile.Projectile) {
@@ -593,11 +592,8 @@ public class DefenseWallSystem {
                 }
                 if (state.getValue(STAGE) <= 0) {
                     if (entity instanceof ZombieEntity || entity instanceof CrawlerEntity || entity instanceof HellhoundEntity) {
-                        return Shapes.empty(); 
+                        return Shapes.empty();
                     }
-                }
-                if (entity instanceof Player p && p.isCreative()) {
-                    return Shapes.empty();
                 }
                 if (entity instanceof ZombieEntity || entity instanceof CrawlerEntity || entity instanceof HellhoundEntity) {
                     return Shapes.box(0, 0, 0, 1, 1.5, 1);

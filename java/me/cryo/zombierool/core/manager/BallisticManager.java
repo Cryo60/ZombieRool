@@ -101,7 +101,7 @@ public class BallisticManager {
             def = gunItem.getDefinition();
             weaponId = def.id.replace("zombierool:", "").toLowerCase();
             isPap = gunItem.isPackAPunched(weaponStack);
-            
+
             if (weaponId.equals("whisper") && gunItem.getAmmo(weaponStack) == 1) {
                 isWhisperLastShot = true;
             }
@@ -113,7 +113,7 @@ public class BallisticManager {
 
         List<Impact> allImpacts = new ArrayList<>();
         List<Vec3> trailPoints = new ArrayList<>();
-        
+
         Vec3 visualStart = weaponStack != null && weaponStack.getItem() instanceof WeaponSystem.BaseGunItem gun ? gun.getVisualMuzzlePos(shooter) : eyePos;
         trailPoints.add(visualStart);
 
@@ -135,7 +135,7 @@ public class BallisticManager {
         while (remainingRange > 0 && safetyLoop < 100) {
             safetyLoop++;
             Vec3 segmentEnd = currentTraceStart.add(currentDir.scale(remainingRange));
-            
+
             BlockHitResult blockHit = me.cryo.zombierool.gameplay.CompatibilityFixes.clip(level, new ClipContext(currentTraceStart, segmentEnd, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
             if (blockHit.getType() == HitResult.Type.MISS) {
                 break;
@@ -149,7 +149,7 @@ public class BallisticManager {
             me.cryo.zombierool.block.system.GlassDefenseDoorBlock.damage(level, hitPos);
             boolean passThrough = false;
 
-            if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock || 
+            if (hitState.getBlock() instanceof me.cryo.zombierool.block.AbstractTechnicalBlock ||
                 hitState.getBlock() instanceof DefenseDoorSystem.BaseDefenseDoor) {
                 passThrough = true;
             } else if (DefenseWallSystem.bulletsPass(hitState)) {
@@ -168,19 +168,19 @@ public class BallisticManager {
             if (isPenetrable(level, hitPos, hitState)) {
                 allImpacts.add(new Impact(blockHit.getLocation(), totalDist, hitPos));
                 lastHitBlock = hitPos;
-                
+
                 currentTraceStart = blockHit.getLocation().add(currentDir.scale(0.05));
                 remainingRange -= distToHit;
                 accumulatedDist += distToHit;
             } else {
                 Impact impact = new Impact(blockHit.getLocation(), totalDist, hitPos);
-                
+
                 if (bouncesLeft > 0) {
                     impact.isBounce = true;
                     impact.bounceNormal = new Vec3(blockHit.getDirection().step());
                     allImpacts.add(impact);
                     bouncesLeft--;
-                    
+
                     Vec3 normal = impact.bounceNormal;
                     currentDir = currentDir.subtract(normal.scale(2 * currentDir.dot(normal))).normalize();
                     currentTraceStart = blockHit.getLocation().add(currentDir.scale(0.05));
@@ -214,7 +214,7 @@ public class BallisticManager {
 
             if (impact.isEntity) {
                 if (impact.entity instanceof WhiteKnightEntity) continue;
-                if (impact.entity instanceof Player && impact.entity != shooter) continue; 
+                if (impact.entity instanceof Player && impact.entity != shooter) continue;
                 if (!impact.entity.isAlive()) continue;
 
                 if (impact.entity instanceof LivingEntity livingTarget) {
@@ -227,8 +227,8 @@ public class BallisticManager {
 
                     if (weaponId.equals("percepteur") && livingTarget.getHealth() / livingTarget.getMaxHealth() <= 0.05f) {
                         specialBonusDamage = livingTarget.getHealth() + 10;
-                        int pts = isPap ? 75 : 50; 
-                        PointManager.modifyScore(shooter, pts); 
+                        int pts = isPap ? 75 : 50;
+                        PointManager.awardEnemyPoints(shooter, livingTarget, pts);
                         level.sendParticles(ParticleTypes.SOUL, livingTarget.getX(), livingTarget.getY() + 1, livingTarget.getZ(), 10, 0.2, 0.5, 0.2, 0.1);
                         level.playSound(null, livingTarget.blockPosition(), SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 1f, 1f);
                     } else if (isWhisperLastShot) {
@@ -262,7 +262,7 @@ public class BallisticManager {
                         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> shooter), new S2CDisplayHitmarkerPacket());
 
                         float kb = (def != null && isPap) ? def.pap.knockback_bonus : 0.0f;
-                        if (kb > 0.0f && !(livingTarget instanceof me.cryo.zombierool.entity.MrChiefEntity)) {
+                        if (kb > 0.0f && !(livingTarget instanceof me.cryo.zombierool.entity.MrChiefEntity) && !(me.cryo.zombierool.gameplay.MapActors.owns(livingTarget)&&livingTarget.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)>=1)) {
                             long now = level.getGameTime();
                             long lastKb = livingTarget.getPersistentData().getLong("zr_kb_cooldown");
                             if (now - lastKb > 20) {
@@ -321,7 +321,7 @@ public class BallisticManager {
                     }
 
                     if (reduceDamage) {
-                        damage *= 0.5f; 
+                        damage *= 0.5f;
                     }
                 }
             } else {
@@ -331,7 +331,7 @@ public class BallisticManager {
                     PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(impact.blockPos)),
                     new S2CVisualBlockCrackPacket(impact.blockPos, crackLevel)
                 );
-                
+
                 LuaScriptManager.callEvent("OnBlockShot", shooter.getUUID().toString(), impact.blockPos.getX(), impact.blockPos.getY(), impact.blockPos.getZ());
 
                 if (impact.isBounce) {
@@ -432,7 +432,7 @@ public class BallisticManager {
         List<EntityHitResult> results = new ArrayList<>();
 
         for (Entity entity : entities) {
-            AABB box = entity.getBoundingBox().inflate(0.15); 
+            AABB box = entity.getBoundingBox().inflate(0.15);
             Optional<Vec3> hit = box.clip(start, end);
             if (box.contains(start)) {
                 results.add(new EntityHitResult(entity, start));

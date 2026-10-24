@@ -44,18 +44,18 @@ import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class PlayerDownManager {
-    private static final long BASE_DOWN_DURATION_TICKS = 60 * 20; 
-    public static final long BASE_REVIVE_DURATION_TICKS = 6 * 20;  
-    private static final long SOLO_QUICK_REVIVE_DURATION_TICKS = 10 * 20; 
-    private static final int POINTS_LOST_ON_DOWN_PERCENTAGE = 20; 
-    private static final int POINTS_GAINED_ON_REVIVE = 100; 
+    private static final long BASE_DOWN_DURATION_TICKS = 60 * 20;
+    public static final long BASE_REVIVE_DURATION_TICKS = 6 * 20;
+    private static final long SOLO_QUICK_REVIVE_DURATION_TICKS = 10 * 20;
+    private static final int POINTS_LOST_ON_DOWN_PERCENTAGE = 20;
+    private static final int POINTS_GAINED_ON_REVIVE = 100;
 
     private static final ResourceLocation ANN_DOWN_SOUND_RES = new ResourceLocation("zombierool", "ann_down");
     private static SoundEvent getVineBoomSound() {
-        return ZombieroolModSounds.VINE_BOOM.get(); 
+        return ZombieroolModSounds.VINE_BOOM.get();
     }
-    
-    private static final Random STATIC_RANDOM = new Random(); 
+
+    private static final Random STATIC_RANDOM = new Random();
 
     private static final Map<UUID, Long> playersDown = new ConcurrentHashMap<>();
     private static final Map<UUID, UUID> reviverToDownPlayer = new ConcurrentHashMap<>();
@@ -97,14 +97,14 @@ public class PlayerDownManager {
             ServerLevel level = player.serverLevel();
 
             if (player.getPersistentData().getBoolean("zr_real_death")) {
-                player.getInventory().clearContent(); 
+                player.getInventory().clearContent();
                 player.getPersistentData().remove("zr_real_death");
                 handlePlayerPermanentDeath(player, level);
-                return; 
+                return;
             }
 
             if (!WaveManager.isGameRunning()) {
-                handlePlayerPermanentDeath(player, level); 
+                handlePlayerPermanentDeath(player, level);
                 return;
             }
 
@@ -117,7 +117,7 @@ public class PlayerDownManager {
 
             ItemStack currentMainHandItem = player.getMainHandItem();
             if (WeaponFacade.isHandgun(currentMainHandItem)) {
-                lastKnownHandgun.put(player.getUUID(), currentMainHandItem.copy()); 
+                lastKnownHandgun.put(player.getUUID(), currentMainHandItem.copy());
             }
 
             long otherActivePlayersCount = level.getServer().getPlayerList().getPlayers().stream()
@@ -131,13 +131,13 @@ public class PlayerDownManager {
 
             if (isSoloPlayer) {
                 if (player.hasEffect(ZombieroolModMobEffects.PERKS_EFFECT_QUICK_REVIVE.get())) {
-                    event.setCanceled(true); 
-                    player.setHealth(1.0f); 
+                    event.setCanceled(true);
+                    player.setHealth(1.0f);
                     player.removeEffect(ZombieroolModMobEffects.PERKS_EFFECT_QUICK_REVIVE.get());
                     player.sendSystemMessage(Component.translatable("message.zombierool.down.quick_revive_saved"));
 
                     markPlayerDown(player, level);
-                    soloQuickRevivePlayers.put(player.getUUID(), level.getGameTime()); 
+                    soloQuickRevivePlayers.put(player.getUUID(), level.getGameTime());
 
                     broadcast(level, Component.translatable("message.zombierool.down.announce_downed", player.getName()));
                     playGlobalSound(level, ANN_DOWN_SOUND_RES, player.blockPosition());
@@ -146,14 +146,14 @@ public class PlayerDownManager {
                 } else {
                     player.getInventory().clearContent();
                     handlePlayerPermanentDeath(player, level);
-                    return; 
+                    return;
                 }
             } else {
                 if (otherActivePlayersCount > 0) {
-                    event.setCanceled(true); 
-                    player.setHealth(1.0f); 
-                    markPlayerDown(player, level); 
-                    
+                    event.setCanceled(true);
+                    player.setHealth(1.0f);
+                    markPlayerDown(player, level);
+
                     if (WaveManager.isGameRunning() && !player.isCreative() && !player.isSpectator()) {
                         PlayerStatsManager.recordDeath(player);
                     }
@@ -177,7 +177,7 @@ public class PlayerDownManager {
                 } else {
                     player.getInventory().clearContent();
                     handlePlayerPermanentDeath(player, level);
-                    return; 
+                    return;
                 }
             }
         }
@@ -185,12 +185,13 @@ public class PlayerDownManager {
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        event.getEntity().setAbsorptionAmount(0);
         var uuid=event.getEntity().getUUID();
         playersDown.remove(uuid);soloQuickRevivePlayers.remove(uuid);savedPlayerInventories.remove(uuid);lastKnownHandgun.remove(uuid);
         me.cryo.zombierool.hotfix.HotfixDownReset.resetPlayer(event.getEntity());
         if (event.getEntity() instanceof ServerPlayer player) {
             ServerLevel level = player.serverLevel();
-            
+
             if (WaveManager.isGameRunning()) {
                 String penalty = WorldConfig.get(level).getDeathPenalty();
                 if ("kick".equalsIgnoreCase(penalty)) {
@@ -288,14 +289,14 @@ public class PlayerDownManager {
                             playersDownIterator.remove();
                         }
                     } else if (currentTime - downTime >= BASE_DOWN_DURATION_TICKS) {
-                        playersDownIterator.remove(); 
+                        playersDownIterator.remove();
                         player.getPersistentData().putBoolean("zr_real_death", true);
-                        player.hurt(level.damageSources().generic(), Float.MAX_VALUE); 
+                        player.hurt(level.damageSources().generic(), Float.MAX_VALUE);
                     }
                 } else {
                     playersDownIterator.remove();
                     soloQuickRevivePlayers.remove(uuid);
-                    checkAndEndGame(level); 
+                    checkAndEndGame(level);
                 }
             }
 
@@ -324,7 +325,7 @@ public class PlayerDownManager {
 
                     if (currentTime - reviveStartTime >= effectiveDuration) {
                         completeRevive(downPlayer, reviver, level);
-                        reviverIterator.remove(); 
+                        reviverIterator.remove();
                         reviveStartTicks.remove(reviverUUID);
                     }
                 } else {
@@ -336,7 +337,7 @@ public class PlayerDownManager {
                 }
             }
 
-            checkAndEndGame(level); 
+            checkAndEndGame(level);
         }
     }
 
@@ -344,10 +345,10 @@ public class PlayerDownManager {
         if (!WaveManager.isGameRunning()) {
             return;
         }
-        
+
         long totalPlayers = level.getServer().getPlayerList().getPlayers().size();
         long trulyActivePlayers = level.getServer().getPlayerList().getPlayers().stream()
-            .filter(p -> p.isAlive()) 
+            .filter(p -> p.isAlive())
             .filter(p -> p.gameMode.getGameModeForPlayer() == GameType.SURVIVAL || p.gameMode.getGameModeForPlayer() == GameType.ADVENTURE)
             .filter(p -> !isPlayerDown(p.getUUID()) || soloQuickRevivePlayers.containsKey(p.getUUID()))
             .count();
@@ -361,8 +362,8 @@ public class PlayerDownManager {
         playersDown.remove(player.getUUID());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayerDownPacket(false, player.getUUID()));
 
-        restorePlayerInventory(player); 
-        resetPlayerState(player); 
+        restorePlayerInventory(player);
+        resetPlayerState(player);
 
         player.sendSystemMessage(Component.translatable("message.zombierool.down.self_revived"));
         PlayerVoiceManager.playWasRevived(player, level);
@@ -371,18 +372,21 @@ public class PlayerDownManager {
     }
 
     public static void handlePlayerPermanentDeath(ServerPlayer player, ServerLevel level) {
+        me.cryo.zombierool.gameplay.LunarEquipment.revoke(player);
         playersDown.remove(player.getUUID());
         soloQuickRevivePlayers.remove(player.getUUID());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayerDownPacket(false, player.getUUID()));
-        
+
         savedPlayerInventories.remove(player.getUUID());
-        lastKnownHandgun.remove(player.getUUID()); 
+        lastKnownHandgun.remove(player.getUUID());
 
         player.removeAllEffects();
+        player.setAbsorptionAmount(0);
         player.getPersistentData().remove("zr_has_bowie_knife");
         player.getCapability(ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(cap -> {
             cap.setLethalType(WorldConfig.get(level).getStartingLethal());
             cap.setLethalCount(5);
+            me.cryo.zombierool.gameplay.EquipmentSystem.resetLoadout(player, cap);
             cap.sync(player);
         });
 
@@ -391,13 +395,15 @@ public class PlayerDownManager {
         if (WaveManager.isGameRunning()) {
             broadcast(level, Component.translatable("message.zombierool.down.announce_permanent_death", player.getName()).withStyle(ChatFormatting.RED));
         }
-        
+
+        me.cryo.zombierool.block.system.MusicVolume.reset(player);
         LuaScriptManager.callEvent("OnPlayerDeath", player.getUUID().toString());
         checkAndEndGame(level);
     }
 
     private static void resetPlayerState(ServerPlayer player) {
-        player.removeAllEffects(); 
+        player.removeAllEffects();
+        player.setAbsorptionAmount(0);
         player.setHealth(player.getMaxHealth());
         player.setPose(Pose.STANDING);
         player.refreshDimensions();
@@ -405,6 +411,7 @@ public class PlayerDownManager {
     }
 
     public static void startRevive(ServerPlayer reviver, ServerPlayer downPlayer, ServerLevel level) {
+        if(me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(reviver))return;
         if (!playersDown.containsKey(downPlayer.getUUID())) {
             reviver.sendSystemMessage(Component.translatable("message.zombierool.down.target_not_down"));
             return;
@@ -438,13 +445,13 @@ public class PlayerDownManager {
 
         NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> reviver),
                 new S2CPlayerRevivePacket(downPlayer.getUUID(), level.getGameTime(), effectiveDuration));
-        
+
         PlayerVoiceManager.playIsReviving(reviver, level);
     }
 
     public static void cancelRevive(ServerLevel level, UUID reviverUUID) {
         ServerPlayer reviver = level.getServer().getPlayerList().getPlayer(reviverUUID);
-        UUID downPlayerUUID = reviverToDownPlayer.get(reviverUUID); 
+        UUID downPlayerUUID = reviverToDownPlayer.get(reviverUUID);
         ServerPlayer downPlayer = null;
         if (downPlayerUUID != null) {
             downPlayer = level.getServer().getPlayerList().getPlayer(downPlayerUUID);
@@ -454,7 +461,7 @@ public class PlayerDownManager {
             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> reviver), new S2CPlayerRevivePacket(downPlayerUUID, -1, 0));
             reviver.sendSystemMessage(Component.translatable("message.zombierool.down.revive_canceled_reviver_moved"));
         }
-        
+
         if (downPlayer != null) {
             broadcast(level, Component.translatable("message.zombierool.down.revive_canceled_target_invalid"));
         }
@@ -467,8 +474,8 @@ public class PlayerDownManager {
         playersDown.remove(downPlayer.getUUID());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CPlayerDownPacket(false, downPlayer.getUUID()));
 
-        restorePlayerInventory(downPlayer); 
-        resetPlayerState(downPlayer); 
+        restorePlayerInventory(downPlayer);
+        resetPlayerState(downPlayer);
 
         broadcast(level, Component.translatable("message.zombierool.down.announce_revived", downPlayer.getName(), reviver.getName()));
 
@@ -490,7 +497,7 @@ public class PlayerDownManager {
         if (event.phase == TickEvent.Phase.START && event.player instanceof ServerPlayer player) {
             ItemStack currentMainHandItem = player.getMainHandItem();
             if (WeaponFacade.isHandgun(currentMainHandItem)) {
-                lastKnownHandgun.put(player.getUUID(), currentMainHandItem.copy()); 
+                lastKnownHandgun.put(player.getUUID(), currentMainHandItem.copy());
             }
 
             if (playersDown.containsKey(player.getUUID())) {
@@ -508,7 +515,7 @@ public class PlayerDownManager {
 
         if (event.getEntity() instanceof ServerPlayer player) {
             if (playersDown.containsKey(player.getUUID())) {
-                event.setCanceled(true); 
+                event.setCanceled(true);
             }
         }
     }
@@ -554,7 +561,7 @@ public class PlayerDownManager {
     private static void saveAndEquipHandgunForDownedPlayer(ServerPlayer player) {
         List<ItemStack> currentInventory = new ArrayList<>();
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            currentInventory.add(player.getInventory().getItem(i).copy()); 
+            currentInventory.add(player.getInventory().getItem(i).copy());
         }
         savedPlayerInventories.put(player.getUUID(), currentInventory);
 
@@ -571,12 +578,12 @@ public class PlayerDownManager {
             }
         }
 
-        downedHandgun.setCount(1); 
+        downedHandgun.setCount(1);
         WeaponFacade.setAmmo(downedHandgun, WeaponFacade.getMaxAmmo(downedHandgun));
         WeaponFacade.setReserve(downedHandgun, WeaponFacade.getMaxAmmo(downedHandgun));
 
         player.getInventory().setItem(1, downedHandgun);
-        player.getInventory().selected = 1; 
+        player.getInventory().selected = 1;
     }
 
     private static void restorePlayerInventory(ServerPlayer player) {

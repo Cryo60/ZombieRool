@@ -68,13 +68,13 @@ public class WeaponSystem {
         public boolean is_wonder_weapon = false;
         public List<String> lore = new ArrayList<>();
         public List<String> tags = new ArrayList<>();
-        
+
         public Stats stats = new Stats();
         public Ammo ammo = new Ammo();
         public Ballistics ballistics = new Ballistics();
         public Burst burst = new Burst();
         public Recoil recoil = new Recoil();
-        
+
         @SerializedName("pack_a_punch")
         public PackAPunch pap = new PackAPunch();
         public Headshot headshot = new Headshot();
@@ -82,6 +82,9 @@ public class WeaponSystem {
         public Scoped scoped = new Scoped();
         public Explosion explosion = null;
         public Tacz tacz = null;
+        public Map<String,float[]> animation = new HashMap<>();
+        public String weapon_kind = "";
+        public int draw_ticks = 24;
 
         public static class Stats {
             public float damage = 1f;
@@ -91,6 +94,9 @@ public class WeaponSystem {
             public int penetration = 0;
             public int durability = 0;
             public boolean damage_reduction_on_pierce = true;
+            public double damage_falloff_start = 6.0;
+            public double damage_falloff_end = 24.0;
+            public double damage_falloff_min = 0.1;
         }
 
         public static class Ammo {
@@ -146,10 +152,11 @@ public class WeaponSystem {
             public float base_bonus_damage = 0.0f;
             public float pap_bonus_damage = 0.0f;
             public boolean can_explode_head = true;
-            public float head_explosion_chance = 1.0f; 
+            public float head_explosion_chance = 1.0f;
         }
 
         public static class Sounds {
+            public String draw = "";
             public String fire;
             public String fire_pap;
             public String reload_start;
@@ -182,6 +189,7 @@ public class WeaponSystem {
             public String gun_id;
             public String pap_gun_id;
             public String ammo_id;
+            public List<Tacz> fallbacks = new ArrayList<>();
             public Map<String, String> attachments = new HashMap<>();
             public Map<String, String> pap_attachments = new HashMap<>();
         }
@@ -221,18 +229,25 @@ public class WeaponSystem {
                 "energysword", "famas", "fg42", "fiveseven", "flamethrower", "fnfal",
                 "g36c", "galil", "gewehr43", "glock", "haymaker", "hk21", "hkg3", "hydra",
                 "intervention", "kar98k", "l85a2", "m14", "m16a4", "m1911",
-                "m1carbine", "m1garand", "m40a3", "m7smg", "ma5d", "magnum", "maschinenpistole28",
+                "m1014", "m1carbine", "m1garand", "m40a3", "m7smg", "ma5d", "magnum", "maschinenpistole28",
                 "mauserc96", "mg42", "mosinnagant", "mp40", "mp5", "mp7", "mpx",
                 "needler", "oldcrossbow", "oldsword", "olympia", "p90", "peacekeeper", "percepteur",
                 "plasmapistol", "ppsh41", "r4c", "raygun", "raygunmarkii", "rpd", "rpg", "rpk",
                 "saw", "scarh", "shotgun", "sniper", "spas12", "springfield", "starr1858",
                 "stg44", "storm", "superbow", "svt40", "tar21", "thompson", "thundergun", "trenchgun",
-                "type100", "ump45", "usp45", "uzi", "vandal", "vector", "whisper", "wunderwaffedg2"
+                "type100", "ump45", "usp45", "uzi", "vandal", "vector", "whisper", "wunderwaffedg2", "winters_howl", "vr11",
+                "fire_wand", "shadow_wand", "longbow", "scarlet_crossbow", "scarlet_sword", "scarlet_axe", "scarlet_halberd", "scarlet_shield",
+                "stratholme_shortbow", "stratholme_warbow", "stratholme_hunting_crossbow", "stratholme_heavy_crossbow", "stratholme_flintlock", "stratholme_musket", "stratholme_blunderbuss", "stratholme_dwarven_rifle", "stratholme_rusty_dagger", "stratholme_assassin_dagger", "stratholme_hunting_knife", "stratholme_runic_knife", "stratholme_arming_sword", "stratholme_runeblade", "stratholme_claymore", "stratholme_runic_greatsword"
         };
 
         public static BaseGunItem createWeapon(Definition def) {
             String type = def.type != null ? def.type.toUpperCase() : "RIFLE";
             String id = def.id != null ? def.id.replace("zombierool:", "").trim().toLowerCase() : "";
+            if(id.startsWith("stratholme_")){if(type.equals("MELEE"))return new me.cryo.zombierool.item.ScarletWeaponItem(def);if(type.equals("BOW"))return new me.cryo.zombierool.item.MapBowItem(def);if(type.equals("CROSSBOW"))return new me.cryo.zombierool.item.FantasyRangedWeaponItem(def);return new me.cryo.zombierool.item.MapPowderWeaponItem(def);}
+            if(id.equals("longbow"))return new me.cryo.zombierool.item.MapBowItem(def);
+            if(java.util.Set.of("scarlet_sword","scarlet_axe","scarlet_halberd","scarlet_shield").contains(id))return new me.cryo.zombierool.item.ScarletWeaponItem(def);
+            if(java.util.Set.of("fire_wand","shadow_wand","longbow","scarlet_crossbow").contains(id))return new me.cryo.zombierool.item.FantasyRangedWeaponItem(def);
+            if(id.equals("winters_howl")||id.equals("vr11"))return new me.cryo.zombierool.item.ClassicWonderWeaponItem(def);
 
             if ("energysword".equals(id)) {
                 return new me.cryo.zombierool.item.EnergySwordItem(def);
@@ -266,7 +281,7 @@ public class WeaponSystem {
                 return new me.cryo.zombierool.item.StormItem(def);
             } else if ("BOLT".equals(type)) {
                 def.stats.fire_rate = 30;
-                return new WeaponImplementations.BoltActionRifleItem(def);
+                return "SHELL".equalsIgnoreCase(def.ammo.reload_type)?new WeaponImplementations.BoltActionRifleItem(def):new WeaponImplementations.SniperGunItem(def);
             } else if ("SHOTGUN".equals(type)) {
                 if ("SHELL".equalsIgnoreCase(def.ammo.reload_type)) def.stats.fire_rate = 25;
                 return new WeaponImplementations.ShotgunItem(def);
@@ -290,7 +305,7 @@ public class WeaponSystem {
                 String path = "data/zombierool/gameplay/weapons/" + weaponId + ".json";
                 try (InputStream stream = Loader.class.getClassLoader().getResourceAsStream(path)) {
                     if (stream != null) {
-                        try (InputStreamReader reader = new InputStreamReader(stream)) {
+                        try (InputStreamReader reader = new InputStreamReader(stream,java.nio.charset.StandardCharsets.UTF_8)) {
                             Definition def = GSON.fromJson(reader, Definition.class);
                             if (def != null) {
                                 if (def.id == null || def.id.trim().isEmpty()) {
@@ -309,7 +324,7 @@ public class WeaponSystem {
                 File[] files = externalFolder.listFiles((dir, name) -> name.endsWith(".json"));
                 if (files != null) {
                     for (File file : files) {
-                        try (FileReader reader = new FileReader(file)) {
+                        try (FileReader reader = new FileReader(file,java.nio.charset.StandardCharsets.UTF_8)) {
                             Definition def = GSON.fromJson(reader, Definition.class);
                             if (def != null) {
                                 String filenameId = file.getName().replace(".json", "");
@@ -330,12 +345,15 @@ public class WeaponSystem {
         public static String applyWorldWeapons(net.minecraft.server.level.ServerLevel level) {
             loadWeapons();
             com.google.gson.JsonArray applied = new com.google.gson.JsonArray();
-            java.io.File dir = new java.io.File(me.cryo.zombierool.util.WorldZombieroolPaths.getZombieroolDir(level), "weapons");
-            if (dir.isDirectory()) {
-                java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            java.io.File dir = me.cryo.zombierool.util.WorldZombieroolPaths.resolve(me.cryo.zombierool.util.WorldZombieroolPaths.getZombieroolDir(level), "weapons");
+            var packFiles=new java.util.ArrayList<java.io.File>();
+            for(var path:me.cryo.zombierool.gameplay.MapWeaponPacks.definitions(level))packFiles.add(path.toFile());
+            if(dir.isDirectory()){var legacy=dir.listFiles((d,name)->name.endsWith(".json"));if(legacy!=null)packFiles.addAll(java.util.Arrays.asList(legacy));}
+            {
+                java.io.File[] files = packFiles.toArray(java.io.File[]::new);
                 if (files != null) {
                     for (java.io.File file : files) {
-                        try (java.io.FileReader reader = new java.io.FileReader(file)) {
+                        try (java.io.FileReader reader = new java.io.FileReader(file,java.nio.charset.StandardCharsets.UTF_8)) {
                             Definition def = GSON.fromJson(reader, Definition.class);
                             if (def == null) continue;
                             String filenameId = file.getName().replace(".json", "");
@@ -347,6 +365,7 @@ public class WeaponSystem {
                             }
                             def.resolveBackwardCompatibility();
                             LOADED_DEFINITIONS.put(id, def);
+                            me.cryo.zombierool.gameplay.MapWeaponPacks.activate(id);
                             applied.add(GSON.toJsonTree(def));
                         } catch (Exception e) {
                             me.cryo.zombierool.ZombieroolMod.LOGGER.error("[ZombieRool] Failed to read map weapon " + file.getName(), e);
@@ -354,11 +373,13 @@ public class WeaponSystem {
                     }
                 }
             }
+            LOADED_DEFINITIONS.keySet().removeIf(id->!me.cryo.zombierool.gameplay.MapWeaponPacks.available(id));
             return applied.toString();
         }
 
         public static void applyWeaponPayload(String payload) {
-            if (payload == null || payload.isBlank() || "[]".equals(payload.trim())) return;
+            me.cryo.zombierool.gameplay.MapWeaponPacks.clear();
+            if (payload == null || payload.isBlank())payload="[]";
             try {
                 Definition[] defs = GSON.fromJson(payload, Definition[].class);
                 if (defs == null) return;
@@ -371,7 +392,9 @@ public class WeaponSystem {
                     }
                     def.resolveBackwardCompatibility();
                     LOADED_DEFINITIONS.put(id, def);
+                    me.cryo.zombierool.gameplay.MapWeaponPacks.activate(id);
                 }
+                LOADED_DEFINITIONS.keySet().removeIf(id->!me.cryo.zombierool.gameplay.MapWeaponPacks.available(id));
             } catch (Exception e) {
                 me.cryo.zombierool.ZombieroolMod.LOGGER.error("[ZombieRool] Failed to apply map weapon payload", e);
             }
@@ -383,6 +406,7 @@ public class WeaponSystem {
                     def.id = "zombierool:" + filenameId;
                 }
                 String id = def.id.replace("zombierool:", "").trim();
+                if (id.equals("mp7_cirrus")&&def.tacz!=null&&"lrl:mp7_cirrus".equals(def.tacz.gun_id)) return;
                 if (!id.isEmpty()) LOADED_DEFINITIONS.put(id, def);
             }
         }
@@ -481,9 +505,9 @@ public class WeaponSystem {
             Vec3 lookVec = player.getViewVector(1.0F);
             Vec3 rightVec = lookVec.cross(new Vec3(0, 1, 0)).normalize();
             Vec3 upVec = rightVec.cross(lookVec).normalize();
-            
+
             float sideOffset = isLeft ? -0.45f : 0.45f;
-            
+
             return eyePos.add(rightVec.scale(sideOffset)).add(upVec.scale(-0.35)).add(lookVec.scale(0.6));
         }
 
@@ -569,7 +593,7 @@ public class WeaponSystem {
                 if (isAkimbo(player.getItemInHand(hand))) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 }
-                
+
                 if (this.getDefinition().scoped != null && this.getDefinition().scoped.isScoped) {
                     return InteractionResultHolder.consume(player.getItemInHand(hand));
                 }
@@ -582,6 +606,9 @@ public class WeaponSystem {
         }
 
         public void tryShoot(ItemStack stack, Player player, float charge, boolean isLeft) {
+            if(!me.cryo.zombierool.gameplay.MapWeaponPacks.available(getDefinition().id.replace("zombierool:","")))return;
+            if(me.cryo.zombierool.gameplay.PortableEquipment.inHands(player))return;
+            if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(player)||(me.cryo.zombierool.gameplay.LunarEquipment.busy(player)||me.cryo.zombierool.gameplay.BuildableSystem.busy(player))))return;
             Definition currentDef = getDefinition();
             long now = player.level().getGameTime();
             String timeTag = isLeft ? TAG_LAST_FIRE_LEFT : TAG_LAST_FIRE;
@@ -658,6 +685,11 @@ public class WeaponSystem {
                 performShooting(stack, player, charge, isLeft);
             }
 
+            if(player instanceof net.minecraft.server.level.ServerPlayer shooter && java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii").contains(currentDef.id)){
+                float recoil=currentDef.recoil.pitch*(isPackAPunched(stack)?currentDef.pap.recoil_mult:1);
+                me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->shooter),new me.cryo.zombierool.network.packet.S2CRecoilPacket(recoil,(player.getRandom().nextBoolean()?1:-1)*currentDef.recoil.yaw));
+            }
+
             PlayerVoiceManager.onPlayerShoot(player);
 
             if (!player.isCreative()) {
@@ -693,16 +725,11 @@ public class WeaponSystem {
                 }
             }
 
-            playSound(player.level(), player, currentDef.sounds.fire);
-            if (isPackAPunched(stack) && !java.util.Objects.equals(currentDef.sounds.fire, currentDef.sounds.fire_pap)) {
-                playSound(player.level(), player, currentDef.sounds.fire_pap);
-            }
-
-            if (currentDef.id != null && currentDef.id.contains("raygunmarkii")) {
-                Vec3 look = player.getViewVector(1.0f);
-                double propStrength = isPackAPunched(stack) ? 0.3 : 0.15;
-                player.setDeltaMovement(player.getDeltaMovement().subtract(look.x * propStrength, look.y * propStrength, look.z * propStrength));
-                player.hurtMarked = true;
+            boolean ray=java.util.Set.of("zombierool:raygun","zombierool:raygunmarkii").contains(currentDef.id);
+            if(ray) playSound(player.level(),player,isPackAPunched(stack)?currentDef.sounds.fire_pap:currentDef.sounds.fire);
+            else {
+                playSound(player.level(), player, currentDef.sounds.fire);
+                if (isPackAPunched(stack) && !java.util.Objects.equals(currentDef.sounds.fire, currentDef.sounds.fire_pap)) playSound(player.level(),player,currentDef.sounds.fire_pap);
             }
 
             getOrCreateTag(stack).putBoolean(TAG_PUMP_PLAYED, false);
@@ -723,6 +750,7 @@ public class WeaponSystem {
 
         @Override
         public void startReload(ItemStack stack, Player player) {
+            if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(player)||(me.cryo.zombierool.gameplay.LunarEquipment.busy(player)||me.cryo.zombierool.gameplay.BuildableSystem.busy(player))))return;
             if (!isAkimbo(stack) && player.getCooldowns().isOnCooldown(this)) return;
             if (hasOverheat() || hasDurability()) return;
 
@@ -734,7 +762,7 @@ public class WeaponSystem {
             if (!isInfinite(stack) && getReserve(stack) <= 0 && !player.isCreative()) return;
 
             getOrCreateTag(stack).putInt(TAG_BURST_SHOTS_LEFT, 0);
-            
+
             Definition currentDef = getDefinition();
             float baseTime = currentDef.ammo.reload_time;
             if (isPackAPunched(stack)) baseTime *= currentDef.pap.reload_speed_mult;
@@ -909,8 +937,8 @@ public class WeaponSystem {
 
             String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
             if (nameKey == null) nameKey = "Unknown Weapon";
-            
-            MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
+
+            MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ?
                     Component.translatable(nameKey) : Component.literal(nameKey);
 
             MutableComponent nameComponent = Component.empty().append(baseComp).withStyle(upgraded ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.WHITE);

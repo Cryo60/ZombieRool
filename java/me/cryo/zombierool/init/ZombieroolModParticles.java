@@ -26,6 +26,7 @@ import me.cryo.zombierool.client.particle.BlackCrowParticle;
 public class ZombieroolModParticles {
 	@SubscribeEvent
 	public static void registerParticles(RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(ZombieroolModParticleTypes.THIEF_DIGITS.get(),me.cryo.zombierool.client.particle.ThiefDigitsParticle::provider);
 		event.registerSpriteSet(ZombieroolModParticleTypes.INSTAKILL.get(), InstakillParticle::provider);
 		event.registerSpriteSet(ZombieroolModParticleTypes.MAXAMMO.get(), MaxammoParticle::provider);
 		event.registerSpriteSet(ZombieroolModParticleTypes.NUKE.get(), NukeParticle::provider);

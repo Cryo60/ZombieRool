@@ -22,6 +22,18 @@ public class ZRThrowableRegistry {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ZombieroolMod.MODID);
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ZombieroolMod.MODID);
 
+
+    public static final RegistryObject<Item> C4_ITEM=selector("c4",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.C4);
+    public static final RegistryObject<Item> CLAYMORE_ITEM=selector("claymore",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.CLAYMORE);
+    public static final RegistryObject<Item> BETTY_ITEM=selector("bouncing_betty",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.BETTY);
+    public static final RegistryObject<Item> FLASH_ITEM=selector("flash",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.FLASH);
+    public static final RegistryObject<Item> PHEROMONE_ITEM=selector("pheromone",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.PHEROMONE);
+    public static final RegistryObject<Item> SEMTEX_ITEM=selector("semtex",me.cryo.zombierool.gameplay.EquipmentSystem.Kind.SEMTEX);
+    public static final RegistryObject<Item> C4_DETONATOR=ITEMS.register("anim_c4_detonator",()->new Item(new Item.Properties()));
+    private static RegistryObject<Item> selector(String name,me.cryo.zombierool.gameplay.EquipmentSystem.Kind kind){return ITEMS.register(name,()->new me.cryo.zombierool.gameplay.EquipmentSystem.LoadoutItem(kind));}
+    public static Item loadoutItem(me.cryo.zombierool.gameplay.EquipmentSystem.Kind kind){return switch(kind){case C4->C4_ITEM.get();case CLAYMORE->CLAYMORE_ITEM.get();case BETTY->BETTY_ITEM.get();case FLASH->FLASH_ITEM.get();case PHEROMONE->PHEROMONE_ITEM.get();case SEMTEX->SEMTEX_ITEM.get();};}
+    public static final RegistryObject<EntityType<me.cryo.zombierool.gameplay.EquipmentEntity>> EQUIPMENT_ENTITY=ENTITIES.register("equipment",()->EntityType.Builder.<me.cryo.zombierool.gameplay.EquipmentEntity>of(me.cryo.zombierool.gameplay.EquipmentEntity::new,MobCategory.MISC).sized(.3f,.2f).clientTrackingRange(8).updateInterval(1).build("equipment"));
+
     public static final RegistryObject<Item> GRENADE_ITEM = ITEMS.register("grenade", Grenade.GrenadeItem::new);
     public static final RegistryObject<Item> MOLOTOV_ITEM = ITEMS.register("molotov", Molotov.MolotovItem::new);
     public static final RegistryObject<Item> STIELHANDGRANATE_ITEM = ITEMS.register("stielhandgranate", Stielhandgranate.StielhandgranateItem::new);
@@ -65,6 +77,7 @@ public class ZRThrowableRegistry {
     public static class ClientRenderers {
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(EQUIPMENT_ENTITY.get(), me.cryo.zombierool.client.EquipmentRenderer::new);
             event.registerEntityRenderer(GRENADE_ENTITY.get(), ThrownItemRenderer::new);
             event.registerEntityRenderer(MOLOTOV_ENTITY.get(), ThrownItemRenderer::new);
             event.registerEntityRenderer(STIELHANDGRANATE_ENTITY.get(), ThrownItemRenderer::new);

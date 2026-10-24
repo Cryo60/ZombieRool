@@ -93,6 +93,12 @@ public class BlindBuySystem {
     public static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS = DeferredRegister.create(ForgeRegistries.MENU_TYPES, ZombieroolMod.MODID);
 
     public static final RegistryObject<Block> BLOCK = BLOCKS.register("blind_buy_cabinet", BlindBuyCabinetBlock::new);
+    public static final RegistryObject<Block> RACK = BLOCKS.register("secret_weapon_rack", ()->new BlindBuyCabinetBlock(true));
+    public static final RegistryObject<Item> RACK_ITEM = ITEMS.register("secret_weapon_rack",()->new BlockItem(RACK.get(),new Item.Properties()) {
+        @Override public InteractionResult place(BlockPlaceContext context){
+            return super.place(new BlockPlaceContext(context.getLevel(),context.getPlayer(),context.getHand(),context.getItemInHand(),new BlockHitResult(context.getClickLocation(),context.getClickedFace(),context.getClickedPos().above(),context.isInside())));
+        }
+    });
     public static final RegistryObject<Item> ITEM = ITEMS.register("blind_buy_cabinet", () -> new BlockItem(BLOCK.get(), new Item.Properties()) {
         @Override
         public InteractionResult place(BlockPlaceContext context) {
@@ -101,12 +107,26 @@ public class BlindBuySystem {
         }
     });
 
-    public static final RegistryObject<BlockEntityType<BlindBuyCabinetBlockEntity>> BE = BLOCK_ENTITIES.register("blind_buy_cabinet", () -> BlockEntityType.Builder.of(BlindBuyCabinetBlockEntity::new, BLOCK.get()).build(null));
+    public static final RegistryObject<BlockEntityType<BlindBuyCabinetBlockEntity>> BE = BLOCK_ENTITIES.register("blind_buy_cabinet", () -> BlockEntityType.Builder.of(BlindBuyCabinetBlockEntity::new, BLOCK.get(), RACK.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<BlindBuyManagerMenu>> MENU = MENUS.register("sys_blind_buy_manager", () -> IForgeMenuType.create(BlindBuyManagerMenu::new));
 
     private static final Map<Level, Set<BlindBuyCabinetBlockEntity>> CABINETS = new ConcurrentHashMap<>();
 
+    private static final class ResetEpoch extends net.minecraft.world.level.saveddata.SavedData {
+        long value;
+        static ResetEpoch load(CompoundTag tag){var data=new ResetEpoch();data.value=tag.getLong("epoch");return data;}
+        @Override public CompoundTag save(CompoundTag tag){tag.putLong("epoch",value);return tag;}
+    }
+
+    private static ResetEpoch resetEpoch(net.minecraft.server.level.ServerLevel level){
+        return level.getDataStorage().computeIfAbsent(ResetEpoch::load,ResetEpoch::new,"zombierool_cabinet_reset");
+    }
+
     public static void registerCabinet(Level level, BlindBuyCabinetBlockEntity be) {
+        if(level instanceof net.minecraft.server.level.ServerLevel server){
+            long epoch=resetEpoch(server).value;
+            if(be.resetEpoch!=epoch)be.resetForMatch(epoch);
+        }
         CABINETS.computeIfAbsent(level, k -> Collections.synchronizedSet(new HashSet<>())).add(be);
     }
 
@@ -118,14 +138,13 @@ public class BlindBuySystem {
     }
 
     public static void resetAllCabinets(Level level) {
+        if(!(level instanceof net.minecraft.server.level.ServerLevel server))return;
+        var epoch=resetEpoch(server);epoch.value++;epoch.setDirty();
         Set<BlindBuyCabinetBlockEntity> set = CABINETS.get(level);
         if (set != null) {
             for (BlindBuyCabinetBlockEntity be : set) {
                 if (be.isRemoved()) continue;
-                BlockState state = be.getBlockState();
-                if (state.hasProperty(BlindBuyCabinetBlock.OPEN) && state.getValue(BlindBuyCabinetBlock.OPEN)) {
-                    level.setBlock(be.getBlockPos(), state.setValue(BlindBuyCabinetBlock.OPEN, false), 3);
-                }
+                be.resetForMatch(epoch.value);
             }
         }
     }
@@ -140,7 +159,7 @@ public class BlindBuySystem {
 
     @SubscribeEvent
     public static void buildContents(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zombie_arsenal"))) {
+        if (event.getTabKey().location().equals(new ResourceLocation(ZombieroolMod.MODID, "zb_rct"))) {
             event.accept(ITEM.get());
         }
     }
@@ -154,8 +173,11 @@ public class BlindBuySystem {
         protected static final VoxelShape SHAPE_EAST  = Shapes.block();
 
         public BlindBuyCabinetBlock() {
+            this(false);
+        }
+        public BlindBuyCabinetBlock(boolean metal) {
             super(BlockBehaviour.Properties.of()
-                .sound(SoundType.WOOD)
+                .sound(metal?SoundType.METAL:SoundType.WOOD)
                 .strength(2.0f, 3600000)
                 .noOcclusion());
             this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
@@ -225,6 +247,7 @@ public class BlindBuySystem {
 
     public static class BlindBuyCabinetBlockEntity extends BlockEntity implements MenuProvider {
         private int price = 0;
+        private long resetEpoch;
         private final ItemStackHandler itemHandler = new ItemStackHandler(1) {
             @Override
             protected void onContentsChanged(int slot) {
@@ -252,6 +275,14 @@ public class BlindBuySystem {
         public ItemStack getWeapon() { return itemHandler.getStackInSlot(0); }
         public void triggerPurchase() { }
 
+        private void resetForMatch(long epoch){
+            resetEpoch=epoch;
+            BlockState state=getBlockState();
+            if(level!=null&&state.hasProperty(BlindBuyCabinetBlock.OPEN)&&state.getValue(BlindBuyCabinetBlock.OPEN))
+                level.setBlock(getBlockPos(),state.setValue(BlindBuyCabinetBlock.OPEN,false),3);
+            setChanged();
+        }
+
         @Override
         public void onLoad() {
             super.onLoad();
@@ -272,6 +303,7 @@ public class BlindBuySystem {
         public void load(CompoundTag tag) {
             super.load(tag);
             this.price = tag.getInt("Price");
+            this.resetEpoch=tag.getLong("ResetEpoch");
             this.itemHandler.deserializeNBT(tag.getCompound("Inventory"));
         }
 
@@ -279,6 +311,7 @@ public class BlindBuySystem {
         protected void saveAdditional(CompoundTag tag) {
             super.saveAdditional(tag);
             tag.putInt("Price", this.price);
+            tag.putLong("ResetEpoch",this.resetEpoch);
             tag.put("Inventory", this.itemHandler.serializeNBT());
         }
 
@@ -451,20 +484,21 @@ public class BlindBuySystem {
         @Override
         public void render(BlindBuyCabinetBlockEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
             boolean isOpen = entity.getBlockState().getValue(BlindBuyCabinetBlock.OPEN);
+            boolean rack = entity.getBlockState().is(RACK.get());
             Direction facing = entity.getBlockState().getValue(BlindBuyCabinetBlock.FACING);
 
             poseStack.pushPose();
             poseStack.translate(0.5, 0.0, 0.5);
-            float yRot = -facing.toYRot();
+            float yRot = -facing.toYRot()+(rack?180:0);
             poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
 
             float offsetX = 0.0f;
-            float offsetY = 9.0f / 16.0f;
-            float offsetZ = -0.2f;
+            float offsetY = rack?0:9.0f / 16.0f;
+            float offsetZ = rack?0.05f:-0.2f;
 
             poseStack.translate(offsetX, offsetY, offsetZ);
 
-            if (!isOpen) {
+            if (!isOpen && !rack) {
                 poseStack.pushPose();
                 poseStack.mulPose(Axis.YP.rotationDegrees(180));
                 float textScale = 0.035f;
@@ -476,15 +510,16 @@ public class BlindBuySystem {
 
                 font.drawInBatch(text, -textWidth / 2f, -font.lineHeight / 2f, 0xFFFFFFFF, false, poseStack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, packedLight);
                 poseStack.popPose();
-            } else {
+            } else if (isOpen) {
                 ItemStack weapon = entity.getWeapon();
                 if (!weapon.isEmpty()) {
                     poseStack.pushPose();
                     poseStack.mulPose(Axis.YP.rotationDegrees(180));
-                    poseStack.scale(0.7f, 0.7f, 0.7f);
+                    float scale=rack?.55f:.7f;poseStack.scale(scale,scale,scale);
 
                     Minecraft.getInstance().getItemRenderer().renderStatic(
-                        weapon, ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack, bufferSource, entity.getLevel(), 0
+                        weapon, ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack,
+                        bufferSource, entity.getLevel(), 0
                     );
 
                     poseStack.popPose();

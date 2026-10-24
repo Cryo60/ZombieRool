@@ -51,6 +51,7 @@ public class MimicSystem {
 	}
 
     public static BlockState getStateForMimic(Player player, InteractionHand hand, ItemStack held, BlockHitResult hit, Block blockToCopy) {
+        if(blockToCopy instanceof FurnitureSystem.PalletBlock&&player.level().getBlockEntity(hit.getBlockPos()) instanceof IMimicContainer mimic&&mimic.getMimic()!=null&&mimic.getMimic().is(blockToCopy))return mimic.getMimic().setValue(FurnitureSystem.PalletBlock.LAYERS,Math.min(4,mimic.getMimic().getValue(FurnitureSystem.PalletBlock.LAYERS)+1));
         BlockPlaceContext ctx = new BlockPlaceContext(player, hand, held, hit);
         BlockState placementState = blockToCopy.getStateForPlacement(ctx);
 
@@ -60,19 +61,19 @@ public class MimicSystem {
 
         try {
             Direction playerLookDir = player.getDirection();
-            Direction overrideDir = playerLookDir.getOpposite(); 
-            
+            Direction overrideDir = playerLookDir.getOpposite();
+
             if (blockToCopy instanceof me.cryo.zombierool.core.block.ZRSandbagBlock) {
-                overrideDir = playerLookDir.getClockWise(); 
+                overrideDir = playerLookDir.getClockWise();
             }
 
             for (net.minecraft.world.level.block.state.properties.Property<?> prop : placementState.getProperties()) {
                 if (prop.getName().equals("facing") && prop.getValueClass() == Direction.class) {
-                    net.minecraft.world.level.block.state.properties.DirectionProperty dirProp = 
+                    net.minecraft.world.level.block.state.properties.DirectionProperty dirProp =
                         (net.minecraft.world.level.block.state.properties.DirectionProperty) prop;
-                    
+
                     Direction finalDir = overrideDir;
-                    
+
                     if (!dirProp.getPossibleValues().contains(finalDir)) {
                         if (finalDir.getAxis() == Direction.Axis.Y) {
                             finalDir = playerLookDir.getOpposite();
@@ -83,7 +84,7 @@ public class MimicSystem {
                         placementState = placementState.setValue(dirProp, finalDir);
                     }
                 } else if (prop.getName().equals("axis") && prop.getValueClass() == Direction.Axis.class) {
-                    net.minecraft.world.level.block.state.properties.EnumProperty<Direction.Axis> axisProp = 
+                    net.minecraft.world.level.block.state.properties.EnumProperty<Direction.Axis> axisProp =
                         (net.minecraft.world.level.block.state.properties.EnumProperty<Direction.Axis>) prop;
                     if (axisProp.getPossibleValues().contains(hit.getDirection().getAxis())) {
                         placementState = placementState.setValue(axisProp, hit.getDirection().getAxis());
@@ -326,6 +327,7 @@ public class MimicSystem {
 
 	public static BlockState getConnectedState(BlockState state, BlockGetter level, BlockPos pos) {
 	    Block block = state.getBlock();
+        if(block instanceof FurnitureSystem.SofaBlock sofa)return sofa.connect(state,level,pos);
         if(block instanceof DoorBlock){
             BlockState neighbor=getMimicAt(level,pos.below());
             boolean upper=neighbor!=null&&neighbor.getBlock()==block&&neighbor.hasProperty(DoorBlock.HALF)&&neighbor.getValue(DoorBlock.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER;
@@ -373,7 +375,7 @@ public class MimicSystem {
 
 	        if (count == 4) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CROSS);
 	        if (count == 3) {
-	            Direction open = !n ? Direction.NORTH 
+	            Direction open = !n ? Direction.NORTH
 	                           : !s ? Direction.SOUTH
 	                           : !e ? Direction.EAST
 	                           :      Direction.WEST;
@@ -383,10 +385,10 @@ public class MimicSystem {
 	            return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.STRAIGHT).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.NORTH);
 	        if ((e && w) || (!n && !s && (e || w)))
 	            return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.STRAIGHT).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.EAST);
-	        if (s && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.WEST);  
-	        if (s && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.NORTH); 
-	        if (n && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.EAST);  
-	        if (n && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.SOUTH); 
+	        if (s && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.WEST);
+	        if (s && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.NORTH);
+	        if (n && w) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.EAST);
+	        if (n && e) return state.setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.WALL_SHAPE, me.cryo.zombierool.core.block.ZRSandbagBlock.WallShape.CORNER).setValue(me.cryo.zombierool.core.block.ZRSandbagBlock.FACING, Direction.SOUTH);
 	    }
 
 	    return state;

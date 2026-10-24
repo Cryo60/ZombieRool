@@ -101,6 +101,32 @@
     "ammo_id": "tacz:45acp",
     "pap_attachments": {
       "scope": "tacz:holographic"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "lrl:mp7_cirrus",
+        "pap_attachments": {
+          "scope": "tacz:holographic"
+        }
+      },
+      {
+        "gun_id": "elitex:mp7r",
+        "pap_attachments": {
+          "scope": "tacz:holographic"
+        }
+      },
+      {
+        "gun_id": "mw19:mp7",
+        "pap_attachments": {
+          "scope": "tacz:holographic"
+        }
+      },
+      {
+        "gun_id": "nmw2:vel46",
+        "pap_attachments": {
+          "scope": "tacz:holographic"
+        }
+      }
+    ]
   }
 }

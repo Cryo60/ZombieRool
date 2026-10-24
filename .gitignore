@@ -29,11 +29,17 @@ run-data/
 run-server/
 run-mp1/
 run-mp2/
+run-hotfix1-server/
+logs/
+__pycache__/
+*.pyc
 
 # Textures, sounds and models stay out of the public GitHub tree.
 # They are still packed into the mod jar.
 src/main/resources/assets/
+assets-source/
 resources/assets/
+assets-source/
 
 # MCreator leftovers
 .mcreator/
@@ -41,3 +47,18 @@ elements/
 *.mcreator
 mcreator.gradle
 .custombuildconfig.properties
+
+# Private creator voucher output
+/sponsor-codes.json
+
+# Local private multiplayer server and installer payloads
+/distribution/
+
+# Local source/resource mirrors and development dependencies
+/src/
+/assets/
+/data/
+/META-INF/
+/libs/
+/dev-libs/
+/forge-installer.jar.log

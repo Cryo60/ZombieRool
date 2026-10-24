@@ -13,4 +13,3 @@ plugins {
 }
 
 rootProject.name = 'ZombieRool'
-include 'zrcopy'

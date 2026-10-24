@@ -102,6 +102,20 @@
     "gun_id": "ww:kar98k",
     "pap_attachments": {
       "scope": "tacz:scope_mk5hd"
-    }
+    },
+    "fallbacks": [
+      {
+        "gun_id": "tacz:kar98",
+        "pap_attachments": {
+          "scope": "tacz:scope_mk5hd"
+        }
+      },
+      {
+        "gun_id": "elitex:kar98k",
+        "pap_attachments": {
+          "scope": "tacz:scope_mk5hd"
+        }
+      }
+    ]
   }
 }

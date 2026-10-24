@@ -49,6 +49,7 @@ public class GorePieceEntity extends Entity {
     public static final byte SKULL = 7;
     public static final byte JAW = 8;
     public static final byte MEAT = 9;
+    public static final byte BONE=10,BONE_SKULL=11,BONE_RIB=12;
 
     private static final EntityDataAccessor<Byte> KIND = SynchedEntityData.defineId(GorePieceEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(GorePieceEntity.class, EntityDataSerializers.INT);
@@ -56,6 +57,17 @@ public class GorePieceEntity extends Entity {
     private static final EntityDataAccessor<Boolean> STUCK = SynchedEntityData.defineId(GorePieceEntity.class, EntityDataSerializers.BOOLEAN);
 
     private static final ResourceLocation FLESH = new ResourceLocation("zombierool", "textures/entities/gore_flesh.png");
+    private net.minecraft.core.BlockPos supportTop,supportBottom;
+    private net.minecraft.world.level.block.state.BlockState supportTopState,supportBottomState;
+    private int debrisAge;
+    private int jammedTicks;
+    private boolean settledSupportUnchanged(){
+        var top=net.minecraft.core.BlockPos.containing(position().add(0,.05,0));var bottom=net.minecraft.core.BlockPos.containing(position().add(0,-.12,0));
+        var a=level().getBlockState(top);var b=level().getBlockState(bottom);
+        boolean reusable=!a.hasBlockEntity()&&!b.hasBlockEntity()&&!a.getBlock().hasDynamicShape()&&!b.getBlock().hasDynamicShape();
+        if(reusable&&top.equals(supportTop)&&bottom.equals(supportBottom)&&a==supportTopState&&b==supportBottomState)return true;
+        supportTop=top;supportBottom=bottom;supportTopState=reusable?a:null;supportBottomState=reusable?b:null;return false;
+    }
 
     public GorePieceEntity(PlayMessages.SpawnEntity packet, Level level) {
         this(me.cryo.zombierool.init.ZombieroolModEntities.GORE_PIECE.get(), level);
@@ -67,6 +79,7 @@ public class GorePieceEntity extends Entity {
     }
 
     public static void spawn(ServerLevel level, LivingEntity from, byte kind, int skin, String customSkin) {
+        if(!me.cryo.zombierool.gameplay.RemainsCleanup.allowGore(level))return;
         GorePieceEntity piece = new GorePieceEntity(me.cryo.zombierool.init.ZombieroolModEntities.GORE_PIECE.get(), level);
         piece.setPos(from.getX(), from.getY() + from.getBbHeight() * 0.62, from.getZ());
         piece.entityData.set(KIND, kind);
@@ -76,6 +89,10 @@ public class GorePieceEntity extends Entity {
         // Start outside the source hitbox so corpse collision cannot trap the piece.
         double radius = from.getBbWidth() * 0.5 + piece.getBbWidth() + 0.05;
         piece.setPos(from.getX() + Math.cos(yaw) * radius, piece.getY(), from.getZ() + Math.sin(yaw) * radius);
+        if(!me.cryo.zombierool.util.GoreCollision.clear(piece,piece.position())){
+            piece.setPos(from.getX(),from.getY()+from.getBbHeight()*.62,from.getZ());
+            if(!me.cryo.zombierool.util.GoreCollision.resolveEmbedded(piece))return;
+        }
         double speed = 0.35 + level.random.nextDouble() * 0.45;
         piece.setDeltaMovement(Math.cos(yaw) * speed, 0.35 + level.random.nextDouble() * 0.55, Math.sin(yaw) * speed);
         piece.setYRot(level.random.nextFloat() * 360.0F);
@@ -98,24 +115,38 @@ public class GorePieceEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide && ++debrisAge >= 2400) { discard(); return; }
+        if(!level().isClientSide&&(!isStuck()||(tickCount+getId())%20==0)){
+            if(!me.cryo.zombierool.util.GoreCollision.resolveEmbedded(this)){discard();return;}
+        }
         if (this.isStuck()) {
+            if(!settledSupportUnchanged()){
+                var support=me.cryo.zombierool.util.GoreCollision.clip(this.level(),this.position().add(0,.05,0),this.position().add(0,-.12,0));
+                if(support.getType()!=net.minecraft.world.phys.HitResult.Type.BLOCK){supportTopState=null;supportBottomState=null;this.entityData.set(STUCK,false);this.setOnGround(false);return;}
+            }
             this.setDeltaMovement(Vec3.ZERO);
-            if (!this.level().isClientSide && this.tickCount > 900) this.discard();
+
             return;
         }
-        this.setDeltaMovement(this.getDeltaMovement().add(0.0, -0.05, 0.0));
-        this.move(MoverType.SELF, this.getDeltaMovement());
+        this.setDeltaMovement(this.getDeltaMovement().add(0.0, -0.05*me.cryo.zombierool.gameplay.LunarPhysics.gravityAt(this), 0.0));
+        Vec3 before=position();
+        me.cryo.zombierool.util.GoreCollision.move(this, this.getDeltaMovement());
+        if(!level().isClientSide&&!onGround()){
+            jammedTicks=position().distanceToSqr(before)<1e-8?jammedTicks+1:0;
+            if(jammedTicks>=20){discard();return;}
+        }
         this.setDeltaMovement(this.getDeltaMovement().scale(0.98));
         if (!this.level().isClientSide && this.onGround()) {
             this.entityData.set(STUCK, true);
             this.setDeltaMovement(Vec3.ZERO);
-        } else if (!this.level().isClientSide && (this.tickCount > 80 || this.getY() < this.level().getMinBuildHeight() - 8)) {
+        } else if (!this.level().isClientSide && (this.getY() < this.level().getMinBuildHeight() - 8)) {
             this.discard();
         }
     }
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
+        debrisAge = tag.getInt("DebrisAge");
         this.entityData.set(KIND, tag.getByte("Kind"));
         this.entityData.set(SKIN, tag.getInt("Skin"));
         this.entityData.set(CUSTOM_SKIN, tag.getString("CustomSkin"));
@@ -124,6 +155,7 @@ public class GorePieceEntity extends Entity {
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
+        tag.putInt("DebrisAge", debrisAge);
         tag.putByte("Kind", this.getKind());
         tag.putInt("Skin", this.getSkinIndex());
         tag.putString("CustomSkin", this.getCustomSkin());
@@ -143,20 +175,28 @@ public class GorePieceEntity extends Entity {
     @OnlyIn(Dist.CLIENT)
     public static class GorePieceRenderer extends EntityRenderer<GorePieceEntity> {
         private final ModelPart root;
+        private final ModelPart bones;
+        private static final ResourceLocation BONE_TEXTURE=new ResourceLocation("zombierool","textures/entities/bone_gibs.png");
 
         public GorePieceRenderer(EntityRendererProvider.Context context) {
             super(context);
             this.root = context.bakeLayer(ZombieLimbModel.GIB_LAYER);
+            var mesh=new net.minecraft.client.model.geom.builders.MeshDefinition();var part=mesh.getRoot();
+            part.addOrReplaceChild("bone",net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0,0).addBox(-.75f,-4,-.75f,1.5f,8,1.5f).addBox(-1.25f,-4,-1.25f,2.5f,1,2.5f).addBox(-1.25f,3,-1.25f,2.5f,1,2.5f),net.minecraft.client.model.geom.PartPose.ZERO);
+            part.addOrReplaceChild("skull",net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0,16).addBox(-3,-3,-3,6,6,6),net.minecraft.client.model.geom.PartPose.ZERO);
+            part.addOrReplaceChild("rib",net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0,0).addBox(-3,-2,0,6,1,1).addBox(-3,0,0,6,1,1).addBox(-3,2,0,6,1,1).addBox(-.5f,-3,0,1,7,1),net.minecraft.client.model.geom.PartPose.ZERO);
+            bones=net.minecraft.client.model.geom.builders.LayerDefinition.create(mesh,64,64).bakeRoot();
         }
 
         @Override
         public void render(GorePieceEntity entity, float yaw, float partial, PoseStack pose, MultiBufferSource buffer, int light) {
             if (ZRClientConfig.isGoreReduced()) return;
-            if(me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()){
-                pose.pushPose();pose.translate(0,.10,0);pose.mulPose(Axis.YP.rotationDegrees((entity.tickCount+partial)*17));
+            buffer=me.cryo.zombierool.client.RemainsFade.buffers(buffer,entity,partial);
+            if(entity.getKind()<BONE&&me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()){
+                pose.pushPose();pose.translate(0,.10,0);pose.mulPose(Axis.YP.rotationDegrees(entity.isStuck()?entity.getYRot():(entity.tickCount+partial)*17));
                 me.cryo.zombierool.client.CandyModel.render(pose,buffer,entity.getId());pose.popPose();return;
             }
-            ModelPart part = this.root.getChild(partName(entity.getKind()));
+            ModelPart part = entity.getKind()>=BONE?bones.getChild(entity.getKind()==BONE_SKULL?"skull":entity.getKind()==BONE_RIB?"rib":"bone"):this.root.getChild(partName(entity.getKind()));
             pose.pushPose();
             float spin = (entity.tickCount + partial) * (entity.isStuck() ? 0.0F : 17.0F);
             pose.translate(0.0, entity.isStuck() ? 0.04 : 0.12, 0.0);
@@ -174,13 +214,16 @@ public class GorePieceEntity extends Entity {
 
         @Override
         public ResourceLocation getTextureLocation(GorePieceEntity entity) {
+            if(entity.getKind()>=BONE)return BONE_TEXTURE;
             if (entity.getKind() == MEAT) return FLESH;
             String custom = entity.getCustomSkin();
             if (custom != null && !custom.isEmpty()) {
                 ResourceLocation dyn = DynamicResourceManager.getClientSkin("zombie", custom);
                 if (dyn != null) return dyn;
             }
-            return ZombieRenderer.skin(entity.getSkinIndex());
+            ResourceLocation builtin = me.cryo.zombierool.config.EnemySkinPresets.texture(entity.getCustomSkin());
+        if (builtin != null) return builtin;
+        return ZombieRenderer.skin(entity.getSkinIndex());
         }
 
         private static String partName(byte kind) {

@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "zombierool:shield_car_door",
+    "zombierool:shield_hand_truck",
+    "zombierool:turbine_mannequin",
+    "zombierool:turbine_fan",
+    "zombierool:turbine_tail",
+    "zombierool:sentry_tripod",
+    "zombierool:sentry_receiver",
+    "zombierool:pap_frame",
+    "zombierool:pap_gears",
+    "zombierool:pap_sign"
+  ]
+}

@@ -12,9 +12,11 @@ import java.util.Map;
 
 public class CareerManager {
 
-    public enum ChallengeType { 
-        HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED, 
-        WEAPON_KILLS, WEAPON_HEADSHOTS 
+    public enum ChallengeType {
+        HEADSHOTS, KILLS, WAVES, REVIVES, GRENADE_KILLS, OBSTACLE_BOUGHT, PERK_BOUGHT, PAP_USED, MYSTERY_BOX_USED,
+        WEAPON_KILLS, WEAPON_HEADSHOTS,
+        SOULS_COLLECTED, CERBERUS_FED, OBJECTIVES_COMPLETED, TELEPORTER_USES,
+        FLASHED_ENEMIES, PHEROMONE_ENEMIES, EQUIPMENT_KILLS, WINTER_FROZEN, VRIL_CONVERSIONS, ZIPLINE_TRIPS
     }
 
     public static class ChallengeDef {
@@ -22,10 +24,10 @@ public class CareerManager {
         public int target;
         public int reward;
 
-        public ChallengeDef(ChallengeType type, int target, int reward) { 
-            this.type = type; 
-            this.target = target; 
-            this.reward = reward; 
+        public ChallengeDef(ChallengeType type, int target, int reward) {
+            this.type = type;
+            this.target = target;
+            this.reward = reward;
         }
     }
 
@@ -33,9 +35,9 @@ public class CareerManager {
         public String langKey;
         public int price;
 
-        public CamoDef(String langKey, int price) { 
-            this.langKey = langKey; 
-            this.price = price; 
+        public CamoDef(String langKey, int price) {
+            this.langKey = langKey;
+            this.price = price;
         }
     }
 
@@ -62,5 +64,8 @@ public class CareerManager {
 
     public static void progressChallenge(ServerPlayer player, ChallengeType type, int amount) {
         progressChallenge(player, type, amount, "");
+    }
+    public static void progressGameplay(ServerPlayer player,ChallengeType type,int amount){
+        if(player!=null&&amount>0&&me.cryo.zombierool.gameplay.WaveManager.isGameRunning()&&player.isAlive()&&!player.isCreative()&&!player.isSpectator())progressChallenge(player,type,amount);
     }
 }

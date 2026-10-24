@@ -36,6 +36,7 @@ public final class PackAPunchProjectiles {
             return;
         }
         float radius = def.explosion.radius + (isPap && def.pap != null ? def.pap.explosion_radius_bonus : 0);
+        if (radius <= 0) return;
         applyExplosive(
                 nbt,
                 radius,

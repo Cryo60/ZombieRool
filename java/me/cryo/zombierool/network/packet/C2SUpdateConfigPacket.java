@@ -39,11 +39,13 @@ public class C2SUpdateConfigPacket {
             String action = msg.data.getString("action");
 
             if (action.equals("save_all")) {
-                config.setDataVersion(1); 
+                config.setDataVersion(1);
                 config.loadEditable(msg.data);
-                
+                for(var target:level.players())me.cryo.zombierool.gameplay.DebugPlayerControls.sync(target);
+                me.cryo.zombierool.config.SpecialEnemyConfig.syncSpawners(level);
+
                 java.io.File worldDir = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).toFile();
-                
+
                 String mapId = config.getMapId();
                 if (mapId == null || mapId.trim().isEmpty() || mapId.equals("zr_")) {
                     String folderName = worldDir.getName();
@@ -81,7 +83,7 @@ public class C2SUpdateConfigPacket {
                     json.remove("resource_pack_name");
                     json.remove("spooky_ambience");
                     json.remove("force_halloween");
-                    json.remove("resource_pack"); // Suppression de la section RP 
+                    json.remove("resource_pack"); // Suppression de la section RP
 
                     try (java.io.FileWriter writer = new java.io.FileWriter(mapJson)) {
                         new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(json, writer);
@@ -105,6 +107,9 @@ public class C2SUpdateConfigPacket {
                 }
 
                 player.sendSystemMessage(Component.translatable("message.zombierool.config.saved").withStyle(ChatFormatting.GREEN));
+            } else if (action.equals("reset_enemies")) {
+                config.setSpecialEnemies(me.cryo.zombierool.config.SpecialEnemyConfig.defaults());
+                me.cryo.zombierool.config.SpecialEnemyConfig.syncSpawners(level);
             } else if (action.equals("reset_general")) {
                 config.resetGeneral();
                 NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new S2CSetEyeColorPacket(config.getEyeColorPreset()));

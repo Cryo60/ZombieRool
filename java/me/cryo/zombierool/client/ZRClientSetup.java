@@ -32,6 +32,7 @@ public class ZRClientSetup {
 	            ItemBlockRenderTypes.setRenderLayer(blockRegistryObject.get(), RenderType.cutout());
 	        }
 	        ItemBlockRenderTypes.setRenderLayer(ZRBlocks.DEFENSE_DOOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ZRBlocks.IRON_DEFENSE_DOOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ZRBlocks.GLASS_DEFENSE_DOOR.get(), RenderType.translucent());
 
 	        for (Item item : ZRRegistry.GUN_ITEMS) {
@@ -67,7 +68,11 @@ public class ZRClientSetup {
                         case "crawler" -> 0.1f;
                         case "hellhound" -> 0.2f;
                         case "player" -> 0.3f;
-                        default -> 0.0f; 
+                        case "panzer" -> 0.4f;
+                        case "brutus" -> 0.5f;
+                        case "napalm_minion" -> 0.6f;
+                        case "skeleton_minion" -> 0.7f;
+                        default -> 0.0f;
                     };
                 }
                 return 0.0f;

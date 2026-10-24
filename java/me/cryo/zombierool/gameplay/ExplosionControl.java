@@ -36,7 +36,7 @@ public class ExplosionControl {
         if (soundId != null && !soundId.isEmpty() && !soundId.equals("NONE")) {
             SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(soundId));
             if (sound != null) {
-                level.playSound(null, pos.x, pos.y, pos.z, sound, SoundSource.PLAYERS, 4.0f, (1.0F + (level.random.nextFloat() - level.random.nextFloat()) * 0.2F) * 0.7F);
+                level.playSound(null, pos.x, pos.y, pos.z, sound, SoundSource.PLAYERS, "RAYGUN_IMPACT".equals(vfxType)?1.0f:4.0f, "RAYGUN_IMPACT".equals(vfxType)?1.0f:(1.0F + (level.random.nextFloat() - level.random.nextFloat()) * 0.2F) * 0.7F);
             }
         }
 
@@ -53,11 +53,15 @@ public class ExplosionControl {
         DamageSource dmgSource = source instanceof Player ? level.damageSources().playerAttack((Player)source) : level.damageSources().generic();
 
         String ownerUuid = source instanceof Player p ? p.getUUID().toString() : "";
+        if(level instanceof ServerLevel server)PortableEquipment.blast(server,pos,radius);
         LuaScriptManager.callEvent("OnExplosion", ownerUuid, pos.x, pos.y, pos.z, (double)radius);
 
         if (source instanceof Player owner && owner.level() == level && owner.distanceToSqr(pos) <= radius * radius) {
             if (heldInHand) FixedPlayerDamage.heldGrenadeExplosion(owner);
-            else FixedPlayerDamage.selfExplosion(owner);
+            else if ("RAYGUN_IMPACT".equals(vfxType)) {
+                float falloff = (float)Math.max(0, 1 - owner.getBoundingBox().getCenter().distanceTo(pos) / radius);
+                FixedPlayerDamage.raygunSplash(owner, Math.min(selfDmgCap, baseDamage*selfDmgMult)*falloff);
+            } else FixedPlayerDamage.selfExplosion(owner);
         }
 
         for (Entity entity : entities) {
@@ -76,15 +80,16 @@ public class ExplosionControl {
                 float finalDamage = actualDamage;
                 if (entity instanceof LivingEntity le) {
                     finalDamage = actualDamage * 5.0f;
+                    if ("RAYGUN_IMPACT".equals(vfxType)) finalDamage *= (float)Math.max(0, 1-Math.sqrt(distSq)/radius);
                     le.getPersistentData().putBoolean("zombierool:explosive_damage", true);
-                    
+
                     if (kbStrength <= 0.0f) le.getPersistentData().putBoolean("zr_prevent_knockback", true);
                     me.cryo.zombierool.core.manager.DamageManager.applyDamage(le, dmgSource, finalDamage);
                     le.getPersistentData().remove("zr_prevent_knockback");
                 } else {
                     entity.hurt(dmgSource, finalDamage);
                 }
-                
+
                 entity.hurtMarked = true;
             }
         }
@@ -104,6 +109,7 @@ public class ExplosionControl {
         }
 
         String ownerUuid = source instanceof Player p ? p.getUUID().toString() : "";
+        if(level instanceof ServerLevel server)PortableEquipment.blast(server,pos,outerRadius);
         LuaScriptManager.callEvent("OnExplosion", ownerUuid, pos.x, pos.y, pos.z, (double)outerRadius);
 
         AABB area = new AABB(pos.x - outerRadius, pos.y - outerRadius, pos.z - outerRadius, pos.x + outerRadius, pos.y + outerRadius, pos.z + outerRadius);
@@ -119,7 +125,7 @@ public class ExplosionControl {
             if (distSq <= outerRadius * outerRadius) {
                 double dist = Math.sqrt(distSq);
                 boolean inInner = dist <= innerRadius;
-                
+
                 if (entity instanceof Player p) {
                     if (p.hasEffect(me.cryo.zombierool.init.ZombieroolModMobEffects.PERKS_EFFECT_PHD_FLOPPER.get())) {
                         continue;
@@ -132,7 +138,7 @@ public class ExplosionControl {
                 if (entity instanceof LivingEntity le) {
                     le.getPersistentData().putBoolean("zombierool:explosive_damage", true);
                     me.cryo.zombierool.core.manager.DamageManager.applyDamage(le, dmgSource, finalDamage);
-                    
+
                     if (!inInner && le.isAlive() && le instanceof ZombieEntity zombie && !zombie.isCrawler()) {
                         if (level.random.nextFloat() < 0.85f) {
                             zombie.makeCrawler();

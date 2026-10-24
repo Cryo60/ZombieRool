@@ -9,7 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import java.util.UUID;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.effect.MobEffectInstance; 
+import net.minecraft.world.effect.MobEffectInstance;
 import me.cryo.zombierool.entity.WhiteKnightEntity;
 import me.cryo.zombierool.init.ZombieroolModEntities;
 public class PerksEffectRoyalBeerMobEffect extends MobEffect {
@@ -27,7 +27,7 @@ public class PerksEffectRoyalBeerMobEffect extends MobEffect {
     }
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
-        return true; 
+        return true;
     }
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
@@ -38,12 +38,13 @@ public class PerksEffectRoyalBeerMobEffect extends MobEffect {
         CompoundTag persistentData = entity.getPersistentData();
         if (!entity.isAlive() || !entity.hasEffect(this)) {
             handleWhiteKnightRemoval(serverLevel, persistentData);
-            if (entity.hasEffect(this)) { 
+            if (entity.hasEffect(this)) {
                  entity.removeEffect(this);
             }
-            return; 
+            return;
         }
         if (!persistentData.contains(WHITE_KNIGHT_UUID_TAG)) {
+            if(serverLevel.getGameTime()<persistentData.getLong("zr_royal_next_spawn"))return;
             WhiteKnightEntity whiteKnight = ZombieroolModEntities.WHITE_KNIGHT.get().create(serverLevel);
             if (whiteKnight != null) {
                 whiteKnight.setPos(entity.getX(), entity.getY() + 0.5, entity.getZ());
@@ -52,8 +53,9 @@ public class PerksEffectRoyalBeerMobEffect extends MobEffect {
                 whiteKnight.setPersistenceRequired();
                 whiteKnight.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(whiteKnight.blockPosition()),
                         MobSpawnType.MOB_SUMMONED, null, null);
-                serverLevel.addFreshEntity(whiteKnight);
-                persistentData.putString(WHITE_KNIGHT_UUID_TAG, whiteKnight.getUUID().toString());
+                if(serverLevel.addFreshEntity(whiteKnight)){
+                    persistentData.putString(WHITE_KNIGHT_UUID_TAG, whiteKnight.getUUID().toString());persistentData.remove("zr_royal_next_spawn");
+                }else persistentData.putLong("zr_royal_next_spawn",serverLevel.getGameTime()+20);
             }
         } else {
             UUID whiteKnightUUID = UUID.fromString(persistentData.getString(WHITE_KNIGHT_UUID_TAG));
@@ -71,9 +73,9 @@ public class PerksEffectRoyalBeerMobEffect extends MobEffect {
             UUID whiteKnightUUID = UUID.fromString(persistentData.getString(WHITE_KNIGHT_UUID_TAG));
             Entity whiteKnight = serverLevel.getEntity(whiteKnightUUID);
             if (whiteKnight instanceof WhiteKnightEntity) {
-                whiteKnight.discard(); 
+                whiteKnight.discard();
             }
-            persistentData.remove(WHITE_KNIGHT_UUID_TAG); 
+            persistentData.remove(WHITE_KNIGHT_UUID_TAG);
         }
     }
 }

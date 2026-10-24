@@ -18,6 +18,9 @@ import me.cryo.zombierool.core.manager.DynamicResourceManager;
 
 public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombieArmsFront<ZombieEntity>> {
 
+    private final java.util.Map<String,BlockyEnemyRenderer<ZombieEntity>> sourceModels=new java.util.HashMap<>();
+    private final java.util.Map<String,BlockyEnemyRenderer<ZombieEntity>> mapOutfits=new java.util.LinkedHashMap<>();
+    private final EntityRendererProvider.Context rendererContext;
     private static final ResourceLocation[] ZOMBIE_SKINS = {
         new ResourceLocation("zombierool", "textures/entities/zombie_32_0.png"),
         new ResourceLocation("zombierool", "textures/entities/zombie_32_1.png"),
@@ -27,11 +30,14 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     };
 
     private static final ResourceLocation EYE_TEXTURE_DEFAULT = new ResourceLocation("zombierool", "textures/entities/zombie_e_32.png");
-    private static ResourceLocation currentEyeTexture = EYE_TEXTURE_DEFAULT; 
+    private static ResourceLocation currentEyeTexture = EYE_TEXTURE_DEFAULT;
+    private static String currentEyePreset = "default";
 
     public ZombieRenderer(EntityRendererProvider.Context context) {
         super(context, new ModelZombieArmsFront<>(context.bakeLayer(ZombieLimbModel.LAYER)), 0.5f);
-        
+        rendererContext=context;
+
+        for(String kind:java.util.List.of("scourge_ghoul","scourge_zombie","scourge_skeleton"))sourceModels.put(kind,new BlockyEnemyRenderer<>(context,kind));
         this.addLayer(new HumanoidArmorLayer<>(
             this,
             new ModelZombieArmsFront<>(context.bakeLayer(ModelLayers.ZOMBIE_INNER_ARMOR)),
@@ -44,17 +50,20 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             public RenderType renderType() {
                 return RenderType.eyes(currentEyeTexture);
             }
-            
+
             @Override
             public void render(PoseStack pMatrixStack, MultiBufferSource pBuffer, int pPackedLight, ZombieEntity pLivingEntity, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
                 if (!pLivingEntity.isAlive() || pLivingEntity.deathTime > 0) return;
                 ResourceLocation customEye = DynamicResourceManager.getClientSkin("zombie_eyes", pLivingEntity.getEyeSkinId());
-                RenderType renderType = customEye != null ? RenderType.eyes(customEye) : RenderType.eyes(currentEyeTexture);
+                boolean builtin = me.cryo.zombierool.config.EnemySkinPresets.texture(pLivingEntity.getCustomSkin()) != null;
+                ResourceLocation eyes = builtin ? new ResourceLocation("zombierool", "textures/entities/presets/eyes_" + currentEyePreset + ".png") : currentEyeTexture;
+                RenderType renderType = RenderType.eyes(customEye != null ? customEye : eyes);
                 com.mojang.blaze3d.vertex.VertexConsumer vertexconsumer = pBuffer.getBuffer(renderType);
                 this.getParentModel().renderToBuffer(pMatrixStack, vertexconsumer, 15728640, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
             }
         });
-        
+
+        this.addLayer(new ZombiePresetGearLayer(this));
         this.addLayer(new EmissivePumpkinHeadLayer<>(this));
         this.addLayer(new GoreWoundLayer(this));
         this.addLayer(new CharredLayer(this));
@@ -66,6 +75,7 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
 
     @Override
     protected void scale(ZombieEntity entity, PoseStack poseStack, float partialTickTime) {
+        if(entity.isAlive()&&entity.getEmergenceTicks()>0)poseStack.translate(0,entity.getBbHeight()*Math.max(0,(entity.getEmergenceTicks()-partialTickTime)/(double)me.cryo.zombierool.gameplay.SpawnEmergence.DURATION),0);
         float s = entity.getScale();
         if (s != 1.0f) {
             poseStack.scale(s, s, s);
@@ -79,12 +89,18 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
             ResourceLocation dyn = DynamicResourceManager.getClientSkin("zombie", customSkin);
             if (dyn != null) return dyn;
         }
+        ResourceLocation builtin = me.cryo.zombierool.config.EnemySkinPresets.texture(entity.getCustomSkin());
+        if (builtin != null) return builtin;
         return skin(entity.getId());
     }
 
     @Override
     public void render(ZombieEntity entity, float yaw, float partialTicks, PoseStack matrixStack,
                        MultiBufferSource buffer, int packedLight) {
+        String source=me.cryo.zombierool.config.EnemySkinPresets.blockyModel(entity.getCustomSkin());
+        if(!entity.mapOutfit().getList("armorBoxes",10).isEmpty()&&!source.isBlank()){if(mapOutfits.size()>48)mapOutfits.clear();String key=source+entity.mapOutfit().getList("armorBoxes",10);var renderer=mapOutfits.computeIfAbsent(key,k->new BlockyEnemyRenderer<>(rendererContext,source,entity.mapOutfit()));renderer.render(entity,yaw,partialTicks,matrixStack,buffer,packedLight);return;}
+        if(!source.isBlank()&&sourceModels.containsKey(source)){sourceModels.get(source).render(entity,yaw,partialTicks,matrixStack,buffer,packedLight);return;}
+        buffer=CerberusCorpsePose.eatingBuffer(entity,matrixStack,partialTicks,buffer);
         this.shadowRadius = entity.deathTime > 0 || !entity.isAlive() ? 0.0F : 0.5F;
         if (entity.isDeadOrDying() && entity.isHeadshotDeath() && !ZRClientConfig.isGoreReduced()) {
             boolean headVisible = this.model.head.visible;
@@ -100,7 +116,13 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     }
 
     @Override
+    public net.minecraft.world.phys.Vec3 getRenderOffset(ZombieEntity entity,float partial){return super.getRenderOffset(entity,partial).add(CerberusCorpsePose.offset(entity,partial));}
+    @Override
     protected void setupRotations(ZombieEntity entity, PoseStack pose, float ageInTicks, float rotationYaw, float partialTick) {
+        if(entity.isCerberusFeeding()){
+            CerberusCorpsePose.rotate(entity,pose,partialTick);
+            return;
+        }
         if (entity.deathTime > 0 && !ZRClientConfig.isGoreReduced()) {
             me.cryo.zombierool.client.ZombieRagdoll.Pose ragdoll = me.cryo.zombierool.client.ZombieRagdoll.get(entity);
             float t = ragdoll == null ? 1.0F : ragdoll.settle;
@@ -114,7 +136,9 @@ public class ZombieRenderer extends HumanoidMobRenderer<ZombieEntity, ModelZombi
     }
 
     public static void setEyeTexture(String preset) {
-        switch (preset.toLowerCase()) {
+        String normalized = preset == null ? "default" : preset.toLowerCase(java.util.Locale.ROOT);
+        currentEyePreset = java.util.Set.of("red", "blue", "green").contains(normalized) ? normalized : "default";
+        switch (normalized) {
             case "red":
                 currentEyeTexture = new ResourceLocation("zombierool", "textures/entities/zombie_e_32_red.png");
                 break;

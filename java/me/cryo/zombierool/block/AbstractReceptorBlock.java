@@ -16,9 +16,12 @@ import net.minecraft.ChatFormatting;
 import java.util.Collections;
 import java.util.List;
 
-public class AbstractReceptorBlock extends Block {
+public class AbstractReceptorBlock extends SignalTechnicalBlock {
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty POWERED=net.minecraft.world.level.block.state.properties.BlockStateProperties.POWERED;
+    @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block,BlockState> builder){super.createBlockStateDefinition(builder);builder.add(POWERED);}
     private final String channelName;
     private final String tooltipName;
+    public String signalChannel(){return channelName;}
 
     public AbstractReceptorBlock(SignalChannel channel) {
         this(channel.id(), channel.displayName());
@@ -32,20 +35,18 @@ public class AbstractReceptorBlock extends Block {
             .noOcclusion());
         this.channelName = channelName;
         this.tooltipName = tooltipName;
+        registerDefaultState(defaultBlockState().setValue(POWERED,false));
     }
 
     @Override
-    public void appendHoverText(ItemStack itemstack, BlockGetter world, List<Component> list, TooltipFlag flag) {
-        super.appendHoverText(itemstack, world, list, flag);
+    protected void addTechnicalTooltip(List<Component> list) {
         list.add(Component.translatable("block.zombierool.receptor.generic.tooltip.1", tooltipName).withStyle(ChatFormatting.BLUE));
         list.add(Component.translatable("block.zombierool.receptor.generic.tooltip.2", tooltipName).withStyle(ChatFormatting.GRAY));
         list.add(Component.translatable("block.zombierool.receptor.generic.tooltip.3").withStyle(ChatFormatting.GRAY));
     }
 
     @Override
-    public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {
-        return 15;
-    }
+    public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return getSignal(state, level, pos, direction); }
 
     @Override
     public boolean isSignalSource(BlockState state) {
@@ -54,10 +55,7 @@ public class AbstractReceptorBlock extends Block {
 
     @Override
     public int getSignal(BlockState state, BlockGetter world, BlockPos pos, Direction direction) {
-        if (world instanceof Level level) {
-            return MultiReceptorState.isActivated(level, channelName) ? 15 : 0;
-        }
-        return 0;
+        return state.getValue(POWERED)?15:0;
     }
 
     @Override
@@ -72,15 +70,15 @@ public class AbstractReceptorBlock extends Block {
 
     @Override
     public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean isMoving) {
-        if (!world.isClientSide) {
+        if (!world.isClientSide && state.getBlock()!=oldState.getBlock()) {
             MultiReceptorState.registerReceptor(world, channelName, pos);
-            world.updateNeighborsAt(pos, this);
+            MultiReceptorState.notifyReceptors(world,channelName);
         }
     }
 
     @Override
     public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!world.isClientSide) {
+        if (!world.isClientSide && state.getBlock() != newState.getBlock()) {
             MultiReceptorState.unregisterReceptor(world, channelName, pos);
             world.updateNeighborsAt(pos, this);
         }

@@ -238,11 +238,11 @@ public class PlasmaPistolItem extends WeaponSystem.BaseGunItem implements IHandg
         boolean upgraded = isPackAPunched(stack);
         String nameKey = upgraded && currentDef.pap != null && currentDef.pap.name != null && !currentDef.pap.name.isEmpty() ? currentDef.pap.name : currentDef.name;
         if (nameKey == null) nameKey = "Unknown Weapon";
-        
-        MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ? 
+
+        MutableComponent baseComp = (nameKey.startsWith("weapon.") || nameKey.startsWith("item.") || nameKey.contains("zombierool.")) ?
                 Component.translatable(nameKey) : Component.literal(nameKey);
-        MutableComponent nameComponent = Component.literal((upgraded ? "§d" : "§2")).append(baseComp);
-        
+        MutableComponent nameComponent = Component.empty().append(baseComp).withStyle(upgraded?ChatFormatting.LIGHT_PURPLE:ChatFormatting.DARK_GREEN);
+
         int currentOverheat = getOverheat(stack);
         if (isOverheatLocked(stack)) {
             nameComponent.append(Component.literal(" ").append(Component.translatable("message.zombierool.weapon.overheated").withStyle(ChatFormatting.DARK_RED)));

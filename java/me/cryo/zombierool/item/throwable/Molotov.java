@@ -57,14 +57,15 @@ public class Molotov {
         private void explode() {
             ServerLevel sl = (ServerLevel) this.level();
             Vec3 pos = this.position();
-            
+
             SoundEvent sound = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "molotov_explode"));
             if (sound != null) {
                 sl.playSound(null, pos.x, pos.y, pos.z, sound, SoundSource.PLAYERS, 1.0f, 1.0f);
             }
-            
+
+            me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.NEAR.with(()->new net.minecraftforge.network.PacketDistributor.TargetPoint(pos.x,pos.y,pos.z,64,sl.dimension())),new me.cryo.zombierool.network.packet.S2CWeaponVfxPacket("FIRE_BURST",pos,pos,false,false));
             float patchDamage = 3.5f;
-            
+
             VirtualFireManager.addFirePatch(sl, pos, this.getOwner() != null ? this.getOwner().getUUID() : null, patchDamage, 140, false);
             VirtualFireManager.addFirePatch(sl, pos.add(1, 0, 0), this.getOwner() != null ? this.getOwner().getUUID() : null, patchDamage, 140, false);
             VirtualFireManager.addFirePatch(sl, pos.add(-1, 0, 0), this.getOwner() != null ? this.getOwner().getUUID() : null, patchDamage, 140, false);

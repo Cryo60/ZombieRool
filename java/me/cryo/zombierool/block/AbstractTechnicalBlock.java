@@ -19,7 +19,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
-public abstract class AbstractTechnicalBlock extends Block {
+public abstract class AbstractTechnicalBlock extends Block implements me.cryo.zombierool.block.WaterloggedElement {
     public AbstractTechnicalBlock(Properties properties) {
         super(properties);
     }

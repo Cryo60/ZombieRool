@@ -56,7 +56,7 @@ public class MeleeAttackHandler {
 
 	private static final ConcurrentHashMap<java.util.UUID, Long> COOLDOWN_MAP = new ConcurrentHashMap<>();
 	private static final int COOLDOWN_TICKS = 20;
-	private static final double ATTACK_RANGE = 3.0; 
+	private static final double ATTACK_RANGE = 3.0;
 
 	@SubscribeEvent
 	public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -81,7 +81,7 @@ public class MeleeAttackHandler {
             } else if (DefenseWallSystem.bulletsPass(state)) {
                 passThrough = true;
             }
-            
+
             if (passThrough) {
                 Vec3 dir = end.subtract(start).normalize();
                 Vec3 newStart = Vec3.atCenterOf(result.getBlockPos()).add(dir.scale(0.9));
@@ -94,6 +94,8 @@ public class MeleeAttackHandler {
     }
 
 	public static void performMeleeAttack(Player player) {
+        if(me.cryo.zombierool.gameplay.PortableEquipment.inHands(player)){me.cryo.zombierool.gameplay.PortableEquipment.bashHeld(player);return;}
+        if((me.cryo.zombierool.gameplay.TeleporterPlayerLock.active(player)||me.cryo.zombierool.gameplay.LunarEquipment.busy(player)))return;
 	    if (player.level().isClientSide()) {
 	        return;
 	    }
@@ -148,15 +150,15 @@ public class MeleeAttackHandler {
             targetEntity.getPersistentData().remove(DamageManager.HEADSHOT_TAG);
             targetEntity.getPersistentData().remove("zombierool:explosive_damage");
             targetEntity.getPersistentData().putBoolean("zombierool:no_gore", true);
-            
+
             boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
             float multiplier = hasBowie ? 3.0f : 1.0f;
-	        float finalDamage = 6.0f * multiplier;
-            if (BonusManager.isInstaKillActive(player)) {
+	        float finalDamage = me.cryo.zombierool.gameplay.MapKnifeRules.damage(targetEntity,6.0f * multiplier);
+            if (BonusManager.isInstaKillActive(player)&&!me.cryo.zombierool.gameplay.EquipmentEffects.instantKillImmune(targetEntity)) {
                 finalDamage = 100000f;
             }
 
-	        if (DamageManager.applyDamage(targetEntity, player.damageSources().mobAttack(player), finalDamage)) {
+	        if (me.cryo.zombierool.gameplay.MapKnifeRules.apply(targetEntity, player.damageSources().mobAttack(player), finalDamage)) {
                 me.cryo.zombierool.core.manager.GoreManager.onHit(targetEntity, false);
             }
             if (targetEntity.isAlive()) {
@@ -180,7 +182,7 @@ public class MeleeAttackHandler {
                 BlockPos bPos = blockHit.getBlockPos();
                 strikePos = new Vec3(bPos.getX(), bPos.getY(), bPos.getZ());
                 shared = tryCutShare(player, level, bPos);
-                
+
                 if (!(state.getBlock() instanceof DefenseDoorSystem.BaseDefenseDoor) && !(state.getBlock() instanceof me.cryo.zombierool.block.system.ObstacleDoorSystem.ObstacleDoorBlock)) {
                     boolean hasBowie = player.getPersistentData().getBoolean("zr_has_bowie_knife");
                     ResourceLocation missSound = hasBowie ? new ResourceLocation("zombierool", "bowie_stab") : KNIFE_HIT_MISC_MATERIAL_SOUND;
@@ -197,7 +199,7 @@ public class MeleeAttackHandler {
 	        PlayerVoiceManager.playMeleeAttackSound(player, level);
 	        COOLDOWN_MAP.put(player.getUUID(), currentTime);
 	    }
-        
+
         LuaScriptManager.callEvent("OnMeleeStrike", player.getUUID().toString(), strikePos.x, strikePos.y, strikePos.z);
 	}
 

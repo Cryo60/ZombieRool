@@ -1,0 +1,8 @@
+{
+  "template": "abomination",
+  "name": "entity.zombierool.abomination",
+  "texture": "zombierool:textures/entities/encounters/abomination.png",
+  "health": 850,
+  "speed": 0.19,
+  "damage": 3
+}

@@ -48,12 +48,28 @@ import java.util.EnumSet;
 
 public class WhiteKnightEntity extends TamableAnimal {
     private static final EntityDataAccessor<Boolean> SPAWNED_BY_PLAYER = SynchedEntityData.defineId(WhiteKnightEntity.class, EntityDataSerializers.BOOLEAN);
-    
+
+    private static final EntityDataAccessor<Integer> SPECTRAL_SWING=SynchedEntityData.defineId(WhiteKnightEntity.class,EntityDataSerializers.INT);
+    public int getSpectralSwing(){return entityData.get(SPECTRAL_SWING);}
+    private int clientSwingStarted=-100;
+    @Override public void onSyncedDataUpdated(EntityDataAccessor<?> key){
+        super.onSyncedDataUpdated(key);
+        if(SPECTRAL_SWING.equals(key)&&level().isClientSide){
+            int remaining=getSpectralSwing();
+            if(remaining>0&&tickCount-clientSwingStarted>=18)clientSwingStarted=tickCount-(18-remaining);
+        }
+    }
+    public float spectralSwing(float partial){
+        return level().isClientSide?Math.max(0,18-(tickCount-clientSwingStarted+partial)):Math.max(0,getSpectralSwing()-partial);
+    }
+    private int dashCooldown,dashTicks;
+    private static final java.util.UUID DASH=java.util.UUID.fromString("e4b9284b-21d5-4a67-9cba-076457418879");
+    private LivingEntity sweepTarget;
     private int sweepAttackCooldown = 0;
     private static final int SWEEP_COOLDOWN_TICKS = 60;
-    
-    public static final double AGGRO_RADIUS = 24.0D; 
-    public static final double OWNER_PROTECTION_RADIUS = 8.0D; 
+
+    public static final double AGGRO_RADIUS = 24.0D;
+    public static final double OWNER_PROTECTION_RADIUS = 8.0D;
 
     public WhiteKnightEntity(PlayMessages.SpawnEntity packet, Level world) {
         this(ZombieroolModEntities.WHITE_KNIGHT.get(), world);
@@ -85,6 +101,7 @@ public class WhiteKnightEntity extends TamableAnimal {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(SPAWNED_BY_PLAYER, false);
+        this.entityData.define(SPECTRAL_SWING,0);
     }
 
     public boolean isSpawnedByPlayer() {
@@ -115,16 +132,14 @@ public class WhiteKnightEntity extends TamableAnimal {
         this.goalSelector.removeAllGoals(goal -> true);
         this.targetSelector.removeAllGoals(goal -> true);
 
-        this.goalSelector.addGoal(1, new DefensiveMeleeGoal(this, 1.3D)); 
-        this.goalSelector.addGoal(2, new SmartFollowOwnerGoal(this, 1.2D, 8.0F, 3.0F)); 
-        
+        this.goalSelector.addGoal(1, new DefensiveMeleeGoal(this, 1.3D));
+        this.goalSelector.addGoal(2, new SmartFollowOwnerGoal(this, 1.2D, 8.0F, 3.0F));
+
         this.goalSelector.addGoal(3, new FloatGoal(this));
         this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
 
-        this.targetSelector.addGoal(1, new LineOfSightTargetGoal<>(this, ZombieEntity.class, 10, true, false));
-        this.targetSelector.addGoal(2, new LineOfSightTargetGoal<>(this, CrawlerEntity.class, 10, true, false));
-        this.targetSelector.addGoal(3, new LineOfSightTargetGoal<>(this, HellhoundEntity.class, 10, true, false));
+        this.targetSelector.addGoal(1,new me.cryo.zombierool.gameplay.SpectralGuardianGoal(this));
     }
 
     @Override
@@ -150,11 +165,16 @@ public class WhiteKnightEntity extends TamableAnimal {
         if (source.getEntity() instanceof Player || (source.getDirectEntity() instanceof AbstractArrow && ((AbstractArrow) source.getDirectEntity()).getOwner() instanceof Player)) {
             return false;
         }
+        if(isTame()&&source.getEntity() instanceof AbstractZombieRoolEntity attacker&&getSpectralSwing()==0){
+            var toward=attacker.position().subtract(position()).normalize();
+            if(getLookAngle().dot(toward)>.25)amount*=.45f;
+        }
         return super.hurt(source, amount);
     }
 
     @Override
     public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
+        if(!level().isClientSide&&getSpectralSwing()==0)entityData.set(SPECTRAL_SWING,18);
         boolean result = super.doHurtTarget(target);
         if (result && !this.level().isClientSide() && this.isTame()) {
             LivingEntity owner = this.getOwner();
@@ -163,9 +183,9 @@ public class WhiteKnightEntity extends TamableAnimal {
                                       target instanceof CrawlerEntity ||
                                       target instanceof HellhoundEntity;
                 if (isCustomMob) {
-                    PointManager.modifyScore(player, 10);
+                    PointManager.awardEnemyPoints(player, livingTarget, 10);
                     if (!livingTarget.isAlive()) {
-                        PointManager.modifyScore(player, 50);
+                        PointManager.awardEnemyPoints(player, livingTarget, 50);
                     }
                 }
             }
@@ -197,7 +217,7 @@ public class WhiteKnightEntity extends TamableAnimal {
                 this.usePlayerItem(sourceentity, hand, itemstack);
                 this.heal(4);
                 return InteractionResult.sidedSuccess(this.level().isClientSide());
-            } 
+            }
         }
 
         return super.mobInteract(sourceentity, hand);
@@ -222,16 +242,16 @@ public class WhiteKnightEntity extends TamableAnimal {
     public void onAddedToWorld() {
         super.onAddedToWorld();
         this.applyFixedAttributes();
-        this.registerGoals(); 
+        this.registerGoals();
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         AttributeSupplier.Builder builder = Mob.createMobAttributes();
-        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.23); 
+        builder = builder.add(Attributes.MOVEMENT_SPEED, 0.23);
         builder = builder.add(Attributes.MAX_HEALTH, 30);
         builder = builder.add(Attributes.ARMOR, 10);
         builder = builder.add(Attributes.ATTACK_DAMAGE, 3.5);
-        builder = builder.add(Attributes.FOLLOW_RANGE, 24); 
+        builder = builder.add(Attributes.FOLLOW_RANGE, 24);
         builder = builder.add(Attributes.KNOCKBACK_RESISTANCE, 1);
         return builder;
     }
@@ -240,6 +260,18 @@ public class WhiteKnightEntity extends TamableAnimal {
     public void tick() {
         super.tick();
         if(me.cryo.zombierool.gameplay.FiestaFreeze.frozen(this))return;
+        if(!level().isClientSide){
+            int swing=entityData.get(SPECTRAL_SWING);if(swing>0)entityData.set(SPECTRAL_SWING,swing-1);
+            if(sweepTarget!=null&&swing==10){executeSweep(sweepTarget);sweepTarget=null;}
+            if(dashCooldown>0)dashCooldown--;
+            var speed=getAttribute(Attributes.MOVEMENT_SPEED);
+            if(dashTicks>0&&--dashTicks==0&&speed!=null)speed.removeModifier(DASH);
+            var target=getTarget();
+            if(isTame()&&target!=null&&target.isAlive()&&dashCooldown==0&&distanceToSqr(target)>16&&distanceToSqr(target)<144&&hasLineOfSight(target)&&onGround()&&speed!=null){
+                speed.removeModifier(DASH);speed.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(DASH,"Spectral charge",.7,net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL));dashTicks=12;dashCooldown=80;
+            }
+            if(tickCount%6==0&&level() instanceof net.minecraft.server.level.ServerLevel server)server.sendParticles(ParticleTypes.SOUL,getX(),getY()+1,getZ(),1,.2,.5,.2,.005);
+        }
         if (this.sweepAttackCooldown > 0) {
             this.sweepAttackCooldown--;
         }
@@ -261,6 +293,10 @@ public class WhiteKnightEntity extends TamableAnimal {
             return;
         }
 
+        this.entityData.set(SPECTRAL_SWING,18);sweepTarget=target;sweepAttackCooldown=SWEEP_COOLDOWN_TICKS;
+    }
+    private void executeSweep(LivingEntity target){
+        if(!isAlive())return;
         this.level().broadcastEntityEvent(this, (byte) 29);
 
         double sweepRange = 2.0;
@@ -268,7 +304,7 @@ public class WhiteKnightEntity extends TamableAnimal {
         List<LivingEntity> targetsInSweep = this.level().getEntitiesOfClass(LivingEntity.class, sweepArea, (entity) -> {
             return entity != this &&
                    (this.getOwner() == null || entity != this.getOwner()) &&
-                   !(entity instanceof Player) &&
+                   entity instanceof AbstractZombieRoolEntity &&
                    this.distanceToSqr(entity) < (sweepRange * sweepRange * 1.5) &&
                    !this.isAlliedTo(entity);
         });
@@ -351,7 +387,7 @@ public class WhiteKnightEntity extends TamableAnimal {
                 return;
             }
 
-            if (pathRecalcTick++ >= 15) { 
+            if (pathRecalcTick++ >= 15) {
                 pathRecalcTick = 0;
                 this.knight.getNavigation().moveTo(target, 1.3D);
             }
@@ -359,21 +395,21 @@ public class WhiteKnightEntity extends TamableAnimal {
             if (this.knight.distanceToSqr(target) < (this.getAttackReachSqr(target) * 2.0) && this.knight.sweepAttackCooldown == 0) {
                 AABB checkArea = this.knight.getBoundingBox().inflate(2.0D);
                 List<LivingEntity> nearbyHostiles = this.knight.level().getEntitiesOfClass(LivingEntity.class, checkArea, (e) -> {
-                    return e != this.knight && 
-                           (this.knight.getOwner() == null || e != this.knight.getOwner()) && 
-                           this.knight.hasLineOfSight(e) && 
+                    return e != this.knight &&
+                           (this.knight.getOwner() == null || e != this.knight.getOwner()) &&
+                           this.knight.hasLineOfSight(e) &&
                            this.isHostile(e.getType());
                 });
 
-                if (nearbyHostiles.size() >= 3) { 
+                if (nearbyHostiles.size() >= 3) {
                     this.knight.performSweepAttack(target);
                 }
             }
         }
 
         private boolean isHostile(EntityType<?> type) {
-            return type == ZombieroolModEntities.ZOMBIE.get() || 
-                   type == ZombieroolModEntities.CRAWLER.get() || 
+            return type == ZombieroolModEntities.ZOMBIE.get() ||
+                   type == ZombieroolModEntities.CRAWLER.get() ||
                    type == ZombieroolModEntities.HELLHOUND.get();
         }
     }

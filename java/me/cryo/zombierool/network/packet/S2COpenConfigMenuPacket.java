@@ -8,6 +8,7 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 public class S2COpenConfigMenuPacket {
+    public static void addLootTables(CompoundTag tag,net.minecraft.server.level.ServerLevel level){tag.put("mapConfigDefaults",new me.cryo.zombierool.config.WorldConfig().save(new CompoundTag()));var list=new net.minecraft.nbt.ListTag();for(String id:me.cryo.zombierool.gameplay.MiniBossLoot.tables(level))list.add(net.minecraft.nbt.StringTag.valueOf(id));tag.put("availableBossLootTables",list);tag.put("mapConfigSchemas",me.cryo.zombierool.config.MapConfigExtensions.schemas());tag.put("bossDefinitions",me.cryo.zombierool.config.MiniBossDefinitions.snapshot());}
     public final CompoundTag configData;
     public final boolean isGameRunning;
     public final int currentWave;
@@ -37,6 +38,7 @@ public class S2COpenConfigMenuPacket {
 
     private static final class ClientHandler {
         private static void apply(S2COpenConfigMenuPacket msg) {
+            me.cryo.zombierool.config.MiniBossDefinitions.receive(msg.configData.getCompound("bossDefinitions"));
             net.minecraft.client.Minecraft.getInstance().setScreen(new me.cryo.zombierool.client.gui.WorldConfigMenuScreen(msg));
         }
     }

@@ -1,0 +1,101 @@
+{
+  "sourceGames": "Local T4/T5 installations; original geometry/diffuse converted offline",
+  "entries": [
+    {
+      "id": "tank_legacy_normal",
+      "source": "vehicle_rus_tracked_t34_wet_lod1.xmodel_export",
+      "faces": 4155,
+      "bytes": 317081
+    },
+    {
+      "id": "tank_legacy_broken",
+      "source": "vehicle_rus_tracked_t34_dmg_wet_lod1.xmodel_export",
+      "faces": 4919,
+      "bytes": 374866
+    },
+    {
+      "id": "tank_modern_normal",
+      "source": "t5_veh_tank_t55_lod1.xmodel_export",
+      "faces": 7351,
+      "bytes": 564108
+    },
+    {
+      "id": "tank_modern_broken",
+      "source": "t5_veh_tank_t55_dead_lod1.xmodel_export",
+      "faces": 7608,
+      "bytes": 582041
+    },
+    {
+      "id": "truck_legacy_normal",
+      "source": "vehicle_jap_wheeled_type94_lod1.xmodel_export",
+      "faces": 3322,
+      "bytes": 251950
+    },
+    {
+      "id": "truck_legacy_broken",
+      "source": "vehicle_jap_wheeled_type94_dmg_lod1.xmodel_export",
+      "faces": 3376,
+      "bytes": 255982
+    },
+    {
+      "id": "truck_modern_normal",
+      "source": "t5_veh_truck_gaz63_lod1.xmodel_export",
+      "faces": 2098,
+      "bytes": 157880
+    },
+    {
+      "id": "truck_modern_broken",
+      "source": "t5_veh_truck_gaz63_dead_lod1.xmodel_export",
+      "faces": 2137,
+      "bytes": 160908
+    },
+    {
+      "id": "plane_legacy_normal",
+      "source": "vehicle_usa_aircraft_f4ucorsair_dist_lod0.xmodel_export",
+      "faces": 3424,
+      "bytes": 224609
+    },
+    {
+      "id": "plane_legacy_broken",
+      "source": "vehicle_usa_aircraft_f4ucorsair_dist_lod0.xmodel_export",
+      "faces": 3407,
+      "bytes": 221423
+    },
+    {
+      "id": "plane_modern_normal",
+      "source": "t5_veh_jet_mig17_gear_lod1.xmodel_export",
+      "faces": 3330,
+      "bytes": 219409
+    },
+    {
+      "id": "plane_modern_broken",
+      "source": "t5_veh_jet_mig17_gear_lod1.xmodel_export",
+      "faces": 2967,
+      "bytes": 195210
+    },
+    {
+      "id": "helicopter_modern_normal",
+      "source": "t5_veh_helo_huey_usmc_lod1.xmodel_export",
+      "faces": 3904,
+      "bytes": 255266
+    },
+    {
+      "id": "helicopter_modern_broken",
+      "source": "t5_veh_helo_huey_usmc_lod1.xmodel_export",
+      "faces": 3805,
+      "bytes": 248369
+    },
+    {
+      "id": "dca_quad_normal",
+      "source": "vehicle_zpu4_lod1.xmodel_export",
+      "faces": 1618,
+      "bytes": 122268
+    },
+    {
+      "id": "dca_quad_broken",
+      "source": "vehicle_zpu4_burn_lod1.xmodel_export",
+      "faces": 1942,
+      "bytes": 145897
+    }
+  ]
+}

@@ -8,8 +8,8 @@
     "weapon.zombierool.raygun.lore.2"
   ],
   "stats": {
-    "damage": 40.0,
-    "fire_rate": 5,
+    "damage": 24.0,
+    "fire_rate": 7,
     "range": 100.0,
     "mobility": 1.0,
     "penetration": 0,
@@ -26,7 +26,7 @@
   "ballistics": {
     "count": 1,
     "spread": 0.1,
-    "velocity": 7.0,
+    "velocity": 2.6,
     "type": "PROJECTILE",
     "gravity": false,
     "trail_vfx": "RAYGUN",
@@ -37,17 +37,17 @@
     "delay": 0
   },
   "recoil": {
-    "pitch": 0.3,
+    "pitch": 0.85,
     "yaw": 0.1
   },
   "pack_a_punch": {
     "name": "weapon.zombierool.raygun.pap",
-    "damage_bonus": 15.0,
+    "damage_bonus": 12.0,
     "clip_bonus": 20,
     "reserve_bonus": 80,
     "reload_speed_mult": 0.8,
     "spread_mult": 1.0,
-    "recoil_mult": 0.8,
+    "recoil_mult": 0.85,
     "durability_bonus": 0,
     "explosion_radius_bonus": 0.5,
     "penetration_bonus": 0,
@@ -67,7 +67,7 @@
   },
   "sounds": {
     "fire": "zombierool:laser_fire",
-    "fire_pap": "zombierool:gun_fire_upgraded",
+    "fire_pap": "zombierool:laser_fire_upgraded",
     "reload": "zombierool:laser_reloading",
     "dry": "zombierool:rifle_dry",
     "equip": "zombierool:weapon_in_hand",
@@ -79,13 +79,13 @@
     "zoom": "1x"
   },
   "explosion": {
-    "radius": 2.5,
-    "damage_multiplier": 1.0,
-    "self_damage_multiplier": 0.1,
-    "self_damage_cap": 2.0,
+    "radius": 2.0,
+    "damage_multiplier": 0.6,
+    "self_damage_multiplier": 0.2,
+    "self_damage_cap": 6.0,
     "knockback": 0.0,
     "vfx_type": "RAYGUN_IMPACT",
-    "sound": "",
+    "sound": "zombierool:raygun_impact",
     "pap_only": false
   },
   "is_wonder_weapon": true,
