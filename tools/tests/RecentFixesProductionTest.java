@@ -67,9 +67,13 @@ public final class RecentFixesProductionTest {
         level.setBlock(batchMarker,me.cryo.zombierool.block.system.UniversalSpawnerSystem.ACTOR_MARKER_BLOCK.get().defaultBlockState(),3);
         var batchRule=MapActorTemplates.marker();batchRule.putString("profile","builtin_ghoul");batchRule.putInt("batch",7);batchRule.putInt("maxAlive",7);batchRule.putDouble("spawnRadius",8);batchRule.putBoolean("countsForWave",false);
         MapActors.get(level).marker(batchMarker,batchRule);MapActors.begin(level);active.setBoolean(null,true);
-        server.getWorldData().overworldData().setGameTime(200);MapActors.tick(pulse);
         var batchMobs=new java.util.ArrayList<net.minecraft.world.entity.Mob>();
-        for(var entity:level.getAllEntities())if(NativeMapActors.owns(entity)&&entity.getPersistentData().getString("MapMarker").equals(Long.toString(batchMarker.asLong())))batchMobs.add((net.minecraft.world.entity.Mob)entity);
+        // Appearance work is budgeted across ticks, including a cold first spawn.
+        for(int attempt=0;attempt<100&&batchMobs.size()<7;attempt++){
+            server.getWorldData().overworldData().setGameTime(200+attempt);MapActors.tick(pulse);
+            batchMobs.clear();
+            for(var entity:level.getAllEntities())if(NativeMapActors.owns(entity)&&entity.getPersistentData().getString("MapMarker").equals(Long.toString(batchMarker.asLong())))batchMobs.add((net.minecraft.world.entity.Mob)entity);
+        }
         if(batchMobs.size()!=7)throw new AssertionError("Batch 7 on a small platform spawned "+batchMobs.size());
         for(int i=0;i<batchMobs.size();i++)for(int j=0;j<i;j++)if(batchMobs.get(i).getBoundingBox().intersects(batchMobs.get(j).getBoundingBox()))throw new AssertionError("Batch enemies overlap");
         MapActors.tick(pulse);
