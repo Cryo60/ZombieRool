@@ -45,7 +45,7 @@ public class ObstaclePurchaseHandler {
         if (me.cryo.zombierool.gameplay.WardenLocks.intercept(serverPlayer,pos)) return;
 
         int prix = be.getPrix();
-        int finalCanal = be.getCanalAsInt();
+        Set<Integer> channels = be.getChannels();
 
         if (prix <= 0) {
             player.sendSystemMessage(Component.translatable("message.zombierool.obstacle.not_for_sale"));
@@ -78,8 +78,11 @@ public class ObstaclePurchaseHandler {
 
         transformBlocks(player.level(), connected);
 
-        WaveManager.unlockChannel(finalCanal);
-        if(player.level() instanceof ServerLevel deliveryLevel)me.cryo.zombierool.block.system.MachineDeliverySystem.onDoorOpened(deliveryLevel,finalCanal);
+        for (int channel : channels) {
+            WaveManager.unlockChannel(channel);
+            if (player.level() instanceof ServerLevel deliveryLevel)
+                me.cryo.zombierool.block.system.MachineDeliverySystem.onDoorOpened(deliveryLevel, channel);
+        }
 
         serverPlayer.playNotifySound(
                 ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("zombierool", "buy")),

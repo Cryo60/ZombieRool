@@ -633,7 +633,7 @@ public class ZombieroolAPI {
 
             List<BlockPos> toBreak = new ArrayList<>();
             for (ObstacleDoorBlockEntity be : ObstacleDoorSystem.OBSTACLES) {
-                if (be.getLevel() == level && be.getCanalAsInt() == c) {
+                if (be.getLevel() == level && be.getChannels().contains(c)) {
                     toBreak.add(be.getBlockPos());
                 }
             }

@@ -93,6 +93,16 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
     private static boolean valid(LivingEntity entity){return entity instanceof Player p&&p.isAlive()&&!p.isCreative()&&!p.isSpectator()&&!PlayerDownManager.isPlayerDown(p.getUUID())&&!BonusManager.isZombieBloodActive(p);}
     private static boolean canRepath(Mob mob){return mob.onGround()||mob.isInWater()||mob.isInLava()||mob.isPassenger();}
     public static void invalidate(Mob mob){NEXT_CHECK.remove(mob);FAILED.remove(mob);SELECTIONS.remove(mob);}
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void damaged(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        if (event.getAmount()>0 && !event.getEntity().level().isClientSide
+                && event.getEntity() instanceof AbstractZombieRoolEntity zombie
+                && event.getSource().getEntity() instanceof Player) {
+            // A shot can knock the mob onto a different step or column. Reassess failures
+            // using its new position instead of keeping a pre-impact failed route.
+            invalidate(zombie);
+        }
+    }
     private static boolean reachable(Path path,Player player) {
         return me.cryo.zombierool.gameplay.RouteNavigation.reachesPlayer(path,player);
     }

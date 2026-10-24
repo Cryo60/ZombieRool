@@ -148,11 +148,10 @@ public class LinkRenderer {
                             for (int c : stops) currentMaxChannel = Math.max(currentMaxChannel, c);
                             
                         } else if (be instanceof ObstacleDoorBlockEntity obstacle) {
-                            try {
-                                int c = Integer.parseInt(obstacle.getCanal());
+                            for (int c : obstacle.getChannels()) {
                                 obstaclesByChannel.computeIfAbsent(c, k -> new ArrayList<>()).add(be.getBlockPos());
                                 currentMaxChannel = Math.max(currentMaxChannel, c);
-                            } catch (NumberFormatException ignored) {}
+                            }
                         }
                     }
                 }

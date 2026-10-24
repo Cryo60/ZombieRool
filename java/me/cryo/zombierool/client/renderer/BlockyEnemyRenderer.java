@@ -107,7 +107,7 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
             root=LayerDefinition.create(mesh,256,256).bakeRoot();for(var row:data.getAsJsonArray("parts")){var p=row.getAsJsonObject();String name=p.get("name").getAsString(),parent=p.has("parent")?p.get("parent").getAsString():"";bones.put(name,(parent.isBlank()?root:bones.get(parent)).getChild(name));}
             eyes=b("head").getChild("glowing_eyes");
             for(String joint:JOINTS){var part=b(joint);origins.put(joint,new org.joml.Vector3f(part.x,part.y,part.z));}
-            var animation=read("animations/blocky/"+kind+".json");
+            var animation=read("zr_animation_data/blocky/"+kind+".json");
             if(animation.get("format").getAsInt()!=2)throw new IllegalStateException("Source motion format: "+kind);
             var anchor=animation.getAsJsonArray("hip");hip.set(f(anchor,0),f(anchor,1),f(anchor,2));
             for(var entry:animation.getAsJsonObject("clips").entrySet()){var c=entry.getValue().getAsJsonObject();var raw=c.getAsJsonArray("frames");float[][] frames=new float[raw.size()][53];for(int i=0;i<frames.length;i++)for(int j=0;j<raw.get(i).getAsJsonArray().size();j++)frames[i][j]=f(raw.get(i).getAsJsonArray(),j);clips.put(entry.getKey(),new Clip(c.get("fps").getAsFloat(),frames));}

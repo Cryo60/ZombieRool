@@ -34,6 +34,10 @@ Large furniture places as one object, reserves its footprint, and removes as a w
 
 Right-click a Buyable Obstacle area's lower corner with a furniture/vehicle item to assign that model. Only the required footprint is used. Provide enough obstacle cells; unrelated neighbors remain separate. One purchase opens the whole face-connected obstacle barrier, including adjacent furniture groups; the collision disappears with the purchased blocks.
 
+### Unlock several channels with one purchase
+
+Open the Buyable Obstacle editor in Creative and enter a comma-separated list in **Unlock channels**, for example `1,2,3`. One purchase opens the connected obstacle and unlocks every listed channel, charging the configured price once. Duplicate channels are ignored. Existing single-channel obstacles remain supported. The list is saved with the map and appears in the channel-link visualization.
+
 ## Wall barricade planks
 
 **Wall Barricade Planks** is one decoration block with ten randomly selected arrangements. Place it against a wall or door; each placement keeps its chosen arrangement. Right-click the placed block in Creative to cycle through all ten variants.

@@ -184,6 +184,14 @@ tasks.named('processResources', ProcessResources).configure {
     ]
     inputs.properties replaceProperties
 
+    // GeckoLib scans every namespace's animations/ folder using its own schema.
+    // These are native ZombieRool motion tracks, so keep them outside that scan.
+    eachFile { details ->
+        if (details.path.startsWith('assets/zombierool/animations/')) {
+            details.path = details.path.replace('assets/zombierool/animations/', 'assets/zombierool/zr_animation_data/')
+        }
+    }
+
     filesMatching(['META-INF/mods.toml']) {
         expand replaceProperties
     }

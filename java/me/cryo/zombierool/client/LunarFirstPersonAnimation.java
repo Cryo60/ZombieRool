@@ -22,7 +22,7 @@ public final class LunarFirstPersonAnimation {
     private static final Map<String,Clip> CLIPS=new HashMap<>();
     private static final Map<String,ModelPart> PARTS=new HashMap<>();
     private static Clip load(String name){
-        try(var raw=LunarFirstPersonAnimation.class.getResourceAsStream("/assets/zombierool/animations/lunar/"+name+".json");var reader=new InputStreamReader(raw,StandardCharsets.UTF_8)){
+        try(var raw=LunarFirstPersonAnimation.class.getResourceAsStream("/assets/zombierool/zr_animation_data/lunar/"+name+".json");var reader=new InputStreamReader(raw,StandardCharsets.UTF_8)){
             var root=JsonParser.parseReader(reader).getAsJsonObject();var rows=root.getAsJsonArray("frames");float[][][] frames=new float[rows.size()][6][3];
             for(int i=0;i<frames.length;i++)for(int j=0;j<6;j++)for(int k=0;k<3;k++)frames[i][j][k]=rows.get(i).getAsJsonArray().get(j).getAsJsonArray().get(k).getAsFloat();return new Clip(root.get("fps").getAsFloat(),frames);
         }catch(Exception e){throw new IllegalStateException("Cannot load T5 helmet animation "+name,e);}

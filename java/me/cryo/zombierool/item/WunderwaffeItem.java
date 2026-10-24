@@ -79,8 +79,7 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
                 currentTarget.level().playSound(null, currentTarget.blockPosition(), ZombieroolModSounds.ZOMBIE_ELEC.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
 
                 if (!wouldDie && currentTarget.isAlive()) {
-                    currentTarget.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 9, false, false));
-                    currentTarget.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 9, false, false));
+                    me.cryo.zombierool.gameplay.ElectricStun.apply(currentTarget);
                 }
 
                 AABB searchBox = currentTarget.getBoundingBox().inflate(chainRange);

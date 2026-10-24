@@ -234,6 +234,7 @@ public class ClientWeaponVfxHandler {
                 }
                 break;
             case "WUNDERWAFFE":
+                me.cryo.zombierool.client.render.WunderwaffeLightning.add(start,end,isPap);
                 Vector3f lightningColor = isPap ? new Vector3f(1.0f, 0.2f, 0.2f) : new Vector3f(0.5f, 0.8f, 1.0f);
                 DustParticleOptions lightningDust = new DustParticleOptions(lightningColor, 1.5f);
 

@@ -113,6 +113,13 @@ public class ObstacleDoorSystem {
         BlockPos pos = new BlockPos(message.x(), message.y(), message.z());
         if (!world.isClientSide()) {
             if (message.isCreative()) {
+                if (!player.isCreative() || !player.hasPermissions(2) || player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(pos)) > 64) return;
+                String text = message.canal().trim();
+                var channels = me.cryo.zombierool.gameplay.SpawnChannelActions.parse(text);
+                if (text.length() > 256 || !text.isEmpty() && (!text.matches("\\d+(?:\\s*,\\s*\\d+)*") || channels.size() != java.util.Arrays.stream(text.split(",")).map(String::trim).distinct().count())) {
+                    player.displayClientMessage(Component.literal("Use comma-separated channels from 0 to 10000, for example 1,2,3."), false);
+                    return;
+                }
                 if (world.getBlockEntity(pos) instanceof ObstacleDoorBlockEntity be) {
                     List<BlockPos> connectedBlocks = new ArrayList<>();
                     Set<BlockPos> checked = new HashSet<>();
@@ -120,7 +127,7 @@ public class ObstacleDoorSystem {
                     for (BlockPos blockPos : connectedBlocks) {
                         if (world.getBlockEntity(blockPos) instanceof ObstacleDoorBlockEntity memberBe) {
                             memberBe.setPrix(message.prix());
-                            memberBe.setCanal(message.canal());
+                            memberBe.setCanal(text);
                             memberBe.setChanged();
                             world.sendBlockUpdated(blockPos, world.getBlockState(blockPos), world.getBlockState(blockPos), 3);
                         }
@@ -283,7 +290,13 @@ public class ObstacleDoorSystem {
         public int getPrix() { return this.prix; }
         public void setPrix(int prix) { this.prix = prix; }
         public String getCanal() { return this.canal; }
-        public void setCanal(String canal) { this.canal = canal; }
+        public void setCanal(String canal) { this.canal = canal == null ? "" : canal.trim(); }
+        public java.util.Set<Integer> getChannels() {
+            var channels = me.cryo.zombierool.gameplay.SpawnChannelActions.parse(this.canal);
+            if (!channels.isEmpty()) return channels;
+            try { return java.util.Set.of(Integer.parseInt(this.canal.trim())); }
+            catch (NumberFormatException ignored) { return java.util.Set.of(0); }
+        }
 
         @Override public BlockState getMimic() { return mimicBlockState; }
         @Override public void setMimic(@Nullable BlockState state) {
@@ -301,7 +314,7 @@ public class ObstacleDoorSystem {
             setChanged();
         }
 
-        public int getCanalAsInt() { try { return Integer.parseInt(this.canal); } catch(Exception e) { return 0; } }
+        public int getCanalAsInt() { return getChannels().iterator().next(); }
 
         @Override public void load(CompoundTag compound) {
             super.load(compound);
@@ -361,7 +374,8 @@ public class ObstacleDoorSystem {
             prix_input = new EditBox(this.font, startX + 125, startY + 30, 105, 20, Component.empty());
             canal_input = new EditBox(this.font, startX + 125, startY + 70, 105, 20, Component.empty());
             prix_input.setMaxLength(10);
-            canal_input.setMaxLength(10);
+            canal_input.setMaxLength(256);
+            canal_input.setHint(Component.literal("1,2,3"));
 
             if (this.minecraft.level.getBlockEntity(this.menu.pos) instanceof ObstacleDoorBlockEntity be) {
                 prix_input.setValue(String.valueOf(be.getPrix()));
@@ -382,7 +396,7 @@ public class ObstacleDoorSystem {
         @Override protected void renderLabels(GuiGraphics g, int mx, int my) {
             super.renderLabels(g, mx, my);
             g.drawString(this.font, "Price:", 30, 36, 0xAAAAAA, false);
-            g.drawString(this.font, "Req. Channel:", 30, 76, 0xAAAAAA, false);
+            g.drawString(this.font, "Unlock channels:", 30, 76, 0xAAAAAA, false);
         }
     }
 

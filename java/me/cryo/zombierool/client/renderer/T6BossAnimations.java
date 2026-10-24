@@ -16,7 +16,7 @@ public final class T6BossAnimations {
     public static boolean apply(boolean panzer,String name,float age,boolean loop,int duration,ModelPart[] parts){
         String kind=panzer?"panzer":"brutus";
         var clips=CACHE.computeIfAbsent(kind,k->{
-            try(var reader=new InputStreamReader(Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation("zombierool","animations/"+k+"_minecraft_t6.json")).orElseThrow().open(),StandardCharsets.UTF_8)){
+            try(var reader=new InputStreamReader(Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation("zombierool","zr_animation_data/"+k+"_minecraft_t6.json")).orElseThrow().open(),StandardCharsets.UTF_8)){
                 var result=new HashMap<String,Clip>();
                 for(var entry:JsonParser.parseReader(reader).getAsJsonObject().getAsJsonObject("clips").entrySet()){
                     var data=entry.getValue().getAsJsonObject();var raw=data.getAsJsonArray("frames");float[][] frames=new float[raw.size()][];

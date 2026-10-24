@@ -190,9 +190,7 @@ class TacZImpl {
                     }
 
                     if (def.id.contains("wunderwaffedg2")) {
-                        currentTarget.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                            net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 100, 9, false, false
-                        ));
+                        me.cryo.zombierool.gameplay.ElectricStun.apply(currentTarget);
                     }
 
                     net.minecraft.world.phys.AABB searchBox = currentTarget.getBoundingBox().inflate(chainRange);

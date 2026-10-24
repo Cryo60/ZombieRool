@@ -32,7 +32,7 @@ public final class ElectricTrapLightning {
             tube(pose,vertices,segment,.011f*width,.7f,.93f,1,.95f);
         }
     }
-    private static void tube(PoseStack pose,VertexConsumer vertices,ElectricArcGeometry.Segment segment,float width,float red,float green,float blue,float alpha){
+    static void tube(PoseStack pose,VertexConsumer vertices,ElectricArcGeometry.Segment segment,float width,float red,float green,float blue,float alpha){
         Vec3 forward=segment.to().subtract(segment.from()).normalize();
         Vec3 side=Math.abs(forward.y)>.8?forward.cross(new Vec3(1,0,0)).normalize():forward.cross(new Vec3(0,1,0)).normalize();
         Vec3 up=forward.cross(side).normalize();Vec3[] ring={side.add(up).scale(width),side.subtract(up).scale(width),side.add(up).scale(-width),up.subtract(side).scale(width)};

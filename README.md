@@ -12,7 +12,7 @@
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-**ZombieRool 26.7 Beta 2**
+**ZombieRool 26.7 Beta 3**
 
 </div>
 
@@ -36,7 +36,7 @@ Play a map, or build one. Map makers get a creative tab, an in-game config menu,
 
 ---
 
-Download **26.7 Beta 2** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.2). This beta is available for testing; report problems on Discord.
+Download **26.7 Beta 3** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.3). This beta is available for testing; report problems on Discord.
 
 ## What's new
 

@@ -1,3 +1,13 @@
+# ZombieRool 26.7 Beta 3
+Minecraft 1.20.1 | Forge | Java 17
+
+## Fixes and improvements
+
+- The TaCZ Wunderwaffe now draws bright electric arcs even with minimal particles.
+- Electric stun expiry explicitly restores pursuit; bullet impacts invalidate stale target-path decisions after knockback.
+- Buyable Obstacles accept multiple unlock channels, such as `1,2,3`, for one purchase.
+- Fixed a GeckoLib startup crash caused by native ZombieRool animation data being scanned as GeckoLib animations.
+
 # ZombieRool 26.7 Beta 2
 Minecraft 1.20.1 | Forge | Java 17
 
