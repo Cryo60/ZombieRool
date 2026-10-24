@@ -248,3 +248,28 @@ def playerResourceExcludes = [
 ]
 tasks.named('processResources').configure { exclude playerResourceExcludes }
 tasks.withType(Jar).configureEach { exclude playerResourceExcludes }
+
+// Registry references used by client setup must exist even before a map pack is loaded.
+def verifyBuiltinWeapons = tasks.register('verifyBuiltinWeaponResources') {
+    inputs.file('java/me/cryo/zombierool/core/system/WeaponSystem.java')
+    inputs.dir('resources/data/zombierool/gameplay/weapons')
+    doLast {
+        def source = file('java/me/cryo/zombierool/core/system/WeaponSystem.java').getText('UTF-8')
+        def declaration = (source =~ /(?s)BUILTIN_WEAPONS\s*=\s*\{(.*?)\};/)
+        if (!declaration.find()) throw new GradleException('Cannot locate built-in weapon declarations')
+        def missing = []
+        (declaration.group(1) =~ /"([a-z0-9_]+)"/).each { match ->
+            def resource = file("resources/data/zombierool/gameplay/weapons/${match[1]}.json")
+            if (!resource.isFile()) missing.add(match[1])
+            else {
+                def definition = new groovy.json.JsonSlurper().parse(resource, 'UTF-8')
+                if (definition.id && definition.id != match[1] && definition.id != "zombierool:${match[1]}") {
+                    throw new GradleException("Wrong weapon identity in ${resource.name}")
+                }
+            }
+        }
+        if (!missing.isEmpty()) throw new GradleException("Missing built-in weapon resources: ${missing.join(', ')}")
+    }
+}
+tasks.named('check').configure { dependsOn verifyBuiltinWeapons }
+tasks.named('processResources').configure { dependsOn verifyBuiltinWeapons }

@@ -1,0 +1,15 @@
+{
+  "id": "zombierool:stratholme_flintlock",
+  "name": "Dwarven Flintlock",
+  "type": "RIFLE",
+  "weapon_kind": "pistol",
+  "stats": {
+    "damage": 0,
+    "range": 0,
+    "fire_rate": 20
+  },
+  "ammo": {
+    "clip_size": 0,
+    "max_reserve": 0
+  }
+}

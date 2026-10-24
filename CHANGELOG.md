@@ -1,3 +1,11 @@
+# ZombieRool 26.7 Beta 2
+Minecraft 1.20.1 | Forge | Java 17
+
+## Fixes
+
+- Fixed a startup crash caused by missing built-in weapon registration files.
+- Restored the reserved item identities required by client rendering and map weapon packs.
+
 # ZombieRool 26.7 Beta 1
 Minecraft 1.20.1 | Forge 47.1.3 | Java 17
 

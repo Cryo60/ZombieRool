@@ -1,0 +1,15 @@
+{
+  "id": "zombierool:stratholme_hunting_knife",
+  "name": "Ranger’s Hunting Knife",
+  "type": "MELEE",
+  "weapon_kind": "knife",
+  "stats": {
+    "damage": 0,
+    "range": 0,
+    "fire_rate": 20
+  },
+  "ammo": {
+    "clip_size": 0,
+    "max_reserve": 0
+  }
+}
