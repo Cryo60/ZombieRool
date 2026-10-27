@@ -19,7 +19,7 @@ public final class FurnitureSystem {
     public static final DeferredRegister<Block> BLOCKS=DeferredRegister.create(ForgeRegistries.BLOCKS,"zombierool");
     public static final DeferredRegister<Item> ITEMS=DeferredRegister.create(ForgeRegistries.ITEMS,"zombierool");
     public static final Map<String,RegistryObject<Block>> ALL=new LinkedHashMap<>();
-    static {for(String id:MODELS){RegistryObject<Block> block=BLOCKS.register("furniture_"+id,()->id.equals("wall_barricade_planks")?new BarricadePlankBlock():LargeFurnitureBlock.SIZES.containsKey(id)?new LargeFurnitureBlock(id):List.of("bed","hospital_bed","iv_stand").contains(id)?new ExtendedFurnitureBlock(id):(id.equals("pallet")||id.equals("duckboard"))?new PalletBlock(id):id.startsWith("sofa")?new SofaBlock(id):new FurnitureBlock(id));ALL.put(id,block);ITEMS.register("furniture_"+id,()->new BlockItem(block.get(),new Item.Properties()));}}
+    static {for(String id:MODELS){RegistryObject<Block> block=BLOCKS.register("furniture_"+id,()->id.equals("wall_barricade_planks")?new BarricadePlankBlock():id.equals("brazier")?new BrazierBlock():LargeFurnitureBlock.SIZES.containsKey(id)?new LargeFurnitureBlock(id):List.of("bed","hospital_bed","iv_stand").contains(id)?new ExtendedFurnitureBlock(id):(id.equals("pallet")||id.equals("duckboard"))?new PalletBlock(id):id.startsWith("sofa")?new SofaBlock(id):new FurnitureBlock(id));ALL.put(id,block);ITEMS.register("furniture_"+id,()->new BlockItem(block.get(),new Item.Properties()));}}
     public static void register(net.minecraftforge.eventbus.api.IEventBus bus){BLOCKS.register(bus);ITEMS.register(bus);}
     @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid="zombierool",bus=net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD,value=net.minecraftforge.api.distmarker.Dist.CLIENT)
     public static final class ClientLayers {
@@ -48,7 +48,7 @@ public final class FurnitureSystem {
     public static class FurnitureBlock extends HorizontalDirectionalBlock {
         public final String model;
         protected final Map<Direction,VoxelShape> shapes=new EnumMap<>(Direction.class);
-        public FurnitureBlock(String id){super(Properties.of().strength(-1,3600000).noOcclusion().lightLevel(state->List.of("chandelier","industrial_light","wall_lamp","brazier","burning_barrel","wow_soul_lantern").contains(id)?12:0).sound(id.equals("sofa")||id.equals("armchair")||id.startsWith("bed")?SoundType.WOOL:SoundType.WOOD));model=id;
+        public FurnitureBlock(String id){super(Properties.of().strength(-1,3600000).noOcclusion().lightLevel(state->id.equals("brazier")?(state.getValue(BrazierBlock.FIRE)==0?0:12):List.of("chandelier","industrial_light","wall_lamp","brazier","burning_barrel","wow_soul_lantern").contains(id)?12:0).sound(id.equals("sofa")||id.equals("armchair")||id.startsWith("bed")?SoundType.WOOL:SoundType.WOOD));model=id;
             registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));
             for(var facing:Direction.Plane.HORIZONTAL){VoxelShape result=Shapes.empty();int turns=facing==Direction.NORTH?0:facing==Direction.EAST?1:facing==Direction.SOUTH?2:3;
                 for(var original:BOXES.get(id)){AABB b=original;for(int i=0;i<turns;i++)b=new AABB(1-b.maxZ,b.minY,b.minX,1-b.minZ,b.maxY,b.maxX);result=Shapes.or(result,Shapes.create(b));}shapes.put(facing,result.optimize());}
@@ -72,6 +72,13 @@ public final class FurnitureSystem {
             var boxes=getShape(state,null,BlockPos.ZERO,CollisionContext.empty()).toAabbs();var box=boxes.stream().max(Comparator.comparingDouble(b->b.getYsize()*(face.getAxis()==Direction.Axis.X?b.getZsize():b.getXsize()))).orElseThrow();var center=box.getCenter();
             return switch(face){case NORTH->new Vec3(center.x,center.y,box.minZ-.006);case SOUTH->new Vec3(center.x,center.y,box.maxZ+.006);case WEST->new Vec3(box.minX-.006,center.y,center.z);case EAST->new Vec3(box.maxX+.006,center.y,center.z);default->center;};
         }
+    }
+    public static final class BrazierBlock extends FurnitureBlock {
+        public static final IntegerProperty FIRE=IntegerProperty.create("fire",0,2);
+        BrazierBlock(){super("brazier");registerDefaultState(defaultBlockState().setValue(FIRE,1));}
+        @Override public int getLightEmission(BlockState s,BlockGetter level,BlockPos pos){return s.getValue(FIRE)==0?0:12;}
+        @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){super.createBlockStateDefinition(b);b.add(FIRE);}
+        @Override public void animateTick(BlockState state,Level level,BlockPos pos,net.minecraft.util.RandomSource random){if(state.getValue(FIRE)==0)return;var particle=state.getValue(FIRE)==2?net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME:net.minecraft.core.particles.ParticleTypes.FLAME;for(int i=0;i<2;i++)level.addParticle(particle,pos.getX()+.3+random.nextDouble()*.4,pos.getY()+.6+random.nextDouble()*.3,pos.getZ()+.3+random.nextDouble()*.4,0,.015,0);}
     }
     public static final class ExtendedFurnitureBlock extends FurnitureBlock {
         public static final BooleanProperty EXTENSION=BooleanProperty.create("extension");

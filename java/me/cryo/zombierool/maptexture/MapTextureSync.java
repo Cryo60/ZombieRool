@@ -25,10 +25,10 @@ public final class MapTextureSync {
         var old=previous.get(server);var next=new S2CMapTextureSlotPacket[MapTextures.SLOTS];
         for(int slot=0;slot<MapTextures.SLOTS;slot++){
             byte[][] faces;
-            try{faces=MapTexturePixels.read(me.cryo.zombierool.util.WorldZombieroolPaths.path(root,"custom_blocks"),names[slot]);}
+            try{faces=MapTexturePixels.readAnimated(me.cryo.zombierool.util.WorldZombieroolPaths.path(root,"custom_blocks"),names[slot]);}
             catch(Exception e){me.cryo.zombierool.ZombieroolMod.LOGGER.warn("Cannot load map texture {}",names[slot],e);try{faces=MapTexturePixels.read(root,"");}catch(java.io.IOException impossible){throw new IllegalStateException(impossible);}}
             next[slot]=new S2CMapTextureSlotPacket(slot,names[slot],MapTextures.soundId(slot),faces);
-            boolean changed=old==null||!old[slot].name().equals(names[slot])||!old[slot].sound().equals(next[slot].sound())||!Arrays.deepEquals(old[slot].faces(),faces);
+            boolean changed=old==null||!old[slot].name().equals(names[slot])||!old[slot].sound().equals(next[slot].sound())||old[slot].opacity()!=next[slot].opacity()||!Arrays.deepEquals(old[slot].faces(),faces);
             final var packet=next[slot];
             if(changed)NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),packet);
             else if(joining!=null)NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(()->joining),packet);

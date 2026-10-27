@@ -47,13 +47,70 @@ public final class MapArmor {
     }
     public static final class Station extends net.minecraft.world.level.block.Block {
         public final String set;
-        private Station(String set){super(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().strength(-1,3600000).noOcclusion());this.set=set;}
-        @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState state,net.minecraft.world.level.BlockGetter level,net.minecraft.core.BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){return net.minecraft.world.phys.shapes.Shapes.or(box(1,0,2,15,2,14),box(7,2,7,9,7,9),box(1,5,5,15,13,11),box(5,13,5,11,19,11));}
+        public static final net.minecraft.world.level.block.state.properties.EnumProperty<net.minecraft.world.level.block.state.properties.DoubleBlockHalf> HALF=net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF;
+        public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING=net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING;
+        private Station(String set){
+            super(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().strength(-1,3600000).sound(net.minecraft.world.level.block.SoundType.WOOD).noOcclusion());this.set=set;
+            registerDefaultState(stateDefinition.any().setValue(HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER).setValue(FACING,net.minecraft.core.Direction.NORTH));
+        }
+        @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<net.minecraft.world.level.block.Block,net.minecraft.world.level.block.state.BlockState> b){b.add(HALF,FACING);}
+        @Override public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext c){
+            return c.getClickedPos().getY()<c.getLevel().getMaxBuildHeight()-1&&c.getLevel().getBlockState(c.getClickedPos().above()).canBeReplaced(c)?defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite()):null;
+        }
+        @Override public void setPlacedBy(net.minecraft.world.level.Level level,net.minecraft.core.BlockPos pos,net.minecraft.world.level.block.state.BlockState state,LivingEntity owner,ItemStack stack){level.setBlock(pos.above(),state.setValue(HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),3);}
+        @Override public net.minecraft.world.level.block.state.BlockState updateShape(net.minecraft.world.level.block.state.BlockState state,net.minecraft.core.Direction dir,net.minecraft.world.level.block.state.BlockState neighbor,net.minecraft.world.level.LevelAccessor level,net.minecraft.core.BlockPos pos,net.minecraft.core.BlockPos other){
+            boolean upper=state.getValue(HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER;
+            if(upper&&dir==net.minecraft.core.Direction.DOWN&&(!neighbor.is(this)||neighbor.getValue(HALF)!=net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER))return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+            return super.updateShape(state,dir,neighbor,level,pos,other);
+        }
+        @Override public void onRemove(net.minecraft.world.level.block.state.BlockState state,net.minecraft.world.level.Level level,net.minecraft.core.BlockPos pos,net.minecraft.world.level.block.state.BlockState next,boolean moved){
+            if(!next.is(this)){
+                var other=state.getValue(HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER?pos.above():pos.below();var paired=level.getBlockState(other);
+                if(paired.is(this)&&paired.getValue(HALF)!=state.getValue(HALF))level.removeBlock(other,false);
+            }
+            super.onRemove(state,level,pos,next,moved);
+        }
+        @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState state,net.minecraft.world.level.BlockGetter level,net.minecraft.core.BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){
+            return state.getValue(HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER?box(1,0,1,15,16,15):box(1,0,2,15,15,14);
+        }
         @Override public net.minecraft.world.InteractionResult use(net.minecraft.world.level.block.state.BlockState state,net.minecraft.world.level.Level level,net.minecraft.core.BlockPos pos,Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){
             if(hand!=net.minecraft.world.InteractionHand.MAIN_HAND)return net.minecraft.world.InteractionResult.CONSUME;
             if(player instanceof net.minecraft.server.level.ServerPlayer server)interact(server,set);
             return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
         }
+    }
+    /** Upgrade old single-block stations in place; never replace authored blocks above them. */
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid="zombierool")
+    public static final class StationMigration {
+        private record Pending(net.minecraft.server.level.ServerLevel level,int x,int z,java.util.List<net.minecraft.core.BlockPos> positions,int attempts){}
+        private static final java.util.concurrent.ConcurrentLinkedQueue<Pending> pending=new java.util.concurrent.ConcurrentLinkedQueue<>();
+        @net.minecraftforge.eventbus.api.SubscribeEvent public static void loaded(net.minecraftforge.event.level.ChunkEvent.Load event){
+            if(!(event.getLevel() instanceof net.minecraft.server.level.ServerLevel level)||!(event.getChunk() instanceof net.minecraft.world.level.chunk.LevelChunk chunk))return;
+            var candidates=new java.util.ArrayList<net.minecraft.core.BlockPos>();
+            for(int sectionIndex=0;sectionIndex<chunk.getSectionsCount();sectionIndex++){
+                var section=chunk.getSection(sectionIndex);if(!section.maybeHas(s->s.getBlock() instanceof Station))continue;
+                int baseY=chunk.getSectionYFromSectionIndex(sectionIndex)<<4;
+                for(int y=0;y<16;y++)for(int x=0;x<16;x++)for(int z=0;z<16;z++){
+                    var state=section.getBlockState(x,y,z);
+                    if(state.getBlock() instanceof Station&&state.getValue(Station.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER)candidates.add(new net.minecraft.core.BlockPos(chunk.getPos().getMinBlockX()+x,baseY+y,chunk.getPos().getMinBlockZ()+z));
+                }
+            }
+            // Server.execute runs inline when already on the server thread. Never query
+            // the level here: the chunk's load future has not completed during this event.
+            if(!candidates.isEmpty())pending.add(new Pending(level,chunk.getPos().x,chunk.getPos().z,candidates,0));
+        }
+        @net.minecraftforge.eventbus.api.SubscribeEvent public static void tick(net.minecraftforge.event.TickEvent.ServerTickEvent event){
+            if(event.phase!=net.minecraftforge.event.TickEvent.Phase.END)return;
+            int budget=Math.min(16,pending.size());
+            for(int i=0;i<budget;i++){
+                var row=pending.poll();if(row==null)break;var level=row.level;if(level.getServer()!=event.getServer())continue;
+                // Nonblocking lookup: migration must never force a chunk to load.
+                var chunk=level.getChunkSource().getChunkNow(row.x,row.z);
+                if(chunk==null){if(row.attempts<100)pending.add(new Pending(level,row.x,row.z,row.positions,row.attempts+1));continue;}
+                for(var pos:row.positions){var state=chunk.getBlockState(pos);if(state.getBlock() instanceof Station&&state.getValue(Station.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER&&chunk.getBlockState(pos.above()).isAir())level.setBlock(pos.above(),state.setValue(Station.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),3);}
+            }
+        }
+        @net.minecraftforge.eventbus.api.SubscribeEvent public static void unloaded(net.minecraftforge.event.level.LevelEvent.Unload event){pending.removeIf(row->row.level==event.getLevel());}
     }
     public static void interact(net.minecraft.server.level.ServerPlayer player,String set){String result=player.isCreative()?"preview":purchase(player,set);player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.zombierool.map_armor."+result,prices.getOrDefault(set,0),repairs.getOrDefault(set,0)),true);}
     public static net.minecraft.network.chat.Component hint(Player player,String set,String key){boolean complete=true;for(var type:ArmorItem.Type.values())if(!(player.getItemBySlot(type.getSlot()).getItem() instanceof Piece piece)||!piece.set.equals(set))complete=false;return net.minecraft.network.chat.Component.translatable("message.zombierool.map_armor."+(complete?"repair_hint":"buy_hint"),key,net.minecraft.network.chat.Component.translatable("block.zombierool.map_"+set+"_station"),(complete?repairs:prices).getOrDefault(set,0));}

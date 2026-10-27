@@ -18,6 +18,7 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
         addLayer(new net.minecraft.client.renderer.entity.layers.RenderLayer<MapActorEntity,Model>(this){@Override public void render(PoseStack pose,net.minecraft.client.renderer.MultiBufferSource buffers,int light,MapActorEntity actor,float walk,float amount,float partial,float age,float yaw,float pitch){if(actor.isAlive())model.renderEyes(pose,buffers,getTextureLocation(actor),age,actor.profile());}});
     }
     @Override protected boolean shouldShowName(MapActorEntity e){return e.profile().getBoolean("boss")&&super.shouldShowName(e);}
+    @Override protected net.minecraft.client.renderer.RenderType getRenderType(MapActorEntity e,boolean visible,boolean translucent,boolean glowing){return visible&&e.profile().contains("renderAlpha")&&e.profile().getDouble("renderAlpha")<1?net.minecraft.client.renderer.RenderType.entityTranslucent(getTextureLocation(e)):super.getRenderType(e,visible,translucent,glowing);}
     @Override public ResourceLocation getTextureLocation(MapActorEntity e){
         String texture=e.profile().getString("texture");
         if(!texture.isEmpty()){var dynamic=me.cryo.zombierool.core.manager.DynamicResourceManager.getClientSkin("map_actor",texture);if(dynamic!=null)return dynamic;var resource=texture.contains(":")?ResourceLocation.tryParse(texture):null;if(resource!=null)return resource;}
@@ -33,9 +34,11 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
         private record Box(ModelPart part,List<Bone> path,float r,float g,float b,boolean emissive,float eyeX,float eyeY,float eyeZ){}
         private final Map<String,Bone> bones=new LinkedHashMap<>();
         private final List<Box> parts=new ArrayList<>();
+        private final boolean fullBright,fadeDeath;private final float opacity;private float deathOpacity=1;
         private static final class Playback {float previousSwing,attackStart=-10000,changed;String clip="";CompoundTag current=new CompoundTag(),previous=new CompoundTag();}
         private final Map<MapActorEntity,Playback> playback=new WeakHashMap<>();
         Model(CompoundTag profile) {
+            fullBright=profile.getBoolean("fullBright");fadeDeath=profile.getBoolean("despawnAfterDeath");opacity=profile.contains("renderAlpha")?(float)profile.getDouble("renderAlpha"):1;
             var definitions=MapActorAnimations.bones(profile.getCompound("bones"));
             for(String name:new TreeSet<>(definitions.getAllKeys())){
                 var n=definitions.getCompound(name);var parent=definitions.getCompound(n.getString("parent"));
@@ -50,6 +53,7 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
             }
         }
         @Override public void setupAnim(MapActorEntity e,float walk,float amount,float age,float yaw,float pitch){
+            deathOpacity=fadeDeath&&!e.isAlive()?Math.max(0,1-(e.deathTime+(age-e.tickCount))/(float)Math.max(1,e.profile().getCompound("animations").getCompound("death").getDouble("duration"))):1;
             for(var entry:bones.entrySet()){
                 var b=entry.getValue();var part=b.part;part.x=b.baseX;part.y=b.baseY;part.z=b.baseZ;part.xRot=b.rx;part.yRot=b.ry;part.zRot=b.rz;
                 if(!e.profile().getBoolean("sourceMotion")){
@@ -83,7 +87,7 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
                 pose.popPose();}
         }
         @Override public void renderToBuffer(PoseStack pose,VertexConsumer consumer,int light,int overlay,float r,float g,float b,float alpha){
-            for(var box:parts){pose.pushPose();for(var bone:box.path)bone.part.translateAndRotate(pose);box.part.render(pose,consumer,light,overlay,r*box.r,g*box.g,b*box.b,alpha);pose.popPose();}
+            for(var box:parts){pose.pushPose();for(var bone:box.path)bone.part.translateAndRotate(pose);box.part.render(pose,consumer,fullBright?net.minecraft.client.renderer.LightTexture.FULL_BRIGHT:light,overlay,r*box.r,g*box.g,b*box.b,alpha*opacity*deathOpacity);pose.popPose();}
         }
     }
 }

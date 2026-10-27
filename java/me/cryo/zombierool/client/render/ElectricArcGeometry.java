@@ -8,11 +8,14 @@ public final class ElectricArcGeometry {
     public record Segment(Vec3 from,Vec3 to,boolean branch) {}
     private ElectricArcGeometry() {}
     public static List<Segment> create(Vec3 start,Vec3 end,long seed){
+        return create(start,end,seed,5);
+    }
+    public static List<Segment> create(Vec3 start,Vec3 end,long seed,int lanes){
         Vec3 axis=end.subtract(start);double length=axis.length();if(length<.02)return List.of();
         Vec3 forward=axis.normalize(),side=Math.abs(forward.y)>.8?new Vec3(1,0,0):forward.cross(new Vec3(0,1,0)).normalize();
         Vec3 other=forward.cross(side).normalize();Random random=new Random(seed);List<Segment> result=new ArrayList<>();
         int steps=Math.min(32,Math.max(4,(int)Math.ceil(length*4)));
-        for(int lane=0;lane<5;lane++){
+        for(int lane=0;lane<Math.max(1,Math.min(5,lanes));lane++){
             double angle=lane*Math.PI/2;Vec3 offset=lane==0?Vec3.ZERO:side.scale(Math.cos(angle)*.34).add(other.scale(Math.sin(angle)*.34));
             Vec3 previous=start.add(offset);List<Vec3> points=new ArrayList<>();points.add(previous);
             for(int i=1;i<=steps;i++){

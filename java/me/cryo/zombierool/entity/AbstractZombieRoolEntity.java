@@ -408,7 +408,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         if (!this.level().isClientSide() && this.isAlive() && !me.cryo.zombierool.gameplay.TraversalMotion.active(this)
                 && !me.cryo.zombierool.block.system.TraversalSystem.boardingZipline(this)) {
             List<Entity> nearby = this.level().getEntities(this, this.getBoundingBox().inflate(0.3D),
-                e -> e instanceof AbstractZombieRoolEntity && e.isAlive());
+                e -> e instanceof AbstractZombieRoolEntity && e.isAlive()&&!me.cryo.zombierool.gameplay.ActorWaveCollision.ignores(this,e));
             if (!nearby.isEmpty()) {
                 double pushX = 0;
                 double pushZ = 0;

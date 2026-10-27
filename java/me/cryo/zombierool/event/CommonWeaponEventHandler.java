@@ -50,6 +50,8 @@ public class CommonWeaponEventHandler {
         Player player = event.getEntity();
 
          ItemStack stack = event.getItemStack();
+        if(stack.getItem() instanceof me.cryo.zombierool.core.system.WeaponImplementations.MeleeWeaponItem){event.setCanceled(true);if(player instanceof net.minecraft.server.level.ServerPlayer server)me.cryo.zombierool.gameplay.MeleeCombat.request(server,false);return;}
+        if(!event.getLevel().isClientSide()&&(stack.getItem() instanceof me.cryo.zombierool.item.BowieKnifeItem||stack.getItem() instanceof me.cryo.zombierool.item.ScarletWeaponItem knife&&java.util.Set.of("knife","dagger").contains(knife.kind()))){var p=event.getPos();me.cryo.zombierool.scripting.LuaScriptManager.callEvent("OnBlockKnifed",player.getUUID().toString(),p.getX(),p.getY(),p.getZ());}
         
         if (stack.getItem() instanceof SwordItem ||
             stack.getItem() instanceof AxeItem ||

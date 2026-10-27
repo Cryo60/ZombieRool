@@ -32,7 +32,7 @@ public final class TexturePixelEditor extends Screen {
         this.texture = texture;
         load();
     }
-    private Path directory() { return MapTextureClient.worldRoot().resolve("zombierool/custom_blocks"); }
+    private Path directory() { return me.cryo.zombierool.util.WorldZombieroolPaths.path(MapTextureClient.worldRoot(),"custom_blocks"); }
     private Path target() { return directory().resolve(texture + (face.equals("side") ? "" : "_" + face) + ".png"); }
     private void remember(){NativeImage copy=new NativeImage(size,size,true);for(int y=0;y<size;y++)for(int x=0;x<size;x++)copy.setPixelRGBA(x,y,pixels.getPixelRGBA(x,y));NativeImage previous=drafts.put(face,copy);if(previous!=null)previous.close();}
     private void clearDrafts(){drafts.values().forEach(NativeImage::close);drafts.clear();}
@@ -98,7 +98,10 @@ public final class TexturePixelEditor extends Screen {
     @Override public boolean mouseReleased(double x,double y,int button){return super.mouseReleased(x/uiScale,y/uiScale,button);}
     private boolean acceptName(){String value=me.cryo.zombierool.maptexture.MapTextures.sanitize(name.getValue());if(value.isEmpty()||value.equals("import")||value.startsWith("import/")||minecraft.player==null||!minecraft.player.isCreative()){status=Component.translatable("gui.zombierool.texture_error");return false;}texture=value;name.setValue(value);return true;}
     private void refreshSlots(){var server=minecraft.getSingleplayerServer();if(server==null)return;var uuid=minecraft.player.getUUID();server.execute(()->{var names=me.cryo.zombierool.maptexture.MapTextures.syncFolder(server.overworld());me.cryo.zombierool.maptexture.MapTextureSync.refresh(server.overworld(),null);var player=server.getPlayerList().getPlayer(uuid);if(player!=null&&player.containerMenu instanceof me.cryo.zombierool.maptexture.MapTextures.TextureKitMenu menu)for(int i=0;i<names.size();i++)menu.names.set(i,names.get(i));minecraft.tell(()->{if(parent instanceof TextureKitScreen screen){screen.getMenu().names.clear();screen.getMenu().names.addAll(names);}MapTextureClient.rebuildIfChanged();});});}
-    private void save(){if(!acceptName())return;try{Files.createDirectories(target().getParent());
+    private void save(){if(!acceptName())return;try{
+        if(me.cryo.zombierool.maptexture.MapTextureAnimation.exists(directory().resolve(texture+".png"))){status=Component.literal("Animated texture: edit the PNG and .mcmeta externally.");return;}
+        for(String checkFace:FACES)if(me.cryo.zombierool.maptexture.MapTextureAnimation.exists(directory().resolve(texture+"_"+checkFace+".png"))){status=Component.literal("Animated texture: edit the PNG and .mcmeta externally.");return;}
+        Files.createDirectories(target().getParent());
         Path base=directory().resolve(texture+".png");
         if(Files.isRegularFile(base)){byte[] original=Files.readAllBytes(base);if(original.length>=24){var header=java.nio.ByteBuffer.wrap(original);if(header.getInt(16)!=header.getInt(20)){var prepared=me.cryo.zombierool.maptexture.MapTexturePixels.read(directory(),texture);for(int i=1;i<prepared.length;i++){String convertedFace=me.cryo.zombierool.maptexture.MapTexturePixels.FACES[i];if(!convertedFace.equals("north"))Files.write(directory().resolve(texture+"_"+convertedFace+".png"),prepared[i]);}}}}
         remember();for(var entry:drafts.entrySet()){entry.getValue().writeToFile(directory().resolve(texture+(entry.getKey().equals("side")?"":"_"+entry.getKey())+".png"));if(entry.getKey().equals("side"))entry.getValue().writeToFile(directory().resolve(texture+"_side.png"));}if(!Files.exists(directory().resolve(texture+".png")))pixels.writeToFile(directory().resolve(texture+".png"));refreshSlots();status=Component.translatable("gui.zombierool.texture_saved");}catch(Exception e){status=Component.translatable("gui.zombierool.texture_error");}}
@@ -107,9 +110,16 @@ public final class TexturePixelEditor extends Screen {
         String name=importName.getValue();if(!name.matches("[A-Za-z0-9_-]+\\.png")){status=Component.translatable("gui.zombierool.texture_error");return;}
         Path sourcePath=directory().resolve("import").resolve(name);
         try{if(Files.size(sourcePath)>1024*1024)throw new IllegalArgumentException();
+            if(!headImport && me.cryo.zombierool.maptexture.MapTextureAnimation.exists(sourcePath)){
+                me.cryo.zombierool.maptexture.MapTextureAnimation.read(sourcePath).encode();
+                Files.createDirectories(target().getParent());
+                for(String importedFace:FACES){Path dest=directory().resolve(texture+(importedFace.equals("side")?"":"_"+importedFace)+".png");Files.copy(sourcePath,dest,java.nio.file.StandardCopyOption.REPLACE_EXISTING);Files.copy(me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(sourcePath),me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(dest),java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+                Path side=directory().resolve(texture+"_side.png");Files.copy(sourcePath,side,java.nio.file.StandardCopyOption.REPLACE_EXISTING);Files.copy(me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(sourcePath),me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(side),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                clearDrafts();load();refreshSlots();status=Component.translatable("gui.zombierool.texture_saved");return;
+            }
             var faces=headImport?me.cryo.zombierool.maptexture.TextureAtlasImport.convertHead(Files.readAllBytes(sourcePath),size):me.cryo.zombierool.maptexture.TextureAtlasImport.convert(Files.readAllBytes(sourcePath),size);
             Files.createDirectories(target().getParent());
-            for(String convertedFace:me.cryo.zombierool.maptexture.MapTexturePixels.FACES){String suffix=convertedFace.equals("side")||convertedFace.equals("north")?"":"_"+convertedFace;var image=faces.getOrDefault(suffix,faces.get(""));javax.imageio.ImageIO.write(image,"png",directory().resolve(texture+(convertedFace.equals("side")?"":"_"+convertedFace)+".png").toFile());if(convertedFace.equals("side"))javax.imageio.ImageIO.write(image,"png",directory().resolve(texture+"_side.png").toFile());}
+            for(String convertedFace:me.cryo.zombierool.maptexture.MapTexturePixels.FACES){String suffix=convertedFace.equals("side")||convertedFace.equals("north")?"":"_"+convertedFace;var image=faces.getOrDefault(suffix,faces.get(""));Path dest=directory().resolve(texture+(convertedFace.equals("side")?"":"_"+convertedFace)+".png");javax.imageio.ImageIO.write(image,"png",dest.toFile());Files.deleteIfExists(me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(dest));if(convertedFace.equals("side")){Path side=directory().resolve(texture+"_side.png");javax.imageio.ImageIO.write(image,"png",side.toFile());Files.deleteIfExists(me.cryo.zombierool.maptexture.MapTextureAnimation.metadata(side));}}
             clearDrafts();load();refreshSlots();status=Component.translatable("gui.zombierool.texture_saved");
         }catch(Exception e){status=Component.translatable("gui.zombierool.texture_error");}
     }

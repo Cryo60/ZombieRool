@@ -237,7 +237,7 @@ public class WeaponSystem {
                 "stg44", "storm", "superbow", "svt40", "tar21", "thompson", "thundergun", "trenchgun",
                 "type100", "ump45", "usp45", "uzi", "vandal", "vector", "whisper", "wunderwaffedg2", "winters_howl", "vr11",
                 "fire_wand", "shadow_wand", "longbow", "scarlet_crossbow", "scarlet_sword", "scarlet_axe", "scarlet_halberd", "scarlet_shield",
-                "stratholme_shortbow", "stratholme_warbow", "stratholme_hunting_crossbow", "stratholme_heavy_crossbow", "stratholme_flintlock", "stratholme_musket", "stratholme_blunderbuss", "stratholme_dwarven_rifle", "stratholme_rusty_dagger", "stratholme_assassin_dagger", "stratholme_hunting_knife", "stratholme_runic_knife", "stratholme_arming_sword", "stratholme_runeblade", "stratholme_claymore", "stratholme_runic_greatsword"
+                "stratholme_shortbow", "stratholme_warbow", "stratholme_hunting_crossbow", "stratholme_heavy_crossbow", "stratholme_flintlock", "stratholme_musket", "stratholme_blunderbuss", "stratholme_dwarven_rifle", "stratholme_rusty_dagger", "stratholme_assassin_dagger", "stratholme_hunting_knife", "stratholme_runic_knife", "stratholme_arming_sword", "stratholme_runeblade", "stratholme_claymore", "stratholme_runic_greatsword", "stratholme_ashbringer"
         };
 
         public static BaseGunItem createWeapon(Definition def) {
@@ -298,7 +298,10 @@ public class WeaponSystem {
             return new WeaponImplementations.HitscanGunItem(def);
         }
 
-        public static void loadWeapons() {
+        public static void loadWeapons() { loadWeapons(true); }
+        /** Forge identity must be derived exclusively from the shipped catalog. */
+        public static void loadBuiltinWeapons() { loadWeapons(false); }
+        private static void loadWeapons(boolean external) {
             LOADED_DEFINITIONS.clear();
 
             for (String weaponId : BUILTIN_WEAPONS) {
@@ -316,8 +319,10 @@ public class WeaponSystem {
                             }
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception error) { throw new IllegalStateException("Invalid built-in weapon: "+weaponId,error); }
+                if(!LOADED_DEFINITIONS.containsKey(weaponId))throw new IllegalStateException("Missing built-in weapon: "+weaponId);
             }
+            if(!external)return;
 
             File externalFolder = FMLPaths.GAMEDIR.get().resolve("data/zombierool/gameplay/weapons/").toFile();
             if (externalFolder.exists() && externalFolder.isDirectory()) {
@@ -332,6 +337,11 @@ public class WeaponSystem {
                                     def.id = "zombierool:" + filenameId;
                                 }
                                 def.resolveBackwardCompatibility();
+                                String key=def.id.replace("zombierool:","").trim();
+                                if(!LOADED_DEFINITIONS.containsKey(key)){
+                                    me.cryo.zombierool.ZombieroolMod.LOGGER.warn("[ZombieRool] Local weapon '{}' is not in the fixed registry catalog; skipped to preserve multiplayer compatibility.",key);
+                                    continue;
+                                }
                                 registerDefinition(def, filenameId);
                             }
                         } catch (Exception e) {
@@ -533,7 +543,7 @@ public class WeaponSystem {
         @Override public void setReloadTimer(ItemStack s, int t) { getOrCreateTag(s).putInt(TAG_RELOAD_TIMER, t); }
 
         @Override public int getMaxAmmo(ItemStack s) { Definition currentDef = getDefinition(); return isPackAPunched(s) ? currentDef.ammo.clip_size + currentDef.pap.clip_bonus : currentDef.ammo.clip_size; }
-        @Override public int getMaxReserve(ItemStack s) { Definition currentDef = getDefinition(); return isPackAPunched(s) ? currentDef.ammo.max_reserve + currentDef.pap.reserve_bonus : currentDef.ammo.max_reserve; }
+        @Override public int getMaxReserve(ItemStack s) { Definition currentDef = getDefinition(); return me.cryo.zombierool.gameplay.WeaponReserves.capacity(currentDef.ammo.max_reserve,isPackAPunched(s)?currentDef.pap.reserve_bonus:0); }
         @Override public boolean isInfinite(ItemStack s) { return getDefinition().ammo.max_reserve < 0; }
 
         public boolean hasDurability() { return getDefinition().stats.durability > 0; }
@@ -548,7 +558,7 @@ public class WeaponSystem {
             if (!tag.contains(TAG_AMMO)) {
                 setAmmo(stack, currentDef.ammo.clip_size);
                 setAmmoLeft(stack, currentDef.ammo.clip_size);
-                setReserve(stack, currentDef.ammo.max_reserve);
+                setReserve(stack, getMaxReserve(stack));
                 if (hasOverheat()) setOverheat(stack, 0);
                 if (hasDurability()) setDurability(stack, getMaxDurability(stack));
             }

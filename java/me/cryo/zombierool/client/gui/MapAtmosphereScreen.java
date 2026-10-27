@@ -74,7 +74,7 @@ public final class MapAtmosphereScreen extends Screen {
         var editor=importingEditor;if(editor==null)return;importingEditor=null;editor.importing=false;
         if(!success){editor.error="importFailed";}else{
             String id=result.getString("id");
-            if(result.getString("kind").equals("sky")){editor.draft.putString("skyTexture",id);editor.draft.putBoolean("skyEnabled",true);editor.draft.putString("skyLayout",result.getString("skyLayout"));editor.draft.putString("skyCoordinates",result.getString("skyLayout").equals("panorama")?"y_up":result.getString("skyCoordinates"));editor.tab=1;}
+            if(result.getString("kind").equals("sky")){editor.draft.putString("skyTexture",id);editor.draft.putBoolean("skyEnabled",true);editor.draft.putBoolean("vanillaSky",false);editor.draft.putString("skyLayout",result.getString("skyLayout"));editor.draft.putString("skyCoordinates",result.getString("skyLayout").equals("panorama")?"y_up":result.getString("skyCoordinates"));editor.tab=1;}
             else{var p=editor.minecraft.player;if(p==null)return;if(editor.sources().size()>=MapAtmosphere.MAX_SOURCES){editor.error="sourceLimit";editor.init();return;}editor.sources().add(MapAtmosphere.source("ambience_"+UUID.randomUUID().toString().substring(0,6),id,false,false,p.getX(),p.getY(),p.getZ(),.7,128,400,1200));editor.selected=editor.sources().size()-1;editor.tab=2;}
             editor.page=0;editor.changed();
         }
@@ -114,7 +114,7 @@ public final class MapAtmosphereScreen extends Screen {
         }
         if(tab==1){
             row("skyObjects",y->addRenderableWidget(Button.builder(Component.translatable("gui.zombierool.skyObjects.title"),b->minecraft.setScreen(new SkyObjectsScreen(this,draft,objects->{draft.put("skyObjects",objects);draft.putBoolean("skyEnabled",true);changed();}))).bounds(left()+124,y,180,18).build()));
-            bool(draft,"skyEnabled");row("skyFile",y->addRenderableWidget(Button.builder(tr("importSky"),b->pickFile(true)).bounds(left()+124,y,180,18).build()));
+            bool(draft,"skyEnabled");bool(draft,"vanillaSky");row("skyFile",y->addRenderableWidget(Button.builder(tr("importSky"),b->pickFile(true)).bounds(left()+124,y,180,18).build()));
             if(advanced){text(draft,"skyTexture");row("skyLayout",y->addRenderableWidget(CycleButton.builder((String s)->tr(s)).withValues("cube","panorama").withInitialValue(draft.getString("skyLayout")).displayOnlyValue().create(left()+174,y,130,18,tr("skyLayout"),(b,v)->{draft.putString("skyLayout",v);changed();})));row("skyCoordinates",y->addRenderableWidget(CycleButton.builder((String s)->tr(s)).withValues("z_up","y_up").withInitialValue(draft.getString("skyCoordinates")).displayOnlyValue().create(left()+174,y,130,18,tr("skyCoordinates"),(b,v)->{draft.putString("skyCoordinates",v);changed();})));for(String k:List.of("skyPitch","red","green","blue","exposure","gamma","vignetteSoftness"))number(draft,k);}
             else{
                 var skies=new ArrayList<String>();for(String id:MapAtmosphere.presetIds())if(!id.equals("none"))skies.add(MapAtmosphere.preset(id).getString("skyTexture"));skies.addAll(MapAtmosphereClient.skyIds().stream().sorted().toList());if(!skies.contains(draft.getString("skyTexture")))skies.add(draft.getString("skyTexture"));

@@ -27,11 +27,13 @@ public final class MapActorBehavior {
             if(!(level.getEntity(id) instanceof Mob mob)||!mob.isAlive()||mob.isNoAi())continue;
             var p=MapKnifeRules.profile(mob);Vec3 home=mob instanceof me.cryo.zombierool.entity.MapActorEntity actor?actor.home():new Vec3(mob.getPersistentData().getDouble("MapHomeX"),mob.getPersistentData().getDouble("MapHomeY"),mob.getPersistentData().getDouble("MapHomeZ"));
             patrol(mob,p,home);
+            if(mob.getNavigation() instanceof RouteNavigation nav&&nav.planningDeferred()
+                &&mob.getTarget()==null&&p.getDouble("wanderRadius")>0&&queue.waiting.add(id))queue.pending.addLast(id);
         }
     }
     @net.minecraftforge.eventbus.api.SubscribeEvent public static void patrolUnload(net.minecraftforge.event.level.LevelEvent.Unload event){if(event.getLevel() instanceof ServerLevel level)PATROLS.remove(level);}
     @net.minecraftforge.eventbus.api.SubscribeEvent public static void patrolLeft(net.minecraftforge.event.entity.EntityLeaveLevelEvent event){if(event.getLevel() instanceof ServerLevel level){var queue=PATROLS.get(level);if(queue!=null){queue.progress.remove(event.getEntity().getUUID());queue.waiting.remove(event.getEntity().getUUID());}}}
-    public static final java.util.List<String> BEHAVIOR_FIELDS=java.util.List.of("behavior","aggroRadius","wanderRadius","leashRadius","speed","speedMode","stayNearSpawn","healthMode","faction","knifeMode","knifeHits");
+    public static final java.util.List<String> BEHAVIOR_FIELDS=java.util.List.of("behavior","aggroRadius","wanderRadius","leashRadius","speed","speedMode","stayNearSpawn","healthMode","faction","knifeMode","knifeHits","wavePursuit");
     public static void settings(CompoundTag in,CompoundTag out){
         String mode=in.getString("speedMode");if(!java.util.List.of("custom","walk","trot","run").contains(mode))mode="walk";
         out.putString("speedMode",mode);out.putBoolean("stayNearSpawn",!in.contains("stayNearSpawn")||in.getBoolean("stayNearSpawn"));
@@ -41,7 +43,7 @@ public final class MapActorBehavior {
     public static float waveHealth(ServerLevel level){var config=me.cryo.zombierool.config.WorldConfig.get(level);int wave=Math.max(1,WaveManager.getCurrentWave());float hp=config.getZombieBaseHealth();if(wave>=2)hp=wave<=9?hp+wave*4:(hp+36)*(float)Math.pow(1.15,wave-9);return Math.min(hp,config.getZombieMaxHealth());}
     public static double speed(CompoundTag p,ServerLevel level){return switch(p.getString("speedMode")){case "walk"->me.cryo.zombierool.entity.ZombieEntity.DEFAULT_MOVEMENT_SPEED;case "trot"->.23;case "run"->me.cryo.zombierool.config.WorldConfig.get(level).getZombieSprintSpeed();default->p.getDouble("speed");};}
     public static boolean eligible(ServerPlayer p){return p!=null&&p.isAlive()&&!p.isCreative()&&!p.isSpectator()&&!me.cryo.zombierool.player.PlayerDownManager.isPlayerDown(p.getUUID());}
-    public static String faction(LivingEntity e){if(MapActors.owns(e)){var p=MapKnifeRules.profile(e);if(p.getString("id").equals("baron_rivendare"))return "scourge";if(p.getString("id").equals("balnazzar"))return "risen";if(p.getString("baseEntity").equals("geist"))return "scourge";return p.getString("faction");}if(e instanceof me.cryo.zombierool.entity.ZombieEntity zombie&&me.cryo.zombierool.config.EnemySkinPresets.blockyModel(zombie.getCustomSkin()).startsWith("scourge_"))return "scourge";if(e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity boss&&(boss.getType()==me.cryo.zombierool.init.ZombieroolModEntities.GEIST.get()||boss.bossProfile().getString("template").equals("abomination")))return "scourge";return "";}
+    public static String faction(LivingEntity e){if(MapActors.owns(e)){var p=MapKnifeRules.profile(e);if(p.getString("id").equals("baron_rivendare")||p.getString("id").equals("scourge_necromancer"))return "scourge";if(p.getString("id").equals("balnazzar"))return "risen";if(p.getString("baseEntity").equals("geist"))return "scourge";return p.getString("faction");}if(e instanceof me.cryo.zombierool.entity.ZombieEntity zombie&&me.cryo.zombierool.config.EnemySkinPresets.blockyModel(zombie.getCustomSkin()).startsWith("scourge_"))return "scourge";if(e instanceof me.cryo.zombierool.entity.SpecialEnemyEntity boss&&(boss.getType()==me.cryo.zombierool.init.ZombieroolModEntities.GEIST.get()||boss.bossProfile().getString("template").equals("abomination")))return "scourge";return "";}
     public static boolean enemies(LivingEntity a,LivingEntity b){String first=faction(a),second=faction(b);return first.equals("risen")&&second.equals("scourge")||first.equals("scourge")&&second.equals("risen");}
     public static double gapSquared(LivingEntity a,LivingEntity b){var x=a.getBoundingBox();var y=b.getBoundingBox();double dx=Math.max(0,Math.max(x.minX-y.maxX,y.minX-x.maxX)),dy=Math.max(0,Math.max(x.minY-y.maxY,y.minY-x.maxY)),dz=Math.max(0,Math.max(x.minZ-y.maxZ,y.minZ-x.maxZ));return dx*dx+dy*dy+dz*dz;}
     public static boolean visible(Mob mob,LivingEntity target){if(mob.hasLineOfSight(target))return true;var from=mob.position().add(0,Math.min(1.1,mob.getBbHeight()*.6),0);var to=target.position().add(0,Math.min(1.1,target.getBbHeight()*.6),0);return mob.level().clip(new net.minecraft.world.level.ClipContext(from,to,net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,mob)).getType()==net.minecraft.world.phys.HitResult.Type.MISS;}
@@ -53,10 +55,21 @@ public final class MapActorBehavior {
         if(e.getEntity() instanceof ServerPlayer player&&me.cryo.zombierool.bonuses.BonusManager.isZombieBloodActive(player)&&e.getSource().getEntity() instanceof Mob mob&&MapActors.owns(mob))e.setCanceled(true);
     }
     /** The spawn tether bounds idle wandering only. Pursuit uses the independent leash. */
-    public static double boundary(CompoundTag p){return p.getDouble("leashRadius");}
+    public static double boundary(CompoundTag p){return p.getBoolean("wavePursuit")?0:p.getDouble("leashRadius");}
     public static LivingEntity target(Mob mob,CompoundTag p,Vec3 home){
         var level=(ServerLevel)mob.level();double radius=p.getDouble("aggroRadius");
         var state=mob.getPersistentData();
+        if(p.getBoolean("wavePursuit")){
+            // An authored wave-style arrival locks a valid target without radius or LOS
+            // acquisition limits. Only already loaded entities are considered.
+            if(pursuable(mob,mob.getTarget()))return mob.getTarget();
+            long now=level.getGameTime();if(state.getLong("MapNextGlobalAcquire")>now)return null;
+            state.putLong("MapNextGlobalAcquire",now+20);
+            LivingEntity closest=null;double best=Double.MAX_VALUE;
+            for(var player:level.players())if(pursuable(mob,player)){double distance=gapSquared(mob,player);if(distance<best){best=distance;closest=player;}}
+            for(var entity:level.getAllEntities())if(entity instanceof LivingEntity candidate&&!(candidate instanceof ServerPlayer)&&pursuable(mob,candidate)){double distance=gapSquared(mob,candidate);if(distance<best){best=distance;closest=candidate;}}
+            return closest;
+        }
         if(MapActors.owns(mob)&&state.hasUUID("MapRetaliation")){var entity=level.getEntity(state.getUUID("MapRetaliation"));if(entity instanceof LivingEntity target&&pursuable(mob,target))return target;state.remove("MapRetaliation");}
         if(p.getString("behavior").equals("wander"))return null;
         if((MapActors.owns(mob)||faction(mob).equals("scourge"))&&pursuable(mob,mob.getTarget()))return mob.getTarget();

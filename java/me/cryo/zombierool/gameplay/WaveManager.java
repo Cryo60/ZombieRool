@@ -183,6 +183,7 @@ public class WaveManager {
         MapPower.resetSignals(level);
         for (var buildLevel : level.getServer().getAllLevels()) BuildableSystem.get(buildLevel).reset(buildLevel);
         MatchWorldJournal.restore(level);
+        QuestBlockSnapshots.get(level).restoreAll(level);
         me.cryo.zombierool.block.system.BlindBuySystem.resetAllCabinets(level);
         WorldConfig.get(level).migrateEncounterLabHorde();
         MatchConfigSnapshot.begin(level);
@@ -956,6 +957,7 @@ public class WaveManager {
         MapPower.resetSignals(level);
         for (var buildLevel : level.getServer().getAllLevels()) BuildableSystem.get(buildLevel).reset(buildLevel);
         MatchWorldJournal.restore(level);
+        QuestBlockSnapshots.get(level).restoreAll(level);
         MapPower.refresh(level);
         resetPerkEgg(level);
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
@@ -987,6 +989,7 @@ public class WaveManager {
             if(matchWasRunning)MapPower.resetSignals(overworld);
             for (var buildLevel : event.getServer().getAllLevels()) BuildableSystem.get(buildLevel).reset(buildLevel);
             MatchWorldJournal.restore(overworld);
+            QuestBlockSnapshots.get(overworld).restoreAll(overworld);
             MatchConfigSnapshot.restore(overworld);
             if (matchWasRunning) {
                 MapPower.refresh(overworld);

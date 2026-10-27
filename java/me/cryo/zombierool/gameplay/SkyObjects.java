@@ -7,7 +7,7 @@ import java.util.*;
 /** Portable sky scenery: definitions travel with presets, world saves and player overrides. */
 public final class SkyObjects {
     public static final int MAX_OBJECTS=12, MAX_BOXES=64;
-    public static final List<String> TYPES=List.of("moon","nuclear_cloud","earth","dogfight","eclipse","floating_rocks","meteor","necropolis","custom");
+    public static final List<String> TYPES=List.of("sun","destroyed_earth","moon","nuclear_cloud","earth","dogfight","eclipse","floating_rocks","meteor","necropolis","custom");
     private SkyObjects(){}
     private static void value(CompoundTag out,CompoundTag in,String k,double fallback,double min,double max){double v=in.contains(k,99)?in.getDouble(k):fallback;out.putDouble(k,Double.isFinite(v)?Math.max(min,Math.min(max,v)):fallback);}
     public static ListTag sanitize(ListTag input){var result=new ListTag();var ids=new HashSet<String>();for(Tag tag:input){if(result.size()>=MAX_OBJECTS)break;if(!(tag instanceof CompoundTag n))continue;var row=sanitize(n);if(!row.getString("id").isBlank()&&ids.add(row.getString("id")))result.add(row);}return result;}

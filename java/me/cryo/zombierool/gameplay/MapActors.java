@@ -25,6 +25,126 @@ public final class MapActors extends SavedData {
     private final Map<String, String> triggered = new HashMap<>();
     private record SpawnBatch(String token,int remaining,int cursor){}
     private final Map<String,SpawnBatch> pendingBatches=new HashMap<>();
+    // Match-local ledger: chunk unloading is not a death. Retain membership until match reset.
+    private final Map<UUID,Boolean> questActors=new HashMap<>();
+    private final Map<String,Set<UUID>> questMembers=new HashMap<>();
+    public String trackQuestActor(String uuid){
+        if(!uuid.isEmpty()&&running)questActors.putIfAbsent(UUID.fromString(uuid),true);
+        return uuid;
+    }
+    private String remember(String uuid,String marker){
+        if(!uuid.isEmpty()&&running&&!marker.isEmpty()&&markers.getCompound(marker).getString("trigger").equals("game_start")){
+            trackQuestActor(uuid);questMembers.computeIfAbsent(marker,k->new HashSet<>()).add(UUID.fromString(uuid));
+        }
+        return uuid;
+    }
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    public static void questDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event){
+        if(event.getEntity().level() instanceof ServerLevel level&&owns(event.getEntity())){
+            var data=get(level);if(data.questActors.containsKey(event.getEntity().getUUID()))data.questActors.put(event.getEntity().getUUID(),false);
+        }
+    }
+    public String questActorState(String uuid){try{Boolean alive=questActors.get(UUID.fromString(uuid));return alive==null?"unknown":alive?"alive":"dead";}catch(IllegalArgumentException e){return "unknown";}}
+    public org.luaj.vm2.LuaTable questStatus(BlockPos min,BlockPos max){
+        var out=new org.luaj.vm2.LuaTable();int count=0,invalid=0,pending=0,alive=0,spawned=0,expected=0;
+        for(String key:markers.getAllKeys()){
+            BlockPos pos=BlockPos.of(Long.parseLong(key));
+            if(pos.getX()<min.getX()||pos.getX()>max.getX()||pos.getY()<min.getY()||pos.getY()>max.getY()||pos.getZ()<min.getZ()||pos.getZ()>max.getZ())continue;
+            var rule=markers.getCompound(key);if(!rule.getBoolean("enabled"))continue;count++;expected+=rule.getInt("batch");
+            if(!rule.getString("trigger").equals("game_start"))invalid++;
+            if(!Objects.equals(triggered.get(key),session+":start")||pendingBatches.containsKey(key))pending++;
+            var members=questMembers.getOrDefault(key,Set.of());spawned+=members.size();
+            for(UUID id:members)if(Boolean.TRUE.equals(questActors.get(id)))alive++;
+        }
+        out.set("expected",expected);out.set("unspawned",Math.max(0,expected-spawned));out.set("markers",count);out.set("invalid",invalid);out.set("pending",pending);out.set("alive",alive);out.set("spawned",spawned);
+        out.set("complete",org.luaj.vm2.LuaValue.valueOf(running&&count>0&&invalid==0&&pending==0&&spawned>0&&alive==0));return out;
+    }
+    private record QuestArea(BlockPos min,BlockPos max){
+        boolean core(BlockPos p){return Math.abs(p.getX()-(min.getX()+max.getX())*.5)<=3&&Math.abs(p.getZ()-(min.getZ()+max.getZ())*.5)<=3&&contains(p);}
+        boolean contains(BlockPos p){return p.getX()>=min.getX()&&p.getX()<=max.getX()&&p.getY()>=min.getY()&&p.getY()<=max.getY()&&p.getZ()>=min.getZ()&&p.getZ()<=max.getZ();}
+    }
+    private final Map<String,QuestArea> questAreas=new LinkedHashMap<>();
+    private final Map<UUID,CompoundTag> parked=new LinkedHashMap<>();
+    private double activationRadius,parkingRadius;
+    private int questMarkerCursor;
+    public void configureStreaming(double active,double sleep){
+        if(!Double.isFinite(active)||!Double.isFinite(sleep)||active<32||active>96||sleep<active+16||sleep>192)throw new IllegalArgumentException("Streaming radii: active 32..96, parking active+16..192");
+        activationRadius=active;parkingRadius=sleep;
+    }
+    public void questArea(String id,BlockPos min,BlockPos max){
+        if(id==null||!id.matches("[A-Za-z0-9_-]{1,48}")||questAreas.size()>=16&&!questAreas.containsKey(id)||min.getX()>max.getX()||min.getY()>max.getY()||min.getZ()>max.getZ()||max.getX()-min.getX()>64||max.getY()-min.getY()>32||max.getZ()-min.getZ()>64)throw new IllegalArgumentException("Invalid quest spawner area");
+        questAreas.put(id,new QuestArea(min,max));
+    }
+    private QuestArea questArea(BlockPos pos){for(var area:questAreas.values())if(area.contains(pos))return area;return null;}
+    private boolean protectedMarker(String key){try{return questArea(BlockPos.of(Long.parseLong(key)))!=null;}catch(NumberFormatException e){return false;}}
+    public boolean spawnSpace(ServerLevel level,net.minecraft.world.entity.LivingEntity mob,String marker){
+        return !marker.isEmpty()&&protectedMarker(marker)?!level.getBlockCollisions(mob,mob.getBoundingBox()).iterator().hasNext()&&level.getWorldBorder().isWithinBounds(mob.getBoundingBox()):level.noCollision(mob);
+    }
+    public boolean spawnOccupied(net.minecraft.world.entity.LivingEntity mob,String marker){
+        var area=marker.isEmpty()?null:questArea(BlockPos.of(Long.parseLong(marker)));
+        for(var other:mob.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,mob.getBoundingBox().inflate(.15,0,.15),e->e.isAlive())){
+            // A small authored room can fill as a single group without its first guards
+            // blocking the remaining guards. Players and unrelated groups still obstruct it.
+            if(area!=null&&owns(other)&&!(other instanceof net.minecraft.world.entity.player.Player)){
+                String key=other instanceof MapActorEntity actor?actor.marker():other.getPersistentData().getString("MapMarker");
+                if(!key.isEmpty()&&area==questArea(BlockPos.of(Long.parseLong(key))))continue;
+            }
+            return true;
+        }
+        return false;
+    }
+    private void clearStreaming(){activationRadius=parkingRadius=0;questAreas.clear();parked.clear();questMarkerCursor=0;}
+    private static boolean near(java.util.List<net.minecraft.server.level.ServerPlayer> players,Vec3 at,double radius){
+        for(var player:players){double dx=player.getX()-at.x,dz=player.getZ()-at.z;if(dx*dx+dz*dz<=radius*radius&&Math.abs(player.getY()-at.y)<=24)return true;}return false;
+    }
+    private void questBehavior(CompoundTag profile){
+        profile.putBoolean("stayNearSpawn",true);double leash=profile.getDouble("leashRadius");profile.putDouble("leashRadius",leash>0?Math.min(leash,10):10);profile.putDouble("wanderRadius",Math.min(profile.getDouble("wanderRadius"),3));
+    }
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    public static void questActorJoined(net.minecraftforge.event.entity.EntityJoinLevelEvent event){
+        if(!(event.getLevel() instanceof ServerLevel level)||!(event.getEntity() instanceof net.minecraft.world.entity.Mob mob)||!owns(mob))return;
+        var data=get(level);
+        if(mob.getPersistentData().getBoolean("matchActor")&&(!WaveManager.isGameRunning()||!data.running||!mob.getPersistentData().getString("MapMatchId").equals(data.matchIdentity))){mob.discard();event.setCanceled(true);return;}
+        String key=mob instanceof MapActorEntity actor?actor.marker():mob.getPersistentData().getString("MapMarker");
+        if(key.isEmpty()||!data.protectedMarker(key))return;
+        var profile=MapKnifeRules.profile(mob).copy();data.questBehavior(profile);
+        if(mob instanceof MapActorEntity actor)actor.applyBehaviorSettings(profile);else mob.getPersistentData().put("MapNativeProfile",profile);
+    }
+    /** Offscreen finite groups keep UUID, health and script state. Parking is never a kill or a fresh spawn. */
+    public int stream(ServerLevel level,java.util.List<net.minecraft.server.level.ServerPlayer> players,long deadline){
+        if(activationRadius<=0)return 0;int saved=0,restored=0;
+        var candidates=new ArrayList<net.minecraft.world.entity.Mob>();
+        for(var e:level.getAllEntities())if(e instanceof net.minecraft.world.entity.Mob mob&&owns(mob)&&mob.isAlive()&&!countsForWave(mob))candidates.add(mob);
+        for(var mob:candidates){
+            if(saved>=4||System.nanoTime()>deadline)break;
+            String key=mob instanceof MapActorEntity actor?actor.marker():mob.getPersistentData().getString("MapMarker");
+            if(key.isEmpty()||!markers.getCompound(key).getString("trigger").equals("game_start")||MapKnifeRules.profile(mob).getBoolean("boss")||near(players,mob.position(),parkingRadius)||(MapActorBehavior.pursuable(mob,mob.getTarget())&&(!(mob.getTarget() instanceof net.minecraft.world.entity.player.Player)||mob.distanceToSqr(mob.getTarget())<=parkingRadius*parkingRadius))||mob.hurtTime>0)continue;
+            var tag=new CompoundTag();if(!mob.save(tag))continue;
+            parked.put(mob.getUUID(),tag);mob.discard();saved++;
+        }
+        for(var it=parked.entrySet().iterator();it.hasNext();){
+            if(restored>=4||System.nanoTime()>deadline||ActorPopulation.marked(level)>=ActorPopulation.MARKER_LIMIT||ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE)break;
+            var entry=it.next();var tag=entry.getValue();var pos=tag.getList("Pos",6);if(pos.size()!=3)continue;
+            var at=new Vec3(pos.getDouble(0),pos.getDouble(1),pos.getDouble(2));
+            if(!near(players,at,activationRadius)||!level.hasChunkAt(BlockPos.containing(at)))continue;
+            String key=tag.getString("MapMarker");if(key.isEmpty())key=tag.getCompound("ForgeData").getString("MapMarker");boolean objective=protectedMarker(key);
+            if(!objective&&ActorPopulation.marked(level)>=ActorPopulation.MARKER_LIMIT-64)continue;
+            if(level.getEntity(entry.getKey())!=null){it.remove();continue;}
+            var entity=net.minecraft.world.entity.EntityType.loadEntityRecursive(tag.copy(),level,e->e);
+            if(!(entity instanceof net.minecraft.world.entity.Mob mob)||!mob.isAlive())continue;
+            if(!spawnSpace(level,mob,key)||spawnOccupied(mob,key))continue;
+            if(!level.addFreshEntity(mob))continue;
+            var profile=MapKnifeRules.profile(mob).copy();
+            var original=tag.contains("MapProfile",10)?tag.getCompound("MapProfile"):tag.getCompound("ForgeData").getCompound("MapNativeProfile");
+            for(String field:MapActorBehavior.BEHAVIOR_FIELDS)if(original.contains(field))profile.put(field,original.get(field).copy());
+            if(objective)questBehavior(profile);
+            if(mob instanceof MapActorEntity custom)custom.applyBehaviorSettings(profile);else{mob.getPersistentData().put("MapNativeProfile",profile);var speed=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);if(speed!=null)speed.setBaseValue(MapActorBehavior.speed(profile,level));}
+            ActorPopulation.spawned(mob);it.remove();restored++;
+        }
+        return restored;
+    }
+    private String matchIdentity="";
+    public String matchIdentity(){return matchIdentity;}
     private boolean running;
     private int session;
     private boolean imported;
@@ -85,6 +205,13 @@ public final class MapActors extends SavedData {
         out.putBoolean("boss",in.getBoolean("boss"));out.putInt("meleeCooldown",(int)number(in,"meleeCooldown",20,20,200));out.putBoolean("countsForWave",in.getBoolean("countsForWave"));
         out.putBoolean("undead",!in.contains("undead")||in.getBoolean("undead"));
         out.putBoolean("sourceMotion",in.getBoolean("sourceMotion"));
+        out.putBoolean("harmless",in.getBoolean("harmless"));
+        out.putBoolean("invulnerable",in.getBoolean("invulnerable"));
+        out.putDouble("healthMultiplier",number(in,"healthMultiplier",1,.1,10));
+        out.putBoolean("wavePursuit",in.getBoolean("wavePursuit"));
+        out.putBoolean("despawnAfterDeath",in.getBoolean("despawnAfterDeath"));
+        out.putBoolean("fullBright",in.getBoolean("fullBright"));
+        out.putDouble("renderAlpha",number(in,"renderAlpha",1,.1,1));
         String base=in.getString("baseEntity");if(!base.isEmpty()&&!List.of("scourge_ghoul","scourge_zombie","scourge_skeleton","abomination","geist","zombie","crawler","hellhound","white_knight","panzer","brutus","pentagon_thief","napalm_minion","skeleton_minion","george_romero","astronaut").contains(base))throw new IllegalArgumentException("Invalid base entity");out.putString("baseEntity",base);
         out.putString("nameKey",in.getString("nameKey"));
         String knife=in.getString("knifeMode");if(!List.of("wave","hits","fixed").contains(knife))knife=!in.getBoolean("boss")&&List.of("zombie","scourge_ghoul","scourge_zombie","scourge_skeleton","crawler","hellhound","skeleton_minion").contains(base)?"wave":"fixed";out.putString("knifeMode",knife);out.putInt("knifeHits",(int)number(in,"knifeHits",1,1,1000));
@@ -152,7 +279,11 @@ public final class MapActors extends SavedData {
             if(imported.size()>=256||Files.isSymbolicLink(file)||Files.size(file)>1000000)throw new IllegalArgumentException("Too many or invalid entity files");
             String id=file.getFileName().toString().replaceFirst("\\.json$","");imported.put(id,sanitize(id,parse(Files.readString(file))));
         }}
-        profiles.merge(imported);
+        // A file defines the complete profile. Recursive NBT merge keeps removed
+        // bones and animation channels from older versions of the same model.
+        // Replace matching profiles atomically after all files have validated;
+        // profiles without a corresponding file and authored markers stay intact.
+        for(String id:imported.getAllKeys())profiles.put(id,imported.getCompound(id));
         // Older Risen maps had separate gender entries. Preserve their spawners as aliases.
         for(String old:new ArrayList<>(profiles.getAllKeys()))if(!canonicalProfileId(old).equals(old))profiles.remove(old);
         for(String key:markers.getAllKeys()){
@@ -162,8 +293,8 @@ public final class MapActors extends SavedData {
         setDirty();return imported.size();
     }
     public CompoundTag marker(BlockPos pos) {return markers.getCompound(Long.toString(pos.asLong())).copy();}
-    public static void end(ServerLevel level){var data=get(level);data.running=false;data.triggered.clear();data.pendingBatches.clear();for(var dimension:level.getServer().getAllLevels()){var cleanup=new java.util.ArrayList<net.minecraft.world.entity.Entity>();for(var entity:dimension.getAllEntities())if(owns(entity))cleanup.add(entity);for(var entity:cleanup)if(!entity.isRemoved())entity.discard();}}
-    public static void begin(ServerLevel level){end(level);var data=get(level);data.running=true;data.session++;}
+    public static void end(ServerLevel level){var data=get(level);data.running=false;data.matchIdentity="";data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();for(var dimension:level.getServer().getAllLevels()){var cleanup=new java.util.ArrayList<net.minecraft.world.entity.Entity>();for(var entity:dimension.getAllEntities())if(owns(entity))cleanup.add(entity);for(var entity:cleanup)if(!entity.isRemoved())entity.discard();}}
+    public static void begin(ServerLevel level){end(level);var data=get(level);data.running=true;data.session++;data.matchIdentity=UUID.randomUUID().toString();}
     /** A saved batch must fit within its simultaneous population limit. Never lower a larger limit. */
     public static void normalizeSpawnBatch(CompoundTag settings) {
         int batch=(int)number(settings,"batch",1,1,16);
@@ -198,15 +329,17 @@ public final class MapActors extends SavedData {
         var p=profile(id);if(p.isEmpty()||!Double.isFinite(at.x)||!Double.isFinite(at.y)||!Double.isFinite(at.z)||!level.hasChunkAt(BlockPos.containing(at))||level.isOutsideBuildHeight(BlockPos.containing(at)))return "";
         p=appearance(p,level.random.nextInt(p.getList("appearances",10).size()+1));
         if(!marker.isEmpty()){var rule=markers.getCompound(marker);for(String key:List.of("health","damage","speed","aggroRadius","wanderRadius","leashRadius","countsForWave","behavior","knockbackResistance","knifeMode","knifeHits","speedMode","stayNearSpawn","healthMode"))if(rule.contains(key))p.put(key,rule.get(key).copy());}
-        p.putDouble("knockbackResistance",1);if(p.getString("healthMode").equals("wave"))p.putDouble("health",MapActorBehavior.waveHealth(level));
-        if(!p.getString("baseEntity").isEmpty())return NativeMapActors.spawn(level,p,at,marker);
+        if(!marker.isEmpty()&&protectedMarker(marker))questBehavior(p);
+        p.putDouble("knockbackResistance",1);double baseHealth=p.getString("healthMode").equals("wave")?MapActorBehavior.waveHealth(level):p.getDouble("health");double healthMultiplier=p.contains("healthMultiplier",99)?p.getDouble("healthMultiplier"):1;p.putDouble("health",Math.min(1000000,baseHealth*healthMultiplier));
+        if(!p.getString("baseEntity").isEmpty())return remember(NativeMapActors.spawn(level,p,at,marker),marker);
         if(ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE)return "";
         var actor=ZombieroolModEntities.MAP_ACTOR.get().create(level);if(actor==null)return "";
         actor.configure(p,at,marker);actor.moveTo(at.x,at.y,at.z,level.random.nextFloat()*360,0);
         actor.getPersistentData().putBoolean("matchActor",WaveManager.isGameRunning());
-        if(!level.noCollision(actor)||!level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,actor.getBoundingBox().inflate(.15,0,.15),e->e.isAlive()).isEmpty()||!level.addFreshEntity(actor))return "";
+        actor.getPersistentData().putString("MapMatchId",matchIdentity);
+        if(!spawnSpace(level,actor,marker)||spawnOccupied(actor,marker)||!level.addFreshEntity(actor))return "";
         if(p.getBoolean("countsForWave")&&WaveManager.isCombatWave())WaveManager.registerMapActor(actor);
-        ActorPopulation.spawned(actor);actor.callback("spawn");return actor.getUUID().toString();
+        ActorPopulation.spawned(actor);actor.callback("spawn");return remember(actor.getUUID().toString(),marker);
     }
     @SubscribeEvent public static void tick(TickEvent.LevelTickEvent event) {
         if(event.phase!=TickEvent.Phase.END||!(event.level instanceof ServerLevel level)||level.dimension()!=net.minecraft.world.level.Level.OVERWORLD)return;
@@ -221,16 +354,25 @@ public final class MapActors extends SavedData {
             if(style.equals("arrow")||level.getGameTime()%5!=0)continue;level.sendParticles(style.equals("fire")?net.minecraft.core.particles.ParticleTypes.FLAME:style.equals("web")?net.minecraft.core.particles.ParticleTypes.CLOUD:net.minecraft.core.particles.ParticleTypes.WITCH,bolt.getX(),bolt.getY(),bolt.getZ(),3,.05,.05,.05,0);
         }
         var data=get(level);boolean playing=WaveManager.isGameRunning();
-        if(!playing) {if(data.running){for(var e:level.getAllEntities())if(owns(e))e.discard();data.running=false;data.triggered.clear();data.pendingBatches.clear();}return;}
-        if(!data.running){data.running=true;data.session++;data.triggered.clear();data.pendingBatches.clear();}
+        if(!playing) {if(data.running){for(var e:level.getAllEntities())if(owns(e))e.discard();data.running=false;data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();}return;}
+        if(!data.running){data.running=true;data.session++;data.matchIdentity=UUID.randomUUID().toString();data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();}
         if(WaveManager.isPausedByPlayer()||level.players().stream().noneMatch(MapActorBehavior::eligible))return;
         int wave=WaveManager.getCurrentWave();
-        var keys=new ArrayList<>(new TreeSet<>(data.markers.getAllKeys()));
-        int visited=0,attemptsLeft=128,spawnsLeft=8;long spawnStarted=System.nanoTime();
-        while(visited<keys.size()&&attemptsLeft>0&&spawnsLeft>0){
-            if(visited>0&&System.nanoTime()-spawnStarted>=2_000_000)break;
-            String key=keys.get(Math.floorMod(data.markerCursor++,keys.size()));visited++;
+        var players=level.players().stream().filter(MapActorBehavior::eligible).toList();
+        long streamStarted=System.nanoTime();
+        int attemptsLeft=128,spawnsLeft=8-data.stream(level,players,streamStarted+1_000_000);
+        var priority=new ArrayList<String>();var ordinary=new ArrayList<String>();
+        for(String key:new TreeSet<>(data.markers.getAllKeys()))(data.protectedMarker(key)?priority:ordinary).add(key);
+        long spawnStarted=System.nanoTime();
+        for(var keys:java.util.List.of(priority,ordinary)){
+            boolean protectedPass=keys==priority;int visited=0;
+            while(visited<keys.size()&&attemptsLeft>0&&spawnsLeft>0){
+                if(System.nanoTime()-spawnStarted>=2_000_000)break;
+                int cursor=protectedPass?data.questMarkerCursor++:data.markerCursor++;
+                String key=keys.get(Math.floorMod(cursor,keys.size()));visited++;
             BlockPos pos=BlockPos.of(Long.parseLong(key));if(!level.hasChunkAt(pos))continue;
+            if(data.activationRadius>0&&!near(players,Vec3.atCenterOf(pos),data.activationRadius))continue;
+            var quest=data.questArea(pos);
             if(!level.getBlockState(pos).is(me.cryo.zombierool.block.system.UniversalSpawnerSystem.ACTOR_MARKER_BLOCK.get())){data.markers.remove(key);data.setDirty();continue;}
             var n=data.markers.getCompound(key);if(!n.getBoolean("enabled")||n.getBoolean("requireRedstone")&&!level.hasNeighborSignal(pos))continue;
             String trigger=n.getString("trigger");if(!trigger.equals("game_start")&&(wave<n.getInt("firstWave")||(wave-n.getInt("firstWave"))%n.getInt("waveInterval")!=0))continue;
@@ -243,23 +385,28 @@ public final class MapActors extends SavedData {
             if(data.profile(n.getString("profile")).isEmpty())continue;
             if(pending.remaining<=0){data.triggered.put(key,token);data.pendingBatches.remove(key);continue;}
             if(count<=0){data.pendingBatches.put(key,pending);continue;}
-            if(ActorPopulation.marked(level)>=ActorPopulation.MARKER_LIMIT||ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE){data.pendingBatches.put(key,pending);break;}
+            if(ActorPopulation.marked(level)>=(data.activationRadius>0&&quest==null?ActorPopulation.MARKER_LIMIT-64:ActorPopulation.MARKER_LIMIT)||ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE){data.pendingBatches.put(key,pending);break;}
             int spawned=0;
             // Fill the interior nearest the marker first, rather than only its centre and eight distant points.
-            var offsets=spawnOffsets(n.getDouble("spawnRadius"));
+            var offsets=spawnOffsets(quest!=null?Math.min(8,n.getDouble("spawnRadius")):n.getDouble("spawnRadius"));
             int checked=0;
             while(checked<Math.min(32,offsets.size())&&spawned<count&&attemptsLeft>0&&spawnsLeft>0){
                 if(checked>0&&System.nanoTime()-spawnStarted>=2_000_000)break;
-                attemptsLeft--;
                 var offset=offsets.get((pending.cursor+checked++)%offsets.size());
-                Vec3 at=Vec3.atBottomCenterOf(pos).add(offset.getX(),0,offset.getZ());
-                var floor=BlockPos.containing(at).below();if(!level.hasChunkAt(floor)||level.getBlockState(floor).getCollisionShape(level,floor).isEmpty())continue;
-                if(ActorPopulation.marked(level)>=ActorPopulation.MARKER_LIMIT||ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE)break;
-                if(!data.spawn(level,n.getString("profile"),at,key).isEmpty()){spawned++;spawnsLeft--;}
+                for(int dy:quest==null?new int[]{0}:new int[]{0,-1,-2}){
+                    if(attemptsLeft<=0||System.nanoTime()-spawnStarted>=2_000_000)break;
+                    attemptsLeft--;
+                    Vec3 at=Vec3.atBottomCenterOf(pos).add(offset.getX(),dy,offset.getZ());
+                    if(quest!=null&&(!quest.contains(BlockPos.containing(at))||!quest.core(BlockPos.containing(at))&&!MeleeTrace.clear(level,Vec3.atCenterOf(pos),at.add(0,1.35,0))))continue;
+                    var floor=BlockPos.containing(at).below();if(!level.hasChunkAt(floor)||level.getBlockState(floor).getCollisionShape(level,floor).isEmpty())continue;
+                    if(ActorPopulation.marked(level)>=(data.activationRadius>0&&quest==null?ActorPopulation.MARKER_LIMIT-64:ActorPopulation.MARKER_LIMIT)||ActorPopulation.alive(level)>=ActorPopulation.MAX_ALIVE)break;
+                    if(!data.spawn(level,n.getString("profile"),at,key).isEmpty()){spawned++;spawnsLeft--;break;}
+                }
             }
             int remaining=pending.remaining-spawned;
             if(remaining<=0){data.triggered.put(key,token);data.pendingBatches.remove(key);}
             else data.pendingBatches.put(key,new SpawnBatch(token,remaining,(pending.cursor+checked)%offsets.size()));
+            }
         }
     }
     @SubscribeEvent public static void impact(net.minecraftforge.event.entity.ProjectileImpactEvent event){

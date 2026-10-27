@@ -34,53 +34,45 @@ public final class ScarletWeaponClient {
     public static void hand(net.minecraftforge.client.event.RenderHandEvent e){
         var mc=Minecraft.getInstance();if(mc.player==null||me.cryo.zombierool.gameplay.PortableEquipment.inHands(mc.player))return;
         boolean off=e.getHand()==InteractionHand.OFF_HAND;var stack=mc.player.getItemInHand(e.getHand());
-        if(off&&mc.player.getMainHandItem().getItem() instanceof ScarletWeaponItem main&&main.twoHanded()){e.setCanceled(true);return;}
-        if(off?!(stack.getItem() instanceof ScarletWeaponItem.Guard):!(stack.getItem() instanceof ScarletWeaponItem))return;
-        e.setCanceled(true);var pose=e.getPoseStack();var buffers=mc.renderBuffers().bufferSource();
+        if(off&&me.cryo.zombierool.gameplay.MeleeMoves.twoHanded(mc.player.getMainHandItem())){e.setCanceled(true);return;}
+        if(off?!(stack.getItem() instanceof ScarletWeaponItem.Guard):!(stack.getItem() instanceof me.cryo.zombierool.core.system.WeaponImplementations.MeleeWeaponItem))return;
+        e.setCanceled(true);var pose=e.getPoseStack();var buffers=e.getMultiBufferSource();
         int side=mc.player.getMainArm()==net.minecraft.world.entity.HumanoidArm.RIGHT?1:-1;if(off)side=-side;
-        float progress=e.getSwingProgress();var phases=ScarletWeaponPose.phases(progress);float ready=phases[0],stroke=phases[1];
-        float idle=(float)Math.sin((mc.player.tickCount+e.getPartialTick())*.08)*.008f;
+        var original=new org.joml.Matrix4f(pose.last().pose());org.joml.Vector3f wrist=null,supportWrist=null;
+        float idle=(float)Math.sin((mc.player.tickCount+e.getPartialTick())*.08)*.006f;
         pose.pushPose();pose.translate(side*.47,-.4+idle-e.getEquipProgress()*.4,-.95);
+        var held=stack;
         if(off){boolean blocking=mc.player.isUsingItem()&&mc.player.getUsedItemHand()==InteractionHand.OFF_HAND;
             pose.translate(-side*(blocking?.18:0),blocking?.12:-.03,blocking?-.04:.06);
             pose.mulPose(Axis.YP.rotationDegrees(180+side*(blocking?0:15)));pose.scale(1.15f,1.15f,1.15f);
-        }else{var weapon=(ScarletWeaponItem)stack.getItem();
-            if(MapWeaponAnimation.authored(weapon.getDefinition())){
-                var def=weapon.getDefinition();
-                pose.translate(side*MapWeaponAnimation.value(def,"fpX",ready,stroke,0),MapWeaponAnimation.value(def,"fpY",ready,stroke,0),MapWeaponAnimation.value(def,"fpZ",ready,stroke,0));
-                pose.mulPose(Axis.YP.rotationDegrees(side*MapWeaponAnimation.value(def,"fpRy",ready,stroke,0)));
-                pose.mulPose(Axis.ZP.rotationDegrees(side*MapWeaponAnimation.value(def,"fpRz",ready,stroke,0)));
-                pose.mulPose(Axis.XP.rotationDegrees(MapWeaponAnimation.value(def,"fpRx",ready,stroke,0)));
-                float scale=net.minecraft.util.Mth.clamp(MapWeaponAnimation.value(def,"fpScale",ready,stroke,1),.1f,3);pose.scale(scale,scale,scale);
-                if(weapon.kind().equals("shield"))stack=new ItemStack(me.cryo.zombierool.init.ZombieroolModItems.SCARLET_SWORD.get());
-            }else if(weapon.twoHanded()){
-                pose.translate(side*(-.04*ready-.12*stroke),.07*ready-.08*stroke,-.17*stroke);
-                pose.mulPose(Axis.YP.rotationDegrees(side*(-12+6*ready-12*stroke)));
-                pose.mulPose(Axis.ZP.rotationDegrees(side*(12+8*ready-25*stroke)));
-                pose.mulPose(Axis.XP.rotationDegrees(-35-30*ready+65*stroke));pose.scale(.8f,.8f,.8f);
-            }else if(weapon.kind().equals("axe")){
-                pose.translate(side*(-.08*ready-.2*stroke),.18*ready-.12*stroke,-.15*stroke);
-                pose.mulPose(Axis.YP.rotationDegrees(side*-25));
-                pose.mulPose(Axis.ZP.rotationDegrees(side*(-18+22*ready-25*stroke)));
-                pose.mulPose(Axis.XP.rotationDegrees(-8-50*ready+72*stroke));pose.scale(.85f,.85f,.85f);
-            }else{
-                pose.translate(side*(.07*ready-.35*stroke),.08*ready-.08*stroke,-.12*stroke);
-                pose.mulPose(Axis.YP.rotationDegrees(side*-20));
-                pose.mulPose(Axis.ZP.rotationDegrees(side*(-12-25*ready+70*stroke)));
-                pose.mulPose(Axis.XP.rotationDegrees(-12-20*ready+35*stroke));pose.scale(.85f,.85f,.85f);
-                if(weapon.kind().equals("shield"))stack=new ItemStack(me.cryo.zombierool.init.ZombieroolModItems.SCARLET_SWORD.get());
-            }
+        }else{
+            var weapon=(me.cryo.zombierool.core.system.WeaponImplementations.MeleeWeaponItem)stack.getItem();
+            var def=weapon.getDefinition();var motion=MeleeMotionClient.pose(mc.player,e.getPartialTick());
+            float charge=smooth(MeleeMotionClient.charge(mc.player,e.getPartialTick()));
+            // Apply the attack to the grip pivot, then the weapon's authored resting alignment.
+            pose.translate(side*(motion[0]+.10*charge),motion[1]+.12*charge,motion[2]+.08*charge+MeleeMotionClient.recoil(mc.player,e.getPartialTick()));
+            pose.mulPose(Axis.YP.rotationDegrees(side*(motion[4]+12*charge)));
+            pose.mulPose(Axis.ZP.rotationDegrees(side*(motion[5]-16*charge)));
+            pose.mulPose(Axis.XP.rotationDegrees(motion[3]-38*charge));
+            boolean two=me.cryo.zombierool.gameplay.MeleeMoves.twoHanded(stack);
+            pose.translate(side*MapWeaponAnimation.value(def,"fpX",0,0,0),MapWeaponAnimation.value(def,"fpY",0,0,0)-(two?.22f:0),MapWeaponAnimation.value(def,"fpZ",0,0,0));
+            pose.mulPose(Axis.YP.rotationDegrees(side*MapWeaponAnimation.value(def,"fpRy",0,0,-20)));
+            pose.mulPose(Axis.ZP.rotationDegrees(side*MapWeaponAnimation.value(def,"fpRz",0,0,-12)));
+            pose.mulPose(Axis.XP.rotationDegrees(MapWeaponAnimation.value(def,"fpRx",0,0,two?-35:-12)));
+            float scale=net.minecraft.util.Mth.clamp(MapWeaponAnimation.value(def,"fpScale",0,0,two?.8f:.85f),.1f,3);if(two)scale*=.9f;pose.scale(scale,scale,scale);
+            if(me.cryo.zombierool.gameplay.MeleeMoves.kind(stack).equals("shield"))stack=new ItemStack(me.cryo.zombierool.init.ZombieroolModItems.SCARLET_SWORD.get());
         }
-        if(!off&&stack.getItem() instanceof ScarletWeaponItem){int combo=stack.getOrCreateTag().getInt("zr_combo");float charge=mc.player.isUsingItem()&&mc.player.getUsedItemHand()==InteractionHand.MAIN_HAND?Math.min(1,mc.player.getTicksUsingItem()/16f):0;pose.mulPose(Axis.ZP.rotationDegrees(side*((combo==1?-38:combo==2?22:0)*stroke-25*charge)));pose.mulPose(Axis.XP.rotationDegrees(-35*charge));pose.translate(0,.12*charge,.05*charge);}
         mc.getItemRenderer().renderStatic(stack,ItemDisplayContext.NONE,e.getPackedLight(),OverlayTexture.NO_OVERLAY,pose,buffers,mc.level,0);
-        // Grip follows the weapon, below the crossguard, without a second wrist rotation.
-        pose.pushPose();pose.translate(0,!off&&stack.getItem() instanceof ScarletWeaponItem weapon&&weapon.kind().equals("greatsword")?-.38:-.23,off?.18:0);
-        grip().render(pose,buffers.getBuffer(net.minecraft.client.renderer.RenderType.entityCutoutNoCull(mc.player.getSkinTextureLocation())),e.getPackedLight(),OverlayTexture.NO_OVERLAY);pose.popPose();
-        if(!off&&stack.getItem() instanceof ScarletWeaponItem weapon&&weapon.twoHanded()){
-            pose.translate(0,weapon.kind().equals("greatsword")?-.18:.18,.02);pose.mulPose(Axis.XP.rotationDegrees(-20));pose.mulPose(Axis.ZP.rotationDegrees(-side*65));
-            grip().render(pose,buffers.getBuffer(net.minecraft.client.renderer.RenderType.entityCutoutNoCull(mc.player.getSkinTextureLocation())),e.getPackedLight(),OverlayTexture.NO_OVERLAY);
+        boolean great=!off&&me.cryo.zombierool.gameplay.MeleeMoves.kind(held).equals("greatsword");
+        pose.pushPose();pose.translate(0,great?-.18:-.23,off?.18:0);
+        wrist=MeleeArms.hand(pose,original,buffers,mc.player.getSkinTextureLocation(),e.getPackedLight(),side);pose.popPose();
+        if(!off&&me.cryo.zombierool.gameplay.MeleeMoves.twoHanded(held)){
+            pose.translate(0,great?-.38:.18,.02);pose.mulPose(Axis.XP.rotationDegrees(-20));pose.mulPose(Axis.ZP.rotationDegrees(-side*65));
+            supportWrist=MeleeArms.hand(pose,original,buffers,mc.player.getSkinTextureLocation(),e.getPackedLight(),-side);
         }
-        pose.popPose();buffers.endBatch();
+        pose.popPose();
+        if(wrist!=null)MeleeArms.connect(pose,buffers,mc.player.getSkinTextureLocation(),e.getPackedLight(),wrist,side);
+        if(supportWrist!=null)MeleeArms.connect(pose,buffers,mc.player.getSkinTextureLocation(),e.getPackedLight(),supportWrist,-side);
     }
     @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid="zombierool",bus=net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD,value=net.minecraftforge.api.distmarker.Dist.CLIENT)
     public static final class Models {

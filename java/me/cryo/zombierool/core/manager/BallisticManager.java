@@ -405,6 +405,15 @@ public class BallisticManager {
     }
 
     public static Entity getRayTraceTarget(ServerPlayer shooter, double range) {
+        return getRayTraceTarget(shooter,range,false);
+    }
+
+    /** Electrical chains require a living first target; ballistic gore still hits corpses. */
+    public static Entity getLivingRayTraceTarget(ServerPlayer shooter,double range) {
+        return getRayTraceTarget(shooter,range,true);
+    }
+
+    private static Entity getRayTraceTarget(ServerPlayer shooter,double range,boolean livingOnly) {
         Vec3 eyePos = shooter.getEyePosition(1.0F);
         Vec3 lookVec = shooter.getViewVector(1.0F);
         Vec3 endPos = eyePos.add(lookVec.scale(range));
@@ -414,7 +423,9 @@ public class BallisticManager {
             endPos = blockHit.getLocation();
         }
 
-        EntityHitResult hit = findEntityOnPath(shooter.level(), shooter, eyePos, endPos, new AABB(eyePos, endPos).inflate(1.0));
+        EntityHitResult hit = livingOnly ? findAllEntitiesOnPath(shooter.level(),shooter,eyePos,endPos,new AABB(eyePos,endPos).inflate(1.0)).stream()
+            .filter(h->h.getEntity().isAlive()).min(Comparator.comparingDouble(h->eyePos.distanceToSqr(h.getLocation()))).orElse(null)
+            : findEntityOnPath(shooter.level(), shooter, eyePos, endPos, new AABB(eyePos, endPos).inflate(1.0));
         return hit != null ? hit.getEntity() : null;
     }
 

@@ -161,10 +161,22 @@ public final class EncounterAbilities {
             for(var p:level.players())if(valid(p)&&mob.hasLineOfSight(p)){Vec3 delta=p.getBoundingBox().getCenter().subtract(origin);double along=delta.dot(aim);if(along>0&&along<6&&delta.subtract(aim.scale(along)).length()<.7+along*.12){p.getPersistentData().putLong("zr_plague_until",level.getGameTime()+40);p.getPersistentData().putUUID("zr_plague_source",mob.getUUID());}}
         }return;}
         if(hooked!=null){var p=level.getServer().getPlayerList().getPlayer(hooked);if(p==null||p.level()!=level||!valid(p)||remainingPull<=0||!mob.hasLineOfSight(p)||mob.distanceToSqr(p)<6.25){hooked=null;hook=null;return;}
-            Vec3 delta=mob.position().subtract(p.position()).normalize().scale(Math.min(.4,remainingPull));if(!level.noCollision(p,p.getBoundingBox().move(delta))){hooked=null;hook=null;return;}Vec3 next=p.position().add(delta);teleport(p,next);p.setDeltaMovement(Vec3.ZERO);remainingPull-=delta.length();return;
+            Vec3 delta=mob.position().subtract(p.position()).normalize().scale(Math.min(.4,remainingPull));
+            // Resolve swept movement like walking: a downward component against
+            // the floor must not cancel the horizontal pull on uneven ground.
+            Vec3 before=p.position();p.move(MoverType.SELF,delta);double moved=p.position().distanceTo(before);
+            if(moved<.0001){hooked=null;hook=null;return;}
+            teleport(p,p.position());p.setDeltaMovement(Vec3.ZERO);remainingPull-=moved;return;
         }
-        if(hook!=null){previousHook=hook;hook=hook.add(aim.scale(1.9));var hit=level.clip(new ClipContext(previousHook,hook,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,mob));if(hit.getType()!=HitResult.Type.MISS||hook.distanceToSqr(mob.getEyePosition())>576){hook=null;return;}
-            for(var p:level.players())if(valid(p)&&p.getBoundingBox().inflate(.7).clip(previousHook,hook).isPresent()){hooked=p.getUUID();remainingPull=number("abominationPullDistance");event("OnAbominationHook",mob.getUUID().toString(),p.getUUID().toString(),remainingPull);break;}
+        if(hook!=null){previousHook=hook;hook=hook.add(aim.scale(1.9));var hit=level.clip(new ClipContext(previousHook,hook,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,mob));
+            double nearest=hit.getType()==HitResult.Type.MISS?Double.POSITIVE_INFINITY:previousHook.distanceToSqr(hit.getLocation());
+            ServerPlayer caught=null;
+            for(var p:level.players())if(valid(p)){
+                var box=p.getBoundingBox().inflate(.7);var impact=box.contains(previousHook)?Optional.of(previousHook):box.clip(previousHook,hook);
+                if(impact.isPresent()&&impact.get().distanceToSqr(mob.getEyePosition())<=576&&previousHook.distanceToSqr(impact.get())<nearest){nearest=previousHook.distanceToSqr(impact.get());caught=p;}
+            }
+            if(caught!=null){hooked=caught.getUUID();remainingPull=number("abominationPullDistance");event("OnAbominationHook",mob.getUUID().toString(),caught.getUUID().toString(),remainingPull);}
+            else if(hit.getType()!=HitResult.Type.MISS||hook.distanceToSqr(mob.getEyePosition())>576){hook=null;return;}
             level.sendParticles(ParticleTypes.CRIT,hook.x,hook.y,hook.z,1,0,0,0,0);return;
         }
         if(action>0){stop();if(action>3&&target!=null&&mob.hasLineOfSight(target))aim=hookAim(target);if(--action==0){hook=mob.getEyePosition();previousHook=hook;EncounterAudio.play(mob,"abomination_chain",.85f);}return;}

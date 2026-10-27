@@ -71,7 +71,12 @@ public class ZombieroolAPI {
     public boolean isGamePaused(){return WaveManager.isPausedByPlayer();}
     public LuaTable getMapActorProfiles(){var out=new LuaTable();int i=1;for(String id:me.cryo.zombierool.gameplay.MapActors.get(level).ids())out.set(i++,id);return out;}
     public boolean defineMapActor(String id,LuaTable definition){try{var input=me.cryo.zombierool.gameplay.MapActorTemplates.profile(false);input.merge(MapActorLuaData.compound(definition));me.cryo.zombierool.gameplay.MapActors.get(level).put(level,id,input);return true;}catch(Exception e){throw new org.luaj.vm2.LuaError(e.getMessage());}}
-    public String spawnMapActor(String id,double x,double y,double z){if(!LuaScriptManager.gameplayCallAllowed(level))return "";return me.cryo.zombierool.gameplay.MapActors.get(level).spawn(level,id,new Vec3(x,y,z),"");}
+    public void configureMapActorStreaming(double active,double parking){me.cryo.zombierool.gameplay.MapActors.get(level).configureStreaming(active,parking);}
+    public void registerEnemySpawnerQuestArea(String id,int x1,int y1,int z1,int x2,int y2,int z2){me.cryo.zombierool.gameplay.MapActors.get(level).questArea(id,new BlockPos(x1,y1,z1),new BlockPos(x2,y2,z2));}
+    public String spawnMapQuestActor(String id,double x,double y,double z){
+        return me.cryo.zombierool.gameplay.MapActors.get(level).trackQuestActor(spawnMapActor(id,x,y,z));
+    }
+    public String spawnMapActor(String id,double x,double y,double z){if(!LuaScriptManager.gameplayCallAllowed(level)&&!LuaScriptManager.actorCombatAllowed(level))return "";return me.cryo.zombierool.gameplay.MapActors.get(level).spawn(level,id,new Vec3(x,y,z),"");}
     public LuaTable getMusicVolumes(){return deviceTable(me.cryo.zombierool.block.system.MusicVolume.Data.get(level).list());}
     public LuaTable getMusicVolume(String id){return deviceTable(me.cryo.zombierool.block.system.MusicVolume.Data.get(level).list().getCompound(id));}
     public boolean toggleMusicVolume(String uuid,String id){var p=scriptPlayer(uuid);return p!=null&&me.cryo.zombierool.block.system.MusicVolume.toggle(p,id);}
@@ -79,12 +84,32 @@ public class ZombieroolAPI {
     public boolean setMusicVolumeEnabled(String id,boolean enabled){return me.cryo.zombierool.block.system.MusicVolume.enabled(level,id,enabled);}
     public boolean resetPlayerMusic(String uuid){var p=scriptPlayer(uuid);if(p==null)return false;me.cryo.zombierool.block.system.MusicVolume.reset(p);return true;}
     public String spawnMapActorNearPlayer(String profile,String uuid,double minRadius,double maxRadius){var p=scriptPlayer(uuid);return p==null?"":me.cryo.zombierool.gameplay.HiddenActorSpawn.spawn(p,profile,"",minRadius,maxRadius);}
+    public String spawnVisibleMapActorNearPlayer(String profile,String uuid,double minRadius,double maxRadius){var p=scriptPlayer(uuid);return p==null?"":me.cryo.zombierool.gameplay.HiddenActorSpawn.spawn(p,profile,"",minRadius,maxRadius,true);}
     public String spawnEnemySpawnerNearPlayer(int x,int y,int z,String uuid,double minRadius,double maxRadius){var p=scriptPlayer(uuid);var pos=new BlockPos(x,y,z);if(p==null||!(level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.MapActorMarkerBlock.MarkerData))return "";var rule=me.cryo.zombierool.gameplay.MapActors.get(level).marker(pos);if(rule.isEmpty())return "";return me.cryo.zombierool.gameplay.HiddenActorSpawn.spawn(p,rule.getString("profile"),Long.toString(pos.asLong()),minRadius,maxRadius);}
     private net.minecraft.world.entity.Mob mapActor(String uuid){try{var e=level.getEntity(UUID.fromString(uuid));return e instanceof net.minecraft.world.entity.Mob actor&&me.cryo.zombierool.gameplay.MapActors.owns(actor)?actor:null;}catch(IllegalArgumentException e){return null;}}
     public LuaTable getMapActor(String uuid){var a=mapActor(uuid);var out=new LuaTable();if(a==null)return out;out.set("uuid",uuid);out.set("profile",(a instanceof me.cryo.zombierool.entity.MapActorEntity custom?custom.profile():me.cryo.zombierool.gameplay.NativeMapActors.profile(a)).getString("id"));out.set("health",a.getHealth());out.set("maxHealth",a.getMaxHealth());out.set("x",a.getX());out.set("y",a.getY());out.set("z",a.getZ());out.set("homeX",a instanceof me.cryo.zombierool.entity.MapActorEntity custom?custom.home().x:a.getPersistentData().getDouble("MapHomeX"));out.set("homeY",a instanceof me.cryo.zombierool.entity.MapActorEntity custom?custom.home().y:a.getPersistentData().getDouble("MapHomeY"));out.set("homeZ",a instanceof me.cryo.zombierool.entity.MapActorEntity custom?custom.home().z:a.getPersistentData().getDouble("MapHomeZ"));out.set("inMeleeRange",org.luaj.vm2.LuaValue.valueOf(a.getTarget()!=null&&(a instanceof me.cryo.zombierool.entity.MapActorEntity custom?custom.inMeleeRange(a.getTarget()):a.getBoundingBox().inflate(.9).intersects(a.getTarget().getBoundingBox()))));out.set("canSeeTarget",org.luaj.vm2.LuaValue.valueOf(a.getTarget()!=null&&me.cryo.zombierool.gameplay.MapActorBehavior.pursuable(a,a.getTarget())&&me.cryo.zombierool.gameplay.MapActorBehavior.visible(a,a.getTarget())));out.set("target",a.getTarget()==null?"":a.getTarget().getUUID().toString());return out;}
     public boolean moveMapActor(String uuid,double x,double y,double z,double speed){var a=mapActor(uuid);if(a==null||!Double.isFinite(x)||!Double.isFinite(y)||!Double.isFinite(z)||!Double.isFinite(speed)||!level.hasChunkAt(BlockPos.containing(x,y,z)))return false;return a.getNavigation().moveTo(x,y,z,Math.max(.1,Math.min(3,speed)));}
     public boolean despawnMapActor(String uuid){var a=mapActor(uuid);if(a==null)return false;WaveManager.onMobDeath(a,level);a.discard();return true;}
-    public boolean setMapActorTarget(String uuid,String playerUUID){var a=mapActor(uuid);if(a==null)return false;var p=scriptPlayer(playerUUID);if(p!=null&&!me.cryo.zombierool.gameplay.MapActorBehavior.pursuable(a,p))return false;a.setTarget(p);return p!=null||playerUUID.isEmpty();}
+    public boolean killMapActor(String uuid){var a=mapActor(uuid);return a!=null&&a.isAlive()&&a.hurt(level.damageSources().genericKill(),Float.MAX_VALUE);}
+    public boolean setMapActorTarget(String uuid,String targetUUID){
+        var actor=mapActor(uuid);if(actor==null)return false;
+        LivingEntity target=scriptPlayer(targetUUID);if(target==null)target=mapActor(targetUUID);
+        if(target==null&&!targetUUID.isEmpty())return false;
+        if(target!=null&&!me.cryo.zombierool.gameplay.MapActorBehavior.pursuable(actor,target))return false;
+        actor.getPersistentData().remove("MapRetaliation");
+        if(target!=null&&me.cryo.zombierool.gameplay.MapActors.owns(target))actor.getPersistentData().putUUID("MapRetaliation",target.getUUID());
+        actor.setTarget(target);return true;
+    }
+    public boolean setMapQuestBlockHidden(String id,int x,int y,int z,boolean hidden){return me.cryo.zombierool.gameplay.QuestBlockSnapshots.get(level).hidden(level,id,new BlockPos(x,y,z),hidden);}
+    public boolean setBuildableVisible(String recipe,boolean visible){return me.cryo.zombierool.gameplay.BuildableSystem.get(level).recipeVisible(level,recipe,visible);}
+    public boolean setMapComponentVisible(int x,int y,int z,boolean visible){return me.cryo.zombierool.gameplay.BuildableSystem.get(level).componentVisible(level,new BlockPos(x,y,z),visible);}
+    /** Portable registry IDs replace reflection: no class names or client installations required. */
+    public String spawnVanillaEntity(String id,double x,double y,double z,String snbt){
+        if(!LuaScriptManager.gameplayCallAllowed(level)||id==null||!id.startsWith("minecraft:")||snbt==null||snbt.length()>16000)return "";
+        var key=ResourceLocation.tryParse(id);var type=key==null?null:net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(key);if(type==null)return "";
+        int count=0;for(var e:level.getAllEntities())if(e.isAlive()&&e.getTags().contains("zr_script_vanilla")&&++count>=32)return "";
+        try{var tag=snbt.isBlank()?new net.minecraft.nbt.CompoundTag():net.minecraft.nbt.TagParser.parseTag(snbt);tag.remove("UUID");tag.remove("Passengers");tag.putString("id",id);var pos=new net.minecraft.nbt.ListTag();for(double v:new double[]{x,y,z}){if(!Double.isFinite(v)||Math.abs(v)>30000000)return "";pos.add(net.minecraft.nbt.DoubleTag.valueOf(v));}tag.put("Pos",pos);var actor=type.create(level);if(!(actor instanceof LivingEntity living))return "";actor.load(tag);actor.setPos(x,y,z);actor.addTag("zr_script_vanilla");if(!level.hasChunkAt(BlockPos.containing(x,y,z))||!level.noCollision(actor))return "";return level.addFreshEntity(actor)?actor.getUUID().toString():"";}catch(Exception ignored){return "";}
+    }
     public int mapActorAttack(String uuid,double radius,double damage,String effect,int effectTicks){
         var a=mapActor(uuid);if(a==null||!a.isAlive()||!Double.isFinite(radius)||!Double.isFinite(damage))return 0;radius=Math.max(0,Math.min(32,radius));damage=Math.max(0,Math.min(1000,damage));int hit=0;
         var effectId=ResourceLocation.tryParse(effect);var potion=effectId==null?null:ForgeRegistries.MOB_EFFECTS.getValue(effectId);
@@ -95,6 +120,11 @@ public class ZombieroolAPI {
     public LuaTable getMapActorData(String uuid){var a=mapActor(uuid);return a==null?new LuaTable():deviceTable(a.getPersistentData().getCompound("script"));}
     public boolean setMapActorData(String uuid,LuaTable values){var a=mapActor(uuid);if(a==null)return false;var n=a.getPersistentData().getCompound("script").copy();n.merge(MapActorLuaData.compound(values));if(n.toString().length()>16000)return false;a.getPersistentData().put("script",n);return true;}
     public long getMapActorTime(){return level.getGameTime();}
+    public boolean setMapActorHealth(String uuid,double health){var a=mapActor(uuid);if(a==null||!a.isAlive()||!Double.isFinite(health)||health<=0)return false;a.setHealth((float)Math.min(a.getMaxHealth(),health));return true;}
+    public int setAshbringerPhase(String uuid,int phase){var player=scriptPlayer(uuid);if(player==null)return 0;int count=0;for(var stack:player.getInventory().items)if(me.cryo.zombierool.gameplay.AshbringerCombat.matches(stack)){int value=Math.max(0,Math.min(3,phase));if(stack.getOrCreateTag().getInt("zr_purification")!=value)stack.getOrCreateTag().putInt("zr_purification",value);count++;}if(count>0)player.inventoryMenu.broadcastChanges();return count;}
+    public int getMapBrazierFire(int x,int y,int z){var pos=new BlockPos(x,y,z);if(!level.hasChunkAt(pos))return -1;var s=level.getBlockState(pos);return s.getBlock() instanceof me.cryo.zombierool.block.system.FurnitureSystem.BrazierBlock?s.getValue(me.cryo.zombierool.block.system.FurnitureSystem.BrazierBlock.FIRE):-1;}
+    public boolean setMapBrazierFire(int x,int y,int z,int fire){var pos=new BlockPos(x,y,z);if(!level.hasChunkAt(pos)||fire<0||fire>2)return false;var s=level.getBlockState(pos);if(!(s.getBlock() instanceof me.cryo.zombierool.block.system.FurnitureSystem.BrazierBlock))return false;if(s.getValue(me.cryo.zombierool.block.system.FurnitureSystem.BrazierBlock.FIRE)==fire)return true;me.cryo.zombierool.gameplay.MatchWorldJournal.note(level,pos);return level.setBlock(pos,s.setValue(me.cryo.zombierool.block.system.FurnitureSystem.BrazierBlock.FIRE,fire),3);}
+    public boolean canPlayerInteract(String uuid,double x,double y,double z,double radius){var p=scriptPlayer(uuid);if(!me.cryo.zombierool.gameplay.MapActorBehavior.eligible(p)||!Double.isFinite(x)||!Double.isFinite(y)||!Double.isFinite(z)||!Double.isFinite(radius)||radius<0||radius>5)return false;var at=new Vec3(x,y,z);if(p.getEyePosition().distanceToSqr(at)>radius*radius)return false;var hit=level.clip(new net.minecraft.world.level.ClipContext(p.getEyePosition(),at,net.minecraft.world.level.ClipContext.Block.COLLIDER,net.minecraft.world.level.ClipContext.Fluid.NONE,p));return hit.getType()==net.minecraft.world.phys.HitResult.Type.MISS||hit.getBlockPos().equals(BlockPos.containing(at));}
     public boolean playMapActorAnimation(String uuid,String clip){var actor=mapActor(uuid);return actor instanceof me.cryo.zombierool.entity.MapActorEntity custom&&custom.playAnimation(clip);}
     public int mapActorEffect(String uuid,double radius,String effect,int duration,int amplifier){
         var a=mapActor(uuid);var id=ResourceLocation.tryParse(effect);var type=id==null?null:ForgeRegistries.MOB_EFFECTS.getValue(id);if(a==null||type==null||!Double.isFinite(radius))return 0;
@@ -410,6 +440,10 @@ public class ZombieroolAPI {
     public void setObjective(String uuidStr, String text) {
         ServerPlayer player = getPlayer(uuidStr);
         if (player == null) return;
+        updateObjective(player,text);
+    }
+
+    private static void updateObjective(ServerPlayer player, String text) {
         UUID pId = player.getUUID();
 
         if (text == null || text.isEmpty()) {
@@ -423,6 +457,12 @@ public class ZombieroolAPI {
                 boss.addPlayer(player);
                 return boss;
             });
+            // Rejoining a world or respawning replaces the ServerPlayer instance.
+            // Updating only the name leaves the bar attached to the old connection.
+            for (ServerPlayer previous : List.copyOf(be.getPlayers())) {
+                if (previous != player) be.removePlayer(previous);
+            }
+            be.addPlayer(player);
             be.setName(Component.literal(text));
         }
     }
@@ -586,7 +626,7 @@ public class ZombieroolAPI {
             if (perk != null) {
                 perk.applyEffect(player);
                 me.cryo.zombierool.gameplay.PerksManager.incrementPerkPurchases(perk.getId(), player);
-                player.sendSystemMessage(Component.literal("Â§aAtout " + perk.getName() + " obtenu !"));
+                player.sendSystemMessage(Component.literal("Ã‚Â§aAtout " + perk.getName() + " obtenu !"));
             }
         }
     }
@@ -762,6 +802,15 @@ public class ZombieroolAPI {
         }
     }
 
+    public LuaTable getEnemySpawnerQuestStatus(int x1,int y1,int z1,int x2,int y2,int z2) {
+        return me.cryo.zombierool.gameplay.MapActors.get(level).questStatus(new BlockPos(x1,y1,z1),new BlockPos(x2,y2,z2));
+    }
+    public String getMapActorQuestState(String uuid){return me.cryo.zombierool.gameplay.MapActors.get(level).questActorState(uuid);}
+    public void teleportPlayerFacing(String uuid,double x,double y,double z,float yaw,float pitch){
+        ServerPlayer player=getPlayer(uuid);if(player!=null&&Double.isFinite(x)&&Double.isFinite(y)&&Double.isFinite(z)&&Float.isFinite(yaw)&&Float.isFinite(pitch))
+            player.teleportTo(player.serverLevel(),x,y,z,yaw,Math.max(-90,Math.min(90,pitch)));
+    }
+
     public void teleportPlayer(String playerUUIDStr, double x, double y, double z) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
@@ -893,12 +942,16 @@ public class ZombieroolAPI {
     }
 
     public void giveItem(String playerUUIDStr, String itemId, int count) {
+        giveItem(playerUUIDStr,itemId,count,"");
+    }
+    public void giveItem(String playerUUIDStr, String itemId, int count, String customName) {
         ServerPlayer player = getPlayer(playerUUIDStr);
         if (player != null) {
             ResourceLocation rl = new ResourceLocation(itemId.contains(":") ? itemId : "minecraft:" + itemId);
             Item item = ForgeRegistries.ITEMS.getValue(rl);
             if (item != null && item != net.minecraft.world.item.Items.AIR) {
                 ItemStack stack = new ItemStack(item, count);
+                if(customName!=null&&!customName.isBlank())stack.setHoverName(net.minecraft.network.chat.Component.literal(customName.substring(0,Math.min(80,customName.length()))));
                 if (!player.getInventory().add(stack)) {
                     player.drop(stack, false);
                 }
@@ -1331,6 +1384,7 @@ public class ZombieroolAPI {
         support.configure(recipe,"destination",net.minecraft.world.item.ItemStack.of(data.definitions().getCompound("recipes").getCompound(recipe).getCompound("reward")));
     }
     public String getCarriedBuildableResult(String uuid) {return me.cryo.zombierool.gameplay.BuildableSystem.get(level).delivery(java.util.UUID.fromString(uuid));}
+    public boolean consumeCarriedBuildableResult(String uuid,String recipe){var p=scriptPlayer(uuid);return p!=null&&me.cryo.zombierool.gameplay.BuildableSystem.get(level).consumeDelivery(p,recipe);}
     public void removeBuildable(String id) { me.cryo.zombierool.gameplay.BuildableSystem.get(level).remove(id); }
     public void unbindBuildable(int x,int y,int z) { me.cryo.zombierool.gameplay.BuildableSystem.get(level).unbind(new BlockPos(x,y,z)); }
     public int getBuildableInstalledCount(int x,int y,int z) { return me.cryo.zombierool.gameplay.BuildableSystem.get(level).installed(new BlockPos(x,y,z)); }
@@ -1546,7 +1600,7 @@ public class ZombieroolAPI {
     public LuaTable getEquipmentLoadout(String playerUUID){var p=scriptPlayer(playerUUID);var table=new LuaTable();if(p!=null)p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).ifPresent(c->{table.set("equipment",c.getEquipmentType());table.set("equipmentCharges",c.getEquipmentCount());table.set("tactical",c.getTacticalType());table.set("tacticalCharges",c.getTacticalCount());table.set("lethal",c.getLethalType());table.set("lethalCharges",c.getLethalCount());});return table;}
     public boolean equipEquipment(String playerUUID,String kind){var p=scriptPlayer(playerUUID);var equipment=me.cryo.zombierool.gameplay.EquipmentSystem.Kind.of(kind);if(p==null||equipment==null)return false;me.cryo.zombierool.gameplay.EquipmentSystem.equip(p,equipment);return true;}
     public boolean setEquipmentCharges(String playerUUID,int equipment,int tactical){var p=scriptPlayer(playerUUID);if(p==null)return false;var cap=p.getCapability(me.cryo.zombierool.core.capability.ZombieCapabilitySystem.Provider.PLAYER_DATA).resolve();if(cap.isEmpty())return false;var c=cap.get();c.setEquipmentCount(me.cryo.zombierool.gameplay.EquipmentSystem.Kind.of(c.getEquipmentType())==null?0:Math.max(0,Math.min(2,equipment)));c.setTacticalCount(me.cryo.zombierool.gameplay.EquipmentSystem.Kind.of(c.getTacticalType())==null?0:Math.max(0,Math.min(2,tactical)));c.sync(p);return true;}
-    public LuaTable getEnemyStatus(String entityUUID){var out=new LuaTable();Entity e;try{e=level.getEntity(UUID.fromString(entityUUID));}catch(IllegalArgumentException ex){return out;}if(!(e instanceof LivingEntity))return out;var data=e.getPersistentData();long now=level.getGameTime();for(String key:new String[]{"flash","pheromone","winter_frozen"})out.set(key+"Ticks",LuaValue.valueOf(Math.max(0,data.getLong("zr_"+key+"_until")-now)));out.set("alive",LuaValue.valueOf(e.isAlive()));out.set("boss",LuaValue.valueOf(me.cryo.zombierool.gameplay.EquipmentEffects.boss((LivingEntity)e)));return out;}
+    public LuaTable getEnemyStatus(String entityUUID){var out=new LuaTable();Entity e;try{e=level.getEntity(UUID.fromString(entityUUID));}catch(IllegalArgumentException ex){return out;}if(!(e instanceof LivingEntity))return out;var data=e.getPersistentData();long now=level.getGameTime();for(String key:new String[]{"flash","pheromone","winter_frozen"})out.set(key+"Ticks",LuaValue.valueOf(Math.max(0,data.getLong("zr_"+key+"_until")-now)));out.set("alive",LuaValue.valueOf(e.isAlive()));out.set("undead",LuaValue.valueOf(((LivingEntity)e).getMobType()==net.minecraft.world.entity.MobType.UNDEAD));out.set("boss",LuaValue.valueOf(me.cryo.zombierool.gameplay.EquipmentEffects.boss((LivingEntity)e)));return out;}
 
     public LuaTable getSkyDelivery(){return deviceTable(me.cryo.zombierool.block.system.MachineDeliverySystem.sky(level).status());}
     public boolean configureSkyDelivery(LuaTable settings){var d=me.cryo.zombierool.block.system.MachineDeliverySystem.sky(level);d.configure(mergeDevice(d.config(),settings));return true;}

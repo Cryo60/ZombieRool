@@ -81,6 +81,7 @@ public final class MatchWorldJournal {
                         be.setChanged();
                     }
                 }
+                me.cryo.zombierool.maptexture.CustomWaterlogging.restore(level,pos);
                 level.sendBlockUpdated(pos, snap.state, level.getBlockState(pos), 3);
                 for (String key : snap.overlays.getAllKeys()) {
                     config.addMapOverlay(key, snap.overlays.getString(key));

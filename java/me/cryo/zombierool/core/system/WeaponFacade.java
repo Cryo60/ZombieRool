@@ -489,7 +489,7 @@ public class WeaponFacade {
         if (isTaczWeapon(stack)) {
             return TacZIntegration.getTacZWeaponMaxReserve(stack, def);
         }
-        if (def != null) return isPackAPunched(stack) ? def.ammo.max_reserve + def.pap.reserve_bonus : def.ammo.max_reserve;
+        if (def != null) return me.cryo.zombierool.gameplay.WeaponReserves.capacity(def.ammo.max_reserve,isPackAPunched(stack)?def.pap.reserve_bonus:0);
         return 0;
     }
 

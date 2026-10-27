@@ -25,6 +25,7 @@ public class LuaScriptManager {
     private static final ThreadLocal<java.util.Set<String>> callbacks=ThreadLocal.withInitial(java.util.HashSet::new);
     private static ServerLevel currentLevel;
     private static final ThreadLocal<java.util.UUID> eventPlayer=new ThreadLocal<>();
+    private static final ThreadLocal<java.util.UUID> eventActor=new ThreadLocal<>();
 
     private static final Map<String, String> dataStore = new ConcurrentHashMap<>();
 
@@ -33,12 +34,14 @@ public class LuaScriptManager {
         int remainingTicks;
         LuaValue callback;
         java.util.UUID player;
+        java.util.UUID actor;
 
         LuaTimer(String id, int remainingTicks, LuaValue callback) {
             this.id = id;
             this.remainingTicks = remainingTicks;
             this.callback = callback;
-            this.player = eventPlayer.get();
+            this.actor = eventActor.get();
+            this.player = this.actor==null?eventPlayer.get():null;
         }
     }
 
@@ -212,6 +215,22 @@ public class LuaScriptManager {
     }
     public static boolean gameplayCallAllowed(ServerLevel level){if(!me.cryo.zombierool.gameplay.WaveManager.isGameRunning()||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())return false;var owner=eventPlayer.get();if(owner!=null){var p=level.getServer().getPlayerList().getPlayer(owner);return p!=null&&p.level()==level&&me.cryo.zombierool.gameplay.MapActorBehavior.eligible(p);}return level.players().stream().anyMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible);}
     public static boolean ready(ServerLevel level){return globals!=null&&currentLevel==level;}
+    /** NPC faction duels also run in authoring previews, without starting a match. */
+    public static boolean actorCombatAllowed(ServerLevel level){
+        if(level!=currentLevel||eventActor.get()==null||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())return false;
+        var entity=level.getEntity(eventActor.get());
+        return entity instanceof net.minecraft.world.entity.Mob actor&&actor.isAlive()&&me.cryo.zombierool.gameplay.MapActors.owns(actor)
+            &&actor.getTarget()!=null&&!(actor.getTarget() instanceof net.minecraft.world.entity.player.Player)
+            &&me.cryo.zombierool.gameplay.MapActorBehavior.pursuable(actor,actor.getTarget());
+    }
+    private static boolean actorTimerAllowed(LuaTimer timer){
+        if(currentLevel==null||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())return false;
+        var entity=currentLevel.getEntity(timer.actor);
+        if(!(entity instanceof net.minecraft.world.entity.Mob actor)||!actor.isAlive()||!me.cryo.zombierool.gameplay.MapActors.owns(actor))return false;
+        return currentLevel.players().stream().anyMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible)
+            ||actor.getTarget()!=null&&!(actor.getTarget() instanceof net.minecraft.world.entity.player.Player)
+            &&me.cryo.zombierool.gameplay.MapActorBehavior.pursuable(actor,actor.getTarget());
+    }
     public static String executeString(String code) {
         if (globals == null) return "§cLua engine not initialized.";
         try {
@@ -226,9 +245,10 @@ public class LuaScriptManager {
     public static boolean actorCallback(String name,String uuid) {
         if(globals==null)return true;
         if(!callbacks.get().add(name))return true;
-        try {if(callbacks.get().size()==1)budget.reset();var function=globals.get(name);if(function.isfunction())function.call(LuaValue.valueOf(uuid));return true;}
+        var previousActor=eventActor.get();
+        try {eventActor.set(java.util.UUID.fromString(uuid));if(callbacks.get().size()==1)budget.reset();var function=globals.get(name);if(function.isfunction())function.call(LuaValue.valueOf(uuid));return true;}
         catch(Throwable error){log(name+": "+error.getMessage());return false;}
-        finally{callbacks.get().remove(name);}
+        finally{callbacks.get().remove(name);if(previousActor==null)eventActor.remove();else eventActor.set(previousActor);}
     }
     public static void callEvent(String eventName, Object... args) {eventResult(eventName,args);}
 
@@ -257,8 +277,9 @@ public class LuaScriptManager {
             Iterator<Map.Entry<String, LuaTimer>> iterator = activeTimers.entrySet().iterator();
             while (iterator.hasNext()) {
                 LuaTimer timer = iterator.next().getValue();
+                if(timer.actor!=null){var actor=currentLevel==null?null:currentLevel.getEntity(timer.actor);if(!(actor instanceof net.minecraft.world.entity.Mob mob)||!mob.isAlive()){iterator.remove();continue;}if(!actorTimerAllowed(timer))continue;}
                 if(timer.player!=null){var player=currentLevel==null?null:currentLevel.getServer().getPlayerList().getPlayer(timer.player);if(player==null||!me.cryo.zombierool.gameplay.WaveManager.isGameRunning()){iterator.remove();continue;}if(!me.cryo.zombierool.gameplay.MapActorBehavior.eligible(player)||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())continue;}
-                if(currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible)))continue;
+                if(timer.actor==null&&currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible)))continue;
                 timer.remainingTicks--;
                 if (timer.remainingTicks <= 0) {
                     iterator.remove();
@@ -270,15 +291,17 @@ public class LuaScriptManager {
                 // An earlier due callback can end the match or change a player's mode.
                 // Validate again at invocation time, not just while building the due queue.
                 if(timer.player!=null){var owner=currentLevel==null?null:currentLevel.getServer().getPlayerList().getPlayer(timer.player);if(owner==null||!me.cryo.zombierool.gameplay.WaveManager.isGameRunning())continue;if(!me.cryo.zombierool.gameplay.MapActorBehavior.eligible(owner)){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);continue;}}
-                if(currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible))){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);continue;}
+                if(timer.actor!=null&&!actorTimerAllowed(timer)){var owner=currentLevel==null?null:currentLevel.getEntity(timer.actor);if(owner instanceof net.minecraft.world.entity.Mob mob&&mob.isAlive()){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);}continue;}
+                if(timer.actor==null&&currentLevel!=null&&(me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer()||currentLevel.players().stream().noneMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible))){timer.remainingTicks=1;activeTimers.putIfAbsent(timer.id,timer);continue;}
                 var previousPlayer=eventPlayer.get();if(timer.player!=null)eventPlayer.set(timer.player);
+                var previousActor=eventActor.get();if(timer.actor!=null)eventActor.set(timer.actor);
                 try {
                     if (timer.callback.isfunction()) {
                         budget.reset();timer.callback.call();
                     }
                 } catch (Throwable t) {
                     System.err.println("[ZombieRool Lua] Error executing timer " + timer.id + ": " + t.getMessage());
-                } finally {if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);}
+                } finally {if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);if(previousActor==null)eventActor.remove();else eventActor.set(previousActor);}
             }
         }
     }

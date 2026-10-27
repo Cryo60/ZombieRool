@@ -12,7 +12,7 @@
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-**ZombieRool 26.7 Beta 3**
+**ZombieRool 26.7 Beta 4**
 
 </div>
 
@@ -36,9 +36,15 @@ Play a map, or build one. Map makers get a creative tab, an in-game config menu,
 
 ---
 
-Download **26.7 Beta 3** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.3). This beta is available for testing; report problems on Discord.
+Download **26.7 Beta 4** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.4). This beta is available for testing; report problems on Discord.
 
 ## What's new
+
+### Beta 4 highlights
+
+Reworked melee animations and combos, charged heavy attacks, doubled total ammo reserves, more reliable zombie pursuit and lighter Wunderwaffe effects. Fixed worlds getting stuck at 100% and missing catalogue thumbnails. The update also brings an alternate main menu, animated textures and custom water improvements.
+
+[Full Beta 4 patch notes](release-notes/26.7-beta.4.en.md) · [Notes en français](release-notes/26.7-beta.4.fr.md)
 
 ### Map-owned enemies and encounters
 

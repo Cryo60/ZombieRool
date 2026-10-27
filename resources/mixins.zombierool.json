@@ -53,7 +53,11 @@
     "TurbineDoorPowerMixin",
     "VehicleNavigationRegionAccessor",
     "VehicleWorldPhysicsMixin",
-    "TacZManualCanReloadMixin"
+    "TacZManualCanReloadMixin",
+    "TacZPropHitMixin",
+    "CustomWaterLevelMixin",
+    "CustomWaterContainerMixin",
+    "CustomWaterSlabMixin"
   ],
   "client": [
     "EnvironmentalSuitSkinMixin",
@@ -97,7 +101,8 @@
     "PresentationFrameMixin",
     "AmbientParticleRenderMixin",
     "TacZManualClientReloadMixin",
-    "AmbientPauseMixin"
+    "AmbientPauseMixin",
+    "CustomWaterVisualMixin"
   ],
   "minVersion": "0.8"
 }

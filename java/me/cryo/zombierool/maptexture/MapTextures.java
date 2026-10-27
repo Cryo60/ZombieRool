@@ -56,7 +56,7 @@ import java.util.function.Supplier;
 @Mod.EventBusSubscriber(modid = ZombieroolMod.MODID)
 public final class MapTextures {
     public static final int SLOTS = 32;
-    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane", "door", "head"};
+    public static final String[] SHAPES = {"cube", "stairs", "slab", "fence", "wall", "pane", "door", "head", "water", "item"};
     public static final String[] SOUND_IDS = {
             "stone", "wood", "gravel", "grass", "metal", "glass", "wool", "sand",
             "snow", "mud", "deepslate", "netherrack", "amethyst", "slime", "honey",
@@ -69,6 +69,7 @@ public final class MapTextures {
     public static final RegistryObject<MenuType<TextureKitMenu>> MENU = MENUS.register("texture_kit", () -> IForgeMenuType.create(TextureKitMenu::new));
     public static RegistryObject<Item> KIT;
 
+    public static final RegistryObject<Item>[] ITEMS = new RegistryObject[SLOTS];
     public static final SlotBlocks[] BLOCKS = new SlotBlocks[SLOTS];
     private static Path worldRoot;
     private static String[] cached = new String[SLOTS];
@@ -82,6 +83,7 @@ public final class MapTextures {
     private MapTextures() {}
 
     public static final class SlotBlocks {
+        private final int slot;
         public final RegistryObject<Block> cube;
         public final RegistryObject<Block> stairs;
         public final RegistryObject<Block> slab;
@@ -91,8 +93,9 @@ public final class MapTextures {
         public final RegistryObject<Block> door;
         public final RegistryObject<Block> head;
 
-        SlotBlocks(RegistryObject<Block> cube, RegistryObject<Block> stairs, RegistryObject<Block> slab,
+        SlotBlocks(int slot, RegistryObject<Block> cube, RegistryObject<Block> stairs, RegistryObject<Block> slab,
                    RegistryObject<Block> fence, RegistryObject<Block> wall, RegistryObject<Block> pane, RegistryObject<Block> door, RegistryObject<Block> head) {
+            this.slot=slot;
             this.cube = cube;
             this.stairs = stairs;
             this.slab = slab;
@@ -111,12 +114,14 @@ public final class MapTextures {
                 case 5 -> pane;
                 case 6 -> door;
                 case 7 -> head;
+                case 8 -> MapTextureWater.BLOCKS[slot];
                 default -> cube;
             };
         }
     }
 
     public static void registerBlocks() {
+        MapTextureWater.register(net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus());
         for (int i = 0; i < SLOTS; i++) {
             final int slot = i;
             String name = "maptex_" + i;
@@ -128,7 +133,8 @@ public final class MapTextures {
             RegistryObject<Block> pane = register(name + "_pane", () -> new TexPane(slot));
             RegistryObject<Block> door = register(name + "_door", () -> new net.minecraft.world.level.block.DoorBlock(props(true).sound(SoundType.METAL), net.minecraft.world.level.block.state.properties.BlockSetType.IRON));
             RegistryObject<Block> head=register(name+"_head",()->new TexHead(slot));
-            BLOCKS[i] = new SlotBlocks(cube, stairs, slab, fence, wall, pane, door,head);
+            ITEMS[i]=ZRBlocks.ITEMS.register(name+"_item",()->new Item(new Item.Properties()){@Override public Component getName(ItemStack stack){return Component.literal(humanize(textureName(slot)));}});
+            BLOCKS[i] = new SlotBlocks(slot,cube, stairs, slab, fence, wall, pane, door,head);
             ZRBlocks.CUTOUT_BLOCKS.add(cube);ZRBlocks.CUTOUT_BLOCKS.add(stairs);ZRBlocks.CUTOUT_BLOCKS.add(slab);ZRBlocks.CUTOUT_BLOCKS.add(wall);ZRBlocks.CUTOUT_BLOCKS.add(head);
             ZRBlocks.CUTOUT_BLOCKS.add(door);
             ZRBlocks.CUTOUT_BLOCKS.add(pane);
@@ -244,6 +250,7 @@ public final class MapTextures {
                         Drop PNG files here.
                         Name: lowercase letters, digits, _ and -. Subfolders are supported. Example: walls/red_bricks.png
                         Optional faces: bricks_top.png, bricks_side.png, bricks_bottom.png
+                        Animated textures: place glitch.png and glitch.png.mcmeta together. Up to 64 frames; Minecraft frame timing, order and interpolation are supported.
                         Open the Texture Kit (deco tab, creative) to get the block, stairs, slab, fence, wall, pane, iron door and head.
                         Import PNG atlases from custom_blocks/import in the pixel editor.
                         Formats: square face, 4x3 cube net, or 1x2 door (upper then lower).
@@ -253,6 +260,7 @@ public final class MapTextures {
                         32 textures maximum.
                         """, StandardCharsets.UTF_8);
             }
+            MapTextureAppearance.load(worldRoot);
             cached = readSlots(worldRoot);
             for (int i = 0; i < SLOTS; i++) {
                 if (cached[i].isEmpty()) continue;
@@ -275,7 +283,7 @@ public final class MapTextures {
                 if (id.isEmpty()) continue;
                 if (!id.equals(stem)) {
                     Path target = dir.resolve(id + ".png");
-                    if (!Files.exists(target)) {Files.createDirectories(target.getParent());Files.copy(png, target);}
+                    if (!Files.exists(target)) {Files.createDirectories(target.getParent());Files.copy(png, target);Path meta=MapTextureAnimation.metadata(png);if(Files.isRegularFile(meta))Files.copy(meta,MapTextureAnimation.metadata(target),java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
                 }
                 if (used.contains(id) || faceOfExisting(id, dir, used)) continue;
                 int free = freeSlot(cached);
@@ -286,6 +294,7 @@ public final class MapTextures {
             }
             writeManifest(dir.resolve("manifest.txt"), cached, cachedSounds);
         } catch (IOException ignored) {
+            MapTextureAppearance.load(worldRoot);
             cached = readSlots(worldRoot);
         }
         return Arrays.asList(cached.clone());
@@ -301,6 +310,7 @@ public final class MapTextures {
         Files.createDirectories(target.getParent());
         var sources=new ArrayList<Path>();var targets=new ArrayList<Path>();
         var faceNames=new HashSet<String>();faceNames.add(leaf+".png");for(String suffix:new String[]{"_top","_side","_bottom","_upper","_lower","_north","_south","_east","_west"})faceNames.add(leaf+suffix+".png");
+        for(String name:new ArrayList<>(faceNames))faceNames.add(name+".mcmeta");
         try(var files=Files.list(source.getParent())){for(Path file:files.toList()){String name=file.getFileName().toString();if(faceNames.contains(name)){Path dest=target.getParent().resolve(name);if(Files.exists(dest))throw new IOException("Texture exists");sources.add(file);targets.add(dest);}}}
         int moved=0;try{for(;moved<sources.size();moved++)Files.move(sources.get(moved),targets.get(moved));cached[slot]=next;writeManifest(root.resolve("manifest.txt"),cached,cachedSounds);}
         catch(IOException e){cached[slot]=old;for(int n=moved-1;n>=0;n--)Files.move(targets.get(n),sources.get(n));throw e;}
@@ -376,6 +386,7 @@ public final class MapTextures {
     public static void onLevelLoad(LevelEvent.Load event) {
         if (event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD) {
             worldRoot = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+            MapTextureAppearance.load(worldRoot);
             cached = readSlots(worldRoot);
         }
     }
@@ -547,7 +558,7 @@ public final class MapTextures {
             int slot = id / SHAPES.length;
             if (slot < 0 || slot >= names.size() || slot >= SLOTS) return false;
             if (names.get(slot) == null || names.get(slot).isEmpty()) return false;
-            ItemStack stack = new ItemStack(BLOCKS[slot].get(shape).get(), 64);
+            ItemStack stack = shape==9?new ItemStack(ITEMS[slot].get(),64):shape==8?new ItemStack(MapTextureWater.BUCKETS[slot].get()):new ItemStack(BLOCKS[slot].get(shape).get(), 64);
             if (!player.getInventory().add(stack)) player.drop(stack, false);
             player.inventoryMenu.broadcastChanges();broadcastChanges();
             return true;

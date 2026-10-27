@@ -180,6 +180,7 @@ public class MeleeAttackHandler {
             if (blockHit.getType() == HitResult.Type.BLOCK) {
                 BlockState state = level.getBlockState(blockHit.getBlockPos());
                 BlockPos bPos = blockHit.getBlockPos();
+                LuaScriptManager.callEvent("OnBlockKnifed",player.getUUID().toString(),bPos.getX(),bPos.getY(),bPos.getZ());
                 strikePos = new Vec3(bPos.getX(), bPos.getY(), bPos.getZ());
                 shared = tryCutShare(player, level, bPos);
 

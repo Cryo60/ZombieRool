@@ -57,7 +57,7 @@ public final class MapAtmosphere extends SavedData {
     public CompoundTag settings(){return settings.copy();}
     public void configure(ServerLevel level,CompoundTag input){settings=sanitize(input);next.clear();setDirty();for(ServerPlayer p:level.players())MapAtmospherePackets.sync(p,effective(p));me.cryo.zombierool.scripting.LuaScriptManager.eventResult("OnMapAtmosphereChanged");}
     public static CompoundTag defaults(){
-        var n=new CompoundTag();n.putBoolean("enabled",false);n.putBoolean("skyEnabled",true);n.putString("presetId","none");n.putString("skyTexture","zombierool:textures/environment/ashfall_sky.png");n.putString("skyLayout","cube");n.putString("skyCoordinates","z_up");
+        var n=new CompoundTag();n.putBoolean("enabled",false);n.putBoolean("skyEnabled",true);n.putBoolean("vanillaSky",false);n.putString("presetId","none");n.putString("skyTexture","zombierool:textures/environment/ashfall_sky.png");n.putString("skyLayout","cube");n.putString("skyCoordinates","z_up");
         for(String k:List.of("skyBrightness","saturation","contrast","gamma","red","green","blue","ambientVolume"))n.putDouble(k,1);
         for(String k:List.of("skyYaw","skyPitch","exposure","vignette","dirt","grain"))n.putDouble(k,0);
         n.putDouble("vignetteSoftness",.5);n.putInt("skySceneVersion",3);n.put("skyObjects",new ListTag());n.put("sources",new ListTag());return n;
@@ -66,7 +66,7 @@ public final class MapAtmosphere extends SavedData {
     private static String resource(String value,String fallback){var id=ResourceLocation.tryParse(value);return id==null?fallback:id.toString();}
     public static CompoundTag sanitize(CompoundTag input){
         var n=defaults();n.putString("presetId",input.getString("presetId"));n.putBoolean("enabled",input.getBoolean("enabled"));if(input.contains("skyEnabled"))n.putBoolean("skyEnabled",input.getBoolean("skyEnabled"));
-        n.putString("skyTexture",resource(input.getString("skyTexture"),n.getString("skyTexture")));n.putString("skyLayout","panorama".equals(input.getString("skyLayout"))?"panorama":"cube");n.putString("skyCoordinates","y_up".equals(input.getString("skyCoordinates"))?"y_up":"z_up");
+        n.putBoolean("vanillaSky",input.getBoolean("vanillaSky"));n.putString("skyTexture",resource(input.getString("skyTexture"),n.getString("skyTexture")));n.putString("skyLayout","panorama".equals(input.getString("skyLayout"))?"panorama":"cube");n.putString("skyCoordinates","y_up".equals(input.getString("skyCoordinates"))?"y_up":"z_up");
         number(n,input,"skyYaw",0,-3600,3600);number(n,input,"skyPitch",0,-180,180);number(n,input,"skyBrightness",1,0,8);
         for(String key:List.of("red","green","blue","contrast","gamma","saturation"))number(n,input,key,1,key.equals("gamma")?.1:0,4);
         number(n,input,"exposure",0,-5,5);for(String key:List.of("vignette","dirt","grain"))number(n,input,key,0,0,1);number(n,input,"vignetteSoftness",.5,.05,1);number(n,input,"ambientVolume",1,0,2);

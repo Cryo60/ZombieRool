@@ -16,6 +16,7 @@ import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.opengl.GL11;
 
 /** Health feedback is independent of the optional numeric health display. */
 @Mod.EventBusSubscriber(modid="zombierool",value=Dist.CLIENT)
@@ -52,10 +53,23 @@ public final class InjuryFeedback {
         if(!active()||intensity<=.002f)return;
         var mc=Minecraft.getInstance();var g=event.getGuiGraphics();int w=event.getWindow().getGuiScaledWidth(),h=event.getWindow().getGuiScaledHeight();
         float pulse=.96f+.04f*(float)Math.sin(mc.player.tickCount*.2f);
-        g.fill(0,0,w,h,((int)(intensity*27)<<24));
+        g.flush();
+        boolean depth=GL11.glIsEnabled(GL11.GL_DEPTH_TEST),writeDepth=GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK),blend=GL11.glIsEnabled(GL11.GL_BLEND);
+        RenderSystem.disableDepthTest();RenderSystem.depthMask(false);
         RenderSystem.enableBlend();RenderSystem.defaultBlendFunc();
-        try{g.setColor(.68f,.43f,.43f,Math.min(.84f,(intensity*.64f+impact*.17f)*pulse));g.blit(BLOOD,0,0,0,0,w,h,w,h);}
-        finally{g.setColor(1,1,1,1);RenderSystem.defaultBlendFunc();RenderSystem.disableBlend();}
+        try{
+            // A translucent fullscreen quad must not occlude the later HUD text.
+            g.fill(0,0,w,h,((int)(intensity*27)<<24));g.flush();
+            RenderSystem.disableDepthTest();
+            // Flushing the GUI fill disables blending; restore it before the immediate blit.
+            RenderSystem.enableBlend();RenderSystem.defaultBlendFunc();
+            g.setColor(.68f,.43f,.43f,Math.min(.84f,(intensity*.64f+impact*.17f)*pulse));g.blit(BLOOD,0,0,0,0,w,h,w,h);
+            g.flush();
+        } finally {
+            g.setColor(1,1,1,1);RenderSystem.depthMask(writeDepth);
+            if(depth)RenderSystem.enableDepthTest();else RenderSystem.disableDepthTest();
+            RenderSystem.defaultBlendFunc();if(blend)RenderSystem.enableBlend();else RenderSystem.disableBlend();
+        }
     }
     private static final class Loop extends AbstractTickableSoundInstance {
         final int kind;

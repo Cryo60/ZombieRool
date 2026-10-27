@@ -42,6 +42,16 @@ public final class BuildableSystem extends SavedData {
     private record Hold(BlockPos pos,long tick) {}
     private final Map<UUID,Hold> holds=new HashMap<>();
     private boolean active;
+    private final Set<BlockPos> scriptHidden=new HashSet<>();
+    private final Set<String> hiddenRecipes=new HashSet<>();
+    public boolean recipeVisible(ServerLevel level,String recipe,boolean visible){if(!recipes().contains(recipe))return false;if(visible)hiddenRecipes.remove(recipe);else hiddenRecipes.add(recipe);sync(level);return true;}
+    public boolean componentVisible(ServerLevel level,BlockPos pos,boolean visible){
+        if(!scriptHidden.contains(pos)&&(!(level.getBlockEntity(pos) instanceof me.cryo.zombierool.block.system.BuildableBlocks.PartSupport)||level.getBlockState(pos).getBlock() instanceof me.cryo.zombierool.block.system.BuildableBlocks.Workbench))return false;
+        if(!QuestBlockSnapshots.get(level).hidden(level,"lua_component_"+pos.asLong(),pos,!visible))return false;
+        if(!visible){scriptHidden.add(pos);removeDisplay(level,partDisplays.remove(pos));}
+        else{scriptHidden.remove(pos);var part=available.get(pos);if(part!=null)showSource(level,part);}
+        sync(level);return true;
+    }
     private ServerLevel ownerLevel;
 
     public record Part(String recipe, String id, BlockPos source, CompoundTag snapshot) {}
@@ -201,6 +211,8 @@ public final class BuildableSystem extends SavedData {
         var n=new CompoundTag();n.putLong("pos",pos.asLong());n.putString("recipe",recipe);entries.add(n);definitions.put("destinations",entries);setDirty();
     }
     public String delivery(UUID player){var d=deliveries.get(player);return d==null?"":d.recipe;}
+    /** Consume a scripted delivery without refunding the bench's single claim. */
+    public boolean consumeDelivery(ServerPlayer player,String recipe){var id=player.getUUID();var d=deliveries.get(id);if(d==null||!d.recipe.equals(recipe))return false;cancelAction(player);installing.remove(id);deliveries.remove(id);sync(player.serverLevel());return true;}
     private void releaseDelivery(UUID player){installing.remove(player);var d=deliveries.remove(player);if(d!=null){var bench=benches.get(d.bench);if(bench!=null)bench.claims=Math.max(0,bench.claims-1);}}
     public static void holdAction(ServerPlayer player,BlockPos pos,boolean down){
         var data=get(player.serverLevel());var id=player.getUUID();
@@ -340,7 +352,7 @@ public final class BuildableSystem extends SavedData {
         }
         for (UUID id : displays) { var entity = level.getEntity(id); if (entity != null) entity.discard(); }
         outputs.clear(); setDirty();
-        holds.clear(); installing.clear(); deliveries.clear(); displays.clear(); partDisplays.clear(); benchDisplays.clear(); resultDisplays.clear(); available.clear(); carried.clear(); benches.clear(); assembling.clear(); hidden.clear(); active = false;
+        scriptHidden.clear(); hiddenRecipes.clear(); holds.clear(); installing.clear(); deliveries.clear(); displays.clear(); partDisplays.clear(); benchDisplays.clear(); resultDisplays.clear(); available.clear(); carried.clear(); benches.clear(); assembling.clear(); hidden.clear(); active = false;
         sync(level);
     }
     public static boolean busy(net.minecraft.world.entity.Entity entity) {
@@ -359,6 +371,7 @@ public final class BuildableSystem extends SavedData {
     }
     public static void interact(ServerPlayer p, BlockPos pos) {
         var level = p.serverLevel(); pos=me.cryo.zombierool.block.system.BuildableBlocks.root(level,pos); var data = get(level);
+        if(data.scriptHidden.contains(pos))return;
         if (!data.active || !WaveManager.isGameRunning() || !validPlayer(p) || !reachable(p, pos)
                 || level.getBlockState(pos).isAir() && !data.available.containsKey(pos)) return;
         UUID player = p.getUUID();
@@ -584,11 +597,11 @@ public final class BuildableSystem extends SavedData {
     public CompoundTag state(ServerPlayer player) {
         var n = new CompoundTag(); var targets = new ListTag();
         if (active) {
-            for (var entry : available.entrySet()) {
+            for (var entry : available.entrySet()) {if(scriptHidden.contains(entry.getKey()))continue;
                 var t = new CompoundTag(); t.putLong("pos", entry.getKey().asLong()); t.putString("part", entry.getValue().id);t.putBoolean("pickup",true);
                 var box=pickupBounds(player.serverLevel(),entry.getKey(),entry.getValue());var bounds=new CompoundTag();bounds.putDouble("x0",box.minX);bounds.putDouble("y0",box.minY);bounds.putDouble("z0",box.minZ);bounds.putDouble("x1",box.maxX);bounds.putDouble("y1",box.maxY);bounds.putDouble("z1",box.maxZ);t.put("bounds",bounds);targets.add(t);
             }
-            for (var entry : benches.entrySet()) {
+            for (var entry : benches.entrySet()) {if(scriptHidden.contains(entry.getKey()))continue;
                 var b = entry.getValue(); var t = new CompoundTag(); t.putLong("pos", entry.getKey().asLong()); t.putBoolean("bench", true);
                 t.putString("name", b.recipe.isEmpty() ? "" : recipes().getCompound(b.recipe).getString("name"));
                 t.putInt("installed", b.installed.size()); t.putInt("total", b.recipe.isEmpty() ? 0 : parts(recipes().getCompound(b.recipe)).size());
@@ -616,7 +629,7 @@ public final class BuildableSystem extends SavedData {
     }
     private ListTag catalog(ServerPlayer player) {
         var list = new ListTag();
-        var ids = new ArrayList<>(recipes().getAllKeys()); Collections.sort(ids);
+        var ids = new ArrayList<>(recipes().getAllKeys());ids.removeAll(hiddenRecipes); Collections.sort(ids);
         for (String recipe : ids) for (String id : parts(recipes().getCompound(recipe))) {
             var n = new CompoundTag(); n.putString("recipe", recipe); n.putString("recipeName", recipes().getCompound(recipe).getString("name")); n.putString("part", id);
             for (var tag : definitions.getList("anchors", Tag.TAG_COMPOUND)) {

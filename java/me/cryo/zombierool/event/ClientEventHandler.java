@@ -190,6 +190,7 @@ public class ClientEventHandler {
         }
         
         while (KeyBindings.MELEE_ATTACK_KEY.consumeClick()) {
+            if(mc.player.getMainHandItem().getItem() instanceof me.cryo.zombierool.core.system.WeaponImplementations.MeleeWeaponItem){me.cryo.zombierool.client.MeleeMotionClient.attack();continue;}
             long now = System.currentTimeMillis();
             if (!CutsweepAnimationHandler.isRunning() && (now - lastMeleeTime > 800)) {
                 lastMeleeTime = now;

@@ -133,9 +133,9 @@ public class WeaponEventHandler {
                 if (stack.getItem() instanceof WeaponSystem.BaseGunItem gun) {
                     if(gun instanceof me.cryo.zombierool.item.MapBowItem){if(event.isAttack()){event.setCanceled(true);event.setSwingHand(false);}return;}
                     if (gun instanceof WeaponImplementations.MeleeWeaponItem) {
-                        if(gun instanceof me.cryo.zombierool.item.ScarletWeaponItem&&event.isAttack()){
-                            event.setCanceled(true);event.setSwingHand(true);
-                            NetworkHandler.INSTANCE.sendToServer(new me.cryo.zombierool.network.packet.C2SMeleeAttackPacket());
+                        if(event.isAttack()){
+                            event.setCanceled(true);event.setSwingHand(false);
+                            me.cryo.zombierool.client.MeleeMotionClient.attack();
                         }
                         return;
                     }

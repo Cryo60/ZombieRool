@@ -48,7 +48,7 @@ public final class CompatibilityFixes {
  }
  public static BlockHitResult clip(Level level,ClipContext original){
   return level.clip(new ClipContext(original.getFrom(),original.getTo(),ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,(Entity)null){
-   @Override public VoxelShape getBlockShape(BlockState state,BlockGetter world,BlockPos pos){return state.getBlock() instanceof RestrictBlock?Shapes.empty():original.getBlockShape(state,world,pos);}
+   @Override public VoxelShape getBlockShape(BlockState state,BlockGetter world,BlockPos pos){var prop=ScriptedPropHits.shape(state,world,pos);return prop!=null?prop:state.getBlock() instanceof RestrictBlock?Shapes.empty():original.getBlockShape(state,world,pos);}
    @Override public VoxelShape getFluidShape(FluidState state,BlockGetter world,BlockPos pos){return original.getFluidShape(state,world,pos);}
   });
  }

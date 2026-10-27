@@ -34,30 +34,38 @@ public final class SkyObjectsRenderer {
             var center=new Vector3f((float)Math.sin(yaw)*(float)Math.cos(elevation)*d,(float)Math.sin(elevation)*d,(float)Math.cos(yaw)*(float)Math.cos(elevation)*d);
             center.y+=(float)Math.sin(t*.23)*(float)n.getDouble("bob");
             mesh.transform=new Matrix4f().translate(center).rotateY(yaw).rotateX(type.equals("dogfight")?0:-elevation).rotateY(((float)n.getDouble("rotation")+seconds*(float)n.getDouble("spin"))*RAD).rotateX((float)n.getDouble("tilt")*RAD).rotateZ((float)n.getDouble("roll")*RAD).scale((float)n.getDouble("size"));mesh.opacity=(float)n.getDouble("opacity");
-            switch(n.getString("type")){case "moon"->{int phase=(int)Math.round(n.getDouble("lunarPhase"));float light=n.contains("brightness")?f(n,"brightness"):1;mesh.sprite(new Vector3f(),new Vector3f(1,0,0),new Vector3f(0,1,0),.5f,.5f,0,new float[]{4+(phase%4)/4f,(phase/4)/2f,.25f,.5f},light*f(n,"tintR")/5,light*f(n,"tintG")/5,light*f(n,"tintB")/5,1,false,true);}case "earth","nuclear_cloud","dogfight","eclipse","meteor"->OriginalSkyEffects.render(mesh,n.getString("type"),t);case "floating_rocks"->mesh.rocks(t);case "custom","necropolis"->{for(Tag b:n.getString("type").equals("necropolis")?me.cryo.zombierool.gameplay.SkyObjects.necropolisGeometry():n.getList("boxes",10)){var box=(CompoundTag)b;mesh.box(f(box,"x"),f(box,"y"),f(box,"z"),f(box,"sx"),f(box,"sy"),f(box,"sz"),f(box,"r"),f(box,"g"),f(box,"b"),f(box,"alpha"),f(box,"emissive"));}}default->{}}
+            switch(n.getString("type")){case "sun"->{float light=f(n,"brightness");mesh.sprite(new Vector3f(),new Vector3f(1,0,0),new Vector3f(0,1,0),.5f,.5f,0,new float[]{6,0,1,1},light*f(n,"tintR")/5,light*f(n,"tintG")/5,light*f(n,"tintB")/5,1,false,true);}case "moon"->{int phase=(int)Math.round(n.getDouble("lunarPhase"));float light=n.contains("brightness")?f(n,"brightness"):1;mesh.sprite(new Vector3f(),new Vector3f(1,0,0),new Vector3f(0,1,0),.5f,.5f,0,new float[]{4+(phase%4)/4f,(phase/4)/2f,.25f,.5f},light*f(n,"tintR")/5,light*f(n,"tintG")/5,light*f(n,"tintB")/5,1,false,true);}case "destroyed_earth","earth","nuclear_cloud","dogfight","eclipse","meteor"->OriginalSkyEffects.render(mesh,n.getString("type"),t);case "floating_rocks"->mesh.rocks(t);case "custom","necropolis"->{for(Tag b:n.getString("type").equals("necropolis")?me.cryo.zombierool.gameplay.SkyObjects.necropolisGeometry():n.getList("boxes",10)){var box=(CompoundTag)b;mesh.box(f(box,"x"),f(box,"y"),f(box,"z"),f(box,"sx"),f(box,"sy"),f(box,"sz"),f(box,"r"),f(box,"g"),f(box,"b"),f(box,"alpha"),f(box,"emissive"));}}default->{}}
         }return mesh;
     }
     private static float f(CompoundTag n,String key){return (float)n.getDouble(key);}
     public static void render(CompoundTag settings,Matrix4f projection,Matrix4f view,int depth,int hands){
         if(shader==null||Minecraft.getInstance().level==null||settings.getList("skyObjects",10).isEmpty())return;
-        float seconds=(Minecraft.getInstance().level.getGameTime()+Minecraft.getInstance().getFrameTime())/20f;var mesh=build(settings,seconds,RENDER_MESH);if(mesh.faces.isEmpty())return;
+        float seconds=(Minecraft.getInstance().level.getGameTime()+Minecraft.getInstance().getFrameTime())/20f;renderAt(settings,projection,view,depth,hands,seconds);
+    }
+    public static void renderAt(CompoundTag settings,Matrix4f projection,Matrix4f view,int depth,int hands,float seconds){
+        if(shader==null)return;var previousShader=RenderSystem.getShader();int[] previousTextures=new int[4];for(int i=0;i<4;i++)previousTextures[i]=RenderSystem.getShaderTexture(i);
+        try(var state=new MapAtmosphereClient.RenderState()){var mesh=build(settings,seconds,RENDER_MESH);if(mesh.faces.isEmpty())return;
         mesh.faces.sort(Comparator.comparingDouble((Face face)->face.distance).reversed());
         var stack=RenderSystem.getModelViewStack();RenderSystem.backupProjectionMatrix();stack.pushPose();stack.setIdentity();stack.mulPoseMatrix(view);RenderSystem.applyModelViewMatrix();
         // Decouple the scenery's clipping planes from the world's chunk render distance.
         var skyProjection=new Matrix4f(projection);skyProjection.m22(-1.0001f).m32(-.100005f);RenderSystem.setProjectionMatrix(skyProjection,VertexSorting.DISTANCE_TO_ORIGIN);
         try{
             RenderSystem.disableDepthTest();RenderSystem.depthMask(false);RenderSystem.disableCull();RenderSystem.enableBlend();RenderSystem.blendFunc(com.mojang.blaze3d.platform.GlStateManager.SourceFactor.ONE,com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);RenderSystem.setShaderColor(1,1,1,1);RenderSystem.setShader(()->shader);
+            shader.setSampler("DestroyedEarth",Minecraft.getInstance().getTextureManager().getTexture(new net.minecraft.resources.ResourceLocation("zombierool","textures/environment/destroyed_earth_surface.png")).getId());
+            shader.safeGetUniform("SceneTime").set(seconds);
+            shader.setSampler("SunTexture",Minecraft.getInstance().getTextureManager().getTexture(new net.minecraft.resources.ResourceLocation("minecraft","textures/environment/sun.png")).getId());
             shader.setSampler("MoonTexture",Minecraft.getInstance().getTextureManager().getTexture(new net.minecraft.resources.ResourceLocation("minecraft","textures/environment/moon_phases.png")).getId());
             shader.setSampler("SkyAtlas",Minecraft.getInstance().getTextureManager().getTexture(new net.minecraft.resources.ResourceLocation("zombierool","textures/environment/sky_scene_atlas.png")).getId());RenderSystem.setShaderTexture(0,Math.max(0,depth));RenderSystem.setShaderTexture(1,Math.max(0,hands));shader.safeGetUniform("Occlusion").set(depth>=0?1f:0f);var target=Minecraft.getInstance().getMainRenderTarget();shader.safeGetUniform("ScreenSize").set((float)target.width,(float)target.height);
             var out=Tesselator.getInstance().getBuilder();out.begin(VertexFormat.Mode.QUADS,DefaultVertexFormat.POSITION_TEX_COLOR);
             for(var face:mesh.faces)for(int i=0;i<4;i++){var point=face.points[i];out.vertex(point.x,point.y,point.z).uv(face.uv[i*2],face.uv[i*2+1]).color(face.r,face.g,face.b,face.a).endVertex();}Tesselator.getInstance().end();
-        }finally{stack.popPose();RenderSystem.applyModelViewMatrix();RenderSystem.restoreProjectionMatrix();}
+        }finally{stack.popPose();RenderSystem.applyModelViewMatrix();RenderSystem.restoreProjectionMatrix();RenderSystem.setShader(()->previousShader);for(int i=0;i<4;i++)RenderSystem.setShaderTexture(i,previousTextures[i]);}
+        }
     }
     private void quad(Vector3f a,Vector3f b,Vector3f c,Vector3f d,float r,float g,float blue,float alpha){
         if(faces.size()>=48000)return;Vector3f[] p={a,b,c,d};float dist=0;for(var v:p){transform.transformPosition(v);dist+=v.lengthSquared();}face(p,new float[]{.0005f,.0005f,.0005f,.0005f,.0005f,.0005f,.0005f,.0005f},r,g,blue,alpha*opacity,dist*.25f);
     }
     private static Vector3f p(float x,float y,float z){return new Vector3f(x,y,z);}
-    private void box(float x,float y,float z,float sx,float sy,float sz,float r,float g,float b,float a,float emission){
+    void box(float x,float y,float z,float sx,float sy,float sz,float r,float g,float b,float a,float emission){
         float[] lo={x-sx/2,y-sy/2,z-sz/2},hi={x+sx/2,y+sy/2,z+sz/2};
         int[][] idx={{0,2,3,1},{4,5,7,6},{0,1,5,4},{2,6,7,3},{0,4,6,2},{1,3,7,5}};float[] light={.57f,.8f,.5f,1f,.65f,.85f};
         for(int side=0;side<6;side++){Vector3f[] v=new Vector3f[4];for(int i=0;i<4;i++){int n=idx[side][i];v[i]=p((n&1)==0?lo[0]:hi[0],(n&2)==0?lo[1]:hi[1],(n&4)==0?lo[2]:hi[2]);}float shade=light[side]*(1-emission)+emission;quad(v[0],v[1],v[2],v[3],r*shade,g*shade,b*shade,a);}

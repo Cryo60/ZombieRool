@@ -27,10 +27,13 @@ public final class HiddenActorSpawn {
         float scale=(float)profile.getDouble("scale");return net.minecraft.world.entity.EntityDimensions.fixed(Math.max(.8f,(float)profile.getDouble("width")*scale),Math.max(2,(float)profile.getDouble("height")*scale));
     }
     public static String spawn(ServerPlayer player,String profile,String marker,double min,double max){
-        var level=player.serverLevel();var budget=SEARCHES.computeIfAbsent(level,k->new SearchBudget());if(budget.tick!=level.getGameTime()){budget.tick=level.getGameTime();budget.nanos=0;}if(budget.nanos>=6_000_000)return "";long started=System.nanoTime();
-        try{return attempt(player,profile,marker,min,max,started+4_000_000);}finally{budget.nanos+=System.nanoTime()-started;}
+        return spawn(player,profile,marker,min,max,false);
     }
-    private static String attempt(ServerPlayer player,String profile,String marker,double min,double max,long deadline){
+    public static String spawn(ServerPlayer player,String profile,String marker,double min,double max,boolean visible){
+        var level=player.serverLevel();var budget=SEARCHES.computeIfAbsent(level,k->new SearchBudget());if(budget.tick!=level.getGameTime()){budget.tick=level.getGameTime();budget.nanos=0;}if(budget.nanos>=6_000_000)return "";long started=System.nanoTime();
+        try{return attempt(player,profile,marker,min,max,started+4_000_000,visible);}finally{budget.nanos+=System.nanoTime()-started;}
+    }
+    private static String attempt(ServerPlayer player,String profile,String marker,double min,double max,long deadline,boolean visible){
         var level=player.serverLevel();var data=MapActors.get(level);var definition=data.profile(profile);
         if(!WaveManager.isGameRunning()||WaveManager.isPausedByPlayer()||!MapActorBehavior.eligible(player)||definition.isEmpty()||!Double.isFinite(min)||!Double.isFinite(max)||min<4||max<min||max>64)return "";
         var dimensions=dimensions(definition);double width=dimensions.width,height=dimensions.height;
@@ -49,7 +52,7 @@ public final class HiddenActorSpawn {
                 var at=new Vec3(path.getX()+.5,y+shape.max(net.minecraft.core.Direction.Axis.Y),path.getZ()+.5);
                 if(!NavigationArea.allows(level,BlockPos.containing(at)))continue;
                 var box=new AABB(at.x-width/2,at.y,at.z-width/2,at.x+width/2,at.y+height,at.z+width/2);
-                if(!level.noCollision(box)||level.players().stream().anyMatch(p->visibleTo(p,box)))continue;
+                if(!level.noCollision(box)||(visible?!visibleTo(player,box):level.players().stream().anyMatch(p->visibleTo(p,box))))continue;
                 // Validate before registering the actor, firing callbacks or counting it for the wave.
                 // A path marker authorizes a column; it does not connect sealed floors in it.
                 if(++routeChecks>4)return "";

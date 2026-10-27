@@ -8,6 +8,27 @@ public final class SafeLuaBindings {
     private SafeLuaBindings() {}
     public static LuaTable wrap(ZombieroolAPI api) {
         LuaTable table = new LuaTable();
+        table.set("setMapQuestBlockHidden",new VarArgFunction(){
+            @Override public Varargs invoke(Varargs supplied){
+                Varargs args=supplied.arg1()==table?supplied.subargs(2):supplied;
+                return value(api.setMapQuestBlockHidden(args.arg(1).checkjstring(),args.arg(2).checkint(),args.arg(3).checkint(),args.arg(4).checkint(),args.arg(5).checkboolean()));
+            }
+        });
+        table.set("configureMapActorStreaming",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;api.configureMapActorStreaming(a.arg(1).checkdouble(),a.arg(2).checkdouble());return LuaValue.NONE;}});
+        table.set("registerEnemySpawnerQuestArea",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;api.registerEnemySpawnerQuestArea(a.arg(1).checkjstring(),a.arg(2).checkint(),a.arg(3).checkint(),a.arg(4).checkint(),a.arg(5).checkint(),a.arg(6).checkint(),a.arg(7).checkint());return LuaValue.NONE;}});
+        table.set("spawnMapQuestActor",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;
+            return value(api.spawnMapQuestActor(a.arg(1).checkjstring(),a.arg(2).checkdouble(),a.arg(3).checkdouble(),a.arg(4).checkdouble()));}});
+        table.set("getEnemySpawnerQuestStatus",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;
+            return api.getEnemySpawnerQuestStatus(a.arg(1).checkint(),a.arg(2).checkint(),a.arg(3).checkint(),a.arg(4).checkint(),a.arg(5).checkint(),a.arg(6).checkint());}});
+        table.set("getMapActorQuestState",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.getMapActorQuestState(a.arg(1).checkjstring()));}});
+        table.set("teleportPlayerFacing",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){
+            Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;
+            api.teleportPlayerFacing(a.arg(1).checkjstring(),a.arg(2).checkdouble(),a.arg(3).checkdouble(),a.arg(4).checkdouble(),(float)a.arg(5).checkdouble(),(float)a.arg(6).checkdouble());return LuaValue.NONE;}});
         table.set("isGameRunning", new VarArgFunction() {
             @Override public Varargs invoke(Varargs supplied) {
                 Varargs args = supplied.arg1() == table ? supplied.subargs(2) : supplied;
@@ -72,6 +93,21 @@ public final class SafeLuaBindings {
             @Override public Varargs invoke(Varargs supplied) {
                 Varargs args = supplied.arg1() == table ? supplied.subargs(2) : supplied;
                 return value(api.resetPlayerMusic(args.arg(1).optjstring(null)));
+            }
+        });
+        table.set("setBuildableVisible",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.setBuildableVisible(a.arg(1).optjstring(null),a.arg(2).optboolean(true)));}});
+        table.set("setMapComponentVisible",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.setMapComponentVisible(a.arg(1).optint(0),a.arg(2).optint(0),a.arg(3).optint(0),a.arg(4).optboolean(true)));}});
+        table.set("spawnVanillaEntity",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.spawnVanillaEntity(a.arg(1).optjstring(null),a.arg(2).optdouble(0),a.arg(3).optdouble(0),a.arg(4).optdouble(0),a.arg(5).optjstring("")));}});
+        table.set("setMapActorHealth",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.setMapActorHealth(a.arg(1).optjstring(null),a.arg(2).optdouble(0)));}});
+        table.set("consumeCarriedBuildableResult",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.consumeCarriedBuildableResult(a.arg(1).optjstring(null),a.arg(2).optjstring(null)));}});
+        table.set("setAshbringerPhase",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.setAshbringerPhase(a.arg(1).optjstring(null),a.arg(2).optint(0)));}});
+        table.set("getMapBrazierFire",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.getMapBrazierFire(a.arg(1).optint(0),a.arg(2).optint(0),a.arg(3).optint(0)));}});
+        table.set("setMapBrazierFire",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.setMapBrazierFire(a.arg(1).optint(0),a.arg(2).optint(0),a.arg(3).optint(0),a.arg(4).optint(0)));}});
+        table.set("canPlayerInteract",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.canPlayerInteract(a.arg(1).optjstring(null),a.arg(2).optdouble(0),a.arg(3).optdouble(0),a.arg(4).optdouble(0),a.arg(5).optdouble(0)));}});
+        table.set("spawnVisibleMapActorNearPlayer", new VarArgFunction() {
+            @Override public Varargs invoke(Varargs supplied) {
+                Varargs args = supplied.arg1() == table ? supplied.subargs(2) : supplied;
+                return value(api.spawnVisibleMapActorNearPlayer(args.arg(1).optjstring(null), args.arg(2).optjstring(null), args.arg(3).optdouble(0), args.arg(4).optdouble(0)));
             }
         });
         table.set("spawnMapActorNearPlayer", new VarArgFunction() {
@@ -998,10 +1034,11 @@ public final class SafeLuaBindings {
                 return value(api.getPlayerName(args.arg(1).optjstring(null)));
             }
         });
+        table.set("killMapActor",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){Varargs args=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.killMapActor(args.arg(1).checkjstring()));}});
         table.set("giveItem", new VarArgFunction() {
             @Override public Varargs invoke(Varargs supplied) {
                 Varargs args = supplied.arg1() == table ? supplied.subargs(2) : supplied;
-                api.giveItem(args.arg(1).optjstring(null), args.arg(2).optjstring(null), args.arg(3).optint(0)); return LuaValue.NONE;
+                api.giveItem(args.arg(1).optjstring(null), args.arg(2).optjstring(null), args.arg(3).optint(0),args.arg(4).optjstring("")); return LuaValue.NONE;
             }
         });
         table.set("removeItem", new VarArgFunction() {

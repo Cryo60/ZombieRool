@@ -24,6 +24,7 @@ public final class HotfixTextureFolders {
     }
     public static void applyRequest(net.minecraft.server.level.ServerPlayer player,Request msg){
             if(player==null||!player.isCreative()||!(player.containerMenu instanceof MapTextures.TextureKitMenu menu))return;
+            if(msg.action()==4){try{if(msg.slot()<0||msg.slot()>=MapTextures.SLOTS)return;MapTextureAppearance.set(msg.slot(),Float.parseFloat(msg.path()));MapTextureSync.refresh(player.server.overworld(),null);}catch(Exception ignored){}return;}
             if(msg.action()==2||msg.action()==3){try{int index=Integer.parseInt(msg.path());if(msg.slot()<0||msg.slot()>=MapTextures.SLOTS)return;if(msg.action()==2&&index>=0&&index<MapTextures.SOUND_IDS.length)menu.clickMenuButton(player,MapTextures.SOUND_BUTTON+msg.slot()*MapTextures.SOUND_IDS.length+index);if(msg.action()==3&&index>=0&&index<MapTextures.SHAPES.length)menu.clickMenuButton(player,msg.slot()*MapTextures.SHAPES.length+index);}catch(NumberFormatException ignored){}return;}
             String path=MapTextures.sanitize(msg.path());if(path.isEmpty()&&!(msg.action()==1&&msg.path().trim().equals("/"))||path.startsWith("import/")||path.equals("import"))return;
             try{

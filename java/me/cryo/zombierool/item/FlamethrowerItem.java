@@ -312,6 +312,7 @@ public class FlamethrowerItem extends WeaponSystem.BaseGunItem {
         private static final int MAX_FIRE_PATCHES = 40;
 
         public static void addFirePatch(ServerLevel level, Vec3 pos, UUID owner, float damage, int duration, boolean isBlue) {
+            if(owner!=null&&level.getServer().getPlayerList().getPlayer(owner)!=null)me.cryo.zombierool.scripting.LuaScriptManager.callEvent("OnIncendiaryImpact",owner.toString(),pos.x,pos.y,pos.z);
             for (FirePatch patch : activePatches) {
                 if (patch.level == level && patch.pos.distanceToSqr(pos) < 1.0) {
                     patch.ticksRemaining = Math.max(patch.ticksRemaining, duration);

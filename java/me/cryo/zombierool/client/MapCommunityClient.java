@@ -72,7 +72,7 @@ public final class MapCommunityClient {
     }
     public static byte[] image(String url) throws IOException {
         allowed();if(!validMapLink(url))throw new IOException("image_url");var conn=(HttpURLConnection)URI.create(url).toURL().openConnection();conn.setConnectTimeout(5000);conn.setReadTimeout(10000);
-        try(var in=conn.getInputStream()){return bounded(in,2*1024*1024);}finally{conn.disconnect();}
+        try(var in=conn.getInputStream()){return bounded(in,CatalogueImageDecoder.MAX_BYTES);}finally{conn.disconnect();}
     }
     private static byte[] bounded(InputStream in,int max) throws IOException {byte[] bytes=in.readNBytes(max+1);if(bytes.length>max)throw new IOException("response_too_large");return bytes;}
     public static boolean validMapLink(String value){try{var uri=URI.create(value);return ("https".equalsIgnoreCase(uri.getScheme())||"http".equalsIgnoreCase(uri.getScheme()))&&uri.getHost()!=null&&uri.getUserInfo()==null;}catch(Exception e){return false;}}

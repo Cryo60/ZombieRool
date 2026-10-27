@@ -538,6 +538,7 @@ public class ServerEventHandler {
     }
 
     private static boolean shouldDespawn(Entity entity) {
+        if(entity!=null&&entity.getTags().contains("zr_script_vanilla"))return false;
         if(entity!=null&&me.cryo.zombierool.gameplay.NativeMapActors.owns(entity))return false;
         if(entity instanceof me.cryo.zombierool.entity.MapActorEntity actor&&!actor.profile().isEmpty())return false;
         // Explicit operator console spawns are test mobs, independent of the map whitelist.

@@ -28,7 +28,10 @@ public final class RouteNavigation extends GroundPathNavigation {
     private static final java.util.Map<Level,PlanningBudget> PLANNING=new java.util.WeakHashMap<>();
     private static final java.util.Map<Level,PlanningBudget> ENCOUNTER_PLANNING=new java.util.WeakHashMap<>();
     private static final java.util.Map<Level,PlanningBudget> PATROL_PLANNING=new java.util.WeakHashMap<>();
-    private static final class PlanningBudget {long tick=Long.MIN_VALUE,nanos;int used;}
+    private static final class PlanningBudget {
+        long tick=Long.MIN_VALUE,nanos;int used;
+        final java.util.LinkedHashMap<Integer,Long> waiting=new java.util.LinkedHashMap<>();
+    }
     private boolean planningDeferred;
     private boolean encounterPlanning;
     private boolean patrolPlanning;
@@ -44,8 +47,21 @@ public final class RouteNavigation extends GroundPathNavigation {
     private boolean acquirePlanning(){
         var budget=planningBudget();long tick=level.getGameTime();
         if(budget.tick!=tick){budget.tick=tick;budget.nanos=0;budget.used=0;}
+        // Patrols already have a persistent FIFO in MapActorBehavior. A second
+        // FIFO here waits for mobs that the outer queue will not visit next tick.
+        if(patrolPlanning){
+            if(budget.used>=2||budget.nanos>=2_000_000)return false;
+            budget.used++;return true;
+        }
+        // Map actors update pursuit/return-home every other tick. Keep their
+        // place until that next update, even while wave mobs request every tick.
+        budget.waiting.entrySet().removeIf(entry->tick-entry.getValue()>2);
+        budget.waiting.put(mob.getId(),tick);
+        // Preserve request order across ticks so the first mobs in a large horde
+        // cannot consume every path slot before the tail of the horde is updated.
+        if(budget.waiting.keySet().iterator().next()!=mob.getId())return false;
         if(budget.used>=(encounterPlanning||patrolPlanning?2:4)||budget.nanos>=(patrolPlanning?2_000_000:6_000_000))return false;
-        budget.used++;return true;
+        budget.waiting.remove(mob.getId());budget.used++;return true;
     }
     private RouteNavigation walkProbe;
     private float lastPlanningRange;
@@ -130,9 +146,13 @@ public final class RouteNavigation extends GroundPathNavigation {
         if(!NavigationArea.allowsPursuit(player))return null;
         Vec3 wanted=pursuitPosition(player);
         var goals=new java.util.HashSet<BlockPos>();goals.add(BlockPos.containing(wanted));
+        boolean mapActor=MapActors.owns(mob);
+        // Map guards use their configured melee reach. Combining edge goals
+        // with vanilla's extra one-node accuracy can finish outside that reach.
+        double edgeRadius=mapActor?Math.max(.5,Math.min(1.5,(mob.getBbWidth()+player.getBbWidth())*.5+MapKnifeRules.profile(mob).getDouble("meleeReach")-.5)):1.5;
         // Include supported edge cells in the same search, rather than restarting A* around the player.
         for(int x=Mth.floor(wanted.x-1);x<=Mth.floor(wanted.x+1);x++)for(int z=Mth.floor(wanted.z-1);z<=Mth.floor(wanted.z+1);z++){
-            if((x+.5-wanted.x)*(x+.5-wanted.x)+(z+.5-wanted.z)*(z+.5-wanted.z)>2.25)continue;
+            if((x+.5-wanted.x)*(x+.5-wanted.x)+(z+.5-wanted.z)*(z+.5-wanted.z)>edgeRadius*edgeRadius)continue;
             var support=new BlockPos(x,Mth.floor(wanted.y-.01),z);
             var shape=level.getBlockState(support).getCollisionShape(level,support);
             if(shape.isEmpty()||Math.abs(support.getY()+shape.max(net.minecraft.core.Direction.Axis.Y)-wanted.y)>.6)continue;
@@ -141,10 +161,13 @@ public final class RouteNavigation extends GroundPathNavigation {
             if(level.clip(new ClipContext(point.add(0,.8,0),wanted.add(0,.8,0),ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,mob)).getType()!=HitResult.Type.MISS)continue;
             goals.add(BlockPos.containing(point));
         }
-        return createPath(goals,accuracy);
+        return createPath(goals,mapActor?0:accuracy);
     }
     @Override protected Path createPath(Set<BlockPos> targets,int margin,boolean above,int accuracy,float followRange){
         planningDeferred=false;
+        // Vanilla reuses this path without searching. Do not spend a global
+        // planning slot on that cache hit, especially in MeleeAttackGoal.canUse.
+        if(path!=null&&!path.isDone()&&getTargetPos()!=null&&targets.contains(getTargetPos()))return path;
         if(!acquirePlanning()){planningDeferred=true;return path;}
         long started=System.nanoTime();
         try{

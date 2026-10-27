@@ -7,12 +7,12 @@
     "weapon.zombierool.oldsword.lore.1"
   ],
   "stats": {
-    "damage": 3.0,
-    "fire_rate": 20,
+    "damage": 8,
+    "fire_rate": 14,
     "range": 2.5,
     "mobility": 1.1,
     "penetration": 0,
-    "durability": 50,
+    "durability": 160,
     "damage_reduction_on_pierce": true
   },
   "ammo": {
@@ -41,7 +41,7 @@
   },
   "pack_a_punch": {
     "name": "weapon.zombierool.oldsword.pap",
-    "damage_bonus": 7.0,
+    "damage_bonus": 16,
     "clip_bonus": 0,
     "reserve_bonus": 0,
     "reload_speed_mult": 1.0,

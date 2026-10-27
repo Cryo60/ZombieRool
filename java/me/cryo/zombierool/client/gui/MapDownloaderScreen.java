@@ -77,12 +77,13 @@ public class MapDownloaderScreen extends Screen {
         int ticket=generation;
         MapCommunityClient.async(()->{
             byte[] data=MapCommunityClient.image(map.imageUrl);
-            try(var input=javax.imageio.ImageIO.createImageInputStream(new ByteArrayInputStream(data))){
-                var readers=javax.imageio.ImageIO.getImageReaders(input);if(!readers.hasNext())throw new IOException("image");var reader=readers.next();
-                try{reader.setInput(input);int w=reader.getWidth(0),h=reader.getHeight(0);if(w<1||h<1||w>4096||h>4096||(long)w*h>4194304)throw new IOException("image_size");}finally{reader.dispose();}
-            }
-            return NativeImage.read(new ByteArrayInputStream(data));
-        }).whenComplete((image,error)->{if(error!=null)return;minecraft.execute(()->{if(disposed||ticket!=generation){image.close();return;}var texture=new DynamicTexture(image);var loc=minecraft.getTextureManager().register("zr_catalogue",texture);var old=textures.put(map.key(),loc);if(old!=null)minecraft.getTextureManager().release(old);});});
+            var thumbnail=CatalogueImageDecoder.decode(data);
+            try{
+                var nativeImage=new NativeImage(thumbnail.getWidth(),thumbnail.getHeight(),true);
+                try{for(int y=0;y<thumbnail.getHeight();y++)for(int x=0;x<thumbnail.getWidth();x++)nativeImage.setPixelRGBA(x,y,CatalogueImageDecoder.abgr(thumbnail.getRGB(x,y)));return nativeImage;}
+                catch(Throwable failure){nativeImage.close();throw failure;}
+            }finally{thumbnail.flush();}
+        }).whenComplete((image,error)->{if(error!=null){me.cryo.zombierool.ZombieroolMod.LOGGER.warn("[Catalogue] Thumbnail failed for {}: {}",map.id,error.toString());return;}minecraft.execute(()->{if(disposed||ticket!=generation){image.close();return;}var texture=new DynamicTexture(image);var loc=minecraft.getTextureManager().register("zr_catalogue",texture);var old=textures.put(map.key(),loc);if(old!=null)minecraft.getTextureManager().release(old);});});
     }
     void reviewsChanged(){rebuild(false);}
     private List<MapCatalogue.Entry> filtered(){return maps.stream().filter(m->(tab!=1||m.source.equals("official"))&&(tab!=2||m.source.equals("community"))&&(tab!=3||m.installed>0)&&m.matches(query)).toList();}

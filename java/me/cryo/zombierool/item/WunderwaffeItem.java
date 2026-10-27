@@ -48,7 +48,7 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
         int maxChains = isPap ? 24 : 10;
         double chainRange = 8.0;
 
-        Entity firstHit = BallisticManager.getRayTraceTarget(player, definition.stats.range);
+        Entity firstHit = BallisticManager.getLivingRayTraceTarget(player, definition.stats.range);
 
         if (firstHit == null) {
             Vec3 eyePos = player.getEyePosition(1.0f);
@@ -91,8 +91,7 @@ public class WunderwaffeItem extends WeaponSystem.BaseGunItem {
                 if (potentialNext.isEmpty()) break;
 
                 final LivingEntity refTarget = currentTarget;
-                potentialNext.sort(Comparator.comparingDouble(e -> e.distanceToSqr(refTarget)));
-                currentTarget = potentialNext.get(0);
+                currentTarget = potentialNext.stream().min(Comparator.comparingDouble(e -> e.distanceToSqr(refTarget))).orElse(null);
             }
         }
     }

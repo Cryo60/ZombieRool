@@ -7,12 +7,12 @@
     "weapon.zombierool.energysword.lore.1"
   ],
   "stats": {
-    "damage": 10.0,
+    "damage": 16,
     "fire_rate": 10,
     "range": 3.0,
     "mobility": 1.1,
     "penetration": 0,
-    "durability": 100,
+    "durability": 240,
     "damage_reduction_on_pierce": true
   },
   "ammo": {
@@ -41,7 +41,7 @@
   },
   "pack_a_punch": {
     "name": "weapon.zombierool.energysword.pap",
-    "damage_bonus": 15.0,
+    "damage_bonus": 24,
     "clip_bonus": 0,
     "reserve_bonus": 0,
     "reload_speed_mult": 1.0,

@@ -15,7 +15,7 @@ import java.util.Optional;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NetworkHandler {
     private static boolean alreadyRegistered = false;
-    private static final String PROTOCOL_VERSION = "18";
+    private static final String PROTOCOL_VERSION = "21";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation("zombierool", "main"),
             () -> PROTOCOL_VERSION,
@@ -127,6 +127,7 @@ public class NetworkHandler {
             INSTANCE.registerMessage(id+13,S2CDebugSettingsPacket.class,S2CDebugSettingsPacket::encode,S2CDebugSettingsPacket::decode,S2CDebugSettingsPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id+16,S2CEncounterShockPacket.class,S2CEncounterShockPacket::encode,S2CEncounterShockPacket::decode,S2CEncounterShockPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id+8,S2CPanzerCapturePacket.class,S2CPanzerCapturePacket::encode,S2CPanzerCapturePacket::decode,S2CPanzerCapturePacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            INSTANCE.registerMessage(id+18,S2CMeleeMotionPacket.class,S2CMeleeMotionPacket::encode,S2CMeleeMotionPacket::new,S2CMeleeMotionPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
             INSTANCE.registerMessage(id+17,S2CBonusVisualPacket.class,S2CBonusVisualPacket::encode,S2CBonusVisualPacket::decode,S2CBonusVisualPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         });
     }

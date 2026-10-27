@@ -88,7 +88,7 @@ public class WaWMainMenuScreen extends Screen {
     }
 
     private void drawBackdrop(GuiGraphics g, float partialTick) {
-        WaWMenuBackdrop.draw(g, this.width, this.height, this.ticks + partialTick);
+        if(DestroyedEarthMenu.ACTIVE)DestroyedEarthMenu.draw(g,this.width,this.height);else WaWMenuBackdrop.draw(g, this.width, this.height, this.ticks + partialTick);
     }
 
     private void drawWordmark(GuiGraphics g) {

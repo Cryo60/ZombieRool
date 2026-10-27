@@ -1,0 +1,16 @@
+{
+  "id": "zombierool:stratholme_ashbringer",
+  "name": "weapon.zombierool.stratholme_ashbringer",
+  "type": "MELEE",
+  "weapon_kind": "greatsword",
+  "is_wonder_weapon": true,
+  "stats": {
+    "damage": 0,
+    "range": 0,
+    "fire_rate": 16
+  },
+  "ammo": {
+    "clip_size": 0,
+    "max_reserve": 0
+  }
+}

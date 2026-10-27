@@ -11,7 +11,16 @@ import java.util.ArrayDeque;
 /** Brief full-bright bolts remain visible even with minimal particles. */
 @Mod.EventBusSubscriber(modid="zombierool",value=Dist.CLIENT)
 public final class WunderwaffeLightning {
-    private record Bolt(Vec3 from,Vec3 to,boolean pap,long born) {}
+    private static final class Bolt {
+        final Vec3 from,to;final boolean pap;final long born;
+        long geometryTick=Long.MIN_VALUE;
+        java.util.List<ElectricArcGeometry.Segment> geometry=java.util.List.of();
+        Bolt(Vec3 from,Vec3 to,boolean pap,long born){this.from=from;this.to=to;this.pap=pap;this.born=born;}
+        java.util.List<ElectricArcGeometry.Segment> segments(long now){
+            if(geometryTick!=now/2){geometryTick=now/2;geometry=ElectricArcGeometry.create(from,to,born*31+geometryTick,1);}
+            return geometry;
+        }
+    }
     private static final ArrayDeque<Bolt> BOLTS=new ArrayDeque<>();
     private static net.minecraft.client.multiplayer.ClientLevel world;
     private WunderwaffeLightning() {}
@@ -22,7 +31,7 @@ public final class WunderwaffeLightning {
         var level=Minecraft.getInstance().level;
         if (level!=world) { BOLTS.clear();world=level; }
         if (level==null || from.distanceToSqr(to)<.0001) return;
-        if (BOLTS.size()>=128) BOLTS.removeFirst();
+        if (BOLTS.size()>=48) BOLTS.removeFirst();
         BOLTS.addLast(new Bolt(from,to,pap,level.getGameTime()));
     }
     @SubscribeEvent public static void render(RenderLevelStageEvent event) {
@@ -39,7 +48,7 @@ public final class WunderwaffeLightning {
         var vertices=buffers.getBuffer(ElectricLightningRenderType.BLUE_ARCS);
         for (var bolt:BOLTS) {
             float fade=1-(now-bolt.born+event.getPartialTick())/6f;
-            for (var segment:ElectricArcGeometry.create(bolt.from,bolt.to,bolt.born*31+now/2)) {
+            for (var segment:bolt.segments(now)) {
                 ElectricTrapLightning.tube(pose,vertices,segment,.045f,bolt.pap?1:.15f,bolt.pap?.15f:.55f,bolt.pap?.1f:1,.45f*fade);
                 ElectricTrapLightning.tube(pose,vertices,segment,.012f,1,.95f,1,fade);
             }

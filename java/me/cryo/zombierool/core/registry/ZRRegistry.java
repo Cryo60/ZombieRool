@@ -36,10 +36,10 @@ public class ZRRegistry {
     @SubscribeEvent
     public static void onRegister(RegisterEvent event) {
         if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
-            WeaponSystem.Loader.loadWeapons();
+            WeaponSystem.Loader.loadBuiltinWeapons();
 
             event.register(ForgeRegistries.Keys.ITEMS, helper -> {
-                for (var entry : WeaponSystem.Loader.LOADED_DEFINITIONS.entrySet()) {
+                for (var entry : new java.util.TreeMap<>(WeaponSystem.Loader.LOADED_DEFINITIONS).entrySet()) {
                     WeaponSystem.BaseGunItem gunItem = WeaponSystem.Loader.createWeapon(entry.getValue());
                     ResourceLocation location = new ResourceLocation(ZombieroolMod.MODID, entry.getKey());
                     helper.register(location, gunItem);

@@ -20,17 +20,9 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
         if(event.getLevel() instanceof net.minecraft.server.level.ServerLevel level){TERRAIN.merge(level,1L,Long::sum);me.cryo.zombierool.gameplay.NavigationArea.invalidate(level);}
     }
     private static final java.util.Map<Mob,java.util.Map<java.util.UUID,Failure>> FAILED=new java.util.WeakHashMap<>();
-    private static final java.util.Map<net.minecraft.world.level.Level,SelectionBudget> BUDGETS=new java.util.WeakHashMap<>();
-    private static final class SelectionBudget {long tick=Long.MIN_VALUE,nanos;int used;}
-    private record Selection(long tick,long terrain,java.lang.ref.WeakReference<Player> target,Path path){}
+    private record Selection(long tick,long terrain,java.lang.ref.WeakReference<Player> target,Path path,boolean deferred){}
     private static final java.util.Map<Mob,Selection> SELECTIONS=new java.util.WeakHashMap<>();
     private boolean selectionDeferred;
-    private static boolean acquire(Mob mob){
-        var budget=BUDGETS.computeIfAbsent(mob.level(),key->new SelectionBudget());long tick=mob.level().getGameTime();
-        if(budget.tick!=tick){budget.tick=tick;budget.used=0;budget.nanos=0;}
-        if(budget.used>=4||budget.nanos>=6_000_000)return false;
-        budget.used++;return true;
-    }
     private static int nextReview(Mob mob){return mob.tickCount+1+Math.floorMod(mob.getId()-(int)(mob.level().getGameTime()+1),20);}
     private int nextCheck;
     private Path selectedPath;
@@ -45,17 +37,15 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
         selectionDeferred=false;
         var previousSelection=SELECTIONS.get(mob);
         if(previousSelection!=null&&previousSelection.tick==mob.level().getGameTime()&&previousSelection.terrain==TERRAIN.getOrDefault(mob.level(),0L)){
-            target=previousSelection.target.get();selectedPath=previousSelection.path;return;
+            target=previousSelection.target.get();selectedPath=previousSelection.path;selectionDeferred=previousSelection.deferred;return;
         }
         // A live route in a one-player match already answers the targeting question.
         if(mob.level().players().size()==1&&valid(mob.getTarget())&&mob.canAttack(mob.getTarget())){
             var current=(Player)mob.getTarget();var route=mob.getNavigation().getPath();
             if(route!=null&&!route.isDone()&&reachable(route,current)&&me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit(current)){target=current;selectedPath=route;return;}
         }
-        if(!acquire(mob)){
-            selectionDeferred=true;target=valid(mob.getTarget())&&me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit((Player)mob.getTarget())?(Player)mob.getTarget():null;selectedPath=null;return;
-        }
-        long started=System.nanoTime();
+        // RouteNavigation owns the expensive search budget. A second budget here
+        // can admit different mobs than the path queue and starve both queues.
         try{
         double range=getFollowDistance(),best=Double.POSITIVE_INFINITY;
         target=null;selectedPath=null;
@@ -86,8 +76,7 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
             if(cost<best){best=cost;target=player;selectedPath=path;}
         }
         }finally{
-            BUDGETS.get(mob.level()).nanos+=System.nanoTime()-started;
-            SELECTIONS.put(mob,new Selection(mob.level().getGameTime(),TERRAIN.getOrDefault(mob.level(),0L),new java.lang.ref.WeakReference<>(target instanceof Player p?p:null),selectedPath));
+            SELECTIONS.put(mob,new Selection(mob.level().getGameTime(),TERRAIN.getOrDefault(mob.level(),0L),new java.lang.ref.WeakReference<>(target instanceof Player p?p:null),selectedPath,selectionDeferred));
         }
     }
     private static boolean valid(LivingEntity entity){return entity instanceof Player p&&p.isAlive()&&!p.isCreative()&&!p.isSpectator()&&!PlayerDownManager.isPlayerDown(p.getUUID())&&!BonusManager.isZombieBloodActive(p);}

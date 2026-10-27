@@ -569,6 +569,7 @@ class TacZImpl {
 
     public static int getTacZWeaponMaxReserve(net.minecraft.world.item.ItemStack stack, me.cryo.zombierool.core.system.WeaponSystem.Definition def) {
         int baseReserve = def != null ? def.ammo.max_reserve : 120;
+        if(baseReserve<0)return baseReserve;
         boolean pap=me.cryo.zombierool.core.system.WeaponFacade.isPackAPunched(stack);
         if(def!=null&&pap)baseReserve+=def.pap.reserve_bonus;
         int baseline=def!=null?def.ammo.clip_size+(pap?def.pap.clip_bonus:0):30;
@@ -577,7 +578,7 @@ class TacZImpl {
         int current=getTacZWeaponMaxAmmo(stack,def);
         int totalReserve=(int)Math.ceil(baseReserve*(double)Math.max(1,current)/Math.max(1,baseline));
 
-        return totalReserve;
+        return me.cryo.zombierool.gameplay.WeaponReserves.doubled(totalReserve);
     }
 
     public static List<ResourceLocation> getAllTacZGunIds() {

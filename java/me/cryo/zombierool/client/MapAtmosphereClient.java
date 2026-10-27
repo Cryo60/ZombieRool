@@ -134,12 +134,15 @@ public final class MapAtmosphereClient {
     public static boolean deferredBlood(){return ClientEnvironmentEffects.shaderPackActive()&&deferredAmbient();}
     public static boolean deferredAmbient(){
         if(shader==null||bloodShader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.hasMapFog())return false;
+        if(settings.getBoolean("vanillaSky"))return !settings.getList("skyObjects",10).isEmpty();
         var id=new ResourceLocation(settings.getString("skyTexture"));return skyAvailable(id);
     }
     /** Put the custom sky behind translucent geometry, before its colors blend with the background. */
     @SubscribeEvent public static void skyBackground(RenderLevelStageEvent e){
         if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_SKY||shader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.hasMapFog()||ClientEnvironmentEffects.shaderPackActive())return;
-        var mc=Minecraft.getInstance();if(mc.level==null)return;var sky=new ResourceLocation(settings.getString("skyTexture"));
+        var mc=Minecraft.getInstance();if(mc.level==null)return;
+        if(settings.getBoolean("vanillaSky")){var camera=mc.gameRenderer.getMainCamera();var view=new Matrix4f().rotationX((float)Math.toRadians(camera.getXRot())).rotateY((float)Math.toRadians(camera.getYRot()+180f));renderSkyObjects(e.getProjectionMatrix(),view,-1,-1);return;}
+        var sky=new ResourceLocation(settings.getString("skyTexture"));
         if(!skyAvailable(sky))return;
         var state=new RenderState();var previousShader=RenderSystem.getShader();int[] previousTextures=new int[4];for(int i=0;i<4;i++)previousTextures[i]=RenderSystem.getShaderTexture(i);
         var projection=new Matrix4f(e.getProjectionMatrix()).invert();var view=new Matrix4f(RenderSystem.getInverseViewRotationMatrix());
@@ -208,7 +211,7 @@ public final class MapAtmosphereClient {
         try{
             RenderSystem.setShader(()->shader);RenderSystem.setShaderTexture(0,scene.getColorTextureId());RenderSystem.setShaderTexture(1,depth.getDepthTextureId());RenderSystem.setShaderTexture(2,handCaptured?handDepth.getDepthTextureId():main.getDepthTextureId());
             var sky=new ResourceLocation(settings.getString("skyTexture"));boolean exists=skyAvailable(sky);RenderSystem.setShaderTexture(3,sky);
-            shader.safeGetUniform("SkyPass").set(0f);shader.safeGetUniform("InvProjMat").set(invProjection);shader.safeGetUniform("InvViewRot").set(invView);shader.safeGetUniform("SkyEnabled").set(skyStage?1f:0f);shader.safeGetUniform("SkyLayout").set(settings.getString("skyLayout").equals("panorama")?1f:0f);
+            shader.safeGetUniform("SkyPass").set(0f);shader.safeGetUniform("InvProjMat").set(invProjection);shader.safeGetUniform("InvViewRot").set(invView);shader.safeGetUniform("SkyEnabled").set(skyStage&&!settings.getBoolean("vanillaSky")?1f:0f);shader.safeGetUniform("SkyLayout").set(settings.getString("skyLayout").equals("panorama")?1f:0f);
             shader.safeGetUniform("SkyCoordinates").set(settings.getString("skyCoordinates").equals("z_up")?1f:0f);
             shader.safeGetUniform("SkyParams").set((float)Math.toRadians(settings.getDouble("skyYaw")),(float)Math.toRadians(settings.getDouble("skyPitch")),(float)settings.getDouble("skyBrightness"));shader.safeGetUniform("Tint").set((float)settings.getDouble("red"),(float)settings.getDouble("green"),(float)settings.getDouble("blue"));
             shader.safeGetUniform("Grade").set((float)settings.getDouble("exposure"),(float)settings.getDouble("contrast"),(float)settings.getDouble("saturation"),(float)settings.getDouble("gamma"));shader.safeGetUniform("ScreenEffects").set((float)settings.getDouble("vignette"),(float)settings.getDouble("vignetteSoftness"),(float)settings.getDouble("dirt"),(float)settings.getDouble("grain"));

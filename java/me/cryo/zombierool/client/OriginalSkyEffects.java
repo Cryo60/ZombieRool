@@ -49,6 +49,7 @@ public final class OriginalSkyEffects {
     public static void render(SkyObjectsRenderer mesh,String type,float seconds){load();switch(type){
         case "nuclear_cloud"->{emit(mesh,"cloud",seconds*350+35000,0,1/12500f,new Vector3f(),new Vector3f(),0);nuclearColumn(mesh,seconds);nuclearCrown(mesh,seconds);}
         case "earth"->earth(mesh);
+        case "destroyed_earth"->destroyedEarth(mesh,seconds);
         case "eclipse"->emit(mesh,"eclipse",seconds*1000+35000,1,1/1500f,new Vector3f(),new Vector3f(),0);
         case "meteor"->{float cycle=positive(seconds,18);if(cycle<12)emit(mesh,"meteor",cycle*1000,2,1/450f,new Vector3f(),new Vector3f(0,-1.8f,0),0);else if(cycle<14)emit(mesh,"meteorImpact",(cycle-12)*1000,2,1/1800f,new Vector3f(),new Vector3f(),0);}
         case "dogfight"->aircraft().render(mesh,seconds);
@@ -153,6 +154,61 @@ public final class OriginalSkyEffects {
 
     private static void earth(SkyObjectsRenderer mesh){
         float[] shade={.9f,.65f,1,.6f,.9f,.7f};for(int face=0;face<6;face++){float[] rect={earth[0]+earth[2]*(face%3)/3,earth[1]+earth[3]*(face/3)/2,earth[2]/3,earth[3]/2};float u=rect[0],v=rect[1],w=rect[2],h=rect[3];var corners=new Vector3f[]{cube(face,-1,-1),cube(face,1,-1),cube(face,1,1),cube(face,-1,1)};mesh.textured(corners,new float[]{u,v+h,u+w,v+h,u+w,v,u,v},shade[face],shade[face],shade[face],1,false);}
+    }
+    private static Vector3f brokenCube(int face,float u,float v){
+        var p=cube(face,u,v);
+        // One ruptured corner, shared across adjacent faces without splitting the UVs.
+        float damage=Math.max(0,Math.min(Math.min(p.x-.25f,-p.y-.25f),p.z-.25f));
+        if(damage>0)p.add(-damage*.42f,damage*.42f,-damage*.42f);
+        return p;
+    }
+    private static float[] ruinedUv(int face,float u,float v,float step){
+        float x=8+(face%3+(u+1)*.5f)/3,y=(face/3+(1-v)*.5f)/2,w=step/6,h=step/4;
+        return new float[]{x,y,x+w,y,x+w,y-h,x,y-h};
+    }
+    private static float directionalLight(SkyObjectsRenderer mesh,Vector3f normal){
+        var n=mesh.transform.transformDirection(new Vector3f(normal)).normalize();
+        return .16f+.84f*Math.max(0,n.dot(new Vector3f(-.70f,.45f,.55f).normalize()));
+    }
+    /** Detailed cubemap material and a damaged corner replace the flat neon seams. */
+    private static void destroyedEarth(SkyObjectsRenderer mesh,float time){
+        final int cells=12;float step=2f/cells;
+        for(int face=0;face<6;face++){
+            float light=directionalLight(mesh,cube(face,0,0));
+            for(int y=0;y<cells;y++)for(int x=0;x<cells;x++){
+                float u=-1+x*step,v=-1+y*step;
+                mesh.textured(new Vector3f[]{brokenCube(face,u,v),brokenCube(face,u+step,v),brokenCube(face,u+step,v+step),brokenCube(face,u,v+step)},ruinedUv(face,u,v,step),light,light,light,1,false);
+            }
+        }
+        var base=new Matrix4f(mesh.transform);
+        // Irregular rocky silhouettes with lit/scorched textures; no uniform brown blocks.
+        for(int i=0;i<100;i++){
+            float a=i*2.39996f+time*(.013f+(i%4)*.004f),radius=2.15f+(i%9)*.10f;
+            float size=i%11==0?.075f+(i%3)*.008f:.018f+(i%6)*.007f;
+            float x=(float)Math.cos(a)*radius,y=(float)Math.sin(a)*radius*.65f,z=(float)Math.sin(a*1.7+i)*1.60f;
+            mesh.transform=new Matrix4f(base).translate(x,y,z).rotateX(time*.065f+i).rotateY(time*.045f+i*2);
+            var random=new Random(10411+i*139);var corners=new Vector3f[8];
+            for(int j=0;j<8;j++)corners[j]=new Vector3f(((j&1)==0?-1:1)*size*(.65f+random.nextFloat()*.6f),((j&2)==0?-1:1)*size*(.5f+random.nextFloat()*.45f),((j&4)==0?-1:1)*size*(.6f+random.nextFloat()*.6f));
+            int[][] sides={{0,2,3,1},{4,5,7,6},{0,1,5,4},{2,6,7,3},{0,4,6,2},{1,3,7,5}};
+            for(int side=0;side<6;side++){
+                int[] f=sides[side];float light=.35f+side*.09f;
+                float u=-.8f+random.nextFloat()*.8f,v=-.9f+random.nextFloat()*.8f;
+                mesh.textured(new Vector3f[]{new Vector3f(corners[f[0]]),new Vector3f(corners[f[1]]),new Vector3f(corners[f[2]]),new Vector3f(corners[f[3]])},ruinedUv(i%11==0?i%6:3,u,v,.38f),light,light,light,1,false);
+            }
+        }
+        mesh.transform=base;
+        // Fine ash and warm haze follow the ruptured corner; alpha stays low enough
+        // to leave the textured terrain and individual fragments clearly visible.
+        var smoke=effects.get("cloud").get(0);var haze=smoke.sprites[0];
+        var glow=effects.get("cloud").get(7);var halo=glow.sprites[0];
+        for(int i=0;i<14;i++){
+            float phase=positive(time*.018f+i/14f,1),a=i*2.39996f;
+            var point=new Vector3f(.7f+phase*.75f+(float)Math.cos(a)*.22f,-.65f-phase*.55f,.7f+(float)Math.sin(a)*.25f);
+            float size=.18f+phase*.30f,alpha=(1-phase)*.11f;
+            mesh.sprite(point,new Vector3f(1,0,0),new Vector3f(0,1,0),size,size,i*.8f+time*.012f,aircraftSpriteRect(smoke,haze,i),.38f,.30f,.23f,alpha,false,true);
+        }
+        mesh.sprite(new Vector3f(1.35f,.20f,.0f),new Vector3f(1,0,0),new Vector3f(0,1,0),.90f,.75f,0,aircraftSpriteRect(glow,halo,0),1,.53f,.16f,.24f,true,true);
+        mesh.sprite(new Vector3f(.9f,-.7f,.8f),new Vector3f(1,0,0),new Vector3f(0,1,0),.48f,.42f,0,aircraftSpriteRect(glow,halo,0),1,.35f,.04f,.14f,true,true);
     }
     private static Vector3f cube(int face,float u,float v){return switch(face){case 0->new Vector3f(1,v,u);case 1->new Vector3f(-1,v,-u);case 2->new Vector3f(u,1,v);case 3->new Vector3f(u,-1,-v);case 4->new Vector3f(u,v,1);default->new Vector3f(-u,v,-1);};}
     private record Vertex(float x,float y,float z,float nx,float ny,float nz,float u,float v,int[] bones,float[] weights){}

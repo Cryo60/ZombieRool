@@ -247,7 +247,7 @@ public class WeaponImplementations {
                 ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
                 builder.putAll(map);
                 builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", def.stats.damage, AttributeModifier.Operation.ADDITION));
-                builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon speed", -2.4, AttributeModifier.Operation.ADDITION));
+                builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon speed", 20.0/Math.max(6,Math.min(20,Math.round(getDefinition().stats.fire_rate*.85f)))-4, AttributeModifier.Operation.ADDITION));
                 return builder.build();
             }
             return map;
@@ -269,113 +269,42 @@ public class WeaponImplementations {
             return null;
         }
 
-        @Override
-        public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-            if (!(attacker instanceof Player player) || player.level().isClientSide) return true;
-
-            float baseDamage = getWeaponDamage(stack);
-            boolean isCritical = player.level().random.nextFloat() < getCriticalChance();
-            float actualDamage = isCritical ? baseDamage * getCriticalMultiplier() : baseDamage;
-
-            java.util.concurrent.atomic.AtomicInteger entitiesHit = new java.util.concurrent.atomic.AtomicInteger(0);
-
-            if (isCritical) {
-                player.level().playSound(null, target.getX(), target.getY(), target.getZ(),
-                        SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0f, 1.5f);
-            }
-
-            target.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
-            target.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
-            target.getPersistentData().remove("zombierool:explosive_damage");
-            me.cryo.zombierool.core.manager.DamageManager.applyDamage(target, player.damageSources().playerAttack(player), actualDamage);
-            entitiesHit.incrementAndGet();
-
-            SoundEvent swing = getSwingSound(stack);
-            if (swing != null) {
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(), swing, SoundSource.PLAYERS, 1.0f, 0.9f + player.level().random.nextFloat() * 0.2f);
-            }
-
-            AABB cleaveBox = target.getBoundingBox().inflate(getCleaveRadius());
-            player.level().getEntitiesOfClass(LivingEntity.class, cleaveBox, entity ->
-                entity != player && entity.isAlive() && entity != target &&
-                (entity instanceof me.cryo.zombierool.entity.ZombieEntity || entity instanceof me.cryo.zombierool.entity.CrawlerEntity || entity instanceof me.cryo.zombierool.entity.HellhoundEntity || entity instanceof me.cryo.zombierool.entity.DummyEntity)
-            ).forEach(entity -> {
-                entity.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.GUN_DAMAGE_TAG);
-                entity.getPersistentData().remove(me.cryo.zombierool.core.manager.DamageManager.HEADSHOT_TAG);
-                entity.getPersistentData().remove("zombierool:explosive_damage");
-                me.cryo.zombierool.core.manager.DamageManager.applyDamage(entity, player.damageSources().playerAttack(player), actualDamage * getCleaveDamagePercentage());
-                entitiesHit.incrementAndGet();
-            });
-
-            if (hasDurability() && !player.isCreative()) {
-                int dur = getDurability(stack) - entitiesHit.get();
-                setDurability(stack, Math.max(0, dur));
-                if (dur <= 0) {
-                    player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 1.0f, 1.0f);
-                    stack.shrink(1);
-                }
-            }
-
-            getOrCreateTag(stack).putLong(TAG_LAST_FIRE, player.level().getGameTime());
-            return true;
+        /** Every held melee weapon shares server timing and single-hit ownership. */
+        @Override public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+            return attacker instanceof net.minecraft.server.level.ServerPlayer player && me.cryo.zombierool.gameplay.MeleeCombat.request(player,false);
         }
-
-        @Override
-        public int getUseDuration(ItemStack s) { return 72000; }
-
-        @Override
-        public net.minecraft.world.item.UseAnim getUseAnimation(ItemStack s) { return canDash(s) ? net.minecraft.world.item.UseAnim.SPEAR : net.minecraft.world.item.UseAnim.NONE; }
-
-        @Override
-        public net.minecraft.world.InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-            ItemStack stack = player.getItemInHand(hand);
-            if (canDash(stack)) {
-                player.startUsingItem(hand);
-                return net.minecraft.world.InteractionResultHolder.consume(stack);
-            } else {
-                if (!level.isClientSide) {
-                    player.displayClientMessage(Component.translatable("message.zombierool.melee.dash_requires_pap").withStyle(ChatFormatting.RED), true);
-                }
-                return net.minecraft.world.InteractionResultHolder.fail(stack);
+        public void playMeleeSwing(Player player,ItemStack stack,boolean heavy) {
+            SoundEvent sound=getSwingSound(stack);
+            player.level().playSound(null,player.blockPosition(),sound==null?SoundEvents.PLAYER_ATTACK_SWEEP:sound,SoundSource.PLAYERS,.65f,heavy?.78f:1.08f);
+        }
+        @Override public int getUseDuration(ItemStack stack){return 72000;}
+        @Override public net.minecraft.world.item.UseAnim getUseAnimation(ItemStack stack){return net.minecraft.world.item.UseAnim.NONE;}
+        @Override public net.minecraft.world.InteractionResultHolder<ItemStack> use(Level level,Player player,InteractionHand hand){
+            if(hand!=InteractionHand.MAIN_HAND||!player.getOffhandItem().isEmpty())return net.minecraft.world.InteractionResultHolder.pass(player.getItemInHand(hand));
+            if(player instanceof net.minecraft.server.level.ServerPlayer server&&!me.cryo.zombierool.gameplay.MeleeCombat.canCharge(server))return net.minecraft.world.InteractionResultHolder.fail(player.getItemInHand(hand));
+            player.startUsingItem(hand);return net.minecraft.world.InteractionResultHolder.consume(player.getItemInHand(hand));
+        }
+        @Override public void onUseTick(Level level,LivingEntity entity,ItemStack stack,int remaining){}
+        @Override public void releaseUsing(ItemStack stack,Level level,LivingEntity entity,int remaining){
+            if(!(entity instanceof net.minecraft.server.level.ServerPlayer player))return;
+            int held=getUseDuration(stack)-remaining;
+            if(held<me.cryo.zombierool.gameplay.MeleeMoves.move(stack,player,true).charge())return;
+            // Vanilla invokes releaseUsing before clearing the active-use flag.
+            player.stopUsingItem();
+            if(!me.cryo.zombierool.gameplay.MeleeCombat.request(player,true))return;
+            long now=level.getGameTime();var tag=stack.getOrCreateTag();
+            if(canDash(stack)&&(!tag.contains(TAG_LAST_DASH_TICK)||now-tag.getLong(TAG_LAST_DASH_TICK)>=getDashCooldownTicks())){
+                // A short collision-resolved lunge. Damage still waits for actual melee reach.
+                var forward=player.getLookAngle().multiply(1,0,1).normalize();
+                double speed=Math.min(.85,getDashDistance()*.15);
+                player.setDeltaMovement(forward.x*speed,player.getDeltaMovement().y,forward.z*speed);player.hurtMarked=true;
+                tag.putLong(TAG_LAST_DASH_TICK,now);
             }
         }
-
-        @Override
-        public void onUseTick(Level level, LivingEntity ent, ItemStack stack, int count) {
-            if (!(ent instanceof Player player) || level.isClientSide) return;
-
-            long currentTick = level.getGameTime();
-            long lastDash = getOrCreateTag(stack).getLong(TAG_LAST_DASH_TICK);
-
-            if (currentTick - lastDash >= getDashCooldownTicks()) {
-                Vec3 lookVec = player.getViewVector(1.0f).normalize();
-                float dashDist = getDashDistance();
-                
-                java.util.Optional<LivingEntity> targetOpt = level.getEntitiesOfClass(LivingEntity.class,
-                    player.getBoundingBox().inflate(dashDist), target -> {
-                        if (!(target instanceof me.cryo.zombierool.entity.ZombieEntity || target instanceof me.cryo.zombierool.entity.CrawlerEntity || target instanceof me.cryo.zombierool.entity.HellhoundEntity || target instanceof me.cryo.zombierool.entity.DummyEntity)) return false;
-                        if (!target.isAlive() || target.equals(player)) return false;
-                        if (player.distanceTo(target) > dashDist) return false;
-                        if (!player.hasLineOfSight(target)) return false; 
-                        Vec3 dirToTarget = target.getEyePosition().subtract(player.getEyePosition()).normalize();
-                        return lookVec.dot(dirToTarget) > 0.8; 
-                    }
-                ).stream().min(java.util.Comparator.comparingDouble(player::distanceToSqr));
-
-                if (targetOpt.isPresent()) {
-                    LivingEntity target = targetOpt.get();
-                    Vec3 dir = target.position().subtract(player.position()).normalize();
-                    Vec3 dash = dir.scale(dashDist * 0.8);
-                    player.setDeltaMovement(dash.x, player.getDeltaMovement().y, dash.z);
-                    player.hurtMarked = true;
-                    player.fallDistance = 0;
-                    level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0f, 1.0f);
-                    
-                    getOrCreateTag(stack).putLong(TAG_LAST_DASH_TICK, currentTick);
-                    this.hurtEnemy(stack, target, player);
-                    player.getCooldowns().addCooldown(this, getDashCooldownTicks());
-                }
-            }
+        @Override public void appendHoverText(ItemStack stack,Level level,java.util.List<Component> tooltip,net.minecraft.world.item.TooltipFlag flag){
+            super.appendHoverText(stack,level,tooltip,flag);
+            tooltip.add(Component.translatable("tooltip.zombierool.melee.combo").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(me.cryo.zombierool.gameplay.MeleeMoves.kind(stack).equals("shield")?"tooltip.zombierool.melee.guard":"tooltip.zombierool.melee.heavy").withStyle(ChatFormatting.GRAY));
         }
 
         @Override
