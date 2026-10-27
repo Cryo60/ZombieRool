@@ -1,3 +1,57 @@
+# ZombieRool 26.7 Beta 4
+
+Minecraft 1.20.1 | Forge | Java 17
+
+A melee combat overhaul, doubled ammo reserves, more reliable hordes, and fixes for world loading and the map catalogue.
+
+## Melee combat overhaul
+
+- New attack animations in first and third person, with improved hand placement, including left-handed play.
+- Chain light attacks into three-hit combos, with a stronger finishing strike.
+- Hold Use to prepare a heavy attack, then release after the visual and sound cue.
+- Melee hits push ordinary enemies back without launching them into the air.
+- Swings hit enemies in front of you and respect walls. Successful crowd hits consume durability per swing rather than per enemy; misses consume none.
+- Increased Old Sword and Energy Sword damage and durability.
+
+## Combat and enemies
+
+- Doubled total finite ammo reserves for native weapons and TaCZ weapons managed by ZombieRool. Magazine sizes stay the same.
+- Fixed cases where zombies stopped chasing players after electric stuns or bullet impacts.
+- Improved horde navigation and enemy patrols, including enemies stopping just outside melee range.
+- Wunderwaffe chains ignore lingering corpses when selecting their first target. Reduced the rendering cost of overlapping lightning effects.
+- Abomination hooks pull players more reliably across uneven ground.
+- Fixed custom boss health being capped below the map's configured value.
+
+## Fixes and multiplayer
+
+- Fixed worlds getting stuck at 100% while loading armor stations.
+- Fixed missing map catalogue thumbnails when creators uploaded larger screenshots.
+- Fixed the red injury overlay hiding objective text or covering too much of the view.
+- Objective bars return correctly after reconnecting.
+- Fixed a source of client/server registry mismatches despite matching displayed mod versions.
+- Improved custom armor station visuals and fixed crashes when refreshing custom enemy models.
+
+## Main menu
+
+- Added an alternate main menu featuring Destroyed Earth and a different soundtrack, randomly selected at game launch.
+- The destroyed planet has a detailed scorched surface, glowing magma, smoke, and a wider field of smaller orbiting rocks.
+
+## Map creation tools
+
+- Texture Kit supports animated PNG sprite sheets with matching .png.mcmeta files, including multiplayer synchronization.
+- Fixed dragging PNG files into Texture Kit from Windows Explorer in local worlds. Animation metadata stays with its texture.
+- Added custom flowing water, item textures, and adjustable opacity. Custom water works with waterloggable blocks, and its underwater colors match the texture.
+- Added Sun and Destroyed Earth sky objects, plus Keep Minecraft sky to use sky objects over the vanilla sky.
+- Improved the reliability of custom objectives, placed components, and match resets.
+
+## Updating
+
+Replace the previous ZombieRool JAR with zombierool-26.7-beta.4.jar, keep only one ZombieRool version in mods, and restart Minecraft. Keep Player Animator installed.
+
+In multiplayer, the server and every player must use the same ZombieRool JAR.
+
+[French patch notes](release-notes/26.7-beta.4.fr.md)
+
 # ZombieRool 26.7 Beta 3
 Minecraft 1.20.1 | Forge | Java 17
 
