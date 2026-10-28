@@ -51,7 +51,14 @@ public class ClientEnvironmentEffects {
     private static net.minecraft.nbt.CompoundTag fogOptions=me.cryo.zombierool.config.FogOptions.sanitize(new net.minecraft.nbt.CompoundTag());
     private static boolean presetPulse;
     public static void setFogOptions(net.minecraft.nbt.CompoundTag input){fogOptions=me.cryo.zombierool.config.FogOptions.sanitize(input==null?new net.minecraft.nbt.CompoundTag():input);enableFogPulse=fogOptions.getBoolean("pulseOverride")?fogOptions.getBoolean("pulse"):presetPulse;}
-    public static boolean usesCompositedFog(){return fogShader!=null;}
+    public static boolean usesCompositedFog(){
+        if(fogShader==null)return false;
+        // Opaque, unrestricted fog can use Minecraft's normal geometry fog.
+        // Do not copy the full depth buffer just because the custom shader loaded.
+        return shaderPackActive()||MapAtmosphereClient.skySceneEnabled()||fogOutdoorsOnly
+            ||fogOptions.getBoolean("heightEnabled")||fogOptions.getDouble("opacity")<1
+            ||fogColorAlpha<1;
+    }
     private static boolean postFog(){return usesCompositedFog();}
     private static float pulseFar(){return fogFarPlane*(1+fogPulseValue*(float)fogOptions.getDouble("pulseAmount"));}
     public static boolean enableFogPulse = true;
@@ -222,6 +229,7 @@ public class ClientEnvironmentEffects {
     public static void onRenderShaderFog(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         if (fogShader == null || !hasMapFog() || (!shaderPackActive() && !postFog())) return;
+        if(!hellhoundFog()&&fogColorAlpha*fogOptions.getDouble("opacity")<=0)return;
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null || Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera()!=net.minecraft.world.level.material.FogType.NONE || player.isSpectator()

@@ -17,6 +17,8 @@ public final class LuaSandbox {
         private long deadline;
         private int remaining;
         public void reset() { deadline=System.nanoTime()+150_000_000; remaining=500_000; }
+        /** Map startup performs bounded file/quest setup before gameplay begins. */
+        public void resetStartup() { deadline=System.nanoTime()+2_000_000_000L; remaining=500_000; }
         @Override public void onInstruction(int pc,org.luaj.vm2.Varargs args,int top) {
             if (--remaining<=0 || System.nanoTime()>deadline) throw new BudgetExceeded();
             super.onInstruction(pc,args,top);

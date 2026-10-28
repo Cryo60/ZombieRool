@@ -14,6 +14,8 @@ import me.cryo.zombierool.gameplay.MatchPause;
 public final class MatchPauseClient {
  private static Object lastLevel;
  private static long voteDeadline;
+ private static long noticeUntil;
+ private static String notice="";
  private static CompoundTag state=new CompoundTag();
  public static boolean voting(){return state.getBoolean("voting");}
  public static void showVote(){Minecraft.getInstance().setScreen(new VoteScreen());}
@@ -22,16 +24,22 @@ public final class MatchPauseClient {
  @SubscribeEvent public static void hud(net.minecraftforge.client.event.RenderGuiEvent.Post e){if(Minecraft.getInstance().screen==null)banner(e.getGuiGraphics());}
  @SubscribeEvent public static void screen(net.minecraftforge.client.event.ScreenEvent.Render.Post e){banner(e.getGuiGraphics());}
  private static void banner(GuiGraphics g){
-  var mc=Minecraft.getInstance();if(mc.level==null||!paused()&&!voting())return;
+  var mc=Minecraft.getInstance();if(mc.level==null)return;
+  if(!paused()&&!voting()){if(net.minecraft.Util.getMillis()<noticeUntil){int w=mc.getWindow().getGuiScaledWidth();g.pose().pushPose();g.pose().translate(0,0,700);g.fill(w/2-160,48,w/2+160,74,0xee101118);g.drawCenteredString(mc.font,notice,w/2,57,0xffffcc55);g.pose().popPose();}return;}
   int w=mc.getWindow().getGuiScaledWidth(),box=Math.min(w-16,Math.max(230,mc.font.width(voteLabel())+24)),left=(w-box)/2;
   g.pose().pushPose();g.pose().translate(0,0,600);
   g.fill(left,8,left+box,42,0xe6101118);g.fill(left,8,left+box,10,paused()?0xffae2525:0xffdda53b);
-  g.drawCenteredString(mc.font,paused()?"MATCH PAUSED":"PAUSE VOTE IN PROGRESS",w/2,14,0xffffff);
+  g.drawCenteredString(mc.font,voting()?(state.getBoolean("target")?"PAUSE VOTE IN PROGRESS":"RESUME VOTE IN PROGRESS"):"MATCH PAUSED",w/2,14,0xffffff);
   g.drawCenteredString(mc.font,voting()?voteLabel():"All gameplay is frozen. Vote to resume to continue.",w/2,28,0xeeeeee);g.pose().popPose();
  }
  public static boolean paused(){return state.getBoolean("paused");}
  public static void receive(CompoundTag n){
-  if(n==null)return;state=n.copy();voteDeadline=net.minecraft.Util.getMillis()+n.getLong("remaining");var mc=Minecraft.getInstance();
+  if(n==null)return;boolean wasPaused=paused(),wasVoting=voting();boolean oldTarget=state.getBoolean("target");state=n.copy();voteDeadline=net.minecraft.Util.getMillis()+n.getLong("remaining");var mc=Minecraft.getInstance();
+  String message=null;
+  if(voting()&&(!wasVoting||oldTarget!=n.getBoolean("target")))message=n.getString("requester")+" wants to "+(n.getBoolean("target")?"pause":"resume")+" the match. Vote Yes or No.";
+  else if(wasPaused!=paused())message=paused()?"MATCH PAUSED":"MATCH RESUMED";
+  else if(wasVoting&&!voting())message="Pause vote finished.";
+  if(message!=null){notice=message;noticeUntil=net.minecraft.Util.getMillis()+5000;if(mc.player!=null){mc.player.displayClientMessage(Component.literal(message).withStyle(net.minecraft.ChatFormatting.YELLOW),true);mc.gui.setTitle(Component.literal(voting()?(n.getBoolean("target")?"PAUSE REQUEST":"RESUME REQUEST"):paused()?"MATCH PAUSED":"MATCH RESUMED"));mc.gui.setSubtitle(Component.literal(voting()?n.getString("requester"):message));mc.gui.setTimes(5,60,15);}}
   if(paused()||n.getBoolean("canVote"))mc.setScreen(new VoteScreen());
   else if(mc.screen instanceof VoteScreen)mc.setScreen(null);
  }
@@ -48,7 +56,7 @@ public final class MatchPauseClient {
    if(state.getBoolean("canVote")){
     addRenderableWidget(Button.builder(Component.literal("Vote Yes"),b->MatchPause.send("yes")).bounds(width/2-105,y+12,100,20).build());
     addRenderableWidget(Button.builder(Component.literal("Vote No"),b->MatchPause.send("no")).bounds(width/2+5,y+12,100,20).build());
-   }else if(paused()&&!state.getBoolean("voting"))addRenderableWidget(Button.builder(Component.literal("Vote to resume"),b->MatchPause.send("resume")).bounds(width/2-100,y+12,200,20).build());
+   }else if(paused()&&!state.getBoolean("voting"))addRenderableWidget(Button.builder(Component.literal("VOTE TO RESUME"),b->MatchPause.send("resume")).bounds(width/2-100,y+12,200,20).build());
    if(paused())addRenderableWidget(Button.builder(Component.literal("Disconnect"),b->{if(minecraft.level!=null)minecraft.level.disconnect();minecraft.clearLevel();minecraft.setScreen(new net.minecraft.client.gui.screens.TitleScreen());}).bounds(width/2-100,y+40,200,20).build());
    else addRenderableWidget(Button.builder(Component.literal("Continue playing"),b->minecraft.setScreen(null)).bounds(width/2-100,y+40,200,20).build());
   }

@@ -40,6 +40,10 @@ public class WaWPauseScreen extends Screen {
         this.entries.add(new Entry("gui.zombierool.pause.resume", this::resume));
         if(me.cryo.zombierool.gameplay.WaveManager.isGameRunning())this.entries.add(new Entry("gui.zombierool.pause.vote", () -> {if(me.cryo.zombierool.client.MatchPauseClient.voting()||me.cryo.zombierool.client.MatchPauseClient.paused())me.cryo.zombierool.client.MatchPauseClient.showVote();else {this.minecraft.setScreen(null);me.cryo.zombierool.gameplay.MatchPause.send("pause");}}));
         this.entries.add(new Entry("gui.zombierool.pause.options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
+        String vanillaLabel = I18n.get("gui.zombierool.pause.vanilla").toUpperCase(java.util.Locale.ROOT);
+        this.addRenderableWidget(net.minecraft.client.gui.components.Button.builder(Component.literal(vanillaLabel),
+            button -> MainMenuExtensions.openVanillaPause()).bounds(8, this.height - 24,
+            Math.min(this.width - 16, this.font.width(vanillaLabel) + 16), 18).build());
         this.entries.add(new Entry("gui.zombierool.pause.restart", this::restart));
         if (this.minecraft.hasSingleplayerServer() && this.minecraft.getSingleplayerServer() != null && !this.minecraft.getSingleplayerServer().isPublished())
             this.entries.add(new Entry("menu.shareToLan", () -> this.minecraft.setScreen(new net.minecraft.client.gui.screens.ShareToLanScreen(this))));
@@ -81,6 +85,12 @@ public class WaWPauseScreen extends Screen {
             }
         }
         this.drawEntries(g, right);
+        super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    private String entryLabel(Entry entry) {
+        String text = I18n.get(entry.key());
+        return entry.key().equals("gui.zombierool.pause.vote") ? text.toUpperCase(java.util.Locale.ROOT) : text;
     }
 
     private void layoutRows(int startY) {
@@ -90,7 +100,7 @@ public class WaWPauseScreen extends Screen {
         for (int i = 0; i < this.entries.size(); i++) {
             this.rowY[i] = y;
             this.rowH[i] = step;
-            this.rowW[i] = this.textWidth(I18n.get(this.entries.get(i).key()), scale, 1);
+            this.rowW[i] = this.textWidth(this.entryLabel(this.entries.get(i)), scale, 1);
             y += step;
         }
     }
@@ -106,7 +116,7 @@ public class WaWPauseScreen extends Screen {
                 g.fill(barLeft, barY, this.width, barY + barH, 0x55C8C8C8);
             }
             int color = i == this.selected ? 0xFFFFFFFF : 0xFF8E8E8E;
-            this.drawTrackedRight(g, I18n.get(this.entries.get(i).key()), right, this.rowY[i], scale, 1, color);
+            this.drawTrackedRight(g, this.entryLabel(this.entries.get(i)), right, this.rowY[i], scale, 1, color);
         }
     }
 
@@ -217,6 +227,7 @@ public class WaWPauseScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) {
+            if (this.getFocused() != null && super.keyPressed(keyCode, scanCode, modifiers)) return true;
             this.activate();
             return true;
         }

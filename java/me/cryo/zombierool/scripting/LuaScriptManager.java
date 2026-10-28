@@ -211,7 +211,7 @@ public class LuaScriptManager {
         if(globals==null||!playerEventAllowed(eventName,args))return org.luaj.vm2.LuaValue.NIL;
         if(!callbacks.get().add(eventName))return LuaValue.NIL;
         var previousPlayer=eventPlayer.get();var participant=eventParticipant(args);if(participant!=null)eventPlayer.set(participant);
-        try{if(callbacks.get().size()==1)budget.reset();var f=globals.get(eventName);if(!f.isfunction())return org.luaj.vm2.LuaValue.NIL;var values=new org.luaj.vm2.LuaValue[args.length];for(int i=0;i<args.length;i++)values[i]=eventValue(args[i]);return f.invoke(values).arg1();}catch(Throwable e){log(eventName+": "+e.getMessage());return org.luaj.vm2.LuaValue.NIL;}finally{callbacks.get().remove(eventName);if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);}
+        try{if(callbacks.get().size()==1){if(eventName.equals("OnGameStart"))budget.resetStartup();else budget.reset();}var f=globals.get(eventName);if(!f.isfunction())return org.luaj.vm2.LuaValue.NIL;var values=new org.luaj.vm2.LuaValue[args.length];for(int i=0;i<args.length;i++)values[i]=eventValue(args[i]);return f.invoke(values).arg1();}catch(Throwable e){log(eventName+": "+e.getMessage());return org.luaj.vm2.LuaValue.NIL;}finally{callbacks.get().remove(eventName);if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);}
     }
     public static boolean gameplayCallAllowed(ServerLevel level){if(!me.cryo.zombierool.gameplay.WaveManager.isGameRunning()||me.cryo.zombierool.gameplay.WaveManager.isPausedByPlayer())return false;var owner=eventPlayer.get();if(owner!=null){var p=level.getServer().getPlayerList().getPlayer(owner);return p!=null&&p.level()==level&&me.cryo.zombierool.gameplay.MapActorBehavior.eligible(p);}return level.players().stream().anyMatch(me.cryo.zombierool.gameplay.MapActorBehavior::eligible);}
     public static boolean ready(ServerLevel level){return globals!=null&&currentLevel==level;}
@@ -300,6 +300,7 @@ public class LuaScriptManager {
                         budget.reset();timer.callback.call();
                     }
                 } catch (Throwable t) {
+                    log("Timer "+timer.id+": "+t.getMessage());
                     System.err.println("[ZombieRool Lua] Error executing timer " + timer.id + ": " + t.getMessage());
                 } finally {if(previousPlayer==null)eventPlayer.remove();else eventPlayer.set(previousPlayer);if(previousActor==null)eventActor.remove();else eventActor.set(previousActor);}
             }

@@ -51,6 +51,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     private static final EntityDataAccessor<Float> ZR_SCALE = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> GORE_MASK = SynchedEntityData.defineId(AbstractZombieRoolEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> EMERGENCE=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DEATH_AGE=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.INT);
     public int getEmergenceTicks(){return entityData.get(EMERGENCE);}
     public void setEmergenceTicks(int ticks){entityData.set(EMERGENCE,Math.max(0,Math.min(me.cryo.zombierool.gameplay.SpawnEmergence.DURATION,ticks)));}
     private static final EntityDataAccessor<Boolean> CERBERUS_FEED=SynchedEntityData.defineId(AbstractZombieRoolEntity.class,EntityDataSerializers.BOOLEAN);
@@ -114,6 +115,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
+        entityData.define(DEATH_AGE,0);
         this.entityData.define(CUSTOM_SKIN, "");
         this.entityData.define(CUSTOM_EYE_SKIN, "");
         this.entityData.define(ZR_SCALE, 1.0f);
@@ -167,6 +169,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     }
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> pKey) {
+        if(DEATH_AGE.equals(pKey)){deathTime=Math.max(deathTime,entityData.get(DEATH_AGE));if(deathTime>0)refreshDimensions();}
         if (ZR_SCALE.equals(pKey)) {
             this.refreshDimensions();
         }
@@ -192,6 +195,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
+        if(deathTime>0)entityData.set(DEATH_AGE,deathTime);
         if (compound.contains("CustomSkin")) setCustomSkin(compound.getString("CustomSkin"));
         if (compound.contains("CustomEyeSkin")) {
             setCustomEyeSkin(compound.getString("CustomEyeSkin"));
@@ -318,6 +322,7 @@ public abstract class AbstractZombieRoolEntity extends Monster {
         if (this.deathTime > 19) {
             this.deathTime = 19;
         }
+        if(!level().isClientSide&&(deathTime%5==0||deathTime==19))entityData.set(DEATH_AGE,deathTime);
         this.corpseLinger++;
 
     }

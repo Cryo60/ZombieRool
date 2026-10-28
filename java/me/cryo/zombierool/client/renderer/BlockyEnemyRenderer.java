@@ -70,6 +70,7 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
     private static JsonObject read(String path){try(var in=Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation("zombierool",path)).orElseThrow().open();var reader=new InputStreamReader(in,StandardCharsets.UTF_8)){return JsonParser.parseReader(reader).getAsJsonObject();}catch(IOException ex){throw new IllegalStateException(path,ex);}}
     public static final class Model<T extends LivingEntity> extends EntityModel<T>{
         private final ModelPart root;
+        private final ModelPart[] allParts;
         private ModelPart eyes;
         private final org.joml.Vector3f headCenter=new org.joml.Vector3f();
         private final List<float[]> eyeBoxes=new ArrayList<>();
@@ -79,6 +80,8 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
         final float scale;
         final ResourceLocation texture;
         private static final String[] JOINTS={"torso","head","left_arm","right_arm","left_forearm","right_forearm","left_leg","right_leg","left_shin","right_shin"};
+        private static final String[] LEGS={"left_leg","right_leg"};
+        private static final me.cryo.zombierool.core.manager.GoreManager.Limb[] LIMBS=me.cryo.zombierool.core.manager.GoreManager.Limb.values();
         private record Clip(float fps,float[][] frames){}
         private static final class State{
             final float[] current=new float[53],previous=new float[53],target=new float[53];
@@ -106,6 +109,9 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
             for(var row:data.getAsJsonArray("parts")){var part=row.getAsJsonObject();if(!part.get("name").getAsString().equals("head"))continue;float largest=-1;for(var raw:part.getAsJsonArray("cubes")){var box=raw.getAsJsonObject().getAsJsonArray("box");float volume=f(box,3)*f(box,4)*f(box,5);if(volume>largest){largest=volume;headCenter.set((f(box,0)+f(box,3)/2)/16,(f(box,1)+f(box,4)/2)/16,(f(box,2)+f(box,5)/2)/16);}}}
             root=LayerDefinition.create(mesh,256,256).bakeRoot();for(var row:data.getAsJsonArray("parts")){var p=row.getAsJsonObject();String name=p.get("name").getAsString(),parent=p.has("parent")?p.get("parent").getAsString():"";bones.put(name,(parent.isBlank()?root:bones.get(parent)).getChild(name));}
             eyes=b("head").getChild("glowing_eyes");
+            // The baked hierarchy is immutable. Reuse its traversal instead of building
+            // recursive streams for every enemy on every rendered frame.
+            allParts=root.getAllParts().toArray(ModelPart[]::new);
             for(String joint:JOINTS){var part=b(joint);origins.put(joint,new org.joml.Vector3f(part.x,part.y,part.z));}
             var animation=read("zr_animation_data/blocky/"+kind+".json");
             if(animation.get("format").getAsInt()!=2)throw new IllegalStateException("Source motion format: "+kind);
@@ -121,7 +127,7 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
             pose.popPose();
         }
         @Override public void setupAnim(T e,float walk,float amount,float age,float yaw,float pitch){
-            root.getAllParts().forEach(p->{p.resetPose();p.visible=true;});
+            for(var part:allParts){part.resetPose();part.visible=true;}
             float partial=Mth.clamp(age-e.tickCount,0,1);var state=states.computeIfAbsent(e,key->new State());
             var special=e instanceof SpecialEnemyEntity boss?boss:null;String action=special==null?"idle":special.bossAnimation();
             boolean feeding=e instanceof AbstractZombieRoolEntity body&&body.isCerberusFeeding();
@@ -166,10 +172,10 @@ public final class BlockyEnemyRenderer<T extends net.minecraft.world.entity.Mob>
             // Upper body rotates around the hips, never around its neck. The
             // thigh roots follow the source pelvis; every limb stays attached.
             load(values,0,rotation);vector.set(origins.get("torso")).sub(hip).rotate(rotation).add(hip).add(values[40],values[41],values[42]);b("torso").setPos(vector.x+values[47],vector.y+values[48],vector.z+values[49]);
-            for(String side:new String[]{"left_leg","right_leg"}){load(values,43,rotation);vector.set(origins.get(side)).sub(hip).rotate(rotation).add(hip).add(values[40],values[41],values[42]);b(side).setPos(vector.x+values[50],vector.y+values[51],vector.z+values[52]);}
+            for(String side:LEGS){load(values,43,rotation);vector.set(origins.get(side)).sub(hip).rotate(rotation).add(hip).add(values[40],values[41],values[42]);b(side).setPos(vector.x+values[50],vector.y+values[51],vector.z+values[52]);}
             if(loop&&!feeding){b("head").yRot+=Mth.clamp(yaw,-60,60)*Mth.DEG_TO_RAD;b("head").xRot+=pitch*Mth.DEG_TO_RAD*.5f;}
             if(e instanceof ZombieEntity z&&!me.cryo.zombierool.configuration.ZRClientConfig.isGoreReduced()){
-                int mask=0;for(var limb:me.cryo.zombierool.core.manager.GoreManager.Limb.values())if(me.cryo.zombierool.core.manager.GoreManager.hasLostLimb(e,limb))mask|=1<<limb.ordinal();if(z.isHeadshotDeath())mask|=1;
+                int mask=0;for(var limb:LIMBS)if(me.cryo.zombierool.core.manager.GoreManager.hasLostLimb(e,limb))mask|=1<<limb.ordinal();if(z.isHeadshotDeath())mask|=1;
                 for(var entry:gore.entrySet())if((mask&entry.getValue())!=0)b(entry.getKey()).visible=false;
             }
         }

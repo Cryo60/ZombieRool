@@ -190,7 +190,9 @@ public final class MapActors extends SavedData {
     @SubscribeEvent public static void login(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event){if(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->player),new me.cryo.zombierool.scripting.LuaWorkbenchPackets.Response(get(player.serverLevel()).catalogue()));}
     public static String json(CompoundTag n) {return new GsonBuilder().setPrettyPrinting().create().toJson(NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE,n));}
     public static CompoundTag parse(String json) throws Exception {
-        if(json.length()>1000000)throw new IllegalArgumentException("Definition too large");
+        if(json.length()>4000000)throw new IllegalArgumentException("Definition too large");
+        int content=0;char quote=0;boolean escaped=false;
+        for(int i=0;i<json.length();i++){char c=json.charAt(i);if(quote!=0){content++;if(escaped)escaped=false;else if(c=='\\')escaped=true;else if(c==quote)quote=0;}else if(c=='"'||c=='\''){quote=c;content++;}else if(!Character.isWhitespace(c))content++;if(content>1000000)throw new IllegalArgumentException("Definition content too large");}
         return TagParser.parseTag(json);
     }
     public static void id(String id) {if(!id.matches("[a-z][a-z0-9_]{0,47}"))throw new IllegalArgumentException("Use an identifier such as scarlet_guard");}
@@ -270,7 +272,7 @@ public final class MapActors extends SavedData {
     public void put(ServerLevel level,String id,CompoundTag input) throws Exception {
         if(!profiles.contains(id)&&profiles.size()>=256)throw new IllegalArgumentException("Maximum 256 profiles");
         var clean=sanitize(id,input);
-        if(json(clean).length()>1000000)throw new IllegalArgumentException("Model and animations exceed 1000000 characters");
+        if(new Gson().toJson(NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE,clean)).length()>1000000)throw new IllegalArgumentException("Model and animations exceed 1000000 characters");
         Path directory=me.cryo.zombierool.util.WorldZombieroolPaths.path(level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT),"entities");
         Files.createDirectories(directory);Path file=directory.resolve(id+".json");
         if(Files.isSymbolicLink(directory)||Files.isSymbolicLink(file))throw new IllegalArgumentException("Entity files cannot be symbolic links");
@@ -284,7 +286,7 @@ public final class MapActors extends SavedData {
         if(Files.isSymbolicLink(dir))throw new IllegalArgumentException("Linked entity directory");
         var imported=new CompoundTag();
         try(var files=Files.list(dir)) {for(Path file:files.filter(p->p.toString().endsWith(".json")).sorted().limit(257).toList()) {
-            if(imported.size()>=256||Files.isSymbolicLink(file)||Files.size(file)>1000000)throw new IllegalArgumentException("Too many or invalid entity files");
+            if(imported.size()>=256||Files.isSymbolicLink(file)||Files.size(file)>4000000)throw new IllegalArgumentException("Too many or invalid entity files: "+file.getFileName());
             String id=file.getFileName().toString().replaceFirst("\\.json$","");imported.put(id,sanitize(id,parse(Files.readString(file))));
         }}
         // A file defines the complete profile. Recursive NBT merge keeps removed

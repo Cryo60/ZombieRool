@@ -13,7 +13,7 @@ import java.util.*;
 
 /** Map-owned cuboids, textures, bone hierarchy and animation keyframes. */
 public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorRenderer.Model> {
-    private final Map<String,Model> models=new LinkedHashMap<>();
+    private final Map<String,Model> models=new LinkedHashMap<>(96,.75f,true){@Override protected boolean removeEldestEntry(Map.Entry<String,Model> entry){return size()>96;}};
     public MapActorRenderer(EntityRendererProvider.Context context){super(context,new Model(new CompoundTag()),.5f);
         addLayer(new net.minecraft.client.renderer.entity.layers.RenderLayer<MapActorEntity,Model>(this){@Override public void render(PoseStack pose,net.minecraft.client.renderer.MultiBufferSource buffers,int light,MapActorEntity actor,float walk,float amount,float partial,float age,float yaw,float pitch){if(actor.isAlive())model.renderEyes(pose,buffers,getTextureLocation(actor),age,actor.profile());}});
     }
@@ -26,7 +26,7 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
     }
     @Override protected float getFlipDegrees(MapActorEntity e){return e.profile().getCompound("animations").contains("death")?0:90;}
     @Override public void render(MapActorEntity e,float yaw,float partial,PoseStack pose,net.minecraft.client.renderer.MultiBufferSource buffers,int light){
-        String key=e.visualKey();if(models.size()>64)models.clear();model=models.computeIfAbsent(key,k->new Model(e.profile()));super.render(e,yaw,partial,pose,buffers,light);
+        String key=e.visualKey();model=models.computeIfAbsent(key,k->new Model(e.profile()));super.render(e,yaw,partial,pose,buffers,light);
     }
     @Override protected void scale(MapActorEntity e,PoseStack pose,float partial){float scale=(float)e.profile().getDouble("scale");pose.scale(scale,scale,scale);}
     public static final class Model extends EntityModel<MapActorEntity> {
@@ -35,7 +35,9 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
         private final Map<String,Bone> bones=new LinkedHashMap<>();
         private final List<Box> parts=new ArrayList<>();
         private final boolean fullBright,fadeDeath;private final float opacity;private float deathOpacity=1;
-        private static final class Playback {float previousSwing,attackStart=-10000,changed;String clip="";CompoundTag current=new CompoundTag(),previous=new CompoundTag();}
+        private static final class Playback {float previousSwing,attackStart=-10000,changed;String clip="";final me.cryo.zombierool.gameplay.MapActorAnimationSampler.Pose current,previous;Playback(me.cryo.zombierool.gameplay.MapActorAnimationSampler sampler){current=sampler.newPose();previous=sampler.newPose();}}
+        private final me.cryo.zombierool.gameplay.MapActorAnimationSampler sampler;
+        private final Bone[] boneOrder;
         private final Map<MapActorEntity,Playback> playback=new WeakHashMap<>();
         Model(CompoundTag profile) {
             fullBright=profile.getBoolean("fullBright");fadeDeath=profile.getBoolean("despawnAfterDeath");opacity=profile.contains("renderAlpha")?(float)profile.getDouble("renderAlpha"):1;
@@ -45,6 +47,7 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
                 float x=(float)(n.getDouble("pivotX")-parent.getDouble("pivotX")),y=(float)(n.getDouble("pivotY")-parent.getDouble("pivotY")),z=(float)(n.getDouble("pivotZ")-parent.getDouble("pivotZ"));
                 bones.put(name,new Bone(new ModelPart(List.of(),Map.of()),n.getString("parent"),x,y,z,(float)Math.toRadians(n.getDouble("rx")),(float)Math.toRadians(n.getDouble("ry")),(float)Math.toRadians(n.getDouble("rz"))));
             }
+            boneOrder=bones.values().toArray(Bone[]::new);sampler=new me.cryo.zombierool.gameplay.MapActorAnimationSampler(profile.getCompound("animations"),List.copyOf(bones.keySet()));
             var input=profile.getList("boxes",10);ListTag boxes=input.isEmpty()?me.cryo.zombierool.gameplay.MapActorTemplates.humanoid():input;
             for(var t:boxes){var b=(CompoundTag)t;var mesh=new MeshDefinition();String bone=b.getString("bone");var pivot=definitions.getCompound(bone);
                 mesh.getRoot().addOrReplaceChild("box",CubeListBuilder.create().texOffs(b.getInt("u"),b.getInt("v")).addBox((float)(b.getDouble("x")-pivot.getDouble("pivotX")),(float)(b.getDouble("y")-pivot.getDouble("pivotY")),(float)(b.getDouble("z")-pivot.getDouble("pivotZ")),(float)b.getDouble("sx"),(float)b.getDouble("sy"),(float)b.getDouble("sz")),PartPose.ZERO);
@@ -62,23 +65,24 @@ public final class MapActorRenderer extends MobRenderer<MapActorEntity,MapActorR
                 }
             }
             boolean custom=e.isAlive()&&!e.customAnimation().isEmpty();
-            var state=playback.computeIfAbsent(e,key->new Playback());
+            var state=playback.computeIfAbsent(e,key->new Playback(sampler));
             if(attackTime>0&&(state.previousSwing==0||attackTime<state.previousSwing))state.attackStart=age;state.previousSwing=attackTime;
             boolean attacking=age-state.attackStart<e.profile().getCompound("animations").getCompound("attack").getDouble("duration");
             String movement=amount>.45&&e.profile().getCompound("animations").contains("run")?"run":amount>.02?"walk":"idle";
             String mode=e.profile().getString("speedMode");if(amount>.02&&!mode.equals("custom")&&!mode.isEmpty())movement=mode.equals("run")?"run":"walk";
             String selected=!e.isAlive()?"death":custom?e.customAnimation():e.casting()?"cast":attacking?"attack":movement;
-            var clip=e.profile().getCompound("animations").getCompound(selected);if(clip.isEmpty())return;
+            var clip=sampler.clip(selected);if(clip==null)return;
             double time=custom?e.customAnimationAge(age):selected.equals("death")?e.deathTime+(age-e.tickCount):selected.equals("cast")?e.castAnimationAge(age):selected.equals("attack")?age-state.attackStart:age;
-            var sample=MapActorAnimations.sample(clip,time);
-            if(!selected.equals(state.clip)){state.previous=state.current.copy();state.changed=state.clip.isEmpty()?age-6:age;state.clip=selected;}
-            if(age-state.changed<6)sample=MapActorAnimations.blend(state.previous,sample,Math.max(0,(age-state.changed)/6));state.current=sample;
-            for(String name:sample.getAllKeys()){var bone=bones.get(name);if(bone==null)continue;var pose=sample.getCompound(name);var part=bone.part;
-                if(pose.contains("rx"))part.xRot=(float)Math.toRadians(pose.getDouble("rx"));if(pose.contains("ry"))part.yRot=(float)Math.toRadians(pose.getDouble("ry"));if(pose.contains("rz"))part.zRot=(float)Math.toRadians(pose.getDouble("rz"));
-                if(pose.contains("qw")){var q=MapActorAnimations.quaternion(pose);float x=q.x,y=q.y,z=q.z,w=q.w;part.xRot=(float)Math.atan2(2*(w*x+y*z),1-2*(x*x+y*y));part.yRot=(float)Math.asin(net.minecraft.util.Mth.clamp(2*(w*y-z*x),-1,1));part.zRot=(float)Math.atan2(2*(w*z+x*y),1-2*(y*y+z*z));}
-                part.x+=(float)pose.getDouble("x");part.y+=(float)pose.getDouble("y");part.z+=(float)pose.getDouble("z");
+            if(!selected.equals(state.clip)){state.previous.copyFrom(state.current);state.changed=state.clip.isEmpty()?age-6:age;state.clip=selected;}
+            sampler.sample(clip,time,state.current);
+            if(age-state.changed<6)sampler.blend(state.previous,state.current,Math.max(0,(age-state.changed)/6));
+            var sample=state.current;var values=sample.values;
+            for(int i=0;i<boneOrder.length;i++){var part=boneOrder[i].part;int mask=sample.masks[i],offset=i*10;
+                if((mask&1)!=0)part.xRot=(float)Math.toRadians(values[offset]);if((mask&2)!=0)part.yRot=(float)Math.toRadians(values[offset+1]);if((mask&4)!=0)part.zRot=(float)Math.toRadians(values[offset+2]);
+                if((mask&512)!=0){float x=(float)values[offset+6],y=(float)values[offset+7],z=(float)values[offset+8],w=(float)values[offset+9];part.xRot=(float)Math.atan2(2*(w*x+y*z),1-2*(x*x+y*y));part.yRot=(float)Math.asin(net.minecraft.util.Mth.clamp(2*(w*y-z*x),-1,1));part.zRot=(float)Math.atan2(2*(w*z+x*y),1-2*(y*y+z*z));}
+                part.x+=(float)values[offset+3];part.y+=(float)values[offset+4];part.z+=(float)values[offset+5];
             }
-            if(clip.getBoolean("loop")&&bones.containsKey("head")){bones.get("head").part.yRot+=net.minecraft.util.Mth.clamp(yaw,-60,60)*(float)Math.PI/180;bones.get("head").part.xRot+=pitch*(float)Math.PI/360;}
+            if(clip.loop&&bones.containsKey("head")){bones.get("head").part.yRot+=net.minecraft.util.Mth.clamp(yaw,-60,60)*(float)Math.PI/180;bones.get("head").part.xRot+=pitch*(float)Math.PI/360;}
         }
         void renderEyes(PoseStack pose,net.minecraft.client.renderer.MultiBufferSource buffers,ResourceLocation texture,float age,CompoundTag profile){
             for(var box:parts)if(box.emissive){pose.pushPose();for(var bone:box.path)bone.part.translateAndRotate(pose);box.part.render(pose,buffers.getBuffer(net.minecraft.client.renderer.RenderType.eyes(texture)),net.minecraft.client.renderer.LightTexture.FULL_BRIGHT,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);

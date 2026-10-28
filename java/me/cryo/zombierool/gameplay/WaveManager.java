@@ -908,6 +908,7 @@ public class WaveManager {
         }
         currentState = WaveState.OFF;
         gameRunning = false;
+        PlayerDownManager.resetAll();
         MapActors.end(level);
         isSpecialWave = false;
         cheatsUsed = false;

@@ -20,6 +20,9 @@ public class MainMenuExtensions {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static boolean vanillaMenu;
+    private static boolean vanillaPause;
+    public static void openVanillaPause(){vanillaPause=true;Minecraft.getInstance().setScreen(new PauseScreen(true));}
+    public static void openZombieRoolPause(){vanillaPause=false;Minecraft.getInstance().setScreen(new WaWPauseScreen());}
     public static boolean vanillaMenu(){return vanillaMenu;}
     public static void openVanilla(){vanillaMenu=true;Minecraft.getInstance().setScreen(new TitleScreen());}
     public static void openZombieRool(){vanillaMenu=false;Minecraft.getInstance().setScreen(new WaWMainMenuScreen());}
@@ -28,13 +31,14 @@ public class MainMenuExtensions {
 
         if (event.getNewScreen() instanceof TitleScreen && !vanillaMenu) {
             event.setNewScreen(new WaWMainMenuScreen());
-        } else if (event.getNewScreen() instanceof PauseScreen) {
+        } else if (event.getNewScreen() instanceof PauseScreen && !vanillaPause) {
             event.setNewScreen(new WaWPauseScreen());
         }
     }
 
     @SubscribeEvent
     public static void onInitScreen(ScreenEvent.Init.Post event) {
+        if(event.getScreen() instanceof PauseScreen){event.addListener(Button.builder(Component.literal("ZombieRool pause menu"),b->openZombieRoolPause()).bounds(8,8,160,20).build());return;}
         if (!(event.getScreen() instanceof TitleScreen screen)) {
             return;
         }

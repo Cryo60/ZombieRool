@@ -12,7 +12,7 @@
 
 Play a map, or build one. Map makers get a creative tab, an in-game config menu, JSON weapons, Lua, and assets that sync to anyone who joins the world. No command blocks required.
 
-**ZombieRool 26.7 Beta 5**
+**ZombieRool 26.7 Beta 6 — development**
 
 </div>
 
@@ -36,15 +36,15 @@ Play a map, or build one. Map makers get a creative tab, an in-game config menu,
 
 ---
 
-Download **26.7 Beta 5** from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.5). This beta is available for testing; report problems on Discord.
+The latest published release is **26.7 Beta 5**, available from [GitHub Releases](https://github.com/Cryo60/ZombieRool/releases/tag/26.7-beta.5). This beta is available for testing; report problems on Discord.
 
 ## What's new
 
-### Beta 5 highlights
+### Beta 6 highlights
 
-More reliable zombie pursuit, lighter Halloween candy effects, correct TaCZ Wunderwaffe ammo consumption and shorter electrical stuns. Added multiplayer pause voting, expanded fog controls, restored menu compatibility with Essential, and fixed EliteX camouflage flickering.
+Lower-allocation enemy animations, shared custom model/profile caches, fixes for oversized multiplayer entity data and persistent corpse poses. Clearer pause/resume notifications, a compact vanilla pause-menu button, immediate downed-state reset at match end, and more reliable map script startup. These targeted optimizations do not guarantee that all client freezes are resolved.
 
-[Full Beta 5 patch notes](CHANGELOG.md) · [Notes en français](https://github.com/Cryo60/ZombieRool/releases/download/26.7-beta.5/Patch-Notes-Beta-5-FR.md)
+[Full Beta 6 patch notes](CHANGELOG.md) · [Notes en français](CHANGELOG.fr.md)
 
 ### Map-owned enemies and encounters
 

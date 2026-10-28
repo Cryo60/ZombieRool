@@ -8,6 +8,8 @@ public final class SafeLuaBindings {
     private SafeLuaBindings() {}
     public static LuaTable wrap(ZombieroolAPI api) {
         LuaTable table = new LuaTable();
+        table.set("isChannelUnlocked",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){var a=supplied.arg1()==table?supplied.subargs(2):supplied;return value(api.isChannelUnlocked(a.arg(1).checkint()));}});
+        table.set("sendEntityDialogueToPlayer",new VarArgFunction(){@Override public Varargs invoke(Varargs supplied){var a=supplied.arg1()==table?supplied.subargs(2):supplied;api.sendEntityDialogueToPlayer(a.arg(1).checkjstring(),a.arg(2).checkjstring(),a.arg(3).checkjstring());return LuaValue.NONE;}});
         table.set("setMapQuestBlockHidden",new VarArgFunction(){
             @Override public Varargs invoke(Varargs supplied){
                 Varargs args=supplied.arg1()==table?supplied.subargs(2):supplied;

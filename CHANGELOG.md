@@ -1,3 +1,43 @@
+# ZombieRool 26.7 Beta 6
+Minecraft 1.20.1 | Forge | Java 17
+
+## Performance And Stability
+
+- Reduced repeated animation calculations and memory allocations for Scourge and other blocky enemies, preserving their models, equipment and animation poses.
+- Custom enemies now reuse prepared animation data and compatible visual models instead of repeatedly rebuilding them.
+- Identical custom enemy profiles share decoded data on the client, reducing repeated loading work when enemies appear or players return to an area.
+- Fixed multiplayer disconnections caused by oversized custom enemy model data exceeding Minecraft's NBT packet limit.
+- Simple opaque fog now uses native rendering when no height restriction, outdoor mask, custom sky or external shader pack requires compositing.
+- Fully transparent fog skips its unnecessary full-screen pass.
+
+## Enemies And Match Flow
+
+- Fixed persistent corpses standing up or replaying their death animation when a player returns to an area or begins tracking them again.
+- Players who are downed are now released from the downed state immediately when the match ends.
+- These performance changes do not reduce enemy counts, damage, targeting or animation update frequency.
+
+## Pause And Interface
+
+- Added prominent notifications when a player requests a pause or resume.
+- Improved the display of pause votes, resume votes, paused matches and resumed matches.
+- Added a small VANILLA PAUSE MENU button in the bottom-left corner, with access back to ZombieRool's pause menu. Pause/resume menu labels are uppercase.
+
+## Map Scripting
+
+- Fixed formatted custom enemy profiles preventing an entire profile import from completing, which could leave affected enemy spawners without their profiles.
+- Improved Lua startup handling for maps with many initialization tasks, preventing valid startup sequences from being interrupted too early.
+- Restored missing safe Lua bindings for channel checks and entity dialogue sent to individual players.
+- Improved timer error reporting in the Lua console to help map creators diagnose interrupted scripts.
+
+## Updating
+
+Fully close Minecraft before replacing the JAR. Keep only one ZombieRool JAR in mods and keep Player Animator installed.
+The host/server and every player must use the same ZombieRool JAR. Rejoining a world does not load an updated JAR.
+
+Performance improvements target measured sources of overhead. They do not guarantee that every client freeze is resolved.
+
+---
+
 # ZombieRool 26.7 Beta 5
 Minecraft 1.20.1 | Forge | Java 17
 
