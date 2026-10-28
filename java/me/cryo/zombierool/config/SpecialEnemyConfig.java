@@ -14,6 +14,7 @@ public final class SpecialEnemyConfig {
     static {
         number("romeroRageTicks",240,20,1200,true);number("romeroProvokeRadius",1.8,.5,6,false);number("romeroRageSpeed",.36,.05,1,false);number("romeroReturnRounds",3,1,20,true);
         number("astronautDamage",3,0,20,false);number("astronautStealPerk",1,0,1,true);number("abominationPullDistance",5,1,16,false);number("geistLeapDamage",2,0,20,false);number("thiefEscapeTicks",900,60,3600,true);
+        number("crawlerFractionMin",.15,0,1,false);number("crawlerFractionMax",.40,0,1,false);
         number("firstWave",8,1,10000,true);number("interval",4,1,10000,true);
         number("panzerHealth",480,20,1000000,false);number("brutusHealth",360,20,1000000,false);
         number("waveHealthGrowth",.08,0,2,false);number("extraPlayerHealth",.5,0,3,false);number("bodyDamage",.25,.05,1,false);

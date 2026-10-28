@@ -38,6 +38,7 @@ public class WaWMainMenuScreen extends Screen {
 
     @Override
     protected void init() {
+        this.addRenderableWidget(net.minecraft.client.gui.components.Button.builder(Component.literal("Minecraft menu"), b -> MainMenuExtensions.openVanilla()).bounds(8, this.height-28, 140, 20).build());
         this.entries.clear();
         this.entries.add(new Entry("gui.zombierool.waw.solo", () -> this.minecraft.setScreen(new SelectWorldScreen(this))));
         this.entries.add(new Entry("gui.zombierool.waw.multi", () -> this.minecraft.setScreen(new JoinMultiplayerScreen(this))));
@@ -85,6 +86,7 @@ public class WaWMainMenuScreen extends Screen {
         }
         this.drawEntries(g);
         this.drawFooter(g);
+        super.render(g, mouseX, mouseY, partialTick);
     }
 
     private void drawBackdrop(GuiGraphics g, float partialTick) {
@@ -121,7 +123,7 @@ public class WaWMainMenuScreen extends Screen {
             .map(c -> "v" + c.getModInfo().getVersion().toString())
             .orElse("");
         if (!version.isEmpty()) {
-            g.drawString(this.font, version, this.menuX(), this.height - 16, 0xFF3E3B36, false);
+            g.drawString(this.font, version, this.width - 10 - this.font.width(version), this.height - 16, 0xFF3E3B36, false);
         }
     }
 

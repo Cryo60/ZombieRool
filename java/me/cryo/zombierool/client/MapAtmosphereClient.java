@@ -131,15 +131,16 @@ public final class MapAtmosphereClient {
         public void close(){for(int i=0;i<4;i++){int unit=org.lwjgl.opengl.GL13.GL_TEXTURE0+i;RenderSystem.activeTexture(unit);org.lwjgl.opengl.GL13.glActiveTexture(unit);org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D,textures[i]);RenderSystem.bindTexture(textures[i]);}RenderSystem.activeTexture(active);org.lwjgl.opengl.GL13.glActiveTexture(active);com.mojang.blaze3d.platform.GlStateManager._glUseProgram(program);if(depthTest)RenderSystem.enableDepthTest();else RenderSystem.disableDepthTest();RenderSystem.depthMask(depthWrite);if(blend)RenderSystem.enableBlend();else RenderSystem.disableBlend();RenderSystem.blendFuncSeparate(srcRgb,dstRgb,srcAlpha,dstAlpha);if(cull)RenderSystem.enableCull();else RenderSystem.disableCull();RenderSystem.setShaderColor(color[0],color[1],color[2],color[3]);}
     }
     private static void targets(int w,int h){if(scene==null){scene=new TextureTarget(w,h,false,Minecraft.ON_OSX);depth=new TextureTarget(w,h,true,Minecraft.ON_OSX);handDepth=new TextureTarget(w,h,true,Minecraft.ON_OSX);}else if(scene.width!=w||scene.height!=h){scene.resize(w,h,Minecraft.ON_OSX);depth.resize(w,h,Minecraft.ON_OSX);handDepth.resize(w,h,Minecraft.ON_OSX);}}
+    public static boolean skySceneEnabled(){return settings.getBoolean("enabled")&&settings.getBoolean("skyEnabled");}
     public static boolean deferredBlood(){return ClientEnvironmentEffects.shaderPackActive()&&deferredAmbient();}
     public static boolean deferredAmbient(){
-        if(shader==null||bloodShader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.hasMapFog())return false;
+        if(shader==null||bloodShader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled"))return false;
         if(settings.getBoolean("vanillaSky"))return !settings.getList("skyObjects",10).isEmpty();
         var id=new ResourceLocation(settings.getString("skyTexture"));return skyAvailable(id);
     }
     /** Put the custom sky behind translucent geometry, before its colors blend with the background. */
     @SubscribeEvent public static void skyBackground(RenderLevelStageEvent e){
-        if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_SKY||shader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.hasMapFog()||ClientEnvironmentEffects.shaderPackActive())return;
+        if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_SKY||shader==null||!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.shaderPackActive())return;
         var mc=Minecraft.getInstance();if(mc.level==null)return;
         if(settings.getBoolean("vanillaSky")){var camera=mc.gameRenderer.getMainCamera();var view=new Matrix4f().rotationX((float)Math.toRadians(camera.getXRot())).rotateY((float)Math.toRadians(camera.getYRot()+180f));renderSkyObjects(e.getProjectionMatrix(),view,-1,-1);return;}
         var sky=new ResourceLocation(settings.getString("skyTexture"));
@@ -162,7 +163,7 @@ public final class MapAtmosphereClient {
         renderSkyObjects(e.getProjectionMatrix(),skyView,-1,-1);
     }
     private static void renderSkyObjects(Matrix4f projection,Matrix4f view,int worldDepth,int heldDepth){
-        if(!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled")||ClientEnvironmentEffects.hasMapFog())return;
+        if(!settings.getBoolean("enabled")||!settings.getBoolean("skyEnabled"))return;
         var previous=RenderSystem.getShader();int[] textures=new int[4];for(int i=0;i<4;i++)textures[i]=RenderSystem.getShaderTexture(i);
         try(var state=new RenderState()){SkyObjectsRenderer.render(settings,projection,view,worldDepth,heldDepth);}
         finally{RenderSystem.setShader(()->previous);for(int i=0;i<4;i++)RenderSystem.setShaderTexture(i,textures[i]);}

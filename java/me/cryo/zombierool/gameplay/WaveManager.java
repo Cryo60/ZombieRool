@@ -621,8 +621,9 @@ public class WaveManager {
         zombiesToKill = count;
         mobsToSpawnInThisWave = count;
         Random rand = ThreadLocalRandom.current();
-        int minC = Math.max(1, (int) (count * 0.15));
-        int maxC = Math.max(1, (int) (count * 0.40));
+        var crawlerSettings=me.cryo.zombierool.config.SpecialEnemyConfig.get(level);
+        int minC = Math.max(crawlerSettings.getDouble("crawlerFractionMin")>0?1:0, (int) (count * crawlerSettings.getDouble("crawlerFractionMin")));
+        int maxC = Math.max(minC, (int) (count * crawlerSettings.getDouble("crawlerFractionMax")));
         int numCrawlers = rand.nextInt(maxC - minC + 1) + minC;
         if (!SpawnerRegistry.hasActiveSpawnerOfType(level, UniversalSpawnerSystem.SpawnerMobType.CRAWLER)) {
             numCrawlers = 0;

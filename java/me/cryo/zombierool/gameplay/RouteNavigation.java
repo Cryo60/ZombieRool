@@ -16,6 +16,85 @@ import net.minecraft.util.Mth;
 
 /** A nearby player can require a much longer route through stairs and navigation links. */
 public final class RouteNavigation extends GroundPathNavigation {
+    private Entity directTarget;
+    private double directSpeed;
+    private int directCheckTick = Integer.MIN_VALUE;
+    private Vec3 directFrom, directWanted;
+    private boolean directClear;
+    private int directFailure;
+    private BlockPos directFailurePoint;
+    public String directFailure(){return directFailure+"@"+directFailurePoint;}
+
+    /** A supported, collision-free straight walk does not need a separate A* search per zombie. */
+    private boolean clearWalk(Entity target) {
+        Vec3 wanted=target instanceof Player player?pursuitPosition(player):target.position();
+        if(!mob.onGround()){directFailure=1;return false;}
+        if(mob.isInWater()||mob.isInLava()||target.level()!=level){directFailure=2;return false;}
+        if(Math.abs(wanted.y-mob.getY())>.2){directFailure=3;return false;}
+        if(mob.distanceToSqr(wanted)>64*64){directFailure=4;return false;}
+        if(directFrom!=null&&mob.tickCount-directCheckTick<4
+                &&directFrom.distanceToSqr(mob.position())<1&&directWanted.distanceToSqr(wanted)<1)return directClear;
+        directCheckTick=mob.tickCount;directFrom=mob.position();directWanted=wanted;directClear=false;
+        double distance=mob.position().distanceTo(wanted);
+        int steps=Math.max(1,(int)Math.ceil(distance/.4));
+        var previous=mob.blockPosition();
+        for(int i=0;i<=steps;i++){
+            Vec3 point=mob.position().lerp(wanted,(double)i/steps);
+            var feet=BlockPos.containing(point);
+            directFailurePoint=feet;directFailure=5;
+            if(!level.hasChunkAt(feet)||!NavigationArea.allows(level,feet)
+                    ||!level.getFluidState(feet).isEmpty())return false;
+            var support=BlockPos.containing(point.x,point.y-.01,point.z);
+            var state=level.getBlockState(support);var shape=state.getCollisionShape(level,support);
+            directFailure=6;
+            if(shape.isEmpty()||Math.abs(support.getY()+shape.max(net.minecraft.core.Direction.Axis.Y)-point.y)>.2
+                    ||state.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)
+                    ||state.is(net.minecraft.world.level.block.Blocks.CAMPFIRE)
+                    ||state.is(net.minecraft.world.level.block.Blocks.SOUL_CAMPFIRE))return false;
+            var box=mob.getBoundingBox().move(point.subtract(mob.position())).deflate(.001);
+            directFailure=7;
+            if(level.getBlockCollisions(mob,box).iterator().hasNext())return false;
+            if(!previous.equals(feet)){
+                var from=new net.minecraft.world.level.pathfinder.Node(previous.getX(),previous.getY(),previous.getZ());
+                var to=new net.minecraft.world.level.pathfinder.Node(feet.getX(),feet.getY(),feet.getZ());
+                directFailure=8;
+                if(!me.cryo.zombierool.block.system.OneWayGate.allowed(mob,from,to)
+                        ||!PressurePlateDoors.canApproach(level,previous,feet))return false;
+                previous=feet;
+            }
+        }
+        directFailure=0;return directClear=true;
+    }
+    public boolean directPursuit(){return directTarget!=null;}
+    @Override public boolean moveTo(Entity target,double speed){
+        if(target==null)return false;
+        if(target!=null&&clearWalk(target)){
+            directTarget=target;directSpeed=speed;path=null;planningDeferred=false;
+            // This mob no longer needs its queued search. Never obstruct the next waiter.
+            var budget=PLANNING.get(level);if(budget!=null)budget.waiting.remove(mob.getId());
+            return true;
+        }
+        directTarget=null;
+        Path next=createPath(target,0);
+        // A planning deferral is not a failed route. In particular, do not call
+        // vanilla moveTo(null), which erases a usable route and stops the body.
+        if(planningDeferred||next==null)return path!=null&&!path.isDone();
+        return moveTo(next,speed);
+    }
+    @Override public void tick(){
+        if(directTarget!=null){
+            Entity target=directTarget;
+            if(target.isAlive()&&mob.getTarget()==target&&!mob.isNoAi()&&clearWalk(target)){
+                Vec3 wanted=target instanceof Player player?pursuitPosition(player):target.position();
+                mob.getMoveControl().setWantedPosition(wanted.x,wanted.y,wanted.z,directSpeed);
+                return;
+            }
+            directTarget=null;
+            if(target.isAlive()&&mob.getTarget()==target&&!mob.isNoAi())moveTo(target,directSpeed);
+        }
+        super.tick();
+    }
+    @Override public void stop(){directTarget=null;super.stop();}
     private boolean walkingOnly;
     private int nextExtendedSearch;
     private static final java.util.Map<Level, SearchBudget> EXTENDED_BUDGET=new java.util.WeakHashMap<>();
@@ -128,7 +207,11 @@ public final class RouteNavigation extends GroundPathNavigation {
         }
         if(!player.onGround()&&!player.isInWater()&&!player.isInLava()){
             Vec3 feet=player.position();
-            var floor=player.level().clip(new ClipContext(feet,feet.add(0,-12,0),ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
+            // A ray starting exactly on the floor is nudged inside its first shape
+            // by VoxelShape.clip. Its "inside" hit is below the surface (about
+            // .012 blocks here), which floors into the solid block beneath the
+            // player. Start above the feet so the hit is the real support face.
+            var floor=player.level().clip(new ClipContext(feet.add(0,.1,0),feet.add(0,-12,0),ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
             if(floor.getType()==HitResult.Type.BLOCK&&floor.getDirection()==net.minecraft.core.Direction.UP)
                 return new Vec3(feet.x,floor.getLocation().y,feet.z);
         }
@@ -142,6 +225,12 @@ public final class RouteNavigation extends GroundPathNavigation {
     }
     @Override public Path createPath(Entity target,int accuracy){
         planningDeferred=false;
+        if(target!=null&&clearWalk(target)){
+            Vec3 wanted=target instanceof Player player?pursuitPosition(player):target.position();
+            var start=mob.blockPosition();var end=BlockPos.containing(wanted);
+            return new Path(java.util.List.of(new net.minecraft.world.level.pathfinder.Node(start.getX(),start.getY(),start.getZ()),
+                    new net.minecraft.world.level.pathfinder.Node(end.getX(),end.getY(),end.getZ())),end,true);
+        }
         if(!(target instanceof Player player))return super.createPath(target,accuracy);
         if(!NavigationArea.allowsPursuit(player))return null;
         Vec3 wanted=pursuitPosition(player);

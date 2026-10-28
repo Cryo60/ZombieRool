@@ -16,6 +16,11 @@ import java.util.*;
 
 /** A surface pattern independent of the sub-pixel palette UVs used by many gun packs. */
 public final class TacZCamoOverlay {
+    private static final class CamoLayer extends RenderType {
+        private CamoLayer(){super("zr_camo_unused",DefaultVertexFormat.NEW_ENTITY,VertexFormat.Mode.QUADS,256,false,true,()->{},()->{});}
+        private static final Map<ResourceLocation,RenderType> TYPES=new HashMap<>();
+        static RenderType get(ResourceLocation texture){return TYPES.computeIfAbsent(texture,t->create("zr_camo_surface",DefaultVertexFormat.NEW_ENTITY,VertexFormat.Mode.QUADS,256,true,true,CompositeState.builder().setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER).setTextureState(new TextureStateShard(t,false,false)).setTransparencyState(TRANSLUCENT_TRANSPARENCY).setCullState(NO_CULL).setLightmapState(LIGHTMAP).setOverlayState(OVERLAY).setLayeringState(POLYGON_OFFSET_LAYERING).setWriteMaskState(COLOR_WRITE).createCompositeState(true)));}
+    }
     private static final Map<BedrockModel,FittedBounds> FITTED=new WeakHashMap<>(),FITTED_MESHES=new WeakHashMap<>();
     private static final Map<com.tacz.guns.client.model.bedrock.BedrockPart,BindTransform> BIND_POSES=new WeakHashMap<>();
     private static final Map<com.tacz.guns.client.model.bedrock.BedrockPart,TacZCamoParts.Finish> FINISHES=new WeakHashMap<>();
@@ -61,7 +66,7 @@ public final class TacZCamoOverlay {
         renderSurface(model,texture,pose,light,overlay,scale,meshes,new CamoAppearance.Profile(scale));
     }
     private static void renderSurface(BedrockModel model,ResourceLocation texture,PoseStack pose,int light,int overlay,float scale,TacZMeshCamo.Pass meshes,CamoAppearance.Profile appearance){
-        var mc=Minecraft.getInstance();var type=RenderType.entityTranslucent(texture);var buffers=mc.renderBuffers().bufferSource();
+        var mc=Minecraft.getInstance();var type=CamoLayer.get(texture);var buffers=mc.renderBuffers().bufferSource();
         var consumer=buffers.getBuffer(type);
         // Functional renderers contain the player's arms, attachments, flashes and
         // shells. Only repeat the gun's own mesh, without repeating those effects.

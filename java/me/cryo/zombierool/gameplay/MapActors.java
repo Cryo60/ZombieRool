@@ -173,7 +173,7 @@ public final class MapActors extends SavedData {
         }
         return id;
     }
-    private static final List<String> APPEARANCE_FIELDS=List.of("bones","boxes","animations","texture","textureWidth","textureHeight","scale","sourceMotion","sounds","eyeR","eyeG","eyeB");
+    private static final List<String> APPEARANCE_FIELDS=List.of("bones","boxes","animations","texture","textureWidth","textureHeight","scale","sourceMotion","sounds","dialogue","eyeR","eyeG","eyeB");
     /** Resolve once at spawn and keep only the chosen visual on the synchronized entity. */
     public static CompoundTag appearance(CompoundTag profile,int choice){
         var result=profile.copy();var alternatives=profile.getList("appearances",10);
@@ -206,6 +206,8 @@ public final class MapActors extends SavedData {
         out.putBoolean("undead",!in.contains("undead")||in.getBoolean("undead"));
         out.putBoolean("sourceMotion",in.getBoolean("sourceMotion"));
         out.putBoolean("harmless",in.getBoolean("harmless"));
+        out.putBoolean("deployable",in.getBoolean("deployable"));
+        if(in.contains("explosiveProp",10))out.put("explosiveProp",MapExplosiveProps.settings(in.getCompound("explosiveProp")));
         out.putBoolean("invulnerable",in.getBoolean("invulnerable"));
         out.putDouble("healthMultiplier",number(in,"healthMultiplier",1,.1,10));
         out.putBoolean("wavePursuit",in.getBoolean("wavePursuit"));
@@ -220,7 +222,13 @@ public final class MapActors extends SavedData {
         MapActorBehavior.settings(in,out);
         out.putDouble("meleeReach",number(in,"meleeReach",.8,.1,3));
         String role=in.getString("combatRole");out.putString("combatRole",List.of("archer","mage").contains(role)?role:"melee");out.putDouble("preferredRange",number(in,"preferredRange",8,2,32));out.putBoolean("smokyEyes",in.getBoolean("smokyEyes"));
-        var sounds=new CompoundTag();for(String action:List.of("aggro","attack","hurt","death","slay","cast","idle")){var rows=new ListTag();for(Tag t:in.getCompound("sounds").getList(action,8)){String sound=t.getAsString();if(rows.size()<16&&sound.matches("[a-z0-9_./:-]{1,160}"))rows.add(StringTag.valueOf(sound));}if(!rows.isEmpty())sounds.put(action,rows);}out.put("sounds",sounds);
+        var sounds=new CompoundTag();for(String action:List.of("aggro","attack","hurt","death","slay","cast","idle","move","wing","spawn")){var rows=new ListTag();for(Tag t:in.getCompound("sounds").getList(action,8)){String sound=t.getAsString();if(rows.size()<16&&sound.matches("[a-z0-9_./:-]{1,160}"))rows.add(StringTag.valueOf(sound));}if(!rows.isEmpty())sounds.put(action,rows);}out.put("sounds",sounds);
+        var dialogue=new CompoundTag();for(String sound:in.getCompound("dialogue").getAllKeys()){
+            if(dialogue.size()>=64)throw new IllegalArgumentException("Maximum 64 voice subtitles");
+            var idSound=net.minecraft.resources.ResourceLocation.tryParse(sound);String text=in.getCompound("dialogue").getString(sound).trim();
+            if(idSound==null||text.length()>512)throw new IllegalArgumentException("Invalid voice subtitle");
+            if(!text.isBlank())dialogue.putString(idSound.toString(),text);
+        }out.put("dialogue",dialogue);
         String behavior=in.getString("behavior");if(!List.of("melee","guard","wander","script").contains(behavior))throw new IllegalArgumentException("behavior: melee, guard, wander or script");
         out.putString("behavior",behavior);
         for(var key:List.of("health","damage","speed","aggroRadius","wanderRadius","leashRadius","scale","width","height")) {
@@ -293,8 +301,8 @@ public final class MapActors extends SavedData {
         setDirty();return imported.size();
     }
     public CompoundTag marker(BlockPos pos) {return markers.getCompound(Long.toString(pos.asLong())).copy();}
-    public static void end(ServerLevel level){var data=get(level);data.running=false;data.matchIdentity="";data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();for(var dimension:level.getServer().getAllLevels()){var cleanup=new java.util.ArrayList<net.minecraft.world.entity.Entity>();for(var entity:dimension.getAllEntities())if(owns(entity))cleanup.add(entity);for(var entity:cleanup)if(!entity.isRemoved())entity.discard();}}
-    public static void begin(ServerLevel level){end(level);var data=get(level);data.running=true;data.session++;data.matchIdentity=UUID.randomUUID().toString();}
+    public static void end(ServerLevel level){var data=get(level);data.running=false;data.matchIdentity="";data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();for(var dimension:level.getServer().getAllLevels()){var cleanup=new java.util.ArrayList<net.minecraft.world.entity.Entity>();for(var entity:dimension.getAllEntities())if(owns(entity)&&!MapExplosiveProps.authored(entity))cleanup.add(entity);for(var entity:cleanup)if(!entity.isRemoved())entity.discard();}}
+    public static void begin(ServerLevel level){end(level);var data=get(level);data.running=true;data.session++;data.matchIdentity=UUID.randomUUID().toString();for(var dimension:level.getServer().getAllLevels())MapExplosiveProps.begin(dimension);}
     /** A saved batch must fit within its simultaneous population limit. Never lower a larger limit. */
     public static void normalizeSpawnBatch(CompoundTag settings) {
         int batch=(int)number(settings,"batch",1,1,16);
@@ -339,7 +347,7 @@ public final class MapActors extends SavedData {
         actor.getPersistentData().putString("MapMatchId",matchIdentity);
         if(!spawnSpace(level,actor,marker)||spawnOccupied(actor,marker)||!level.addFreshEntity(actor))return "";
         if(p.getBoolean("countsForWave")&&WaveManager.isCombatWave())WaveManager.registerMapActor(actor);
-        ActorPopulation.spawned(actor);actor.callback("spawn");return remember(actor.getUUID().toString(),marker);
+        ActorPopulation.spawned(actor);MapActorAudio.play(actor,"spawn");actor.callback("spawn");return remember(actor.getUUID().toString(),marker);
     }
     @SubscribeEvent public static void tick(TickEvent.LevelTickEvent event) {
         if(event.phase!=TickEvent.Phase.END||!(event.level instanceof ServerLevel level)||level.dimension()!=net.minecraft.world.level.Level.OVERWORLD)return;
@@ -354,7 +362,7 @@ public final class MapActors extends SavedData {
             if(style.equals("arrow")||level.getGameTime()%5!=0)continue;level.sendParticles(style.equals("fire")?net.minecraft.core.particles.ParticleTypes.FLAME:style.equals("web")?net.minecraft.core.particles.ParticleTypes.CLOUD:net.minecraft.core.particles.ParticleTypes.WITCH,bolt.getX(),bolt.getY(),bolt.getZ(),3,.05,.05,.05,0);
         }
         var data=get(level);boolean playing=WaveManager.isGameRunning();
-        if(!playing) {if(data.running){for(var e:level.getAllEntities())if(owns(e))e.discard();data.running=false;data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();}return;}
+        if(!playing) {if(data.running){for(var e:level.getAllEntities())if(owns(e)&&!MapExplosiveProps.authored(e))e.discard();data.running=false;data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();}return;}
         if(!data.running){data.running=true;data.session++;data.matchIdentity=UUID.randomUUID().toString();data.triggered.clear();data.pendingBatches.clear();data.questActors.clear();data.questMembers.clear();data.clearStreaming();}
         if(WaveManager.isPausedByPlayer()||level.players().stream().noneMatch(MapActorBehavior::eligible))return;
         int wave=WaveManager.getCurrentWave();

@@ -57,7 +57,10 @@
     "TacZPropHitMixin",
     "CustomWaterLevelMixin",
     "CustomWaterContainerMixin",
-    "CustomWaterSlabMixin"
+    "CustomWaterSlabMixin",
+    "MatchPauseServerMixin",
+    "MatchPausePlayerMixin",
+    "MatchPausePacketMixin"
   ],
   "client": [
     "EnvironmentalSuitSkinMixin",
@@ -102,7 +105,9 @@
     "AmbientParticleRenderMixin",
     "TacZManualClientReloadMixin",
     "AmbientPauseMixin",
-    "CustomWaterVisualMixin"
+    "CustomWaterVisualMixin",
+    "MenuButtonSoundMixin",
+    "MatchPauseClientLevelMixin"
   ],
   "minVersion": "0.8"
 }

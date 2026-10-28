@@ -119,8 +119,8 @@ public class DerWunderfizzRenderer implements BlockEntityRenderer<DerWunderfizzB
         tesselator.end();
         poseStack.popPose();
 
-        RenderSystem.setShaderFogStart(me.cryo.zombierool.client.ClientEnvironmentEffects.fogNearPlane);
-        RenderSystem.setShaderFogEnd(me.cryo.zombierool.client.ClientEnvironmentEffects.fogFarPlane);
+        RenderSystem.setShaderFogStart(oldFogStart);
+        RenderSystem.setShaderFogEnd(oldFogEnd);
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
     }

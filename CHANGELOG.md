@@ -1,3 +1,53 @@
+# ZombieRool 26.7 Beta 5
+Minecraft 1.20.1 | Forge | Java 17
+
+## Zombie Pursuit And Combat
+
+- Reduced the performance cost of Halloween candy effects: bounded particle bursts, shorter particle lifetimes and fewer rendering allocations. Candy visuals are preserved.
+- Fixed several causes of zombies stopping for a few seconds while chasing a valid target. Improved pursuit recovery, close-range movement and navigation around obstacles.
+- Improved how large hordes share pathfinding work, reducing unnecessary movement interruptions.
+- TaCZ Wunderwaffe now consumes ammunition correctly. Empty weapons can no longer trigger a free electrical attack.
+- Electrical stuns now last one second. Electrocuted enemies visibly twitch and surviving targets resume movement afterwards.
+- Fixed EliteX weapon camouflages overlapping and flickering against the gun surface, including the 1911 and MP5.
+- Abomination grabs now release players when a pull cannot complete across uneven terrain, instead of trapping them indefinitely.
+
+## Multiplayer Pause
+
+- Added a match pause request through the pause menu.
+- In multiplayer, pausing and resuming require a majority vote. With one participant, the request takes effect immediately.
+- Added visible vote information and a paused-match screen.
+- Pausing freezes gameplay, enemies and world simulation until the match resumes.
+
+## Main Menu And Interface
+
+- ZombieRool's main menu is available with Essential installed, including the alternate Destroyed Earth theme.
+- Added a bottom-left button to open the vanilla main menu, with a button to return to ZombieRool.
+- Restored ZombieRool interface sounds on supported menu buttons.
+- The ZRF icon now uses Minecraft's Rotten Flesh item.
+
+## Fog And Atmosphere
+
+- Added adjustable fog opacity, spherical or cylindrical fog, a height limit with a gradual fade, and configurable pulsing.
+- Fixed fog opacity changes not visibly applying correctly and corrected rendering artifacts.
+- Fog can coexist with custom skies and sky objects, including objects displayed over the Minecraft sky.
+- Fog and enemy numeric settings accept decimal commas as well as decimal points.
+
+## Map Creation
+
+- Added map-owned explosive barrel support. Barrels count bullet impacts independently of weapon damage, allowing a randomized destruction threshold.
+- Supported barrels ignite when sufficiently damaged and explode only when their remaining durability is depleted. Burning alone does not detonate them.
+- Barrel explosions use ZombieRool effects, respect solid cover and preserve map blocks.
+- Barrels placed outside a match retain their authored positions. They survive match startup and return for the next match after being destroyed.
+- These props are available on maps that provide their profiles; they are not automatically added to existing maps.
+- Improved map-owned 3D buildable components and deployable equipment support.
+
+## Updating
+
+Back up your worlds before updating. Keep only one ZombieRool JAR in mods and restart Minecraft after replacing it. Keep Player Animator installed.
+For multiplayer, the server and every player must use the same ZombieRool JAR.
+
+[Notes en français](https://github.com/Cryo60/ZombieRool/releases/download/26.7-beta.5/Patch-Notes-Beta-5-FR.md)
+
 # ZombieRool 26.7 Beta 4
 
 Minecraft 1.20.1 | Forge | Java 17

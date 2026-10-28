@@ -631,6 +631,8 @@ public class ZombieroolAPI {
         }
     }
 
+    public boolean isChannelUnlocked(int channel){return WaveManager.UNLOCKED_CHANNELS.contains(channel)&&!WaveManager.LOCKED_CHANNELS.contains(channel);}
+
     public void unlockChannel(int channel) {
         WaveManager.unlockChannel(channel);
     }
@@ -1129,6 +1131,10 @@ public class ZombieroolAPI {
                      e instanceof me.cryo.zombierool.entity.HellhoundEntity ||
                      e instanceof me.cryo.zombierool.entity.CrawlerEntity)
                 .size();
+    }
+
+    public void sendEntityDialogueToPlayer(String playerUUIDStr,String speaker,String text){
+        me.cryo.zombierool.gameplay.MapDialogue.send(getPlayer(playerUUIDStr),speaker,text);
     }
 
     public void sendMessageToPlayer(String playerUUIDStr, String message) {

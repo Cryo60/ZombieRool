@@ -48,6 +48,12 @@ public class ClientEnvironmentEffects {
     public static float fogColorGreen = 0f;
     public static float fogColorBlue = 0f;
     public static float fogColorAlpha = 0.9f;
+    private static net.minecraft.nbt.CompoundTag fogOptions=me.cryo.zombierool.config.FogOptions.sanitize(new net.minecraft.nbt.CompoundTag());
+    private static boolean presetPulse;
+    public static void setFogOptions(net.minecraft.nbt.CompoundTag input){fogOptions=me.cryo.zombierool.config.FogOptions.sanitize(input==null?new net.minecraft.nbt.CompoundTag():input);enableFogPulse=fogOptions.getBoolean("pulseOverride")?fogOptions.getBoolean("pulse"):presetPulse;}
+    public static boolean usesCompositedFog(){return fogShader!=null;}
+    private static boolean postFog(){return usesCompositedFog();}
+    private static float pulseFar(){return fogFarPlane*(1+fogPulseValue*(float)fogOptions.getDouble("pulseAmount"));}
     public static boolean enableFogPulse = true;
     public static float customFogR = 0f, customFogG = 0f, customFogB = 0f;
     public static float customFogNear = 0.5f, customFogFar = 18.0f;
@@ -69,7 +75,9 @@ public class ClientEnvironmentEffects {
 
     @SubscribeEvent
     public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        if(fogDepth!=null){fogDepth.destroyBuffers();fogDepth=null;}
         fogOutdoorsOnly = false;
+        setFogOptions(new net.minecraft.nbt.CompoundTag());
         setFogPreset("none", 0,0,0,0.5f,512.0f);
         handleWeatherSync(false, "", "", "");
     }
@@ -148,12 +156,13 @@ public class ClientEnvironmentEffects {
         fogColorGreen = g;
         fogColorBlue = b;
         fogColorAlpha = a;
-        enableFogPulse = pulse;
+        presetPulse=pulse;enableFogPulse=fogOptions.getBoolean("pulseOverride")?fogOptions.getBoolean("pulse"):pulse;
     }
 
     @SubscribeEvent
     public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
-        if (enableFog && !hellhoundFog()) {
+        if(event.getCamera().getFluidInCamera()!=net.minecraft.world.level.material.FogType.NONE)return;
+        if (enableFog && !hellhoundFog() && !postFog()) {
             event.setRed(fogColorRed);
             event.setGreen(fogColorGreen);
             event.setBlue(fogColorBlue);
@@ -167,7 +176,7 @@ public class ClientEnvironmentEffects {
     @SubscribeEvent
     public static void onRenderFog(ViewportEvent.RenderFog event) {
         Player player = Minecraft.getInstance().player;
-        if (player == null || player.isSpectator()
+        if (player == null || Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera()!=net.minecraft.world.level.material.FogType.NONE || player.isSpectator()
                 || !hellhoundFog()&&(player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
                 || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER))) {
             return;
@@ -177,15 +186,15 @@ public class ClientEnvironmentEffects {
             return;
         }
 
-        if (fogOutdoorsOnly&&!hellhoundFog()) {
+        if (postFog()&&!hellhoundFog()) {
             event.setFogShape(FogShape.CYLINDER);
-            event.setNearPlaneDistance(512.0F);
-            event.setFarPlaneDistance(1024.0F);
+            event.setNearPlaneDistance(1_000_000.0F);
+            event.setFarPlaneDistance(1_000_001.0F);
             event.setCanceled(true);
             return;
         }
 
-        event.setFogShape(shaderPackActive() ? FogShape.SPHERE : FogShape.CYLINDER);
+        event.setFogShape(fogOptions.getString("shape").equals("sphere")?FogShape.SPHERE:FogShape.CYLINDER);
 
         if (hellhoundFog()) {
             event.setNearPlaneDistance(1.0F);
@@ -194,7 +203,7 @@ public class ClientEnvironmentEffects {
         } else {
             float currentFarPlane = fogFarPlane;
             if (enableFogPulse) {
-                currentFarPlane = fogFarPlane + (fogPulseValue * (fogFarPlane * 0.25F));
+                currentFarPlane = pulseFar();
             }
             event.setNearPlaneDistance(fogNearPlane);
             event.setFarPlaneDistance(currentFarPlane);
@@ -203,6 +212,7 @@ public class ClientEnvironmentEffects {
     }
 
     private static ShaderInstance fogShader;
+    private static com.mojang.blaze3d.pipeline.RenderTarget fogDepth;
 
     /**
      * Iris and Oculus replace Minecraft fog, and a world-space cylinder becomes the triangles in the sky.
@@ -211,10 +221,10 @@ public class ClientEnvironmentEffects {
     @SubscribeEvent
     public static void onRenderShaderFog(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
-        if (fogShader == null || !hasMapFog() || (!shaderPackActive() && !fogOutdoorsOnly)) return;
+        if (fogShader == null || !hasMapFog() || (!shaderPackActive() && !postFog())) return;
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
-        if (player == null || player.isSpectator()
+        if (player == null || Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera()!=net.minecraft.world.level.material.FogType.NONE || player.isSpectator()
                 || !hellhoundFog()&&(player.hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION)
                 || player.hasEffect(net.minecraft.world.effect.MobEffects.CONDUIT_POWER))) {
             return;
@@ -226,11 +236,13 @@ public class ClientEnvironmentEffects {
             near = 1.0F;
             far = 12.0F;
         } else if (enableFogPulse) {
-            far = fogFarPlane + (fogPulseValue * (fogFarPlane * 0.25F));
+            far = pulseFar();
         }
         if (far <= near + 0.5F) far = near + 0.5F;
 
-        ensureFogHeightTexture();
+        var state=new MapAtmosphereClient.RenderState();
+        var previousShader=RenderSystem.getShader();int[] previousTextures=new int[4];for(int i=0;i<4;i++)previousTextures[i]=RenderSystem.getShaderTexture(i);
+        if(fogOutdoorsOnly)ensureFogHeightTexture();
         var cam = minecraft.gameRenderer.getMainCamera();
         Matrix4f invViewRot = new Matrix4f(RenderSystem.getInverseViewRotationMatrix());
         var camera = cam.getPosition();
@@ -239,6 +251,11 @@ public class ClientEnvironmentEffects {
         float green = hellhoundFog() ? 0.92F : fogColorGreen;
         float blue = hellhoundFog() ? 0.92F : fogColorBlue;
         var target = minecraft.getMainRenderTarget();
+        if(fogDepth==null)fogDepth=new com.mojang.blaze3d.pipeline.TextureTarget(target.width,target.height,true,Minecraft.ON_OSX);
+        else if(fogDepth.width!=target.width||fogDepth.height!=target.height)fogDepth.resize(target.width,target.height,Minecraft.ON_OSX);
+        if(target.isStencilEnabled()&&!fogDepth.isStencilEnabled())fogDepth.enableStencil();
+        // Sample a separate attachment: reading the active framebuffer's depth is undefined.
+        fogDepth.copyDepthFrom(target);target.bindWrite(false);
         Matrix4f inverseProjection = new Matrix4f(event.getProjectionMatrix()).invert();
 
         RenderSystem.backupProjectionMatrix();
@@ -247,6 +264,7 @@ public class ClientEnvironmentEffects {
         modelView.setIdentity();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.setProjectionMatrix(new Matrix4f(), VertexSorting.ORTHOGRAPHIC_Z);
+        try {
         RenderSystem.enableBlend();
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         RenderSystem.disableCull();
@@ -254,11 +272,16 @@ public class ClientEnvironmentEffects {
         RenderSystem.disableDepthTest();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShader(() -> fogShader);
-        RenderSystem.setShaderTexture(0, target.getDepthTextureId());
-        RenderSystem.setShaderTexture(1, fogHeightTexture.getId());
+        RenderSystem.setShaderTexture(0, fogDepth.getDepthTextureId());
+        RenderSystem.setShaderTexture(1, fogHeightTexture==null?fogDepth.getDepthTextureId():fogHeightTexture.getId());
         fogShader.safeGetUniform("InvProjMat").set(inverseProjection);
         fogShader.safeGetUniform("InvViewRot").set(invViewRot);
-        fogShader.safeGetUniform("FogColor").set(red, green, blue, hellhoundFog()?1f:fogColorAlpha);
+        fogShader.safeGetUniform("MapFogColor").set(red, green, blue, hellhoundFog()?1f:fogColorAlpha*(float)fogOptions.getDouble("opacity"));
+        fogShader.safeGetUniform("PreserveSky").set(MapAtmosphereClient.skySceneEnabled()?1f:0f);
+        fogShader.safeGetUniform("ShapeSphere").set(fogOptions.getString("shape").equals("sphere")?1f:0f);
+        fogShader.safeGetUniform("HeightEnabled").set(!hellhoundFog()&&fogOptions.getBoolean("heightEnabled")?1f:0f);
+        fogShader.safeGetUniform("FogHeight").set((float)fogOptions.getDouble("height"));
+        fogShader.safeGetUniform("HeightFade").set((float)fogOptions.getDouble("heightFade"));
         fogShader.safeGetUniform("FogNear").set(near);
         fogShader.safeGetUniform("FogFar").set(far);
         fogShader.safeGetUniform("ScreenSize").set((float) target.width, (float) target.height);
@@ -276,13 +299,10 @@ public class ClientEnvironmentEffects {
         buffer.vertex(-1.0, 1.0, 0.0).endVertex();
         tesselator.end();
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
-        modelView.popPose();
-        RenderSystem.applyModelViewMatrix();
-        RenderSystem.restoreProjectionMatrix();
+        } finally {
+            modelView.popPose();RenderSystem.applyModelViewMatrix();RenderSystem.restoreProjectionMatrix();
+            RenderSystem.setShader(()->previousShader);for(int i=0;i<4;i++)RenderSystem.setShaderTexture(i,previousTextures[i]);state.close();
+        }
     }
 
     @Mod.EventBusSubscriber(modid = "zombierool", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -348,6 +368,7 @@ public class ClientEnvironmentEffects {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if(me.cryo.zombierool.client.MatchPauseClient.paused())return;
 
         if (fogOutdoorsOnly && enableFog && fogHeightRefresh-- <= 0) {
             fogHeightRefresh = 10;
@@ -356,10 +377,10 @@ public class ClientEnvironmentEffects {
 
         if (enableFogPulse) {
             if (fogPulseDirection) {
-                fogPulseValue = Math.min(1f, fogPulseValue + 0.005F);
+                fogPulseValue = Math.min(1f, fogPulseValue + 2f/(20f*(float)fogOptions.getDouble("pulseSeconds")));
                 if (fogPulseValue >= 1.0F) fogPulseDirection = false;
             } else {
-                fogPulseValue = Math.max(0f, fogPulseValue - 0.005F);
+                fogPulseValue = Math.max(0f, fogPulseValue - 2f/(20f*(float)fogOptions.getDouble("pulseSeconds")));
                 if (fogPulseValue <= 0.0F) fogPulseDirection = true;
             }
         } else {

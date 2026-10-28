@@ -61,8 +61,10 @@ public class ZombieroolMod {
         me.cryo.zombierool.gameplay.MapArmor.register(bus);
         me.cryo.zombierool.block.system.BuildableBlocks.register(bus);
         me.cryo.zombierool.gameplay.PortableEquipment.register(bus);
+        me.cryo.zombierool.gameplay.MechanicalGreeter.register(bus);
         me.cryo.zombierool.gameplay.BuildablePackets.register();
         me.cryo.zombierool.gameplay.MapAtmospherePackets.register();
+        me.cryo.zombierool.gameplay.MatchPause.register();
         me.cryo.zombierool.block.system.TeleporterSystem.register(bus);
 		ZombieroolModBlockEntities.REGISTRY.register(bus);
 		ZombieroolModItems.REGISTRY.register(bus);

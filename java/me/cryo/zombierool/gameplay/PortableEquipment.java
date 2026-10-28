@@ -45,7 +45,7 @@ public final class PortableEquipment {
     @SubscribeEvent public static void remapLegacy(net.minecraftforge.registries.MissingMappingsEvent event){
         for(var mapping:event.getMappings(ForgeRegistries.Keys.BLOCK_ENTITY_TYPES,"zombierool"))if(mapping.getKey().getPath().equals("tranzit_device"))mapping.remap(DEVICE.get());
     }
-    public static boolean portable(ItemStack stack){return stack.getItem() instanceof Portable;}
+    public static boolean portable(ItemStack stack){return stack.getItem() instanceof Portable||stack.getItem() instanceof MechanicalGreeter.GreeterItem||!MechanicalGreeter.deploymentProfile(stack).isEmpty();}
     public static final String STATE="zr_secondary_equipment";
     public static CompoundTag data(Player p){var root=p.getPersistentData();if(!root.contains(STATE,10))root.put(STATE,new CompoundTag());return root.getCompound(STATE);}
     public static ItemStack carried(Player p){return ItemStack.of(data(p).getCompound("item"));}
@@ -60,6 +60,7 @@ public final class PortableEquipment {
         data(p).remove("item");data(p).putBoolean("active",false);PortableEquipmentPackets.sync(p);
     }
     public static boolean acquire(ServerPlayer p,ItemStack stack){
+        String companion=MechanicalGreeter.deploymentProfile(stack);if(!companion.isEmpty()&&!MapActors.get(p.serverLevel()).profile(companion).getBoolean("deployable"))return false;
         if(!portable(stack)||!p.isAlive()||p.isSpectator()||PlayerDown(p))return false;
         if(carried(p).is(stack.getItem()))return false;
         var copy=stack.copyWithCount(1);p.stopUsingItem();EquipmentSystem.cancel(p);me.cryo.zombierool.handlers.LethalWeaponManager.cancel(p);clearEquipment(p);store(p,copy);return true;
@@ -88,6 +89,7 @@ public final class PortableEquipment {
         var stack=carried(p);var spot=placement(p.level(),p,hit,stack);var pos=spot.pos();
         // This is a gameplay device, not a building item: matches use Adventure mode.
         if(!spot.valid()||!p.level().mayInteract(p,pos))return false;
+        if(!MechanicalGreeter.deploymentProfile(stack).isEmpty()){if(!MechanicalGreeter.deploy(p,Vec3.atBottomCenterOf(pos),MechanicalGreeter.deploymentProfile(stack)))return false;store(p,ItemStack.EMPTY);return true;}
         var level=p.serverLevel();var original=level.getBlockState(pos);MatchWorldJournal.note(level,pos);if(!level.setBlock(pos,spot.state(),3))return false;
         var d=(Device)level.getBlockEntity(pos);d.stack=stack.copy();d.owner=p.getUUID();d.underlay=original;d.setChanged();slots(level).owners.put(d.owner,pos.immutable());slots(level).setDirty();level.sendBlockUpdated(pos,spot.state(),spot.state(),3);
         store(p,ItemStack.EMPTY);refreshPower(level,pos);return true;

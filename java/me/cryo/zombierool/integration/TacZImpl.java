@@ -71,6 +71,7 @@ class TacZImpl {
             if (event.getLogicalSide().isClient()) return;
 
             net.minecraft.world.entity.Entity target = event.getHurtEntity();
+            if(target instanceof me.cryo.zombierool.entity.MapActorEntity actor&&me.cryo.zombierool.gameplay.MapExplosiveProps.active(actor)){me.cryo.zombierool.gameplay.MapExplosiveProps.hit(actor,event.getBullet(),event.getAttacker());event.setCanceled(true);return;}
             if (target instanceof me.cryo.zombierool.entity.CrawlerCorpse || (target instanceof me.cryo.zombierool.entity.CrawlerEntity crawler && !crawler.isAlive())) { if (event.isCancelable()) event.setCanceled(true); return; }
             net.minecraft.world.entity.LivingEntity attacker = event.getAttacker();
 
@@ -363,6 +364,22 @@ class TacZImpl {
                 }
             }
         }
+        private static final java.util.Map<net.minecraft.server.level.ServerPlayer,PendingWonder> PENDING_WONDER=new java.util.WeakHashMap<>();
+        private static final class PendingWonder {
+            final net.minecraft.world.item.ItemStack stack;final me.cryo.zombierool.core.system.WeaponSystem.Definition def;final boolean pap;boolean fired;
+            PendingWonder(net.minecraft.world.item.ItemStack stack,me.cryo.zombierool.core.system.WeaponSystem.Definition def,boolean pap){this.stack=stack;this.def=def;this.pap=pap;}
+        }
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public static void replaceWonderBullet(net.minecraftforge.event.entity.EntityJoinLevelEvent event){
+            if(event.getLevel().isClientSide||!(event.getEntity() instanceof com.tacz.guns.entity.EntityKineticBullet bullet)||!(bullet.getOwner() instanceof net.minecraft.server.level.ServerPlayer player))return;
+            var shot=PENDING_WONDER.get(player);if(shot==null||TacZMappings.forGun(shot.def,bullet.getGunId().toString())==null)return;
+            event.setCanceled(true);if(shot.fired)return;shot.fired=true;
+            playLayeredFire(player,shot.def,shot.pap);
+            if(shot.def.id.equals("zombierool:wunderwaffedg2"))me.cryo.zombierool.item.WunderwaffeItem.fire(player,shot.def,shot.pap,shot.def.stats.damage+(shot.pap?shot.def.pap.damage_bonus:0),player.getEyePosition().add(player.getLookAngle().scale(.5)));
+            else me.cryo.zombierool.core.system.WeaponFacade.shootCustomTaczProjectile(player,shot.stack,shot.def);
+            float factor=shot.pap?shot.def.pap.recoil_mult:1;
+            me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->player),new me.cryo.zombierool.network.packet.S2CRecoilPacket(shot.def.recoil.pitch*factor,(player.getRandom().nextBoolean()?1:-1)*shot.def.recoil.yaw*factor));
+        }
         /** GunShootEvent is before animation/cooldown finalization; GunFireEvent is per actual burst round. */
         @net.minecraftforge.eventbus.api.SubscribeEvent
         public static void onWonderFire(com.tacz.guns.api.event.common.GunFireEvent event){
@@ -373,14 +390,10 @@ class TacZImpl {
             if(def.id.equals("zombierool:raygunmarkii")){
                 me.cryo.zombierool.gameplay.RayGunShots.markIIFired(player,def,pap);
             }else{
-                // Cancel only the gunpack projectile. TaCZ retains ammo, cooldowns and shoot animation.
-                event.setCanceled(true);
-                com.tacz.guns.network.NetworkHandler.sendToTrackingEntity(
-                    new com.tacz.guns.network.message.event.ServerMessageGunFire(player.getId(),stack),player);
-                playLayeredFire(player,def,pap);
-                if(def.id.equals("zombierool:wunderwaffedg2"))
-                    me.cryo.zombierool.item.WunderwaffeItem.fire(player,def,pap,def.stats.damage+(pap?def.pap.damage_bonus:0),player.getEyePosition().add(player.getLookAngle().scale(.5)));
-                else me.cryo.zombierool.core.system.WeaponFacade.shootCustomTaczProjectile(player,stack,def);
+                // Book the round without canceling GunFireEvent: TaCZ consumes ammo
+                // after this event. Replace the actual bullet only after that succeeds.
+                PENDING_WONDER.put(player,new PendingWonder(stack,def,pap));
+                return;
             }
             float factor=pap?def.pap.recoil_mult:1;
             me.cryo.zombierool.network.NetworkHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->player),

@@ -64,7 +64,7 @@ public class BloodStainParticle extends TextureSheetParticle {
 
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()) return new CandyParticle(level,x,y,z,xSpeed,ySpeed,zSpeed);
+            if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()) return CandyParticle.create(level,x,y,z,xSpeed,ySpeed,zSpeed);
             return new BloodStainParticle(level, x, y, z, xSpeed, ySpeed, zSpeed, this.spriteSet);
         }
     }

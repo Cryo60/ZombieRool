@@ -93,7 +93,7 @@ public final class BuildableSystem extends SavedData {
         var resultBlocks = new ListTag(); outputs.values().forEach(t -> resultBlocks.add(t.copy())); n.put("outputs", resultBlocks); return n;
     }
     public boolean active() { return active; }
-    public CompoundTag definitions() { var out=definitions.copy();out.put("presets",me.cryo.zombierool.api.BuildablePresets.catalog());return out; }
+    public CompoundTag definitions() { var out=definitions.copy();out.put("presets",me.cryo.zombierool.api.BuildablePresets.catalog(ownerLevel));return out; }
     /** Power remains a map requirement while its buildable switch has not been installed yet. */
     public boolean hasPlannedPowerSwitch(){
         for(String id:recipes().getAllKeys()){
@@ -176,7 +176,7 @@ public final class BuildableSystem extends SavedData {
         }
     }
     public String createPreset(String kind){
-        var preset=me.cryo.zombierool.api.BuildablePresets.get(kind);String base=kind.replace(':','_');if(base.length()>48)base=base.substring(0,40)+Integer.toHexString(kind.hashCode());String id=base;int suffix=2;while(recipes().contains(id))id=base+"_"+suffix++;
+        var preset=me.cryo.zombierool.api.BuildablePresets.get(ownerLevel,kind);String base=kind.replace(':','_');if(base.length()>48)base=base.substring(0,40)+Integer.toHexString(kind.hashCode());String id=base;int suffix=2;while(recipes().contains(id))id=base+"_"+suffix++;
         var pieces=preset.getList("presetPieces",10).copy();var ids=new ArrayList<String>();for(var tag:pieces)ids.add(((CompoundTag)tag).getString("part"));
         define(id,preset.getString("name"),String.join(",",ids),ItemStack.of(preset.getCompound("reward")),preset.getString("mode"),preset.getInt("ticks"),preset.getInt("limit"));
         recipes().getCompound(id).put("presetPieces",pieces);recipes().getCompound(id).putBoolean("autoParts",true);setDirty();return id;

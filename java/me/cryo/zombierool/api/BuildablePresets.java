@@ -35,6 +35,21 @@ public final class BuildablePresets {
     public static Map<String,CompoundTag> all(){var out=new LinkedHashMap<String,CompoundTag>();out.put("zombie_shield",builtin(false));out.put("turbine",builtin(true));out.put("sentry_turret",sentry());out.put("pack_a_punch",packAPunch());ADDONS.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e->out.put(e.getKey(),e.getValue().copy()));data.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e->out.put(e.getKey(),e.getValue().copy()));return out;}
     public static ListTag catalog(){var out=new ListTag();all().forEach((id,n)->{var copy=n.copy();copy.putString("id",id);out.add(copy);});return out;}
     public static CompoundTag get(String id){var n=all().get(id);if(n==null)throw new IllegalArgumentException("Unknown buildable preset: "+id);return n.copy();}
+    /** Map-owned templates never leak to another world's catalogue. */
+    public static Map<String,CompoundTag> all(net.minecraft.server.level.ServerLevel level){
+        var out=all();if(level==null)return out;
+        var dir=me.cryo.zombierool.util.WorldZombieroolPaths.getZombieroolDir(level).toPath().resolve("gameplay/buildable_presets");
+        if(java.nio.file.Files.isDirectory(dir))try(var stream=java.nio.file.Files.list(dir)){
+            for(var file:stream.filter(p->p.getFileName().toString().endsWith(".json")&&!java.nio.file.Files.isSymbolicLink(p)).sorted().toList())try{
+                var object=com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(file)).getAsJsonObject();var n=new CompoundTag();
+                n.putString("name",object.get("name").getAsString());n.putString("mode",object.has("mode")?object.get("mode").getAsString():"item");n.putInt("ticks",object.has("ticks")?object.get("ticks").getAsInt():40);n.putInt("limit",object.has("limit")?object.get("limit").getAsInt():0);
+                n.put("reward",net.minecraftforge.common.crafting.CraftingHelper.getItemStack(object.getAsJsonObject("reward"),true).save(new CompoundTag()));var parts=new ListTag();
+                for(var value:object.getAsJsonArray("parts")){var part=value.getAsJsonObject();var entry=new CompoundTag();entry.putString("part",part.has("part")?part.get("part").getAsString():part.get("id").getAsString());entry.put("visual",net.minecraftforge.common.crafting.CraftingHelper.getItemStack(part,true).save(new CompoundTag()));parts.add(entry);}n.put("presetPieces",parts);validate(n);out.put(file.getFileName().toString().replaceFirst("\\.json$",""),n);
+            }catch(Exception error){org.slf4j.LoggerFactory.getLogger(BuildablePresets.class).error("Invalid map buildable preset {}",file,error);}
+        }catch(java.io.IOException error){org.slf4j.LoggerFactory.getLogger(BuildablePresets.class).error("Cannot read map buildable presets",error);}return out;
+    }
+    public static ListTag catalog(net.minecraft.server.level.ServerLevel level){var rows=new ListTag();all(level).forEach((id,n)->{var copy=n.copy();copy.putString("id",id);rows.add(copy);});return rows;}
+    public static CompoundTag get(net.minecraft.server.level.ServerLevel level,String id){var n=all(level).get(id);if(n==null)throw new IllegalArgumentException("Unknown buildable preset: "+id);return n.copy();}
     @SubscribeEvent public static void reload(net.minecraftforge.event.AddReloadListenerEvent e){e.addListener(new net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener(new com.google.gson.Gson(),"buildable_presets"){
         @Override protected void apply(Map<ResourceLocation,com.google.gson.JsonElement> files,net.minecraft.server.packs.resources.ResourceManager resources,net.minecraft.util.profiling.ProfilerFiller profiler){
             var parsed=new LinkedHashMap<String,CompoundTag>();files.forEach((id,json)->{try{

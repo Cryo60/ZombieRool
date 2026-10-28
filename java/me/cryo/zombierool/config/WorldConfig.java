@@ -61,6 +61,8 @@ public class WorldConfig extends SavedData {
     private Map<String, String> mapOverlays = new HashMap<>();
 
     private String fogPreset = "normal";
+    private CompoundTag fogOptions=FogOptions.sanitize(new CompoundTag());
+    public CompoundTag getFogOptions(){return fogOptions.copy();}
     private boolean fogOutdoorsOnly = false;
     private boolean reducedGore = false;
     private float customFogR = 0f, customFogG = 0f, customFogB = 0f;
@@ -212,6 +214,7 @@ public class WorldConfig extends SavedData {
         if (nbt.contains("spookyAmbience")) spookyAmbience = nbt.getBoolean("spookyAmbience");
         if (nbt.contains("forceHalloween")) forceHalloween = nbt.getBoolean("forceHalloween");
 
+        if(nbt.contains("fogOptions",10))fogOptions=FogOptions.sanitize(nbt.getCompound("fogOptions"));
         if (nbt.contains("fogPreset")) fogPreset = nbt.getString("fogPreset");
         if (nbt.contains("customFogR")) customFogR = nbt.getFloat("customFogR");
         if (nbt.contains("reducedGore")) reducedGore = nbt.getBoolean("reducedGore");
@@ -340,6 +343,7 @@ public class WorldConfig extends SavedData {
         compound.putBoolean("forceHalloween", forceHalloween);
 
         compound.putString("fogPreset", fogPreset);
+        compound.put("fogOptions",fogOptions.copy());
         compound.putFloat("customFogR", customFogR);
         compound.putFloat("customFogG", customFogG);
         compound.putBoolean("reducedGore", reducedGore);
@@ -695,6 +699,7 @@ public class WorldConfig extends SavedData {
         customFogR = 0f; customFogG = 0f; customFogB = 0f;
         customFogNear = 0.5f; customFogFar = 18.0f;
         fogOutdoorsOnly = false;
+        fogOptions=FogOptions.sanitize(new CompoundTag());
         setDirty();
     }
 

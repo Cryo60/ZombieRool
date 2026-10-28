@@ -123,7 +123,7 @@ public class HellhoundEntity extends AbstractZombieRoolEntity {
             }
         });
 
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, true) {
+        this.goalSelector.addGoal(2, new me.cryo.zombierool.gameplay.ContinuousMeleeAttackGoal(this, 1.4, true) {
             private int pathRecalcDelay = 0;
 
             @Override

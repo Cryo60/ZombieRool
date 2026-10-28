@@ -664,9 +664,10 @@ public class CareerScreen extends Screen {
         g.fill(0, 0, this.width, H_TOPBAR, 0xCC000000);
         g.fill(0, H_TOPBAR - 1, this.width, H_TOPBAR, C_BORDER_CYAN_DIM);
         g.drawCenteredString(font, "C A R E E R", this.width / 2, H_TOPBAR/2 - 4, C_TEXT_GOLD);
-        String zrfTxt = "⬡ " + LocalCareerManager.getData().zrfBalance + " ZRF";
+        String zrfTxt = "" + LocalCareerManager.getData().zrfBalance + " ZRF";
         int zrfX = this.width - font.width(zrfTxt) - 8;
         if (currentTab == Tab.SHOP && dailyButton != null) zrfX -= (dailyButton.getWidth() + 6);
+        g.renderItem(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ROTTEN_FLESH), zrfX - 20, H_TOPBAR/2 - 8);
         g.drawString(font, zrfTxt, zrfX, H_TOPBAR/2 - 4, C_TEXT_GREEN);
         String boostTxt = LocalCareerManager.getActiveBoostText();
         String eventTxt = LocalCareerManager.getActiveEventText();

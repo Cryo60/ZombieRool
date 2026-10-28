@@ -29,6 +29,8 @@ public final class EncounterAbilities {
     private boolean wasInWater;
     private BlockPos escapePad;
     private double remainingPull;
+    private int pullTicks, pullStalledTicks;
+    private double pullBestDistance=Double.POSITIVE_INFINITY;
     private boolean escaped, returned, leapHit, escaping, stoleWeapon, cleanKillRewarded;
     private final ListTag stolen=new ListTag();
     public EncounterAbilities(SpecialEnemyEntity mob){this.mob=mob;}
@@ -49,7 +51,7 @@ public final class EncounterAbilities {
     private void stop(){mob.getNavigation().stop();mob.setDeltaMovement(0,mob.getDeltaMovement().y,0);}
     public void tick(ServerLevel level){
         if(!WaveManager.isGameRunning()||WaveManager.isPausedByPlayer()||!mob.isAlive())return;
-        if(EquipmentEffects.active(mob)||WonderWeaponEffects.frozen(mob)||FiestaFreeze.frozen(mob)||TraversalMotion.active(mob)){hook=null;hooked=null;action=0;mob.hookVisual(null);return;}
+        if(EquipmentEffects.active(mob)||WonderWeaponEffects.frozen(mob)||FiestaFreeze.frozen(mob)||TraversalMotion.active(mob)){releaseHook();action=0;return;}
         if(cooldown>0)cooldown--;
         if(teleportCooldown>0)teleportCooldown--;
         var target=mob.getTarget() instanceof ServerPlayer p&&valid(p)?p:null;
@@ -156,16 +158,21 @@ public final class EncounterAbilities {
         for(Vec3 p:choices)if(level.noCollision(player,player.getBoundingBox().move(p.subtract(player.position()))))return p;
         return null;
     }
+    private void releaseHook(){if(hooked!=null)cooldown=Math.max(cooldown,40);hooked=null;hook=null;remainingPull=0;pullTicks=0;pullStalledTicks=0;pullBestDistance=Double.POSITIVE_INFINITY;mob.hookVisual(null);}
     private void abomination(ServerLevel level,ServerPlayer target){
         if(plague>0){stop();--plague;if(plague>50){if(plague%5==0)level.sendParticles(ParticleTypes.SNEEZE,mob.getX(),mob.getEyeY()-.5,mob.getZ(),3,.15,.15,.15,.01);return;}if(plague==50)EncounterAudio.play(mob,"abomination_belch",.85f);if(plague%4==0){Vec3 origin=mob.getEyePosition().add(0,-.5,0);for(int i=1;i<=6;i++){Vec3 p=origin.add(aim.scale(i));level.sendParticles(ParticleTypes.SNEEZE,p.x,p.y,p.z,2,.15+i*.04,.12,.15+i*.04,.02);}
             for(var p:level.players())if(valid(p)&&mob.hasLineOfSight(p)){Vec3 delta=p.getBoundingBox().getCenter().subtract(origin);double along=delta.dot(aim);if(along>0&&along<6&&delta.subtract(aim.scale(along)).length()<.7+along*.12){p.getPersistentData().putLong("zr_plague_until",level.getGameTime()+40);p.getPersistentData().putUUID("zr_plague_source",mob.getUUID());}}
         }return;}
-        if(hooked!=null){var p=level.getServer().getPlayerList().getPlayer(hooked);if(p==null||p.level()!=level||!valid(p)||remainingPull<=0||!mob.hasLineOfSight(p)||mob.distanceToSqr(p)<6.25){hooked=null;hook=null;return;}
+        if(hooked!=null){var p=level.getServer().getPlayerList().getPlayer(hooked);if(p==null||p.level()!=level||!valid(p)||remainingPull<=0||!mob.hasLineOfSight(p)||mob.distanceToSqr(p)<6.25||++pullTicks>60){releaseHook();return;}
             Vec3 delta=mob.position().subtract(p.position()).normalize().scale(Math.min(.4,remainingPull));
             // Resolve swept movement like walking: a downward component against
             // the floor must not cancel the horizontal pull on uneven ground.
             Vec3 before=p.position();p.move(MoverType.SELF,delta);double moved=p.position().distanceTo(before);
-            if(moved<.0001){hooked=null;hook=null;return;}
+            if(moved<.0001){releaseHook();return;}
+            // Count actual approach, not tiny collision/vertical jitter, as progress.
+            double distance=mob.distanceTo(p);
+            if(distance<pullBestDistance-.1){pullBestDistance=distance;pullStalledTicks=0;}
+            else if(++pullStalledTicks>=10){releaseHook();return;}
             teleport(p,p.position());p.setDeltaMovement(Vec3.ZERO);remainingPull-=moved;return;
         }
         if(hook!=null){previousHook=hook;hook=hook.add(aim.scale(1.9));var hit=level.clip(new ClipContext(previousHook,hook,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,mob));
@@ -175,7 +182,7 @@ public final class EncounterAbilities {
                 var box=p.getBoundingBox().inflate(.7);var impact=box.contains(previousHook)?Optional.of(previousHook):box.clip(previousHook,hook);
                 if(impact.isPresent()&&impact.get().distanceToSqr(mob.getEyePosition())<=576&&previousHook.distanceToSqr(impact.get())<nearest){nearest=previousHook.distanceToSqr(impact.get());caught=p;}
             }
-            if(caught!=null){hooked=caught.getUUID();remainingPull=number("abominationPullDistance");event("OnAbominationHook",mob.getUUID().toString(),caught.getUUID().toString(),remainingPull);}
+            if(caught!=null){hooked=caught.getUUID();pullTicks=0;pullStalledTicks=0;pullBestDistance=mob.distanceTo(caught);remainingPull=number("abominationPullDistance");event("OnAbominationHook",mob.getUUID().toString(),caught.getUUID().toString(),remainingPull);}
             else if(hit.getType()!=HitResult.Type.MISS||hook.distanceToSqr(mob.getEyePosition())>576){hook=null;return;}
             level.sendParticles(ParticleTypes.CRIT,hook.x,hook.y,hook.z,1,0,0,0,0);return;
         }

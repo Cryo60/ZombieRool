@@ -22,13 +22,13 @@ public class ZombieMoonRenderer extends DimensionSpecialEffects {
 
     @Override
     public Vec3 getBrightnessDependentFogColor(Vec3 color, float brightness) {
-        if (!enabled) return color;
+        if (!enabled || ClientEnvironmentEffects.usesCompositedFog()) return color;
         return new Vec3(ClientEnvironmentEffects.fogColorRed, ClientEnvironmentEffects.fogColorGreen, ClientEnvironmentEffects.fogColorBlue);
     }
 
     @Override
     public boolean isFoggyAt(int x, int z) {
-        return enabled;
+        return enabled && !ClientEnvironmentEffects.usesCompositedFog();
     }
 
     // Pas d'Override ici car ces méthodes n'existent pas dans DimensionSpecialEffects (elles sont gérées différemment en 1.20.1)

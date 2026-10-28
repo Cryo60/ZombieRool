@@ -26,7 +26,7 @@ public class ZombieBloodParticle extends TextureSheetParticle {
 		}
 
 		public Particle createParticle(SimpleParticleType typeIn, ClientLevel worldIn, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-			if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()) return new CandyParticle(worldIn,x,y,z,xSpeed,ySpeed,zSpeed);
+			if (me.cryo.zombierool.client.HalloweenManager.isHalloweenPeriod()) return CandyParticle.create(worldIn,x,y,z,xSpeed,ySpeed,zSpeed);
             return new ZombieBloodParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, this.spriteSet);
 		}
 	}

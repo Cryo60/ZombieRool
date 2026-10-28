@@ -8,7 +8,7 @@ public final class MenuTheme {
     private MenuTheme(){}
     public static void begin(GuiGraphics g,Screen screen){frame=null;if(applies(screen)){background(g,screen);frame=screen;}}
     public static void end(){frame=null;}
-    public static boolean applies(Screen screen){return screen!=null&&!(screen instanceof net.minecraft.client.gui.screens.ChatScreen)&&!(screen instanceof net.minecraft.client.gui.screens.InBedChatScreen);}
+    public static boolean applies(Screen screen){return !(MainMenuExtensions.vanillaMenu() && net.minecraft.client.Minecraft.getInstance().level==null)&&screen!=null&&!(screen instanceof net.minecraft.client.gui.screens.ChatScreen)&&!(screen instanceof net.minecraft.client.gui.screens.InBedChatScreen);}
     public static void background(GuiGraphics g,Screen screen){
         if(frame==screen)return;
         var mc=Minecraft.getInstance();

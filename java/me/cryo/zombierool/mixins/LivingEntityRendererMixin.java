@@ -21,6 +21,7 @@ public abstract class LivingEntityRendererMixin {
 
     @org.spongepowered.asm.mixin.injection.ModifyArg(index=3, method="render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at=@At(value="INVOKE",target="Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;setupRotations(Lnet/minecraft/world/entity/LivingEntity;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V"))
     private float zombierool_fiesta(LivingEntity entity, com.mojang.blaze3d.vertex.PoseStack pose, float age, float yaw, float partial){
+        if(me.cryo.zombierool.gameplay.ElectricStun.active(entity)){float t=age+partial+entity.getId();pose.translate(Math.sin(t*2.7)*.015,0,Math.cos(t*2.3)*.015);pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees((float)Math.sin(t*2.9)*2));}
         return me.cryo.zombierool.client.MatchAtmosphere.yaw(entity,yaw,partial);
     }
     @Inject(method = "getOverlayCoords", at = @At("HEAD"), cancellable = true)

@@ -35,7 +35,7 @@ public final class HiddenActorSpawn {
     }
     private static String attempt(ServerPlayer player,String profile,String marker,double min,double max,long deadline,boolean visible){
         var level=player.serverLevel();var data=MapActors.get(level);var definition=data.profile(profile);
-        if(!WaveManager.isGameRunning()||WaveManager.isPausedByPlayer()||!MapActorBehavior.eligible(player)||definition.isEmpty()||!Double.isFinite(min)||!Double.isFinite(max)||min<4||max<min||max>64)return "";
+        if(!WaveManager.isGameRunning()||WaveManager.isPausedByPlayer()||!MapActorBehavior.eligible(player)||definition.isEmpty()||!Double.isFinite(min)||!Double.isFinite(max)||min<(visible?1:4)||max<min||max>64)return "";
         var dimensions=dimensions(definition);double width=dimensions.width,height=dimensions.height;
         var columns=new ArrayList<BlockPos>();var seen=new HashSet<Long>();
         for(var path:me.cryo.zombierool.config.WorldConfig.get(level).getPathPositionsNear(player.blockPosition(),max)){

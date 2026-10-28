@@ -12,6 +12,7 @@ public class S2CSetFogPresetPacket {
 	private final String preset;
 	private final float r, g, b, near, far;
 	private final boolean outdoorsOnly;
+    private net.minecraft.nbt.CompoundTag options;
 
 	public S2CSetFogPresetPacket(String preset, float r, float g, float b, float near, float far) {
 	    this(preset, r, g, b, near, far, false);
@@ -25,6 +26,8 @@ public class S2CSetFogPresetPacket {
 	    this.near = near;
 	    this.far = far;
 	    this.outdoorsOnly = outdoorsOnly;
+        var server=net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+        options=server!=null&&server.isSameThread()?me.cryo.zombierool.config.WorldConfig.get(server.overworld()).getFogOptions():new net.minecraft.nbt.CompoundTag();
 	}
 
 	public static void encode(S2CSetFogPresetPacket msg, FriendlyByteBuf buf) {
@@ -35,10 +38,12 @@ public class S2CSetFogPresetPacket {
 	    buf.writeFloat(msg.near);
 	    buf.writeFloat(msg.far);
 	    buf.writeBoolean(msg.outdoorsOnly);
+        buf.writeNbt(msg.options);
 	}
 
 	public static S2CSetFogPresetPacket decode(FriendlyByteBuf buf) {
-	    return new S2CSetFogPresetPacket(buf.readUtf(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readBoolean());
+        var packet=new S2CSetFogPresetPacket(buf.readUtf(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readBoolean());
+        packet.options=buf.readNbt();return packet;
 	}
 
 	public static void handle(S2CSetFogPresetPacket msg, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -46,6 +51,7 @@ public class S2CSetFogPresetPacket {
 	    context.enqueueWork(() -> {
 	        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 	            ClientEnvironmentEffects.setFogPreset(msg.preset, msg.r, msg.g, msg.b, msg.near, msg.far, msg.outdoorsOnly);
+                ClientEnvironmentEffects.setFogOptions(msg.options);
 	        });
 	    });
 	    context.setPacketHandled(true);

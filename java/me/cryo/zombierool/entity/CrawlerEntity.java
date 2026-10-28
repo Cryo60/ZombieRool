@@ -153,7 +153,7 @@ public class CrawlerEntity extends AbstractZombieRoolEntity {
             @Override public boolean canUse(){return CrawlerEntity.this.getTarget()==null&&super.canUse();}
         });
         this.targetSelector.addGoal(2, new me.cryo.zombierool.hotfix.ReachablePlayerTargetGoal(this, Player.class, false, false));
-        this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.4, true) {
+        this.goalSelector.addGoal(3, new me.cryo.zombierool.gameplay.ContinuousMeleeAttackGoal(this, 1.4, true) {
             @Override public boolean canUse(){return (crawlerLeap==null||!crawlerLeap.busy())&&super.canUse();}
             @Override public boolean canContinueToUse(){return (crawlerLeap==null||!crawlerLeap.busy())&&super.canContinueToUse();}
             @Override

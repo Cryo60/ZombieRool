@@ -38,6 +38,7 @@ public class WaWPauseScreen extends Screen {
     protected void init() {
         this.entries.clear();
         this.entries.add(new Entry("gui.zombierool.pause.resume", this::resume));
+        if(me.cryo.zombierool.gameplay.WaveManager.isGameRunning())this.entries.add(new Entry("gui.zombierool.pause.vote", () -> {if(me.cryo.zombierool.client.MatchPauseClient.voting()||me.cryo.zombierool.client.MatchPauseClient.paused())me.cryo.zombierool.client.MatchPauseClient.showVote();else {this.minecraft.setScreen(null);me.cryo.zombierool.gameplay.MatchPause.send("pause");}}));
         this.entries.add(new Entry("gui.zombierool.pause.options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
         this.entries.add(new Entry("gui.zombierool.pause.restart", this::restart));
         if (this.minecraft.hasSingleplayerServer() && this.minecraft.getSingleplayerServer() != null && !this.minecraft.getSingleplayerServer().isPublished())

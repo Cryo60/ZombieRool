@@ -19,10 +19,14 @@ import org.apache.logging.log4j.Logger;
 public class MainMenuExtensions {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    @SubscribeEvent
+    private static boolean vanillaMenu;
+    public static boolean vanillaMenu(){return vanillaMenu;}
+    public static void openVanilla(){vanillaMenu=true;Minecraft.getInstance().setScreen(new TitleScreen());}
+    public static void openZombieRool(){vanillaMenu=false;Minecraft.getInstance().setScreen(new WaWMainMenuScreen());}
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST)
     public static void onOpening(ScreenEvent.Opening event) {
-        if (ModList.get().isLoaded("essential")) return;
-        if (event.getNewScreen() instanceof TitleScreen) {
+
+        if (event.getNewScreen() instanceof TitleScreen && !vanillaMenu) {
             event.setNewScreen(new WaWMainMenuScreen());
         } else if (event.getNewScreen() instanceof PauseScreen) {
             event.setNewScreen(new WaWPauseScreen());
@@ -38,6 +42,8 @@ public class MainMenuExtensions {
             Minecraft.getInstance().tell(() -> Minecraft.getInstance().setScreen(new NetworkPromptScreen(screen)));
             return;
         }
+        event.addListener(Button.builder(Component.literal("ZombieRool menu"), b -> openZombieRool()).bounds(8, 8, 140, 20).build());
+        if(vanillaMenu)return;
         int buttonHeight = 20;
         int spacing = 4;
         int lowestMainMenuButtonY = screen.height / 4 + 48 + (24 * 5) + 16;

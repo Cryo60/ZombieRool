@@ -42,6 +42,7 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
         // A live route in a one-player match already answers the targeting question.
         if(mob.level().players().size()==1&&valid(mob.getTarget())&&mob.canAttack(mob.getTarget())){
             var current=(Player)mob.getTarget();var route=mob.getNavigation().getPath();
+            if(mob.getNavigation() instanceof me.cryo.zombierool.gameplay.RouteNavigation nav&&nav.directPursuit()&&me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit(current)){target=current;selectedPath=null;return;}
             if(route!=null&&!route.isDone()&&reachable(route,current)&&me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit(current)){target=current;selectedPath=route;return;}
         }
         // RouteNavigation owns the expensive search budget. A second budget here
@@ -56,7 +57,7 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
             var failed=FAILED.computeIfAbsent(mob,key->new java.util.HashMap<>());
             if(!me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit(player)){failed.remove(player.getUUID());continue;}
             var previous=failed.get(player.getUUID());
-            if(previous!=null&&mob.tickCount<previous.retry&&previous.terrain==TERRAIN.getOrDefault(mob.level(),0L)&&player.position().distanceToSqr(previous.position)<4)continue;
+            if(player!=mob.getTarget()&&previous!=null&&mob.tickCount<previous.retry&&previous.terrain==TERRAIN.getOrDefault(mob.level(),0L)&&player.position().distanceToSqr(previous.position)<4)continue;
             Path path=player==mob.getTarget()?mob.getNavigation().getPath():null;
             if(path==null||path.isDone()||!reachable(path,player))path=mob.getNavigation().createPath(player,0);
             if(mob.getNavigation() instanceof me.cryo.zombierool.gameplay.RouteNavigation nav&&nav.planningDeferred()){
@@ -65,7 +66,7 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
                 continue;
             }
             if(me.cryo.zombierool.gameplay.SubmergedMelee.canReach(mob,player)){target=player;selectedPath=null;return;}
-            if(!reachable(path,player)){failed.put(player.getUUID(),new Failure(player.position(),mob.tickCount+40+Math.floorMod(mob.getId(),20),TERRAIN.getOrDefault(mob.level(),0L)));continue;}
+            if(!reachable(path,player)){failed.put(player.getUUID(),new Failure(player.position(),mob.tickCount+10+Math.floorMod(mob.getId(),5),TERRAIN.getOrDefault(mob.level(),0L)));continue;}
             failed.remove(player.getUUID());
             double cost=0;
             for(int i=1;i<path.getNodeCount();i++){
@@ -74,6 +75,12 @@ public final class ReachablePlayerTargetGoal extends NearestAttackableTargetGoal
             }
             if(player==mob.getTarget())cost*=.9; // Avoid switching for tiny route differences.
             if(cost<best){best=cost;target=player;selectedPath=path;}
+        }
+        // Losing a route or waiting for a planner slot does not invalidate a living
+        // player. Keep the lock while navigation continues or repairs its route.
+        if(target==null&&valid(mob.getTarget())&&mob.canAttack(mob.getTarget())
+                &&me.cryo.zombierool.gameplay.NavigationArea.allowsPursuit((Player)mob.getTarget())){
+            target=(Player)mob.getTarget();selectedPath=mob.getNavigation().getPath();
         }
         }finally{
             SELECTIONS.put(mob,new Selection(mob.level().getGameTime(),TERRAIN.getOrDefault(mob.level(),0L),new java.lang.ref.WeakReference<>(target instanceof Player p?p:null),selectedPath,selectionDeferred));

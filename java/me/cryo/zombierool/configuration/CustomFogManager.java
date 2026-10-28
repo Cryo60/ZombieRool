@@ -18,6 +18,7 @@ public class CustomFogManager {
 
     public static class FogData {
         public float r, g, b, near, far;
+        public String options="{}";
         public FogData(float r, float g, float b, float near, float far) {
             this.r = r; this.g = g; this.b = b; this.near = near; this.far = far;
         }
@@ -43,6 +44,8 @@ public class CustomFogManager {
         saveToFile();
     }
 
+    public static void saveOptions(String name,net.minecraft.nbt.CompoundTag options){load();var data=customPresets.get(name);if(data!=null){data.options=options.toString();saveToFile();}}
+    public static net.minecraft.nbt.CompoundTag options(FogData data){try{return net.minecraft.nbt.TagParser.parseTag(data.options==null?"{}":data.options);}catch(Exception e){return new net.minecraft.nbt.CompoundTag();}}
     public static void deletePreset(String name) {
         if (customPresets.remove(name) != null) {
             saveToFile();

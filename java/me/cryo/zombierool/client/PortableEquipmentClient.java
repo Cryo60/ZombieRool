@@ -133,7 +133,7 @@ public final class PortableEquipmentClient {
         pose.pushPose();pose.translate(spot.pos().getX()-camera.x,spot.pos().getY()-camera.y,spot.pos().getZ()-camera.z);
         MultiBufferSource ghost=type->new me.cryo.zombierool.client.renderer.BuildablePartRenderer.GhostVertex(buffers.getBuffer(PreviewType.TYPE),105);
         boolean inside=new net.minecraft.world.phys.AABB(spot.pos()).expandTowards(0,1,0).inflate(.1).contains(camera);
-        if(!inside){if(stack.is(PortableEquipment.SENTRY.get()))renderSentry(spot.state(),null,0,pose,ghost,15728880,OverlayTexture.NO_OVERLAY);else mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),ghost.getBuffer(RenderType.cutout()),spot.state(),mc.getBlockRenderer().getBlockModel(spot.state()),1,1,1,15728880,OverlayTexture.NO_OVERLAY);}
+        if(!inside&&me.cryo.zombierool.gameplay.MechanicalGreeter.deploymentProfile(stack).isEmpty()){if(stack.is(PortableEquipment.SENTRY.get()))renderSentry(spot.state(),null,0,pose,ghost,15728880,OverlayTexture.NO_OVERLAY);else mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),ghost.getBuffer(RenderType.cutout()),spot.state(),mc.getBlockRenderer().getBlockModel(spot.state()),1,1,1,15728880,OverlayTexture.NO_OVERLAY);}
         if(stack.is(PortableEquipment.TURBINE.get())){pose.pushPose();pose.translate(.5,1.5,.5);mc.getItemRenderer().renderStatic(new ItemStack(PortableEquipment.PARTS.get(3).get()),ItemDisplayContext.NONE,15728880,OverlayTexture.NO_OVERLAY,pose,ghost,mc.level,0);pose.popPose();}
         LevelRenderer.renderLineBox(pose,buffers.getBuffer(RenderType.lines()),new net.minecraft.world.phys.AABB(0,0,0,1,2,1),spot.valid()?.2f:1f,spot.valid()?1f:.15f,.2f,.9f);pose.popPose();buffers.endBatch();
     }
